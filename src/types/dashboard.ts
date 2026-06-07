@@ -35,10 +35,32 @@ export interface SalesRow {
   [key: string]: unknown
 }
 
+export interface DebtMonth {
+  label: string
+  amount: number
+}
+
+export interface DebtRow {
+  company: string
+  agent: string
+  clientID: string
+  clientName: string
+  oldDebt: number
+  months: DebtMonth[]
+}
+
+export interface WmsRow {
+  company: string
+  itemSKU: string
+  qtyInStock: number
+  itemName?: string
+}
+
 export interface DashboardData {
   generated?: string
   totalRows?: number
   rows: SalesRow[]
-  debtRows?: unknown[]
+  debtRows?: DebtRow[]
   debtLastUpdate?: string
+  wmsRows?: WmsRow[]
 }

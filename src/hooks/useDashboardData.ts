@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { useDashboardAccess } from '../context/DashboardAccessContext'
 import { filterRows } from '../lib/permissions'
-import type { DashboardData, SalesRow } from '../types/dashboard'
+import { filterDebtRows, normalizeDebtRows } from '../lib/debtMetrics'
+import { buildWmsMaps } from '../lib/wmsData'
+import type { DashboardData, DebtRow, SalesRow } from '../types/dashboard'
 
 declare global {
   interface Window {
@@ -45,6 +47,18 @@ export function useDashboardData() {
 
   const allRows: SalesRow[] = q.data?.rows ?? []
   const rows = access ? filterRows(access, allRows) : []
+  const allDebtRows: DebtRow[] = normalizeDebtRows(q.data?.debtRows)
+  const debtRows = access ? filterDebtRows(access, allDebtRows) : []
+  const { wmsStock, wmsNames } = buildWmsMaps(q.data?.wmsRows)
 
-  return { ...q, allRows, rows, debtLastUpdate: q.data?.debtLastUpdate ?? window.__DEBT_LAST_UPDATE__ }
+  return {
+    ...q,
+    allRows,
+    rows,
+    allDebtRows,
+    debtRows,
+    wmsStock,
+    wmsNames,
+    debtLastUpdate: q.data?.debtLastUpdate ?? window.__DEBT_LAST_UPDATE__,
+  }
 }
