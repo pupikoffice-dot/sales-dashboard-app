@@ -21,17 +21,17 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
-      <form onSubmit={onSubmit} className="w-full max-w-sm bg-white rounded-lg shadow p-6 space-y-4">
-        <h1 className="text-xl font-semibold text-slate-900">Sales Dashboard</h1>
-        <p className="text-sm text-slate-500">Sign in with your Sales Team account</p>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+    <div className="login-shell">
+      <form onSubmit={onSubmit} className="login-card">
+        <h1>Sales Dashboard</h1>
+        <p>Sign in to view your sales data</p>
+        {error && <p className="login-error">{error}</p>}
         <input
           type="email"
           placeholder="Email"
           value={email}
           onChange={e => setEmail(e.target.value)}
-          className="w-full border rounded px-3 py-2 text-sm"
+          className="login-input"
           required
         />
         <input
@@ -39,14 +39,10 @@ export function LoginPage() {
           placeholder="Password"
           value={password}
           onChange={e => setPassword(e.target.value)}
-          className="w-full border rounded px-3 py-2 text-sm"
+          className="login-input"
           required
         />
-        <button
-          type="submit"
-          disabled={busy}
-          className="w-full bg-slate-900 text-white rounded py-2 text-sm font-medium disabled:opacity-50"
-        >
+        <button type="submit" disabled={busy} className="login-submit">
           {busy ? 'Signing in…' : 'Sign in'}
         </button>
       </form>

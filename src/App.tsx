@@ -10,14 +10,14 @@ import { UsersPage } from './pages/admin/UsersPage'
 
 function HomeRedirect() {
   const { access, loading } = useDashboardAccess()
-  if (loading) return <p className="p-6 text-sm">Loading…</p>
+  if (loading) return <p className="status-msg p-6">Loading…</p>
   const path = access ? pathForModule(access.defaultModule) : '/oversite'
   return <Navigate to={path} replace />
 }
 
 function ProtectedApp() {
   const { session, loading, isSuperAdmin } = useAuth()
-  if (loading) return <p className="p-6 text-sm">Loading…</p>
+  if (loading) return <p className="status-msg p-6">Loading…</p>
   if (!session) return <Navigate to="/login" replace />
 
   return (

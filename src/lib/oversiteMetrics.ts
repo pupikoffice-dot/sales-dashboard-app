@@ -6,12 +6,12 @@ export interface OversiteCompanyDef {
   ordersTag: string
   returnsTag: string
   label: string
-  borderClass: string
+  accentColor: string
 }
 
 export const OVERSITE_COMPANIES: OversiteCompanyDef[] = [
-  { id: 'pupik', ordersTag: 'orders-pupik', returnsTag: 'returns-pupik', label: '🏢 Pupik', borderClass: 'border-l-blue-500' },
-  { id: 'mt', ordersTag: 'orders-mt', returnsTag: 'returns-mt', label: '🐒 Monkeytime', borderClass: 'border-l-cyan-500' },
+  { id: 'pupik', ordersTag: 'orders-pupik', returnsTag: 'returns-pupik', label: '🏢 Pupik', accentColor: 'var(--acc)' },
+  { id: 'mt', ordersTag: 'orders-mt', returnsTag: 'returns-mt', label: '🐒 Monkeytime', accentColor: 'var(--acc2)' },
 ]
 
 export interface RowTotals {

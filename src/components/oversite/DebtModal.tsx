@@ -43,74 +43,67 @@ export function DebtModal({ company, debtData, debtLastUpdate, onClose }: DebtMo
   }`
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      onClick={e => {
-        if (e.target === e.currentTarget) onClose()
-      }}
-    >
-      <div className="flex max-h-[90vh] w-full max-w-6xl flex-col rounded-xl bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-          <h2 className="text-sm font-semibold">{title}</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded px-2 py-1 text-slate-500 hover:bg-slate-100"
-          >
+    <div className="debt-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="debt-modal">
+        <div className="debt-modal-hdr">
+          <span>{title}</span>
+          <button type="button" className="debt-modal-close" onClick={onClose}>
             ✕
           </button>
         </div>
-        <div className="overflow-auto p-4">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-500">
-                <th className="py-2 pr-2">Client ID</th>
-                <th className="py-2 pr-2">Client Name</th>
-                <th className="py-2 pr-2">Agent</th>
-                <th className="py-2 pr-2 text-right">Old Debt</th>
-                {mLabels.map(l => (
-                  <th key={l} className="py-2 pr-2 text-right">
-                    {l}
-                  </th>
-                ))}
-                <th className="py-2 text-right">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reportRows.map(r => {
-                const months = debtMonths(r.months)
-                const rowTot = debtRowTotal(r)
-                return (
-                  <tr key={`${r.clientID}-${r.agent}`} className="border-b border-slate-100">
-                    <td className="py-1.5 pr-2">{r.clientID}</td>
-                    <td className="py-1.5 pr-2">{r.clientName}</td>
-                    <td className="py-1.5 pr-2">{r.agent}</td>
-                    <td className="py-1.5 pr-2 text-right tabular-nums text-amber-700">{fmt(r.oldDebt)}</td>
-                    {months.map(m => (
-                      <td key={`${r.clientID}-${m.label}`} className="py-1.5 pr-2 text-right tabular-nums text-amber-700">
-                        {fmt(m.amount)}
+        <div className="debt-modal-body">
+          <div className="tw">
+            <table>
+              <thead>
+                <tr>
+                  <th>Client ID</th>
+                  <th>Client Name</th>
+                  <th>Agent</th>
+                  <th>Old Debt</th>
+                  {mLabels.map(l => (
+                    <th key={l}>{l}</th>
+                  ))}
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reportRows.map(r => {
+                  const months = debtMonths(r.months)
+                  const rowTot = debtRowTotal(r)
+                  return (
+                    <tr key={`${r.clientID}-${r.agent}`}>
+                      <td>{r.clientID}</td>
+                      <td>{r.clientName}</td>
+                      <td>{r.agent}</td>
+                      <td className="cr">{fmt(r.oldDebt)}</td>
+                      {months.map(m => (
+                        <td key={`${r.clientID}-${m.label}`} className="cr">
+                          {fmt(m.amount)}
+                        </td>
+                      ))}
+                      <td className="cr" style={{ fontWeight: 700 }}>
+                        {fmt(rowTot)}
                       </td>
-                    ))}
-                    <td className="py-1.5 text-right font-semibold tabular-nums text-amber-700">{fmt(rowTot)}</td>
-                  </tr>
-                )
-              })}
-            </tbody>
-            <tfoot>
-              <tr className="border-t border-slate-300 font-semibold">
-                <td colSpan={3} className="py-2">
-                  Total
-                </td>
-                <td className="py-2 pr-2 text-right tabular-nums text-amber-700">{fmt(footer.totOld)}</td>
-                {footer.totM.map((v, i) => (
-                  <td key={mLabels[i]} className="py-2 pr-2 text-right tabular-nums text-amber-700">
-                    {fmt(v)}
+                    </tr>
+                  )
+                })}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colSpan={3}>Total</td>
+                  <td className="cr">{fmt(footer.totOld)}</td>
+                  {footer.totM.map((v, i) => (
+                    <td key={mLabels[i]} className="cr">
+                      {fmt(v)}
+                    </td>
+                  ))}
+                  <td className="cr" style={{ fontWeight: 700 }}>
+                    {fmt(footer.totGrand)}
                   </td>
-                ))}
-                <td className="py-2 text-right tabular-nums text-amber-700">{fmt(footer.totGrand)}</td>
-              </tr>
-            </tfoot>
-          </table>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
         </div>
       </div>
     </div>

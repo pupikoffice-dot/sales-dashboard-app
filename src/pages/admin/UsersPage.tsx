@@ -36,40 +36,40 @@ export function UsersPage() {
 
   const [editId, setEditId] = useState<string | null>(null)
 
-  if (isLoading) return <p className="text-sm text-slate-500">Loading users…</p>
+  if (isLoading) return <p className="status-msg">Loading users…</p>
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Dashboard Users</h1>
-      <p className="text-sm text-slate-600">Assign modules, companies, and agents per user.</p>
-      <table className="w-full text-sm bg-white border rounded-lg overflow-hidden">
-        <thead className="bg-slate-100 text-left">
-          <tr>
-            <th className="px-4 py-2">Name</th>
-            <th className="px-4 py-2">Email</th>
-            <th className="px-4 py-2">Role</th>
-            <th className="px-4 py-2"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {(users ?? []).map(u => (
-            <tr key={u.id} className="border-t">
-              <td className="px-4 py-2">{u.name}</td>
-              <td className="px-4 py-2">{u.email}</td>
-              <td className="px-4 py-2">{u.role}</td>
-              <td className="px-4 py-2">
-                <button
-                  type="button"
-                  className="text-blue-600 hover:underline"
-                  onClick={() => setEditId(u.id)}
-                >
-                  Edit access
-                </button>
-              </td>
+    <div>
+      <div className="ov-header">
+        <h2>Dashboard Users</h2>
+        <p className="ov-sub">Assign modules, companies, and agents per user.</p>
+      </div>
+      <div className="tw" style={{ marginTop: 16 }}>
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th></th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {(users ?? []).map(u => (
+              <tr key={u.id}>
+                <td>{u.name}</td>
+                <td>{u.email}</td>
+                <td>{u.role}</td>
+                <td>
+                  <button type="button" className="ov-toggle-btn" style={{ marginTop: 0, width: 'auto' }} onClick={() => setEditId(u.id)}>
+                    Edit access
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       {editId && (
         <EditAccessModal
           userId={editId}

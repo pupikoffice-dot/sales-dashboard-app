@@ -28,25 +28,25 @@ export function OversitePage() {
   const { rows, debtRows, debtLastUpdate, wmsStock, wmsNames, isLoading, error } = useDashboardData()
   const [debtModalCo, setDebtModalCo] = useState<LogicalCompany | null>(null)
 
-  if (isLoading) return <p className="text-sm text-slate-500">Loading sales data…</p>
-  if (error) return <p className="text-sm text-red-600">{(error as Error).message}</p>
+  if (isLoading) return <p className="status-msg">Loading sales data…</p>
+  if (error) return <p className="status-msg error">{(error as Error).message}</p>
 
   const ctx = getOversiteDateContext()
   const visibleCompanies = OVERSITE_COMPANIES.filter(c => access?.companies.includes(c.id))
 
   return (
-    <div className="space-y-5">
-      <header>
-        <h1 className="text-2xl font-bold tracking-tight">🏠 Oversite Dashboard</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Today: <strong>{ctx.todayDisp}</strong> · Month: <strong>{ctx.monthLbl}</strong>
-        </p>
-      </header>
+    <>
+      <div className="ov-header">
+        <h2>🏠 Oversite Dashboard</h2>
+        <div className="ov-sub">
+          Today: <b>{ctx.todayDisp}</b> · Month: <b>{ctx.monthLbl}</b>
+        </div>
+      </div>
 
       {visibleCompanies.length === 0 ? (
-        <p className="text-sm text-slate-500">No companies in your access scope.</p>
+        <p className="ov-empty">No companies in your access scope.</p>
       ) : (
-        <div className="grid gap-5 lg:grid-cols-2">
+        <div className="ov-grid">
           {visibleCompanies.map(co => {
             const ordersToday = computeOrdersToday(rows, co.ordersTag, ctx.todayStr)
             const ordersMtd = computeOrdersMtd(rows, co.ordersTag, ctx.monthStart, ctx.todayStr)
@@ -60,8 +60,8 @@ export function OversitePage() {
             const stockAlerts = computeStockAlerts(rows, co.id, wmsStock, wmsNames)
 
             return (
-              <div key={co.id} className="space-y-3">
-                <div className={`rounded-lg border border-slate-200 border-l-4 bg-white px-4 py-3 font-bold ${co.borderClass}`}>
+              <div key={co.id} className="ov-col">
+                <div className="ov-col-hdr" style={{ borderLeftColor: co.accentColor }}>
                   {co.label}
                 </div>
 
@@ -70,7 +70,7 @@ export function OversitePage() {
                     kpis={[
                       { label: 'Clients', value: String(ordersToday.clients) },
                       { label: 'Qty', value: fmt(ordersToday.qty) },
-                      { label: 'Cash', value: fmt(ordersToday.cash), valueClass: 'text-emerald-600' },
+                      { label: 'Cash', value: fmt(ordersToday.cash), tone: 'grn' },
                     ]}
                   />
                 </OversiteSection>
@@ -80,7 +80,7 @@ export function OversitePage() {
                     kpis={[
                       { label: 'Clients', value: String(ordersMtd.clients) },
                       { label: 'Qty', value: fmt(ordersMtd.qty) },
-                      { label: 'Cash', value: fmt(ordersMtd.cash), valueClass: 'text-emerald-600' },
+                      { label: 'Cash', value: fmt(ordersMtd.cash), tone: 'grn' },
                     ]}
                   />
                   <OversiteCollapsible label="📦 Top 10 Orders ▾">
@@ -91,7 +91,7 @@ export function OversitePage() {
                 <OversiteSection title={`💰 Sales MTD — ${ctx.monthLbl}`}>
                   <OversiteKpiRow
                     kpis={[
-                      { label: 'Cash', value: fmt(salesMtd.cash), valueClass: 'text-emerald-600' },
+                      { label: 'Cash', value: fmt(salesMtd.cash), tone: 'grn' },
                       { label: 'Qty', value: fmt(salesMtd.qty) },
                     ]}
                   />
@@ -111,7 +111,7 @@ export function OversitePage() {
                 <OversiteSection title="↩️ Returns MTD">
                   <OversiteKpiRow
                     kpis={[
-                      { label: 'Cash', value: fmt(returnsMtd.cash), valueClass: 'text-red-600' },
+                      { label: 'Cash', value: fmt(returnsMtd.cash), tone: 'amber' },
                       { label: 'Qty', value: fmt(returnsMtd.qty) },
                     ]}
                   />
@@ -123,10 +123,7 @@ export function OversitePage() {
                 <OversiteSection
                   title={`💳 Open Debt${debtLastUpdate ? ` · Last Update: ${debtLastUpdate}` : ''}`}
                 >
-                  <OversiteDebtSummary
-                    summary={debtSummary}
-                    onOpenReport={() => setDebtModalCo(co.id)}
-                  />
+                  <OversiteDebtSummary summary={debtSummary} onOpenReport={() => setDebtModalCo(co.id)} />
                 </OversiteSection>
 
                 <StockAlertsPanel alerts={stockAlerts} />
@@ -144,7 +141,6 @@ export function OversitePage() {
           onClose={() => setDebtModalCo(null)}
         />
       )}
-
-    </div>
+    </>
   )
 }

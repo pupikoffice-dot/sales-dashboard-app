@@ -1,58 +1,99 @@
 import type { ReactNode } from 'react'
 import { NavLink, Outlet, Navigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { useDashboardAccess } from '../context/DashboardAccessContext'
+import { useDashboardData } from '../hooks/useDashboardData'
 import { canShowModule } from '../lib/permissions'
 import { MODULE_REGISTRY } from '../modules/registry'
 
 export function DashboardLayout() {
   const { signOut, isSuperAdmin } = useAuth()
   const { access, loading } = useDashboardAccess()
+  const { allRows, debtRows, isLoading: dataLoading } = useDashboardData()
+  const queryClient = useQueryClient()
 
-  if (loading) return <p className="p-6 text-sm text-slate-500">Loading permissions…</p>
-  if (!access?.active) return <p className="p-6 text-sm text-red-600">No dashboard access configured.</p>
+  if (loading) return <p className="status-msg p-6">Loading permissions…</p>
+  if (!access?.active) return <p className="status-msg error p-6">No dashboard access configured.</p>
 
   const visible = MODULE_REGISTRY.filter(m => canShowModule(access, m.id))
+  const rowCount = allRows.length
+  const debtCount = debtRows.length
+
+  function refreshData() {
+    queryClient.invalidateQueries({ queryKey: ['dashboard-data'] })
+  }
 
   return (
-    <div className="min-h-screen flex bg-slate-50">
-      <aside className="w-56 bg-slate-900 text-slate-100 flex flex-col">
-        <div className="p-4 font-semibold border-b border-slate-700">Sales Dashboard</div>
-        <nav className="flex-1 p-2 space-y-1">
-          {visible.map(m => (
-            <NavLink
-              key={m.id}
-              to={m.path}
-              className={({ isActive }) =>
-                `block px-3 py-2 rounded text-sm ${isActive ? 'bg-slate-700' : 'hover:bg-slate-800'}`
-              }
-            >
-              {m.label}
-            </NavLink>
-          ))}
-          {isSuperAdmin && (
-            <NavLink
-              to="/admin/users"
-              className={({ isActive }) =>
-                `block px-3 py-2 rounded text-sm mt-4 ${isActive ? 'bg-slate-700' : 'hover:bg-slate-800'}`
-              }
-            >
-              Admin — Users
-            </NavLink>
-          )}
-        </nav>
-        <button
-          type="button"
-          onClick={() => signOut()}
-          className="m-2 px-3 py-2 text-sm text-left rounded hover:bg-slate-800"
-        >
-          Sign out
-        </button>
-      </aside>
-      <main className="flex-1 p-6 overflow-auto">
-        <Outlet />
-      </main>
-    </div>
+    <>
+      <header className="dashboard-header">
+        <div>
+          <h1>Sales Dashboard</h1>
+          <div className="sub">Pupik · Monkeytime · Grow</div>
+        </div>
+        <div className="hdr-right">
+          <div className="data-badge">
+            {dataLoading ? (
+              'Loading data…'
+            ) : (
+              <>
+                Loaded: <b>{rowCount.toLocaleString()}</b> rows
+                {debtCount > 0 ? (
+                  <>
+                    {' '}
+                    · <b>{debtCount}</b> debt clients
+                  </>
+                ) : (
+                  ' · 0 debt rows'
+                )}
+              </>
+            )}
+          </div>
+          <button type="button" className="refresh-btn" onClick={refreshData} title="Reload dashboard data">
+            ↺ Refresh
+          </button>
+          <button type="button" className="sign-out-btn" onClick={() => signOut()}>
+            Sign out
+          </button>
+        </div>
+      </header>
+
+      <div className="dashboard-shell">
+        <aside className="dashboard-sidebar">
+          <div className="sidebar-label">Navigation</div>
+          <nav>
+            {visible.map(m => (
+              <NavLink
+                key={m.id}
+                to={m.path}
+                className={({ isActive }) =>
+                  `nav-btn${m.id === 'oversite' ? ' oversite-nav' : ''}${isActive ? ' active' : ''}`
+                }
+              >
+                {m.id === 'oversite' ? '🏠 ' : ''}
+                {m.label}
+              </NavLink>
+            ))}
+            {isSuperAdmin && (
+              <>
+                <div className="sidebar-label" style={{ marginTop: 8 }}>
+                  Admin
+                </div>
+                <NavLink
+                  to="/admin/users"
+                  className={({ isActive }) => `nav-btn${isActive ? ' active' : ''}`}
+                >
+                  Admin — Users
+                </NavLink>
+              </>
+            )}
+          </nav>
+        </aside>
+        <main className="dashboard-main">
+          <Outlet />
+        </main>
+      </div>
+    </>
   )
 }
 

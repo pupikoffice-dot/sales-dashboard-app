@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { fmt, fmtDateIso } from '../../lib/format'
 import type { StockAlertsResult } from '../../lib/stockAlerts'
 
@@ -14,44 +14,34 @@ export function StockAlertsPanel({ alerts }: { alerts: StockAlertsResult }) {
   ]
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4">
-      <h3 className="mb-3 text-[0.68rem] font-bold uppercase tracking-widest text-slate-500">
+    <section className="ov-section">
+      <h3 className="ov-section-title">
         📦 Stock Alerts{' '}
-        <span
-          className={`ml-1 rounded-full px-2 py-0.5 text-[0.67rem] text-white ${
-            alertCount === 0 ? 'bg-slate-400' : 'bg-red-500'
-          }`}
-        >
-          {alertCount}
-        </span>
+        <span className={`ov-badge${alertCount === 0 ? ' ov-badge-zero' : ''}`}>{alertCount}</span>
       </h3>
-      <div className="mb-2 flex flex-wrap gap-1">
+      <div className="ov-tab-btns">
         {tabs.map((t, i) => (
           <button
             key={t.label}
             type="button"
+            className={`ov-tab-btn${tab === i ? ' active' : ''}`}
             onClick={() => setTab(i)}
-            className={`rounded-full border px-3 py-1 text-xs transition ${
-              tab === i
-                ? 'border-blue-500 bg-blue-500 text-white'
-                : 'border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-600'
-            }`}
           >
             {t.label}
           </button>
         ))}
       </div>
-      {tabs[tab].content}
+      <div className="ov-tab-panel">{tabs[tab].content}</div>
     </section>
   )
 }
 
 function SlowMoversTab({ alerts }: { alerts: StockAlertsResult }) {
   if (!alerts.slowMovers.length && !alerts.neverSold.length) {
-    return <p className="text-sm italic text-slate-500">All stocked items sold in the last 30 days.</p>
+    return <p className="ov-empty">All stocked items sold in the last 30 days.</p>
   }
   return (
-    <div className="space-y-4">
+    <div>
       {alerts.slowMovers.length > 0 && (
         <AlertTable
           headers={['Item', 'SKU', 'Stock', 'Last Sale', 'Days']}
@@ -66,8 +56,10 @@ function SlowMoversTab({ alerts }: { alerts: StockAlertsResult }) {
         />
       )}
       {alerts.neverSold.length > 0 && (
-        <div>
-          <p className="mb-2 text-xs font-bold text-slate-500">Never Sold (stock ≥10, top 10 by qty)</p>
+        <div style={{ marginTop: 12 }}>
+          <p style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--muted)', marginBottom: 8 }}>
+            Never Sold (stock ≥10, top 10 by qty)
+          </p>
           <AlertTable
             headers={['Item', 'SKU', 'Stock']}
             rows={alerts.neverSold.map(r => [r.name, r.sku, fmt(r.qty)])}
@@ -80,11 +72,11 @@ function SlowMoversTab({ alerts }: { alerts: StockAlertsResult }) {
 
 function ClientAlertsTab({ alerts }: { alerts: StockAlertsResult }) {
   if (!alerts.clientAlerts.length) {
-    return <p className="text-sm italic text-slate-500">No at-risk client-item patterns detected.</p>
+    return <p className="ov-empty">No at-risk client-item patterns detected.</p>
   }
   return (
     <div>
-      <p className="mb-2 text-xs text-slate-500">
+      <p style={{ fontSize: '0.71rem', color: 'var(--muted)', marginBottom: 8 }}>
         {alerts.clientAlerts.length} at-risk pairs (showing top 20) — dynamic interval method
       </p>
       <AlertTable
@@ -105,7 +97,7 @@ function ClientAlertsTab({ alerts }: { alerts: StockAlertsResult }) {
 
 function VelocityTab({ alerts }: { alerts: StockAlertsResult }) {
   if (!alerts.velocityDrops.length) {
-    return <p className="text-sm italic text-slate-500">No significant velocity drops detected (≥50% decline).</p>
+    return <p className="ov-empty">No significant velocity drops detected (≥50% decline).</p>
   }
   return (
     <AlertTable
@@ -135,31 +127,29 @@ function AlertTable({
   highlightDrop?: boolean
 }) {
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+    <div className="tw">
+      <table>
         <thead>
-          <tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-500">
+          <tr>
             {headers.map(h => (
-              <th key={h} className="py-2 pr-2">
-                {h}
-              </th>
+              <th key={h}>{h}</th>
             ))}
           </tr>
         </thead>
         <tbody>
           {rows.map((row, i) => (
-            <tr key={i} className="border-b border-slate-100">
+            <tr key={i}>
               {row.map((cell, j) => {
                 const isLast = highlightLast && j === row.length - 1
                 const isDrop = highlightDrop && j === 4
+                const style: CSSProperties = {}
+                if (j === 1) style.fontSize = '0.71rem'
+                if (isLast || isDrop) {
+                  style.fontWeight = 700
+                  style.color = isLast && cell.startsWith('+') ? 'var(--amber)' : 'var(--amber)'
+                }
                 return (
-                  <td
-                    key={j}
-                    className={`py-1.5 pr-2 ${j === 1 ? 'text-xs text-slate-500' : ''} ${
-                      isLast || isDrop ? 'font-bold text-amber-600' : ''
-                    } ${isLast && cell.startsWith('+') ? 'text-red-600' : ''}`}
-                    title={j === 0 ? row[1] : undefined}
-                  >
+                  <td key={j} style={style} title={j === 0 ? row[1] : undefined}>
                     {cell}
                   </td>
                 )
