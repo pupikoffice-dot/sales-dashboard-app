@@ -20,7 +20,7 @@ export function DashboardLayout() {
   if (loading) return <p className="status-msg p-6">Loading permissions…</p>
   if (!access?.active) return <p className="status-msg error p-6">No dashboard access configured.</p>
 
-  const visible = MODULE_REGISTRY.filter(m => canShowModule(access, m.id))
+  const visible = MODULE_REGISTRY.filter(m => canShowModule(access, m.id, isSuperAdmin))
   const rowCount = allRows.length
   const debtCount = debtRows.length
 
@@ -92,7 +92,7 @@ export function DashboardLayout() {
               </>
             )}
           </nav>
-          {showFilters && <SidebarFilters />}
+          {showFilters && isSuperAdmin && <SidebarFilters />}
         </aside>
         <main className="dashboard-main">
           {!dataHealth.ok && dataHealth.message && (
@@ -108,8 +108,9 @@ export function DashboardLayout() {
 }
 
 export function RequireModule({ moduleId, children }: { moduleId: string; children: ReactNode }) {
+  const { isSuperAdmin } = useAuth()
   const { access } = useDashboardAccess()
-  if (!access || !canShowModule(access, moduleId as never)) {
+  if (!access || !canShowModule(access, moduleId as never, isSuperAdmin)) {
     return <Navigate to="/oversite" replace />
   }
   return <>{children}</>
