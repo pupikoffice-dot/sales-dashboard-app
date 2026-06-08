@@ -85,11 +85,16 @@ export function UsersPage() {
     },
   })
 
-  function togglePwd(id: string) {
+  function togglePwd(user: UserRow) {
+    if (!user.password_display) {
+      setPwdEditId(user.id)
+      setPwdEditValue('')
+      return
+    }
     setVisiblePwds(prev => {
       const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
+      if (next.has(user.id)) next.delete(user.id)
+      else next.add(user.id)
       return next
     })
   }
@@ -234,16 +239,19 @@ export function UsersPage() {
                     </div>
                   ) : (
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                      <span style={{ fontFamily: 'monospace', fontSize: '.75rem' }}>
-                        {visiblePwds.has(u.id) ? (u.password_display ?? '—') : '••••••••'}
+                      <span style={{ fontFamily: 'monospace', fontSize: '.75rem', color: u.password_display ? undefined : 'var(--muted)' }}>
+                        {visiblePwds.has(u.id)
+                          ? (u.password_display ?? 'not saved')
+                          : (u.password_display ? '••••••••' : '—')}
                       </span>
                       <button
                         type="button"
                         className="sbar-minimize-btn"
                         style={{ padding: '2px 8px', fontSize: '.65rem' }}
-                        onClick={() => togglePwd(u.id)}
+                        onClick={() => togglePwd(u)}
+                        title={u.password_display ? undefined : 'Password was never saved — enter it with Set'}
                       >
-                        {visiblePwds.has(u.id) ? 'Hide' : 'Show'}
+                        {visiblePwds.has(u.id) ? 'Hide' : (u.password_display ? 'Show' : 'Set pwd')}
                       </button>
                       <button
                         type="button"
