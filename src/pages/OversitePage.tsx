@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useDashboardAccess } from '../context/DashboardAccessContext'
 import { useDashboardData } from '../hooks/useDashboardData'
+import { filterRowsByCompany } from '../lib/permissions'
 import { computeDebtSummary, debtRowsForCompany } from '../lib/debtMetrics'
 import { fmt } from '../lib/format'
 import type { LogicalCompany } from '../types/dashboard'
@@ -10,6 +11,8 @@ import { StockAlertsPanel } from '../components/oversite/StockAlertsPanel'
 import { computeStockAlerts } from '../lib/stockAlerts'
 import {
   OVERSITE_COMPANIES,
+  computeOpenOrders,
+  computeOpenOrdersTop10,
   computeOrdersMtd,
   computeOrdersMtdTop10,
   computeOrdersToday,
@@ -25,7 +28,7 @@ import { OversiteTop10Table } from '../components/oversite/OversiteTop10Table'
 
 export function OversitePage() {
   const { access } = useDashboardAccess()
-  const { rows, debtRows, debtLastUpdate, wmsStock, wmsNames, isLoading, error } = useDashboardData()
+  const { allRows, debtRows, debtLastUpdate, wmsStock, wmsNames, isLoading, error } = useDashboardData()
   const [debtModalCo, setDebtModalCo] = useState<LogicalCompany | null>(null)
 
   if (isLoading) return <p className="status-msg">Loading sales data…</p>
@@ -33,6 +36,7 @@ export function OversitePage() {
 
   const ctx = getOversiteDateContext()
   const visibleCompanies = OVERSITE_COMPANIES.filter(c => access?.companies.includes(c.id))
+  const companyRows = access ? filterRowsByCompany(access, allRows) : []
 
   return (
     <>
@@ -48,16 +52,18 @@ export function OversitePage() {
       ) : (
         <div className="ov-grid">
           {visibleCompanies.map(co => {
-            const ordersToday = computeOrdersToday(rows, co.ordersTag, ctx.todayStr)
-            const ordersMtd = computeOrdersMtd(rows, co.ordersTag, ctx.monthStart, ctx.todayStr)
-            const salesMtd = computeSalesMtd(rows, co.id, ctx.curYear, ctx.curMonth)
-            const ordersTop10 = computeOrdersMtdTop10(rows, co.ordersTag, ctx.monthStart, ctx.todayStr)
-            const salesTop10 = computeSalesMtdTop10(rows, co.id, ctx.curYear, ctx.curMonth)
-            const returnsMtd = computeReturnsMtd(rows, co.returnsTag, ctx.curYear, ctx.curMonth)
-            const returnsTop10 = computeReturnsMtdTop10(rows, co.returnsTag, ctx.curYear, ctx.curMonth)
+            const ordersToday = computeOrdersToday(companyRows, co.ordersTag, ctx.todayStr)
+            const ordersMtd = computeOrdersMtd(companyRows, co.ordersTag, ctx.monthStart, ctx.todayStr)
+            const openOrders = computeOpenOrders(companyRows, co.openOrdersTag)
+            const openOrdersTop10 = computeOpenOrdersTop10(companyRows, co.openOrdersTag)
+            const salesMtd = computeSalesMtd(companyRows, co.id, ctx.curYear, ctx.curMonth)
+            const ordersTop10 = computeOrdersMtdTop10(companyRows, co.ordersTag, ctx.monthStart, ctx.todayStr)
+            const salesTop10 = computeSalesMtdTop10(companyRows, co.id, ctx.curYear, ctx.curMonth)
+            const returnsMtd = computeReturnsMtd(companyRows, co.returnsTag, ctx.curYear, ctx.curMonth)
+            const returnsTop10 = computeReturnsMtdTop10(companyRows, co.returnsTag, ctx.curYear, ctx.curMonth)
             const companyDebt = debtRowsForCompany(debtRows, co.id)
             const debtSummary = computeDebtSummary(companyDebt)
-            const stockAlerts = computeStockAlerts(rows, co.id, wmsStock, wmsNames)
+            const stockAlerts = computeStockAlerts(companyRows, co.id, wmsStock, wmsNames)
 
             return (
               <div key={co.id} className="ov-col">
@@ -75,7 +81,7 @@ export function OversitePage() {
                   />
                 </OversiteSection>
 
-                <OversiteSection title={`📋 Orders MTD — ${ctx.monthLbl}`}>
+                <OversiteSection title={`📋 Orders MTD (722) — ${ctx.monthLbl}`}>
                   <OversiteKpiRow
                     kpis={[
                       { label: 'Clients', value: String(ordersMtd.clients) },
@@ -85,6 +91,19 @@ export function OversitePage() {
                   />
                   <OversiteCollapsible label="📦 Top 10 Orders ▾">
                     <OversiteTop10Table items={ordersTop10} emptyLabel="No order items this month" />
+                  </OversiteCollapsible>
+                </OversiteSection>
+
+                <OversiteSection title="📋 Open Orders (721)">
+                  <OversiteKpiRow
+                    kpis={[
+                      { label: 'Clients', value: String(openOrders.clients) },
+                      { label: 'Qty', value: fmt(openOrders.qty) },
+                      { label: 'Cash', value: fmt(openOrders.cash), tone: 'grn' },
+                    ]}
+                  />
+                  <OversiteCollapsible label="📦 Top 10 Open Orders ▾">
+                    <OversiteTop10Table items={openOrdersTop10} emptyLabel="No open orders in export" />
                   </OversiteCollapsible>
                 </OversiteSection>
 

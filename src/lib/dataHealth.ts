@@ -50,7 +50,15 @@ export function checkOrdersDataHealth(rows: SalesRow[]): DataHealthResult {
     return {
       ok: false,
       message:
-        'Open Orders (721) data is missing from the export. Re-run run_export.ps1 to inject 721 rows.',
+        'Open Orders (721) data is missing from the export. Re-run the Excel export (721pupik / 721mt sheets), then push_to_github.ps1.',
+    }
+  }
+
+  if (ordersMt > 1000 && openMt === 0) {
+    return {
+      ok: false,
+      message:
+        'Monkeytime open orders (721mt) are missing from the export — only Pupik 721 may be present. Check 721mt sheet in the workbook export, then push_to_github.ps1.',
     }
   }
 

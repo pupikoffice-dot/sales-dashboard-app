@@ -1,5 +1,6 @@
 import { useDashboardAccess } from '../context/DashboardAccessContext'
 import { useDashboardData } from '../hooks/useDashboardData'
+import { filterRowsByCompany } from '../lib/permissions'
 import { fmt } from '../lib/format'
 import {
   OVERSITE_COMPANIES,
@@ -15,13 +16,14 @@ import { OversiteTop10Table } from '../components/oversite/OversiteTop10Table'
 /** Orders MTD (722) — all orders this month per company. */
 export function OrdersMtdPage() {
   const { access } = useDashboardAccess()
-  const { rows, isLoading, error } = useDashboardData()
+  const { allRows, isLoading, error } = useDashboardData()
 
   if (isLoading) return <p className="status-msg">Loading orders data…</p>
   if (error) return <p className="status-msg error">{(error as Error).message}</p>
 
   const ctx = getOversiteDateContext()
   const visibleCompanies = OVERSITE_COMPANIES.filter(c => access?.companies.includes(c.id))
+  const companyRows = access ? filterRowsByCompany(access, allRows) : []
 
   return (
     <>
@@ -37,9 +39,9 @@ export function OrdersMtdPage() {
       ) : (
         <div className="ov-grid">
           {visibleCompanies.map(co => {
-            const ordersToday = computeOrdersToday(rows, co.ordersTag, ctx.todayStr)
-            const ordersMtd = computeOrdersMtd(rows, co.ordersTag, ctx.monthStart, ctx.todayStr)
-            const ordersTop10 = computeOrdersMtdTop10(rows, co.ordersTag, ctx.monthStart, ctx.todayStr)
+            const ordersToday = computeOrdersToday(companyRows, co.ordersTag, ctx.todayStr)
+            const ordersMtd = computeOrdersMtd(companyRows, co.ordersTag, ctx.monthStart, ctx.todayStr)
+            const ordersTop10 = computeOrdersMtdTop10(companyRows, co.ordersTag, ctx.monthStart, ctx.todayStr)
 
             return (
               <div key={co.id} className="ov-col">

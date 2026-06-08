@@ -3,15 +3,32 @@ import { MONTH_NAMES } from './format'
 
 export interface OversiteCompanyDef {
   id: LogicalCompany
+  /** Report 722 — orders MTD */
   ordersTag: string
+  /** Report 721 — open / undelivered orders */
+  openOrdersTag: string
   returnsTag: string
   label: string
   accentColor: string
 }
 
 export const OVERSITE_COMPANIES: OversiteCompanyDef[] = [
-  { id: 'pupik', ordersTag: 'orders-pupik', returnsTag: 'returns-pupik', label: '🏢 Pupik', accentColor: 'var(--acc)' },
-  { id: 'mt', ordersTag: 'orders-mt', returnsTag: 'returns-mt', label: '🐒 Monkeytime', accentColor: 'var(--acc2)' },
+  {
+    id: 'pupik',
+    ordersTag: 'orders-pupik',
+    openOrdersTag: 'openorders',
+    returnsTag: 'returns-pupik',
+    label: '🏢 Pupik',
+    accentColor: 'var(--acc)',
+  },
+  {
+    id: 'mt',
+    ordersTag: 'orders-mt',
+    openOrdersTag: 'openorders-mt',
+    returnsTag: 'returns-mt',
+    label: '🐒 Monkeytime',
+    accentColor: 'var(--acc2)',
+  },
 ]
 
 export interface RowTotals {
@@ -141,6 +158,21 @@ export function computeOrdersMtdTop10(
   todayStr: string,
 ): Top10Item[] {
   const matched = rows.filter(r => r.company === ordersTag && r.date && r.date >= monthStart && r.date <= todayStr)
+  return computeTop10BySku(matched)
+}
+
+export interface OpenOrdersMetrics extends OrdersTodayMetrics {}
+
+/** Report 721 — all undelivered open-order rows for the company (no date filter). */
+export function computeOpenOrders(rows: SalesRow[], openOrdersTag: string): OpenOrdersMetrics {
+  const matched = rows.filter(r => r.company === openOrdersTag)
+  const { cash, qty } = sumRows(matched)
+  const clients = new Set(matched.map(r => r.clientID).filter(Boolean)).size
+  return { clients, cash, qty }
+}
+
+export function computeOpenOrdersTop10(rows: SalesRow[], openOrdersTag: string): Top10Item[] {
+  const matched = rows.filter(r => r.company === openOrdersTag)
   return computeTop10BySku(matched)
 }
 

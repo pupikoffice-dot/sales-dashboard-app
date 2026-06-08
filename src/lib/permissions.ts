@@ -29,6 +29,11 @@ export function companyInScope(access: DashboardAccess, company: string): boolea
   return access.companies.includes(logical)
 }
 
+/** Company scope only — used for Oversite / 721 / 722 (legacy uses full company data, not per-agent). */
+export function filterRowsByCompany(access: DashboardAccess, rows: SalesRow[]): SalesRow[] {
+  return rows.filter(r => companyInScope(access, r.company))
+}
+
 export function filterRows(access: DashboardAccess, rows: SalesRow[]): SalesRow[] {
   const agents = access.agents
   const hasAgentFilter = Array.isArray(agents) && agents.length > 0
