@@ -587,6 +587,23 @@ body {
   border-color: var(--acc);
 }
 
+.ov-th-tip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  margin-inline-start: 4px;
+  border-radius: 50%;
+  background: var(--sur2);
+  border: 1px solid var(--bdr);
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 700;
+  cursor: help;
+  vertical-align: middle;
+}
+
 .ov-badge {
   display: inline-block;
   background: var(--red);

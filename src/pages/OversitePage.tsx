@@ -22,6 +22,8 @@ import {
   computeSalesMtd,
   computeSalesMtdTop10,
   getOversiteDateContext,
+  resolveOpenOrdersTag,
+  resolveOrdersTag,
 } from '../lib/oversiteMetrics'
 import { OversiteCollapsible } from '../components/oversite/OversiteCollapsible'
 import { OversiteKpiRow, OversiteSection, SalesLyBars } from '../components/oversite/OversiteKpiRow'
@@ -30,7 +32,8 @@ import { OversiteTop10Table } from '../components/oversite/OversiteTop10Table'
 export function OversitePage() {
   const { t } = useLocale()
   const { access } = useDashboardAccess()
-  const { allRows, debtRows, debtLastUpdate, wmsStock, wmsNames, isLoading, error } = useDashboardData()
+  const { allRows, debtRows, debtLastUpdate, wmsStock, wmsNames, isLoading, error, data: dashboardData } =
+    useDashboardData()
   const [debtModalCo, setDebtModalCo] = useState<LogicalCompany | null>(null)
 
   if (isLoading) return <p className="status-msg">{t('common.loadingSalesData')}</p>
@@ -39,13 +42,21 @@ export function OversitePage() {
   const ctx = getOversiteDateContext()
   const visibleCompanies = OVERSITE_COMPANIES.filter(c => access?.companies.includes(c.id))
   const companyRows = access ? filterRowsByCompany(access, allRows) : []
+  const fileUpdatedAt = dashboardData?.generated?.split(' ')[1]?.slice(0, 5) ?? ''
 
   return (
     <>
       <div className="ov-header">
         <h2>🏠 {t('oversite.title')}</h2>
         <div className="ov-sub">
-          {t('oversite.today')}: <b>{ctx.todayDisp}</b> · {t('oversite.month')}: <b>{ctx.monthLbl}</b>
+          {t('oversite.today')}: <b>{ctx.todayDisp}</b>
+          {fileUpdatedAt ? (
+            <>
+              {' '}
+              · {t('oversite.fileUpdated')}: <b>{fileUpdatedAt}</b>
+            </>
+          ) : null}{' '}
+          · {t('oversite.month')}: <b>{ctx.monthLbl}</b>
         </div>
       </div>
 
@@ -54,12 +65,14 @@ export function OversitePage() {
       ) : (
         <div className="ov-grid">
           {visibleCompanies.map(co => {
-            const ordersToday = computeOrdersToday(companyRows, co.ordersTag, ctx.todayStr)
-            const ordersMtd = computeOrdersMtd(companyRows, co.ordersTag, ctx.monthStart, ctx.todayStr)
-            const openOrders = computeOpenOrders(companyRows, co.openOrdersTag)
-            const openOrdersTop10 = computeOpenOrdersTop10(companyRows, co.openOrdersTag)
+            const ordersTag = resolveOrdersTag(companyRows, co.ordersTag)
+            const openOrdersTag = resolveOpenOrdersTag(companyRows, co.openOrdersTag)
+            const ordersToday = computeOrdersToday(companyRows, ordersTag, ctx.todayStr)
+            const ordersMtd = computeOrdersMtd(companyRows, ordersTag, ctx.monthStart, ctx.todayStr)
+            const openOrders = computeOpenOrders(companyRows, openOrdersTag)
+            const openOrdersTop10 = computeOpenOrdersTop10(companyRows, openOrdersTag)
             const salesMtd = computeSalesMtd(companyRows, co.id, ctx.curYear, ctx.curMonth)
-            const ordersTop10 = computeOrdersMtdTop10(companyRows, co.ordersTag, ctx.monthStart, ctx.todayStr)
+            const ordersTop10 = computeOrdersMtdTop10(companyRows, ordersTag, ctx.monthStart, ctx.todayStr)
             const salesTop10 = computeSalesMtdTop10(companyRows, co.id, ctx.curYear, ctx.curMonth)
             const returnsMtd = computeReturnsMtd(companyRows, co.returnsTag, ctx.curYear, ctx.curMonth)
             const returnsTop10 = computeReturnsMtdTop10(companyRows, co.returnsTag, ctx.curYear, ctx.curMonth)

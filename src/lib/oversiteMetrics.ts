@@ -56,12 +56,20 @@ export interface OversiteDateContext {
   monthStart: string
 }
 
+function localDateStr(d: Date): string {
+  return [
+    d.getFullYear(),
+    String(d.getMonth() + 1).padStart(2, '0'),
+    String(d.getDate()).padStart(2, '0'),
+  ].join('-')
+}
+
 export function getOversiteDateContext(now = new Date()): OversiteDateContext {
   const today = new Date(now)
   today.setHours(0, 0, 0, 0)
   const curYear = today.getFullYear()
   const curMonth = today.getMonth() + 1
-  const todayStr = today.toISOString().slice(0, 10)
+  const todayStr = localDateStr(today)
   const monthLbl = `${MONTH_NAMES[curMonth - 1]} ${curYear}`
   const lyMonthLbl = `${MONTH_NAMES[curMonth - 1]} ${curYear - 1}`
   const monthStart = `${curYear}-${String(curMonth).padStart(2, '0')}-01`
@@ -75,6 +83,27 @@ export function getOversiteDateContext(now = new Date()): OversiteDateContext {
     lyMonthLbl,
     monthStart,
   }
+}
+
+/** Legacy exports tagged 722 rows as openorders when orders-* sheets were missing. */
+export function resolveOrdersTag(rows: SalesRow[], ordersTag: string): string {
+  const count = rows.filter(r => r.company === ordersTag).length
+  if (count >= 100) return ordersTag
+  if (ordersTag === 'orders-pupik') {
+    const legacy = rows.filter(r => r.company === 'openorders').length
+    if (legacy > 2000) return 'openorders'
+  }
+  if (ordersTag === 'orders-mt') {
+    const legacy = rows.filter(r => r.company === 'openorders-mt').length
+    if (legacy > 2000) return 'openorders-mt'
+  }
+  return ordersTag
+}
+
+export function resolveOpenOrdersTag(rows: SalesRow[], openOrdersTag: string): string {
+  const count = rows.filter(r => r.company === openOrdersTag).length
+  if (count > 0) return openOrdersTag
+  return openOrdersTag
 }
 
 export interface OrdersTodayMetrics {

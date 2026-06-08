@@ -4,26 +4,53 @@ import type { LogicalCompany } from '../types/dashboard'
 export const DEBT_REPORT_MIN_TOTAL = 100
 
 const ACCUMULATED_BALANCE_RE = /יתרה\s*מצטברת/i
+const DEBT_HEADER_CLIENT_RE = /חשבון|client|cust|לקוח/i
+
+const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+/** Excel serial dates exported as raw numbers (e.g. 46048) → "Jan 2026". */
+export function formatDebtMonthLabel(label: string): string {
+  const s = String(label || '').trim()
+  if (!s || ACCUMULATED_BALANCE_RE.test(s)) return s
+  const n = Number(s)
+  if (!Number.isFinite(n) || n < 40000 || n > 60000) return s
+  const d = new Date((n - 25569) * 86400000)
+  if (Number.isNaN(d.getTime())) return s
+  return `${MONTH_SHORT[d.getUTCMonth()]} ${d.getUTCFullYear()}`
+}
+
+function isDebtDataRow(row: Record<string, unknown>): boolean {
+  const clientID = String(row.clientID || '').trim()
+  if (!clientID) return false
+  if (DEBT_HEADER_CLIENT_RE.test(clientID)) return false
+  return /^\d+$/.test(clientID)
+}
 
 export function normalizeDebtRows(raw: unknown): DebtRow[] {
   if (!Array.isArray(raw)) return []
-  return raw.map(r => {
-    const row = r as Record<string, unknown>
-    const months = Array.isArray(row.months)
-      ? row.months.map(m => {
-          const month = m as Record<string, unknown>
-          return { label: String(month.label || ''), amount: Number(month.amount) || 0 }
-        })
-      : []
-    return {
-      company: String(row.company || '').toLowerCase(),
-      agent: String(row.agent || ''),
-      clientID: String(row.clientID || ''),
-      clientName: String(row.clientName || ''),
-      oldDebt: Number(row.oldDebt) || 0,
-      months,
-    }
-  })
+  return raw
+    .filter(r => isDebtDataRow(r as Record<string, unknown>))
+    .map(r => {
+      const row = r as Record<string, unknown>
+      const months = Array.isArray(row.months)
+        ? row.months.map(m => {
+            const month = m as Record<string, unknown>
+            const rawLabel = String(month.label || '')
+            return {
+              label: formatDebtMonthLabel(rawLabel),
+              amount: Number(month.amount) || 0,
+            }
+          })
+        : []
+      return {
+        company: String(row.company || '').toLowerCase(),
+        agent: String(row.agent || ''),
+        clientID: String(row.clientID || ''),
+        clientName: String(row.clientName || ''),
+        oldDebt: Number(row.oldDebt) || 0,
+        months,
+      }
+    })
 }
 
 export function debtMonths(months: DebtRow['months']) {

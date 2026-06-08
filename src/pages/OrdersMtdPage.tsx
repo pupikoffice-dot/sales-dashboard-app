@@ -8,6 +8,7 @@ import {
   computeOrdersMtdTop10,
   computeOrdersToday,
   getOversiteDateContext,
+  resolveOrdersTag,
 } from '../lib/oversiteMetrics'
 import { OversiteCollapsible } from '../components/oversite/OversiteCollapsible'
 import { OversiteKpiRow, OversiteSection } from '../components/oversite/OversiteKpiRow'
@@ -39,9 +40,10 @@ export function OrdersMtdPage() {
       ) : (
         <div className="ov-grid">
           {visibleCompanies.map(co => {
-            const ordersToday = computeOrdersToday(companyRows, co.ordersTag, ctx.todayStr)
-            const ordersMtd = computeOrdersMtd(companyRows, co.ordersTag, ctx.monthStart, ctx.todayStr)
-            const ordersTop10 = computeOrdersMtdTop10(companyRows, co.ordersTag, ctx.monthStart, ctx.todayStr)
+            const ordersTag = resolveOrdersTag(companyRows, co.ordersTag)
+            const ordersToday = computeOrdersToday(companyRows, ordersTag, ctx.todayStr)
+            const ordersMtd = computeOrdersMtd(companyRows, ordersTag, ctx.monthStart, ctx.todayStr)
+            const ordersTop10 = computeOrdersMtdTop10(companyRows, ordersTag, ctx.monthStart, ctx.todayStr)
 
             return (
               <div key={co.id} className="ov-col">

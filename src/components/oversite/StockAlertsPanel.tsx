@@ -44,10 +44,10 @@ function SlowMoversTab({ alerts }: { alerts: StockAlertsResult }) {
     <div>
       {alerts.slowMovers.length > 0 && (
         <AlertTable
-          headers={['Item', 'SKU', 'Stock', 'Last Sale', 'Days']}
+          headers={['SKU', 'Item', 'Stock', 'Last Sale', 'Days']}
           rows={alerts.slowMovers.map(r => [
-            r.name,
             r.sku,
+            r.name,
             fmt(r.qty),
             r.lastDate ? fmtDateIso(r.lastDate) : '—',
             r.daysGap === 9999 ? '—' : String(r.daysGap),
@@ -61,8 +61,8 @@ function SlowMoversTab({ alerts }: { alerts: StockAlertsResult }) {
             Never Sold (stock ≥10, top 10 by qty)
           </p>
           <AlertTable
-            headers={['Item', 'SKU', 'Stock']}
-            rows={alerts.neverSold.map(r => [r.name, r.sku, fmt(r.qty)])}
+            headers={['SKU', 'Item', 'Stock']}
+            rows={alerts.neverSold.map(r => [r.sku, r.name, fmt(r.qty)])}
           />
         </div>
       )}
@@ -80,12 +80,18 @@ function ClientAlertsTab({ alerts }: { alerts: StockAlertsResult }) {
         {alerts.clientAlerts.length} at-risk pairs (showing top 20) — dynamic interval method
       </p>
       <AlertTable
-        headers={['Client', 'Item', 'Agent', 'Last Buy', 'Avg Days', 'Overdue']}
+        headers={['Client', 'SKU', 'Item', 'Agent', 'Last Buy', 'Qty', 'Avg Days', 'Overdue']}
+        headerTips={{
+          'Avg Days':
+            'Average days between this client\'s past purchases of this item — used to detect overdue reorders.',
+        }}
         rows={alerts.clientAlerts.map(r => [
           r.clientName,
+          r.sku,
           r.skuName,
           r.agent,
           fmtDateIso(r.lastDate),
+          fmt(r.lastBuyQty),
           `${r.avgInt}d`,
           `+${r.daysOverdue}d`,
         ])}
@@ -101,14 +107,17 @@ function VelocityTab({ alerts }: { alerts: StockAlertsResult }) {
   }
   return (
     <AlertTable
-      headers={['Item', 'Stock', 'Base/Mo', 'Last 30d', 'Drop%', 'Category']}
+      headers={['SKU', 'Item', 'Stock', 'Base/Mo', 'Last 30d', 'Drop%']}
+      headerTips={{
+        'Base/Mo': 'Average monthly net sales over the previous 6 months (months 2–7 back from today).',
+      }}
       rows={alerts.velocityDrops.map(r => [
+        r.sku,
         r.name,
         fmt(r.qty),
         String(r.baseAvg),
         String(r.recent),
         `${r.dropPct}%`,
-        r.cat,
       ])}
       highlightDrop
     />
@@ -117,11 +126,13 @@ function VelocityTab({ alerts }: { alerts: StockAlertsResult }) {
 
 function AlertTable({
   headers,
+  headerTips,
   rows,
   highlightLast,
   highlightDrop,
 }: {
   headers: string[]
+  headerTips?: Record<string, string>
   rows: string[][]
   highlightLast?: boolean
   highlightDrop?: boolean
@@ -132,7 +143,14 @@ function AlertTable({
         <thead>
           <tr>
             {headers.map(h => (
-              <th key={h}>{h}</th>
+              <th key={h}>
+                {h}
+                {headerTips?.[h] ? (
+                  <span className="ov-th-tip" title={headerTips[h]} aria-label={headerTips[h]}>
+                    ?
+                  </span>
+                ) : null}
+              </th>
             ))}
           </tr>
         </thead>
@@ -141,15 +159,15 @@ function AlertTable({
             <tr key={i}>
               {row.map((cell, j) => {
                 const isLast = highlightLast && j === row.length - 1
-                const isDrop = highlightDrop && j === 4
+                const isDrop = highlightDrop && j === 5
                 const style: CSSProperties = {}
-                if (j === 1) style.fontSize = '0.71rem'
+                if (j === 0) style.fontSize = '0.71rem'
                 if (isLast || isDrop) {
                   style.fontWeight = 700
                   style.color = isLast && cell.startsWith('+') ? 'var(--amber)' : 'var(--amber)'
                 }
                 return (
-                  <td key={j} style={style} title={j === 0 ? row[1] : undefined}>
+                  <td key={j} style={style} title={j === 1 ? row[0] : undefined}>
                     {cell}
                   </td>
                 )

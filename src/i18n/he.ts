@@ -111,6 +111,7 @@ export const messages: Record<keyof typeof en, string> = {
 
   'oversite.title': 'לוח מבט על',
   'oversite.today': 'היום',
+  'oversite.fileUpdated': 'עדכון קובץ',
   'oversite.month': 'חודש',
   'oversite.noCompanies': 'אין חברות בהיקף הגישה שלך.',
   'oversite.ordersToday': 'הזמנות היום (מסמך 36)',

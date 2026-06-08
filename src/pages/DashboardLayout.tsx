@@ -113,7 +113,6 @@ export function DashboardLayout() {
         </button>
         <div className="hdr-brand">
           <h1>{t('header.title')}</h1>
-          <div className="sub">{t('header.subtitle')}</div>
         </div>
         <div className="hdr-right">
           <div className="lang-switch" role="group" aria-label={t('common.language')}>

@@ -27,6 +27,7 @@ export interface ClientAlert {
   sku: string
   skuName: string
   lastDate: string
+  lastBuyQty: number
   avgInt: number
   daysOverdue: number
 }
@@ -170,6 +171,7 @@ export function computeStockAlerts(
         sku: p.sku,
         skuName: p.skuName,
         lastDate,
+        lastBuyQty: Math.round(p.netByDate[lastDate] || 0),
         avgInt: Math.round(avgInt),
         daysOverdue: Math.round(daysSince - INT_MULT * avgInt),
       })

@@ -109,6 +109,7 @@ export const messages = {
 
   'oversite.title': 'Oversite Dashboard',
   'oversite.today': 'Today',
+  'oversite.fileUpdated': 'File updated',
   'oversite.month': 'Month',
   'oversite.noCompanies': 'No companies in your access scope.',
   'oversite.ordersToday': 'Orders Today (Doc 36)',
