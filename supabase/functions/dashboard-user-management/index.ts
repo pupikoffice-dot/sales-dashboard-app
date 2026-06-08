@@ -8,6 +8,14 @@ const CORS = {
 
 const USERNAME_AUTH_DOMAIN = 'dashboard.local'
 const USERNAME_RE = /^[a-z0-9][a-z0-9._-]{1,31}$/i
+/** This Supabase project uses user_role (not dashboard_user_role). */
+const VALID_ROLES = ['super_admin', 'admin', 'manager', 'agent'] as const
+
+function normalizeRole(role?: string): string {
+  if (!role || role === 'viewer') return 'agent'
+  if ((VALID_ROLES as readonly string[]).includes(role)) return role
+  return 'agent'
+}
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -77,7 +85,7 @@ Deno.serve(async (req) => {
   if (action === 'create') {
     const rawLogin = ((body.login ?? body.email) as string) ?? ''
     const password = body.password as string
-    const role = (body.role as string) || 'viewer'
+    const role = normalizeRole(body.role as string | undefined)
     if (!password) return json({ error: 'password required' }, 400)
 
     const parsed = parseLoginInput(rawLogin, body.name as string | undefined)
@@ -117,7 +125,7 @@ Deno.serve(async (req) => {
       uid = newUser.user.id
     }
 
-    await admin.from('user_profiles').upsert({
+    const { error: profileErr } = await admin.from('user_profiles').upsert({
       id: uid,
       email,
       username,
@@ -126,8 +134,9 @@ Deno.serve(async (req) => {
       active: true,
       password_display: password,
     }, { onConflict: 'id' })
+    if (profileErr) return json({ error: 'Profile save failed: ' + profileErr.message }, 500)
 
-    await admin.from('dashboard_user_access').upsert({
+    const { error: accessErr } = await admin.from('dashboard_user_access').upsert({
       user_id: uid,
       modules: ['oversite'],
       companies: ['pupik'],
@@ -136,6 +145,7 @@ Deno.serve(async (req) => {
       active: true,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id' })
+    if (accessErr) return json({ error: 'Access save failed: ' + accessErr.message }, 500)
 
     return json({ success: true, id: uid })
   }
