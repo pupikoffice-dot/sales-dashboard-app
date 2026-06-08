@@ -1,0 +1,12 @@
+{
+  "name": "@dashboard/shared",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "esbuild src/legacy.ts --bundle --format=iife --global-name=DashboardShared --outfile=../../dashboard-shared.js --charset=utf8",
+    "watch": "npm run build -- --watch"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}
