@@ -3,6 +3,7 @@ import { useDashboardAccess } from '../context/DashboardAccessContext'
 import { filterRows } from '../lib/permissions'
 import { filterDebtRows, normalizeDebtRows } from '../lib/debtMetrics'
 import { buildItemCostMap, buildItemPriceMap } from '../lib/itemPricing'
+import { checkOrdersDataHealth } from '../lib/dataHealth'
 import { buildWmsMaps } from '../lib/wmsData'
 import type { DashboardData, DebtRow, SalesRow } from '../types/dashboard'
 
@@ -53,11 +54,13 @@ export function useDashboardData() {
   const { wmsStock, wmsNames } = buildWmsMaps(q.data?.wmsRows)
   const itemCost = buildItemCostMap(q.data?.costRows)
   const itemPrice = buildItemPriceMap(q.data?.priceRows)
+  const dataHealth = checkOrdersDataHealth(allRows)
 
   return {
     ...q,
     allRows,
     rows,
+    dataHealth,
     allDebtRows,
     debtRows,
     wmsStock,

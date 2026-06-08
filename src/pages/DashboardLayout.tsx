@@ -12,7 +12,7 @@ import { useLocation } from 'react-router-dom'
 export function DashboardLayout() {
   const { signOut, isSuperAdmin } = useAuth()
   const { access, loading } = useDashboardAccess()
-  const { allRows, debtRows, isLoading: dataLoading } = useDashboardData()
+  const { allRows, debtRows, isLoading: dataLoading, dataHealth } = useDashboardData()
   const queryClient = useQueryClient()
   const location = useLocation()
   const showFilters = !location.pathname.startsWith('/admin')
@@ -95,6 +95,11 @@ export function DashboardLayout() {
           {showFilters && <SidebarFilters />}
         </aside>
         <main className="dashboard-main">
+          {!dataHealth.ok && dataHealth.message && (
+            <div className="status-msg error" style={{ margin: '0 0 12px' }}>
+              {dataHealth.message}
+            </div>
+          )}
           <Outlet />
         </main>
       </div>

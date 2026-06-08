@@ -36,13 +36,16 @@ export function SalesPage() {
     ],
   )
 
+  const title = f.dateMode === 'openorders' ? 'Open Orders' : 'Sales Performance'
+  const icon = f.dateMode === 'openorders' ? '📋' : '📊'
+
   if (!f.company) {
     return (
       <div className="welcome">
-        <div className="ic">📊</div>
-        <h2>Sales Performance</h2>
+        <div className="ic">{icon}</div>
+        <h2>{title}</h2>
         <p>
-          Select a <b>company</b> in the sidebar, set dates and view options, then click{' '}
+          Select a <b>company</b> in the sidebar, set view options, then click{' '}
           <b>Apply &amp; Render</b>.
         </p>
       </div>
@@ -52,8 +55,8 @@ export function SalesPage() {
   if (!f.applied) {
     return (
       <div className="welcome">
-        <div className="ic">📊</div>
-        <h2>Sales Performance</h2>
+        <div className="ic">{icon}</div>
+        <h2>{title}</h2>
         <p>
           Filters are set — click <b>Apply &amp; Render</b> in the sidebar to load the report.
         </p>

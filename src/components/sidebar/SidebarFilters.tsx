@@ -97,7 +97,9 @@ export function SidebarFilters() {
 
     f.apply()
 
-    if (!location.pathname.startsWith('/sales')) {
+    if (f.dateMode === 'openorders') {
+      if (!location.pathname.startsWith('/open-orders')) navigate('/open-orders')
+    } else if (!location.pathname.startsWith('/sales')) {
       navigate('/sales')
     }
   }
