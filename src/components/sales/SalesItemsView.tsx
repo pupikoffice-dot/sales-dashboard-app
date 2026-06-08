@@ -1,4 +1,5 @@
 import type { DashboardFiltersState } from '../../context/DashboardFiltersContext'
+import { useLocale } from '../../context/LocaleContext'
 import { SortableTh } from './SortableTh'
 import { SalesReportUiProvider, useSalesReportUi } from '../../context/SalesReportUiContext'
 import { useReportChart } from '../../hooks/useReportChart'
@@ -160,11 +161,14 @@ function ClientsUnderItemTable({
 }
 
 function SalesItemsContent({ rows, filters, companyRows, wmsStock }: SalesItemsViewProps) {
+  const { t } = useLocale()
   const { searchQuery } = useSalesReportUi()
   useReportChart(filters, rows, { kind: 'item', pieTitle: 'Cash by Item' })
   const company = filters.company! as LogicalCompany
-  const catLabel = filters.catType === 'tablet' ? 'Tablet' : 'Group'
-  const modeLabel = filters.itemMode === 'clients' ? 'By Clients' : 'Summary'
+  const catLabel =
+    filters.catType === 'tablet' ? t('filters.tabletCategory') : t('filters.groupCategory')
+  const modeLabel =
+    filters.itemMode === 'clients' ? t('filters.byClients') : t('filters.itemsSummary')
 
   if (filters.itemMode === 'items') {
     return (
@@ -173,7 +177,7 @@ function SalesItemsContent({ rows, filters, companyRows, wmsStock }: SalesItemsV
         <SalesStatusBar
           filters={filters}
           rows={rows}
-          viewLabel={`Items · ${catLabel} · ${modeLabel}`}
+          viewLabel={`${t('filters.items')} · ${catLabel} · ${modeLabel}`}
           count={filters.selectedItemSkus.size}
         />
         <SkuSummaryTable
@@ -194,7 +198,7 @@ function SalesItemsContent({ rows, filters, companyRows, wmsStock }: SalesItemsV
       <SalesStatusBar
         filters={filters}
         rows={rows}
-        viewLabel={`Items · ${catLabel} · ${modeLabel}`}
+        viewLabel={`${t('filters.items')} · ${catLabel} · ${modeLabel}`}
         count={Object.keys(items).length}
       />
       {Object.entries(items)

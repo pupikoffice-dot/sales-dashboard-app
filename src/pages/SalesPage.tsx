@@ -1,13 +1,15 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { SalesClientsView } from '../components/sales/SalesClientsView'
 import { SalesItemsView } from '../components/sales/SalesItemsView'
 import { SalesStockView } from '../components/sales/SalesStockView'
 import { useDashboardFilters } from '../context/DashboardFiltersContext'
+import { useLocale } from '../context/LocaleContext'
 import { useDashboardData } from '../hooks/useDashboardData'
 import { getReportRows } from '../lib/salesReportRows'
 
 export function SalesPage() {
   const f = useDashboardFilters()
+  const { t } = useLocale()
   const { rows: allRows, wmsStock, wmsNames, itemCost, itemPrice, isLoading, error } =
     useDashboardData()
 
@@ -36,7 +38,13 @@ export function SalesPage() {
     ],
   )
 
-  const title = f.dateMode === 'openorders' ? 'Open Orders' : 'Sales Performance'
+  useEffect(() => {
+    if (!f.isRendering) return
+    const id = window.setTimeout(() => f.finishRendering(), 0)
+    return () => window.clearTimeout(id)
+  }, [f.isRendering, f.applied, reportRows, f.finishRendering])
+
+  const title = f.dateMode === 'openorders' ? t('sales.openOrdersTitle') : t('sales.title')
   const icon = f.dateMode === 'openorders' ? '📋' : '📊'
 
   if (!f.company) {
@@ -44,10 +52,7 @@ export function SalesPage() {
       <div className="welcome">
         <div className="ic">{icon}</div>
         <h2>{title}</h2>
-        <p>
-          Select a <b>company</b> in the sidebar, set view options, then click{' '}
-          <b>Apply &amp; Render</b>.
-        </p>
+        <p>{t('sales.pickCompany')}</p>
       </div>
     )
   }
@@ -57,9 +62,7 @@ export function SalesPage() {
       <div className="welcome">
         <div className="ic">{icon}</div>
         <h2>{title}</h2>
-        <p>
-          Filters are set — click <b>Apply &amp; Render</b> in the sidebar to load the report.
-        </p>
+        <p>{t('sales.clickApply')}</p>
       </div>
     )
   }
@@ -71,12 +74,12 @@ export function SalesPage() {
           <div className="spin-wrap">
             <div className="spin" />
           </div>
-          <p>Building stock report…</p>
+          <p>{t('sales.buildingStock')}</p>
         </div>
       )
     }
     if (error) {
-      return <div className="err">Failed to load data: {(error as Error).message}</div>
+      return <div className="err">{t('sales.loadFailed', { error: (error as Error).message })}</div>
     }
     return (
       <SalesStockView
@@ -96,21 +99,17 @@ export function SalesPage() {
         <div className="spin-wrap">
           <div className="spin" />
         </div>
-        <p>Loading data…</p>
+        <p>{t('common.loadingData')}</p>
       </div>
     )
   }
 
   if (error) {
-    return <div className="err">Failed to load data: {(error as Error).message}</div>
+    return <div className="err">{t('sales.loadFailed', { error: (error as Error).message })}</div>
   }
 
   if (!reportRows.length) {
-    return (
-      <div className="err">
-        No data for the selected filters and period.
-      </div>
-    )
+    return <div className="err">{t('sales.noData')}</div>
   }
 
   if (f.view === 'clients') {
@@ -135,5 +134,5 @@ export function SalesPage() {
     )
   }
 
-  return <div className="err">Select a view in the sidebar.</div>
+  return <div className="err">{t('sales.pickView')}</div>
 }

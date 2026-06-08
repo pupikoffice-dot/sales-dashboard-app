@@ -142,6 +142,7 @@ Deno.serve(async (req) => {
       companies: ['pupik'],
       agents: null,
       default_module: 'oversite',
+      locale: 'en',
       active: true,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id' })

@@ -3,8 +3,11 @@ import { NavLink, Outlet, Navigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { useDashboardAccess } from '../context/DashboardAccessContext'
+import { useDashboardFilters } from '../context/DashboardFiltersContext'
+import { useLocale } from '../context/LocaleContext'
 import { useDashboardData } from '../hooks/useDashboardData'
 import { canShowModule } from '../lib/permissions'
+import { navLabel } from '../i18n'
 import { SidebarFilters } from '../components/sidebar/SidebarFilters'
 import { MODULE_REGISTRY } from '../modules/registry'
 import { useLocation } from 'react-router-dom'
@@ -12,6 +15,8 @@ import { useLocation } from 'react-router-dom'
 export function DashboardLayout() {
   const { signOut, isSuperAdmin } = useAuth()
   const { access, loading } = useDashboardAccess()
+  const { isRendering } = useDashboardFilters()
+  const { locale, setLocale, t } = useLocale()
   const { allRows, debtRows, isLoading: dataLoading, dataHealth } = useDashboardData()
   const queryClient = useQueryClient()
   const location = useLocation()
@@ -27,8 +32,8 @@ export function DashboardLayout() {
     return () => document.body.classList.remove('mobile-sidebar-open')
   }, [sidebarOpen])
 
-  if (loading) return <p className="status-msg p-6">Loading permissions…</p>
-  if (!access?.active) return <p className="status-msg error p-6">No dashboard access configured.</p>
+  if (loading) return <p className="status-msg p-6">{t('common.loadingPermissions')}</p>
+  if (!access?.active) return <p className="status-msg error p-6">{t('common.noAccess')}</p>
 
   const visible = MODULE_REGISTRY.filter(m => canShowModule(access, m.id, isSuperAdmin))
   const rowCount = allRows.length
@@ -44,39 +49,52 @@ export function DashboardLayout() {
         <button
           type="button"
           className="mobile-menu-btn"
-          aria-label={sidebarOpen ? 'Close menu' : 'Open menu'}
+          aria-label={sidebarOpen ? t('common.closeMenu') : t('common.openMenu')}
           aria-expanded={sidebarOpen}
           onClick={() => setSidebarOpen(open => !open)}
         >
           {sidebarOpen ? '✕' : '☰'}
         </button>
         <div className="hdr-brand">
-          <h1>Sales Dashboard</h1>
-          <div className="sub">Pupik · Monkeytime · Grow</div>
+          <h1>{t('header.title')}</h1>
+          <div className="sub">{t('header.subtitle')}</div>
         </div>
         <div className="hdr-right">
+          <div className="lang-switch" role="group" aria-label={t('common.language')}>
+            <button
+              type="button"
+              className={`lang-btn${locale === 'en' ? ' active' : ''}`}
+              onClick={() => setLocale('en')}
+            >
+              EN
+            </button>
+            <button
+              type="button"
+              className={`lang-btn${locale === 'he' ? ' active' : ''}`}
+              onClick={() => setLocale('he')}
+            >
+              עב
+            </button>
+          </div>
           <div className="data-badge">
             {dataLoading ? (
-              'Loading data…'
+              t('common.loadingData')
             ) : (
               <>
-                Loaded: <b>{rowCount.toLocaleString()}</b> rows
+                {t('header.loadedRows', { rows: rowCount.toLocaleString() })}
                 {debtCount > 0 ? (
-                  <>
-                    {' '}
-                    · <b>{debtCount}</b> debt clients
-                  </>
+                  <> {t('header.debtClients', { count: debtCount })}</>
                 ) : (
-                  ' · 0 debt rows'
+                  <> {t('header.noDebtRows')}</>
                 )}
               </>
             )}
           </div>
-          <button type="button" className="refresh-btn" onClick={refreshData} title="Reload dashboard data">
-            ↺ Refresh
+          <button type="button" className="refresh-btn" onClick={refreshData} title={t('common.reloadData')}>
+            ↺ {t('common.refresh')}
           </button>
           <button type="button" className="sign-out-btn" onClick={() => signOut()}>
-            Sign out
+            {t('common.signOut')}
           </button>
         </div>
       </header>
@@ -86,12 +104,12 @@ export function DashboardLayout() {
           <button
             type="button"
             className="sidebar-backdrop"
-            aria-label="Close menu"
+            aria-label={t('common.closeMenu')}
             onClick={() => setSidebarOpen(false)}
           />
         )}
         <aside className={`dashboard-sidebar${sidebarOpen ? ' is-open' : ''}`}>
-          <div className="sidebar-label">Navigation</div>
+          <div className="sidebar-label">{t('nav.navigation')}</div>
           <nav>
             {visible.map(m => (
               <NavLink
@@ -103,20 +121,20 @@ export function DashboardLayout() {
                 }
               >
                 {m.id === 'oversite' ? '🏠 ' : ''}
-                {m.label}
+                {navLabel(locale, m.id)}
               </NavLink>
             ))}
             {isSuperAdmin && (
               <>
                 <div className="sidebar-label" style={{ marginTop: 8 }}>
-                  Admin
+                  {t('nav.admin')}
                 </div>
                 <NavLink
                   to="/admin/users"
                   onClick={() => setSidebarOpen(false)}
                   className={({ isActive }) => `nav-btn${isActive ? ' active' : ''}`}
                 >
-                  Admin — Users
+                  {t('nav.adminUsers')}
                 </NavLink>
               </>
             )}
@@ -124,9 +142,17 @@ export function DashboardLayout() {
           {showFilters && <SidebarFilters />}
         </aside>
         <main className="dashboard-main">
-          {!dataHealth.ok && dataHealth.message && (
+          {!dataHealth.ok && dataHealth.messageKey && (
             <div className="status-msg error" style={{ margin: '0 0 12px' }}>
-              {dataHealth.message}
+              {t(dataHealth.messageKey)}
+            </div>
+          )}
+          {isRendering && (
+            <div className="render-overlay" aria-live="polite">
+              <div className="spin-wrap">
+                <div className="spin" />
+              </div>
+              <p>{t('common.renderingReport')}</p>
             </div>
           )}
           <Outlet />

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useLocale } from '../context/LocaleContext'
 import { useDashboardAccess } from '../context/DashboardAccessContext'
 import { useDashboardData } from '../hooks/useDashboardData'
 import { filterRowsByCompany } from '../lib/permissions'
@@ -27,11 +28,12 @@ import { OversiteKpiRow, OversiteSection, SalesLyBars } from '../components/over
 import { OversiteTop10Table } from '../components/oversite/OversiteTop10Table'
 
 export function OversitePage() {
+  const { t } = useLocale()
   const { access } = useDashboardAccess()
   const { allRows, debtRows, debtLastUpdate, wmsStock, wmsNames, isLoading, error } = useDashboardData()
   const [debtModalCo, setDebtModalCo] = useState<LogicalCompany | null>(null)
 
-  if (isLoading) return <p className="status-msg">Loading sales data…</p>
+  if (isLoading) return <p className="status-msg">{t('common.loadingSalesData')}</p>
   if (error) return <p className="status-msg error">{(error as Error).message}</p>
 
   const ctx = getOversiteDateContext()
@@ -41,14 +43,14 @@ export function OversitePage() {
   return (
     <>
       <div className="ov-header">
-        <h2>🏠 Oversite Dashboard</h2>
+        <h2>🏠 {t('oversite.title')}</h2>
         <div className="ov-sub">
-          Today: <b>{ctx.todayDisp}</b> · Month: <b>{ctx.monthLbl}</b>
+          {t('oversite.today')}: <b>{ctx.todayDisp}</b> · {t('oversite.month')}: <b>{ctx.monthLbl}</b>
         </div>
       </div>
 
       {visibleCompanies.length === 0 ? (
-        <p className="ov-empty">No companies in your access scope.</p>
+        <p className="ov-empty">{t('oversite.noCompanies')}</p>
       ) : (
         <div className="ov-grid">
           {visibleCompanies.map(co => {
@@ -71,47 +73,47 @@ export function OversitePage() {
                   {co.label}
                 </div>
 
-                <OversiteSection title="📋 Orders Today (Doc 36)">
+                <OversiteSection title={`📋 ${t('oversite.ordersToday')}`}>
                   <OversiteKpiRow
                     kpis={[
-                      { label: 'Clients', value: String(ordersToday.clients) },
-                      { label: 'Qty', value: fmt(ordersToday.qty) },
-                      { label: 'Cash', value: fmt(ordersToday.cash), tone: 'grn' },
+                      { label: t('oversite.clients'), value: String(ordersToday.clients) },
+                      { label: t('oversite.qty'), value: fmt(ordersToday.qty) },
+                      { label: t('oversite.cash'), value: fmt(ordersToday.cash), tone: 'grn' },
                     ]}
                   />
                 </OversiteSection>
 
-                <OversiteSection title={`📋 Orders MTD (722) — ${ctx.monthLbl}`}>
+                <OversiteSection title={`📋 ${t('oversite.ordersMtd', { month: ctx.monthLbl })}`}>
                   <OversiteKpiRow
                     kpis={[
-                      { label: 'Clients', value: String(ordersMtd.clients) },
-                      { label: 'Qty', value: fmt(ordersMtd.qty) },
-                      { label: 'Cash', value: fmt(ordersMtd.cash), tone: 'grn' },
+                      { label: t('oversite.clients'), value: String(ordersMtd.clients) },
+                      { label: t('oversite.qty'), value: fmt(ordersMtd.qty) },
+                      { label: t('oversite.cash'), value: fmt(ordersMtd.cash), tone: 'grn' },
                     ]}
                   />
-                  <OversiteCollapsible label="📦 Top 10 Orders ▾">
-                    <OversiteTop10Table items={ordersTop10} emptyLabel="No order items this month" />
+                  <OversiteCollapsible label={`📦 ${t('oversite.top10Orders')} ▾`}>
+                    <OversiteTop10Table items={ordersTop10} emptyLabel={t('oversite.noOrderItems')} />
                   </OversiteCollapsible>
                 </OversiteSection>
 
-                <OversiteSection title="📋 Open Orders (721)">
+                <OversiteSection title={`📋 ${t('oversite.openOrders')}`}>
                   <OversiteKpiRow
                     kpis={[
-                      { label: 'Clients', value: String(openOrders.clients) },
-                      { label: 'Qty', value: fmt(openOrders.qty) },
-                      { label: 'Cash', value: fmt(openOrders.cash), tone: 'grn' },
+                      { label: t('oversite.clients'), value: String(openOrders.clients) },
+                      { label: t('oversite.qty'), value: fmt(openOrders.qty) },
+                      { label: t('oversite.cash'), value: fmt(openOrders.cash), tone: 'grn' },
                     ]}
                   />
-                  <OversiteCollapsible label="📦 Top 10 Open Orders ▾">
-                    <OversiteTop10Table items={openOrdersTop10} emptyLabel="No open orders in export" />
+                  <OversiteCollapsible label={`📦 ${t('oversite.top10OpenOrders')} ▾`}>
+                    <OversiteTop10Table items={openOrdersTop10} emptyLabel={t('oversite.noOpenOrders')} />
                   </OversiteCollapsible>
                 </OversiteSection>
 
-                <OversiteSection title={`💰 Sales MTD — ${ctx.monthLbl}`}>
+                <OversiteSection title={`💰 ${t('oversite.salesMtd', { month: ctx.monthLbl })}`}>
                   <OversiteKpiRow
                     kpis={[
-                      { label: 'Cash', value: fmt(salesMtd.cash), tone: 'grn' },
-                      { label: 'Qty', value: fmt(salesMtd.qty) },
+                      { label: t('oversite.cash'), value: fmt(salesMtd.cash), tone: 'grn' },
+                      { label: t('oversite.qty'), value: fmt(salesMtd.qty) },
                     ]}
                   />
                   <SalesLyBars
@@ -123,24 +125,24 @@ export function OversitePage() {
                   />
                 </OversiteSection>
 
-                <OversiteSection title="🏆 Top 10 Items MTD">
-                  <OversiteTop10Table items={salesTop10} emptyLabel="No sales data this month" />
+                <OversiteSection title={`🏆 ${t('oversite.top10Items')}`}>
+                  <OversiteTop10Table items={salesTop10} emptyLabel={t('oversite.noSales')} />
                 </OversiteSection>
 
-                <OversiteSection title="↩️ Returns MTD">
+                <OversiteSection title={`↩️ ${t('oversite.returnsMtd')}`}>
                   <OversiteKpiRow
                     kpis={[
-                      { label: 'Cash', value: fmt(returnsMtd.cash), tone: 'amber' },
-                      { label: 'Qty', value: fmt(returnsMtd.qty) },
+                      { label: t('oversite.cash'), value: fmt(returnsMtd.cash), tone: 'amber' },
+                      { label: t('oversite.qty'), value: fmt(returnsMtd.qty) },
                     ]}
                   />
-                  <OversiteCollapsible label="↩️ Top 10 Returns ▾">
-                    <OversiteTop10Table items={returnsTop10} emptyLabel="No returns this month" />
+                  <OversiteCollapsible label={`↩️ ${t('oversite.top10Returns')} ▾`}>
+                    <OversiteTop10Table items={returnsTop10} emptyLabel={t('oversite.noReturns')} />
                   </OversiteCollapsible>
                 </OversiteSection>
 
                 <OversiteSection
-                  title={`💳 Open Debt${debtLastUpdate ? ` · Last Update: ${debtLastUpdate}` : ''}`}
+                  title={`💳 ${t('oversite.openDebt')}${debtLastUpdate ? ` · ${t('oversite.lastUpdate')}: ${debtLastUpdate}` : ''}`}
                 >
                   <OversiteDebtSummary summary={debtSummary} onOpenReport={() => setDebtModalCo(co.id)} />
                 </OversiteSection>

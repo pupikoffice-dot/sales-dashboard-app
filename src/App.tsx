@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import { useDashboardAccess } from './context/DashboardAccessContext'
+import { useLocale } from './context/LocaleContext'
 import { pathForModule } from './modules/registry'
 import { LoginPage } from './pages/LoginPage'
 import { DashboardLayout, RequireModule } from './pages/DashboardLayout'
@@ -13,14 +14,16 @@ import { UsersPage } from './pages/admin/UsersPage'
 
 function HomeRedirect() {
   const { access, loading } = useDashboardAccess()
-  if (loading) return <p className="status-msg p-6">Loading…</p>
+  const { t } = useLocale()
+  if (loading) return <p className="status-msg p-6">{t('common.loading')}</p>
   const path = access ? pathForModule(access.defaultModule) : '/oversite'
   return <Navigate to={path} replace />
 }
 
 function ProtectedApp() {
   const { session, loading, isSuperAdmin } = useAuth()
-  if (loading) return <p className="status-msg p-6">Loading…</p>
+  const { t } = useLocale()
+  if (loading) return <p className="status-msg p-6">{t('common.loading')}</p>
   if (!session) return <Navigate to="/login" replace />
 
   return (

@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
 import { ChartModal, type ChartModalConfig } from '../components/sales/ChartModal'
+import { useLocale } from './LocaleContext'
 import { useTableSortDelegation } from '../hooks/useTableSortDelegation'
 
 interface SalesReportUiValue {
@@ -28,10 +29,12 @@ export function SalesReportUiProvider({
   const [globalCollapsed, setGlobalCollapsed] = useState<boolean | null>(null)
   const [reportChart, setReportChart] = useState<ChartModalConfig | null>(null)
   const [activeChart, setActiveChart] = useState<ChartModalConfig | null>(null)
+  const { t } = useLocale()
 
   useTableSortDelegation('sales-report')
 
-  const collapseAllLabel = globalCollapsed === true ? '⊞ Expand All' : '⊟ Minimize All'
+  const collapseAllLabel =
+    globalCollapsed === true ? `⊞ ${t('sales.expandAll')}` : `⊟ ${t('sales.minimizeAll')}`
 
   const openChart = useCallback((config: ChartModalConfig) => {
     setActiveChart(config)

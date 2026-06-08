@@ -30,6 +30,7 @@ export interface DashboardFiltersState {
   selectedCategories: Set<string>
   selectedItemSkus: Set<string>
   applied: boolean
+  isRendering: boolean
 }
 
 interface DashboardFiltersValue extends DashboardFiltersState {
@@ -56,6 +57,7 @@ interface DashboardFiltersValue extends DashboardFiltersState {
   clearCategoryIds: () => void
   clearItemSkus: () => void
   apply: () => void
+  finishRendering: () => void
   canApply: boolean
   viewPanelEnabled: boolean
 }
@@ -95,6 +97,7 @@ export function DashboardFiltersProvider({ children }: { children: ReactNode }) 
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(() => new Set())
   const [selectedItemSkus, setSelectedItemSkus] = useState<Set<string>>(() => new Set())
   const [applied, setApplied] = useState(false)
+  const [isRendering, setIsRendering] = useState(false)
 
   const state: DashboardFiltersState = {
     company,
@@ -110,6 +113,7 @@ export function DashboardFiltersProvider({ children }: { children: ReactNode }) 
     selectedCategories,
     selectedItemSkus,
     applied,
+    isRendering,
   }
 
   const stateRef = useRef(state)
@@ -297,7 +301,12 @@ export function DashboardFiltersProvider({ children }: { children: ReactNode }) 
 
   const apply = useCallback(() => {
     if (!canApplyFilters(stateRef.current)) return
+    setIsRendering(true)
     setApplied(true)
+  }, [])
+
+  const finishRendering = useCallback(() => {
+    setIsRendering(false)
   }, [])
 
   return (
@@ -333,6 +342,7 @@ export function DashboardFiltersProvider({ children }: { children: ReactNode }) 
         clearCategoryIds,
         clearItemSkus,
         apply,
+        finishRendering,
         canApply,
         viewPanelEnabled,
       }}

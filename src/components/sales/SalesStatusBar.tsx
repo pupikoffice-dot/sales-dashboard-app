@@ -1,4 +1,5 @@
 import type { DashboardFiltersState } from '../../context/DashboardFiltersContext'
+import { useLocale } from '../../context/LocaleContext'
 import { useSalesReportUi } from '../../context/SalesReportUiContext'
 import { exportAllFromReport } from '../../lib/csvExport'
 import { fmt } from '../../lib/format'
@@ -13,6 +14,7 @@ interface SalesStatusBarProps {
 }
 
 export function SalesStatusBar({ filters, rows, viewLabel, count }: SalesStatusBarProps) {
+  const { t, monthNames } = useLocale()
   const {
     searchQuery,
     setSearchQuery,
@@ -35,44 +37,48 @@ export function SalesStatusBar({ filters, rows, viewLabel, count }: SalesStatusB
     lastOrderLabel = `${d}/${mo}/${y}`
   }
 
+  let periodLabel = getDateLabel(filters, monthNames)
+  if (filters.dateMode === 'openorders') periodLabel = t('sales.periodOpenOrders')
+  if (filters.dateMode === 'stock') periodLabel = t('sales.periodStock')
+
   return (
     <>
       {warn && <div className="warn">{warn}</div>}
       <div className="sbar">
         <span>
-          Company: <b>{filters.company ? companyLabel(filters.company) : '—'}</b>
+          {t('sales.company')}: <b>{filters.company ? companyLabel(filters.company) : '—'}</b>
         </span>
         <span>
-          View: <b>{viewLabel}</b>
+          {t('sales.view')}: <b>{viewLabel}</b>
         </span>
         <span>
-          Period: <b>{getDateLabel(filters)}</b>
+          {t('sales.period')}: <b>{periodLabel}</b>
         </span>
         {lastOrderLabel && (
           <span>
-            Last Order: <b>{lastOrderLabel}</b>
+            {t('sales.lastOrder')}: <b>{lastOrderLabel}</b>
           </span>
         )}
         <span>
-          Records: <b>{count}</b>
+          {t('sales.records')}: <b>{count}</b>
         </span>
         <span>
-          Cash: <b>{fmt(totals.cash)}</b>
+          {t('sales.cash')}: <b>{fmt(totals.cash)}</b>
         </span>
         <span>
-          Qty: <b>{fmt(totals.qty)}</b>
+          {t('sales.qty')}: <b>{fmt(totals.qty)}</b>
         </span>
         <div className="sbar-actions">
           <input
             className="sbar-search"
             type="text"
-            placeholder="🔍 Search…"
+            placeholder={`🔍 ${t('sales.search')}`}
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
           />
           {reportChart && (
             <button type="button" className="sbar-chart-btn" onClick={() => openChart(reportChart)}>
-              📊 Chart
+              📊 {t('sales.chart')}
             </button>
           )}
           {hasSections && (
@@ -85,7 +91,7 @@ export function SalesStatusBar({ filters, rows, viewLabel, count }: SalesStatusB
                   if (root) exportAllFromReport(root)
                 }}
               >
-                📥 Export All
+                📥 {t('sales.exportAll')}
               </button>
               <button type="button" className="sbar-minimize-btn" onClick={toggleCollapseAll}>
                 {collapseAllLabel}

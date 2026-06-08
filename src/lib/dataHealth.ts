@@ -1,8 +1,9 @@
+import type { MessageKey } from '../i18n/types'
 import type { LogicalCompany, SalesRow } from '../types/dashboard'
 
 export interface DataHealthResult {
   ok: boolean
-  message: string | null
+  messageKey: MessageKey | null
 }
 
 export function checkOrdersDataHealth(
@@ -37,44 +38,24 @@ export function checkOrdersDataHealth(
   }
 
   if (hasPupik && ordersPupik < 1000 && openPupik > 2000) {
-    return {
-      ok: false,
-      message:
-        'Orders data looks wrong: 722 rows are tagged as openorders instead of orders-pupik. Re-run run_export.ps1 on the office PC (not VBA-only export), then push_to_github.ps1.',
-    }
+    return { ok: false, messageKey: 'health.ordersTagSwapPupik' }
   }
 
   if (hasMt && ordersMt < 1000 && openMt > 500) {
-    return {
-      ok: false,
-      message:
-        'Orders data looks wrong: 722 MT rows are tagged as openorders-mt instead of orders-mt. Re-run run_export.ps1 on the office PC.',
-    }
+    return { ok: false, messageKey: 'health.ordersTagSwapMt' }
   }
 
   if (hasPupik && hasMt && openPupik === 0 && openMt === 0 && ordersPupik > 0) {
-    return {
-      ok: false,
-      message:
-        'Open Orders (721) data is missing from the export. Re-run the Excel export (721pupik / 721mt sheets), then push_to_github.ps1.',
-    }
+    return { ok: false, messageKey: 'health.openOrdersBothMissing' }
   }
 
   if (hasPupik && openPupik === 0 && ordersPupik > 0) {
-    return {
-      ok: false,
-      message:
-        'Open Orders (721) data is missing for Pupik. Re-run the Excel export (721pupik sheet), then push_to_github.ps1.',
-    }
+    return { ok: false, messageKey: 'health.openOrdersPupikMissing' }
   }
 
   if (hasMt && ordersMt > 1000 && openMt === 0) {
-    return {
-      ok: false,
-      message:
-        'Monkeytime open orders (721mt) are missing from the export. Check 721mt sheet in the workbook export, then push_to_github.ps1.',
-    }
+    return { ok: false, messageKey: 'health.openOrdersMtMissing' }
   }
 
-  return { ok: true, message: null }
+  return { ok: true, messageKey: null }
 }

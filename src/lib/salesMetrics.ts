@@ -18,7 +18,7 @@ export function companyLabel(co: LogicalCompany): string {
   return co
 }
 
-export function getDateLabel(filters: DashboardFiltersState): string {
+export function getDateLabel(filters: DashboardFiltersState, monthNames = MONTH_NAMES): string {
   if (filters.dateMode === 'openorders') return 'Open Orders'
   if (filters.dateMode === 'stock') return 'Stock'
   if (filters.dateMode === 'range') {
@@ -27,7 +27,7 @@ export function getDateLabel(filters: DashboardFiltersState): string {
   return getSortedMonths(filters.selectedMonths)
     .map(k => {
       const [y, m] = k.split('-')
-      return `${MONTH_NAMES[+m - 1]} ${y}`
+      return `${monthNames[+m - 1] ?? MONTH_NAMES[+m - 1]} ${y}`
     })
     .join(', ')
 }

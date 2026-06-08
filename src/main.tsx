@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from './context/AuthContext'
 import { DashboardAccessProvider } from './context/DashboardAccessContext'
 import { DashboardFiltersProvider } from './context/DashboardFiltersContext'
+import { LocaleProvider } from './context/LocaleContext'
 import App from './App'
 import './index.css'
 
@@ -13,11 +14,13 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <DashboardAccessProvider>
-          <DashboardFiltersProvider>
-            <App />
-          </DashboardFiltersProvider>
-        </DashboardAccessProvider>
+        <LocaleProvider>
+          <DashboardAccessProvider>
+            <DashboardFiltersProvider>
+              <App />
+            </DashboardFiltersProvider>
+          </DashboardAccessProvider>
+        </LocaleProvider>
       </AuthProvider>
     </QueryClientProvider>
   </StrictMode>,

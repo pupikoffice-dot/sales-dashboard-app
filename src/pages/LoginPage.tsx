@@ -1,9 +1,11 @@
 import { FormEvent, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useLocale } from '../context/LocaleContext'
 
 export function LoginPage() {
   const { signIn } = useAuth()
+  const { locale, setLocale, t } = useLocale()
   const navigate = useNavigate()
   const [login, setLogin] = useState('')
   const [password, setPassword] = useState('')
@@ -23,12 +25,28 @@ export function LoginPage() {
   return (
     <div className="login-shell">
       <form onSubmit={onSubmit} className="login-card">
-        <h1>Sales Dashboard</h1>
-        <p>Sign in to view your sales data</p>
+        <div className="login-lang-row">
+          <button
+            type="button"
+            className={`lang-btn${locale === 'en' ? ' active' : ''}`}
+            onClick={() => setLocale('en')}
+          >
+            EN
+          </button>
+          <button
+            type="button"
+            className={`lang-btn${locale === 'he' ? ' active' : ''}`}
+            onClick={() => setLocale('he')}
+          >
+            עב
+          </button>
+        </div>
+        <h1>{t('login.title')}</h1>
+        <p>{t('login.subtitle')}</p>
         {error && <p className="login-error">{error}</p>}
         <input
           type="text"
-          placeholder="Email or username"
+          placeholder={t('login.emailOrUsername')}
           value={login}
           onChange={e => setLogin(e.target.value)}
           className="login-input"
@@ -37,14 +55,14 @@ export function LoginPage() {
         />
         <input
           type="password"
-          placeholder="Password"
+          placeholder={t('login.password')}
           value={password}
           onChange={e => setPassword(e.target.value)}
           className="login-input"
           required
         />
         <button type="submit" disabled={busy} className="login-submit">
-          {busy ? 'Signing in…' : 'Sign in'}
+          {busy ? t('login.signingIn') : t('login.signIn')}
         </button>
       </form>
     </div>

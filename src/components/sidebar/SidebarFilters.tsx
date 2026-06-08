@@ -4,8 +4,8 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { useDashboardFilters, type DateMode } from '../../context/DashboardFiltersContext'
+import { useLocale } from '../../context/LocaleContext'
 import { useDashboardData } from '../../hooks/useDashboardData'
-import { MONTH_NAMES } from '../../lib/format'
 import {
   buildCategoryOptions,
   buildClientOptions,
@@ -21,11 +21,11 @@ const COMPANY_BUTTONS: { id: LogicalCompany; label: string }[] = [
   { id: 'grow', label: '🌱 Grow' },
 ]
 
-const DATE_TABS: { id: DateMode; label: string }[] = [
-  { id: 'range', label: 'From / To' },
-  { id: 'months', label: 'Months' },
-  { id: 'openorders', label: '📋 Open Orders' },
-  { id: 'stock', label: '📦 Stock' },
+const DATE_TAB_KEYS: { id: DateMode; key: 'filters.fromTo' | 'filters.months' | 'filters.openOrders' | 'filters.stock' }[] = [
+  { id: 'range', key: 'filters.fromTo' },
+  { id: 'months', key: 'filters.months' },
+  { id: 'openorders', key: 'filters.openOrders' },
+  { id: 'stock', key: 'filters.stock' },
 ]
 
 const MONTH_YEARS = [2025, 2026]
@@ -34,6 +34,7 @@ export function SidebarFilters() {
   const { isSuperAdmin } = useAuth()
   const { access } = useDashboardAccess()
   const f = useDashboardFilters()
+  const { t, monthNames } = useLocale()
   const { rows, isLoading } = useDashboardData()
   const navigate = useNavigate()
   const location = useLocation()
@@ -81,39 +82,44 @@ export function SidebarFilters() {
   const hasCats = categoryOptions.length > 0
 
   function handleApply() {
-    if (!f.canApply) return
+    if (!f.canApply || f.isRendering) return
 
-    flushSync(() => {
-      if (f.view === 'clients' && clientOptions.length) {
-        f.initClientIds(clientOptions.map(o => o.id))
-      }
-      if (f.view === 'items' && f.catType) {
-        if (categoryOptions.length) {
-          f.initCategoryIds(categoryOptions.map(o => o.id))
+    window.setTimeout(() => {
+      flushSync(() => {
+        if (f.view === 'clients' && clientOptions.length) {
+          f.initClientIds(clientOptions.map(o => o.id))
         }
-        if (itemOptions.length) {
-          f.initItemIds(itemOptions.map(o => o.id))
+        if (f.view === 'items' && f.catType) {
+          if (categoryOptions.length) {
+            f.initCategoryIds(categoryOptions.map(o => o.id))
+          }
+          if (itemOptions.length) {
+            f.initItemIds(itemOptions.map(o => o.id))
+          }
         }
+      })
+
+      f.apply()
+
+      if (!isSuperAdmin) {
+        window.setTimeout(() => f.finishRendering(), 50)
+        return
       }
-    })
 
-    f.apply()
-
-    if (!isSuperAdmin) return
-
-    if (f.dateMode === 'openorders') {
-      if (!location.pathname.startsWith('/open-orders')) navigate('/open-orders')
-    } else if (!location.pathname.startsWith('/sales')) {
-      navigate('/sales')
-    }
+      if (f.dateMode === 'openorders') {
+        if (!location.pathname.startsWith('/open-orders')) navigate('/open-orders')
+      } else if (!location.pathname.startsWith('/sales')) {
+        navigate('/sales')
+      }
+    }, 0)
   }
 
   return (
     <>
-      <div className="sidebar-label">Global Filters</div>
+      <div className="sidebar-label">{t('filters.global')}</div>
 
       <div className="panel">
-        <div className="panel-title">① Company</div>
+        <div className="panel-title">① {t('filters.company')}</div>
         <div className="btn-grp">
           {allowedCompanies.map(c => (
             <button
@@ -129,27 +135,27 @@ export function SidebarFilters() {
       </div>
 
       <div className={`panel${f.company ? '' : ' disabled'}`}>
-        <div className="panel-title">② Date Filter</div>
+        <div className="panel-title">② {t('filters.dateFilter')}</div>
         <div className="tab-row">
-          {DATE_TABS.map(t => (
+          {DATE_TAB_KEYS.map(tab => (
             <button
-              key={t.id}
+              key={tab.id}
               type="button"
-              className={`tab-btn${f.dateMode === t.id ? ' active' : ''}`}
+              className={`tab-btn${f.dateMode === tab.id ? ' active' : ''}`}
               onClick={() => {
-                f.setDateMode(t.id)
-                if (isSuperAdmin && t.id === 'openorders') navigate('/open-orders')
+                f.setDateMode(tab.id)
+                if (isSuperAdmin && tab.id === 'openorders') navigate('/open-orders')
               }}
               disabled={!f.company}
             >
-              {t.label}
+              {tab.id === 'openorders' ? `📋 ${t(tab.key)}` : tab.id === 'stock' ? `📦 ${t(tab.key)}` : t(tab.key)}
             </button>
           ))}
         </div>
 
         {f.dateMode === 'range' && (
           <div className="date-range">
-            <label>From</label>
+            <label>{t('filters.from')}</label>
             <input
               type="date"
               min="2025-01-01"
@@ -158,7 +164,7 @@ export function SidebarFilters() {
               onChange={e => f.setDateFrom(e.target.value)}
               disabled={!f.company}
             />
-            <label>To</label>
+            <label>{t('filters.to')}</label>
             <input
               type="date"
               min="2025-01-01"
@@ -180,7 +186,7 @@ export function SidebarFilters() {
                   </span>
                 </div>
                 <div className="mo-grid">
-                  {MONTH_NAMES.map((mn, idx) => {
+                  {monthNames.map((mn, idx) => {
                     const key = `${yr}-${idx + 1}`
                     const sel = f.selectedMonths.has(key)
                     return (
@@ -201,20 +207,20 @@ export function SidebarFilters() {
             <div className="sel-months-list">
               {f.selectedMonths.size
                 ? [...f.selectedMonths].sort().join(', ')
-                : 'Select one or more months'}
+                : t('filters.selectMonths')}
             </div>
           </div>
         )}
 
         {(f.dateMode === 'openorders' || f.dateMode === 'stock') && (
           <p className="sel-months-list" style={{ marginTop: 8 }}>
-            {f.dateMode === 'openorders' ? 'Shows undelivered orders (721).' : 'Shows warehouse stock view.'}
+            {f.dateMode === 'openorders' ? t('filters.openOrdersHint') : t('filters.stockHint')}
           </p>
         )}
       </div>
 
       <div className={`panel${f.viewPanelEnabled ? '' : ' disabled'}`}>
-        <div className="panel-title">③ View</div>
+        <div className="panel-title">③ {t('filters.view')}</div>
         <div className="btn-grp">
           <button
             type="button"
@@ -222,7 +228,7 @@ export function SidebarFilters() {
             onClick={() => f.setView('clients')}
             disabled={!f.viewPanelEnabled}
           >
-            👥 Clients
+            👥 {t('filters.clients')}
           </button>
           <button
             type="button"
@@ -230,7 +236,7 @@ export function SidebarFilters() {
             onClick={() => f.setView('items')}
             disabled={!f.viewPanelEnabled}
           >
-            📦 Items
+            📦 {t('filters.items')}
           </button>
         </div>
       </div>
@@ -238,9 +244,9 @@ export function SidebarFilters() {
       {f.view === 'clients' && (
         <>
           <div className={`panel${f.viewPanelEnabled ? '' : ' disabled'}`}>
-            <div className="panel-title">④ Select Clients</div>
+            <div className="panel-title">④ {t('filters.selectClients')}</div>
             {isLoading ? (
-              <p className="sel-months-list">Loading clients…</p>
+              <p className="sel-months-list">{t('filters.loadingClients')}</p>
             ) : (
               <FilterCheckList
                 items={clientOptions}
@@ -248,27 +254,27 @@ export function SidebarFilters() {
                 onToggle={f.toggleClientId}
                 onSelectVisible={f.selectClientIds}
                 onClear={f.clearClientIds}
-                searchPlaceholder="Search clients…"
+                searchPlaceholder={t('filters.searchClients')}
               />
             )}
           </div>
 
           <div className={`panel${f.viewPanelEnabled ? '' : ' disabled'}`}>
-            <div className="panel-title">⑤ Show Per Client</div>
+            <div className="panel-title">⑤ {t('filters.showPerClient')}</div>
             <div className="btn-grp">
               <button
                 type="button"
                 className={`btn${f.clientMode === 'items' ? ' active' : ''}`}
                 onClick={() => f.setClientMode('items')}
               >
-                📦 Items breakdown
+                📦 {t('filters.itemsBreakdown')}
               </button>
               <button
                 type="button"
                 className={`btn${f.clientMode === 'cash' ? ' active' : ''}`}
                 onClick={() => f.setClientMode('cash')}
               >
-                💰 Cash summary
+                💰 {t('filters.cashSummary')}
               </button>
             </div>
           </div>
@@ -278,50 +284,48 @@ export function SidebarFilters() {
       {f.view === 'items' && (
         <>
           <div className={`panel${f.viewPanelEnabled ? '' : ' disabled'}`}>
-            <div className="panel-title">④ Item Category Filter</div>
+            <div className="panel-title">④ {t('filters.itemCategory')}</div>
             <div className="btn-grp" style={{ marginBottom: 8 }}>
               <button
                 type="button"
                 className={`btn${f.catType === 'tablet' ? ' active' : ''}`}
                 onClick={() => f.setCatType('tablet')}
               >
-                🏷 Tablet Category
+                🏷 {t('filters.tabletCategory')}
               </button>
               <button
                 type="button"
                 className={`btn${f.catType === 'category' ? ' active' : ''}`}
                 onClick={() => f.setCatType('category')}
               >
-                📂 Group Category
+                📂 {t('filters.groupCategory')}
               </button>
             </div>
             {f.catType && hasCats && (
-              <>
-                <FilterCheckList
-                  items={categoryOptions}
-                  selected={f.selectedCategories}
-                  onToggle={id => {
-                    f.toggleCategoryId(id)
-                  }}
-                  onSelectVisible={ids => {
-                    f.selectCategoryIds(ids)
-                  }}
-                  onClear={f.clearCategoryIds}
-                  searchPlaceholder="Search categories…"
-                  maxHeight={140}
-                />
-              </>
+              <FilterCheckList
+                items={categoryOptions}
+                selected={f.selectedCategories}
+                onToggle={id => {
+                  f.toggleCategoryId(id)
+                }}
+                onSelectVisible={ids => {
+                  f.selectCategoryIds(ids)
+                }}
+                onClear={f.clearCategoryIds}
+                searchPlaceholder={t('filters.searchCategories')}
+                maxHeight={140}
+              />
             )}
             {f.catType && !hasCats && !isLoading && (
-              <p className="sel-months-list">No categories found.</p>
+              <p className="sel-months-list">{t('filters.noCategories')}</p>
             )}
           </div>
 
           {f.catType && (
             <div className={`panel${f.viewPanelEnabled ? '' : ' disabled'}`}>
-              <div className="panel-title">⑤ Select Items</div>
+              <div className="panel-title">⑤ {t('filters.selectItems')}</div>
               {isLoading ? (
-                <p className="sel-months-list">Loading items…</p>
+                <p className="sel-months-list">{t('filters.loadingItems')}</p>
               ) : (
                 <FilterCheckList
                   items={itemOptions}
@@ -329,7 +333,7 @@ export function SidebarFilters() {
                   onToggle={f.toggleItemSku}
                   onSelectVisible={f.selectItemSkus}
                   onClear={f.clearItemSkus}
-                  searchPlaceholder="Search items…"
+                  searchPlaceholder={t('filters.searchItems')}
                 />
               )}
             </div>
@@ -337,21 +341,21 @@ export function SidebarFilters() {
 
           {f.catType && (
             <div className={`panel${f.viewPanelEnabled ? '' : ' disabled'}`}>
-              <div className="panel-title">⑥ Show Per Item</div>
+              <div className="panel-title">⑥ {t('filters.showPerItem')}</div>
               <div className="btn-grp">
                 <button
                   type="button"
                   className={`btn${f.itemMode === 'clients' ? ' active' : ''}`}
                   onClick={() => f.setItemMode('clients')}
                 >
-                  👥 By Clients
+                  👥 {t('filters.byClients')}
                 </button>
                 <button
                   type="button"
                   className={`btn${f.itemMode === 'items' ? ' active' : ''}`}
                   onClick={() => f.setItemMode('items')}
                 >
-                  📦 Items summary
+                  📦 {t('filters.itemsSummary')}
                 </button>
               </div>
             </div>
@@ -361,11 +365,18 @@ export function SidebarFilters() {
 
       <button
         type="button"
-        className="apply-btn"
-        disabled={!f.canApply}
+        className={`apply-btn${f.isRendering ? ' is-loading' : ''}`}
+        disabled={!f.canApply || f.isRendering}
         onClick={handleApply}
       >
-        Apply &amp; Render
+        {f.isRendering ? (
+          <>
+            <span className="apply-btn-spin" aria-hidden />
+            {t('filters.rendering')}
+          </>
+        ) : (
+          t('filters.applyRender')
+        )}
       </button>
     </>
   )

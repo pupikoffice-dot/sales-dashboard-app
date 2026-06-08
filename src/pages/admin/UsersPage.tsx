@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { callUserManagement } from '../../lib/userManagement'
 import { displayLoginId, isEmailLogin, isInternalAuthEmail } from '../../lib/loginIdentifier'
 import { MODULE_REGISTRY } from '../../modules/registry'
+import type { AppLocale } from '../../i18n/types'
 import type { DashboardModuleId, LogicalCompany } from '../../types/dashboard'
 
 interface UserRow {
@@ -22,6 +23,7 @@ interface AccessRow {
   companies: string[]
   agents: string[] | null
   default_module: string
+  locale?: string
   active: boolean
 }
 
@@ -326,6 +328,7 @@ function EditAccessModal({
   const [companies, setCompanies] = useState<LogicalCompany[]>([])
   const [agentsText, setAgentsText] = useState('')
   const [defaultModule, setDefaultModule] = useState<DashboardModuleId>('oversite')
+  const [locale, setLocale] = useState<AppLocale>('en')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -338,6 +341,7 @@ function EditAccessModal({
           setCompanies((row.companies ?? []) as LogicalCompany[])
           setAgentsText(row.agents?.join(', ') ?? '')
           setDefaultModule((row.default_module as DashboardModuleId) ?? 'oversite')
+          setLocale(row.locale === 'he' ? 'he' : 'en')
         } else {
           setModules(['oversite'])
           setCompanies(['pupik'])
@@ -365,6 +369,7 @@ function EditAccessModal({
       companies,
       agents,
       default_module: defaultModule,
+      locale,
       active: true,
       updated_at: new Date().toISOString(),
     })
@@ -423,6 +428,18 @@ function EditAccessModal({
             {MODULE_REGISTRY.map(m => (
               <option key={m.id} value={m.id}>{m.label}</option>
             ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="text-xs font-medium text-slate-500">Language</label>
+          <select
+            className="mt-1 w-full border rounded px-3 py-2 text-sm"
+            value={locale}
+            onChange={e => setLocale(e.target.value as AppLocale)}
+          >
+            <option value="en">English</option>
+            <option value="he">עברית (Hebrew)</option>
           </select>
         </div>
 

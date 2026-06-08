@@ -1,4 +1,5 @@
 import type { DashboardFiltersState } from '../../context/DashboardFiltersContext'
+import { useLocale } from '../../context/LocaleContext'
 import { SalesReportUiProvider, useSalesReportUi } from '../../context/SalesReportUiContext'
 import { useReportChart } from '../../hooks/useReportChart'
 import { matchesSearch } from '../../lib/salesSearch'
@@ -49,6 +50,7 @@ function SalesClientsContent({
   companyRows,
   wmsStock,
 }: SalesClientsViewProps) {
+  const { t } = useLocale()
   const { searchQuery } = useSalesReportUi()
   useReportChart(filters, rows, {
     kind: 'client',
@@ -56,7 +58,8 @@ function SalesClientsContent({
   })
   const clients = groupByClient(rows)
   const company = filters.company!
-  const modeLabel = filters.clientMode === 'cash' ? 'Cash summary' : 'Items breakdown'
+  const modeLabel =
+    filters.clientMode === 'cash' ? t('filters.cashSummary') : t('filters.itemsBreakdown')
 
   return (
     <div id="sales-report">
@@ -64,7 +67,7 @@ function SalesClientsContent({
       <SalesStatusBar
         filters={filters}
         rows={rows}
-        viewLabel={`Clients · ${modeLabel}`}
+        viewLabel={`${t('filters.clients')} · ${modeLabel}`}
         count={Object.keys(clients).length}
       />
       {Object.entries(clients)

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useLocale } from '../../context/LocaleContext'
 import type { ListOption } from '../../lib/salesFilterLists'
 
 interface FilterCheckListProps {
@@ -20,6 +21,7 @@ export function FilterCheckList({
   searchPlaceholder,
   maxHeight = 200,
 }: FilterCheckListProps) {
+  const { t } = useLocale()
   const [search, setSearch] = useState('')
   const q = search.trim().toLowerCase()
 
@@ -43,10 +45,10 @@ export function FilterCheckList({
       />
       <div className="mini-row">
         <button type="button" className="mini" onClick={selectAll}>
-          All
+          {t('common.all')}
         </button>
         <button type="button" className="mini" onClick={onClear}>
-          Clear
+          {t('common.clear')}
         </button>
       </div>
       <div className="chk-list" style={{ maxHeight }}>
