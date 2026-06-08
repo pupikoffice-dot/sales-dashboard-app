@@ -132,7 +132,10 @@ export function SidebarFilters() {
               key={t.id}
               type="button"
               className={`tab-btn${f.dateMode === t.id ? ' active' : ''}`}
-              onClick={() => f.setDateMode(t.id)}
+              onClick={() => {
+                f.setDateMode(t.id)
+                if (t.id === 'openorders') navigate('/open-orders')
+              }}
               disabled={!f.company}
             >
               {t.label}

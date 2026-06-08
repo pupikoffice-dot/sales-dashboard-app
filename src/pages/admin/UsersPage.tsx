@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
+import { callUserManagement } from '../../lib/userManagement'
 import { MODULE_REGISTRY } from '../../modules/registry'
 import type { DashboardModuleId, LogicalCompany } from '../../types/dashboard'
 
@@ -10,6 +11,7 @@ interface UserRow {
   name: string
   role: string
   active: boolean
+  password_display: string | null
 }
 
 interface AccessRow {
@@ -25,25 +27,152 @@ const COMPANIES: LogicalCompany[] = ['pupik', 'mt', 'grow']
 
 export function UsersPage() {
   const qc = useQueryClient()
-  const { data: users, isLoading } = useQuery({
+  const [showCreate, setShowCreate] = useState(false)
+  const [newEmail, setNewEmail] = useState('')
+  const [newName, setNewName] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [createError, setCreateError] = useState<string | null>(null)
+  const [visiblePwds, setVisiblePwds] = useState<Set<string>>(new Set())
+  const [editId, setEditId] = useState<string | null>(null)
+  const [pwdEditId, setPwdEditId] = useState<string | null>(null)
+  const [pwdEditValue, setPwdEditValue] = useState('')
+
+  const { data: users, isLoading, error: loadError } = useQuery({
     queryKey: ['admin-users'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('user_profiles').select('id,email,name,role,active').order('name')
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('id,email,name,role,active,password_display')
+        .order('name')
       if (error) throw error
       return (data ?? []) as UserRow[]
     },
   })
 
-  const [editId, setEditId] = useState<string | null>(null)
+  const createMutation = useMutation({
+    mutationFn: () =>
+      callUserManagement({
+        action: 'create',
+        email: newEmail.trim(),
+        password: newPassword,
+        name: newName.trim() || undefined,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-users'] })
+      setShowCreate(false)
+      setNewEmail('')
+      setNewName('')
+      setNewPassword('')
+      setCreateError(null)
+    },
+    onError: (e: Error) => setCreateError(e.message),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => callUserManagement({ action: 'delete', id }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-users'] }),
+  })
+
+  const passwordMutation = useMutation({
+    mutationFn: ({ id, password }: { id: string; password: string }) =>
+      callUserManagement({ action: 'update-password', id, password }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-users'] })
+      setPwdEditId(null)
+      setPwdEditValue('')
+    },
+  })
+
+  function togglePwd(id: string) {
+    setVisiblePwds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function handleDelete(user: UserRow) {
+    if (user.role === 'super_admin') return
+    if (!confirm(`Delete user "${user.name}" (${user.email})?\nThis cannot be undone.`)) return
+    deleteMutation.mutate(user.id)
+  }
 
   if (isLoading) return <p className="status-msg">Loading users…</p>
+  if (loadError) return <p className="status-msg error">{(loadError as Error).message}</p>
 
   return (
     <div>
-      <div className="ov-header">
-        <h2>Dashboard Users</h2>
-        <p className="ov-sub">Assign modules, companies, and agents per user.</p>
+      <div className="ov-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
+        <div>
+          <h2>Dashboard Users</h2>
+          <p className="ov-sub">Add users, set passwords, and assign modules, companies, and agents.</p>
+        </div>
+        <button
+          type="button"
+          className="ov-toggle-btn"
+          style={{ marginTop: 0, width: 'auto', flexShrink: 0 }}
+          onClick={() => { setShowCreate(true); setCreateError(null) }}
+        >
+          + Add user
+        </button>
       </div>
+
+      {showCreate && (
+        <div className="tw" style={{ marginTop: 16, maxWidth: 480 }}>
+          <h3 style={{ margin: '0 0 12px', fontSize: '1rem' }}>New user</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <label style={{ fontSize: '.8rem' }}>
+              Name
+              <input
+                className="sbar-search"
+                style={{ display: 'block', width: '100%', marginTop: 4, borderRadius: 6 }}
+                value={newName}
+                onChange={e => setNewName(e.target.value)}
+                placeholder="Display name"
+              />
+            </label>
+            <label style={{ fontSize: '.8rem' }}>
+              Email *
+              <input
+                className="sbar-search"
+                style={{ display: 'block', width: '100%', marginTop: 4, borderRadius: 6 }}
+                type="email"
+                value={newEmail}
+                onChange={e => setNewEmail(e.target.value)}
+                placeholder="user@company.com"
+              />
+            </label>
+            <label style={{ fontSize: '.8rem' }}>
+              Password *
+              <input
+                className="sbar-search"
+                style={{ display: 'block', width: '100%', marginTop: 4, borderRadius: 6 }}
+                type="text"
+                value={newPassword}
+                onChange={e => setNewPassword(e.target.value)}
+                placeholder="Set login password"
+              />
+            </label>
+            {createError && <p className="status-msg error" style={{ margin: 0 }}>{createError}</p>}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                className="ov-toggle-btn"
+                style={{ marginTop: 0, width: 'auto' }}
+                disabled={createMutation.isPending || !newEmail.trim() || !newPassword}
+                onClick={() => createMutation.mutate()}
+              >
+                {createMutation.isPending ? 'Creating…' : 'Create user'}
+              </button>
+              <button type="button" className="sbar-minimize-btn" onClick={() => setShowCreate(false)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="tw" style={{ marginTop: 16 }}>
         <table>
           <thead>
@@ -51,25 +180,106 @@ export function UsersPage() {
               <th>Name</th>
               <th>Email</th>
               <th>Role</th>
+              <th>Password</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             {(users ?? []).map(u => (
               <tr key={u.id}>
-                <td>{u.name}</td>
+                <td>
+                  {u.name}
+                  {u.role === 'super_admin' && (
+                    <span style={{ marginLeft: 6, fontSize: '.65rem', color: 'var(--amber)' }}>SUPER</span>
+                  )}
+                </td>
                 <td>{u.email}</td>
                 <td>{u.role}</td>
                 <td>
-                  <button type="button" className="ov-toggle-btn" style={{ marginTop: 0, width: 'auto' }} onClick={() => setEditId(u.id)}>
+                  {pwdEditId === u.id ? (
+                    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                      <input
+                        className="col-filter"
+                        style={{ width: 120 }}
+                        type="text"
+                        value={pwdEditValue}
+                        onChange={e => setPwdEditValue(e.target.value)}
+                        placeholder="New password"
+                      />
+                      <button
+                        type="button"
+                        className="col-filter-mode"
+                        style={{ fontSize: '.55rem' }}
+                        disabled={passwordMutation.isPending || !pwdEditValue}
+                        onClick={() => passwordMutation.mutate({ id: u.id, password: pwdEditValue })}
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        className="sbar-minimize-btn"
+                        style={{ padding: '2px 6px', fontSize: '.6rem' }}
+                        onClick={() => { setPwdEditId(null); setPwdEditValue('') }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      <span style={{ fontFamily: 'monospace', fontSize: '.75rem' }}>
+                        {visiblePwds.has(u.id) ? (u.password_display ?? '—') : '••••••••'}
+                      </span>
+                      <button
+                        type="button"
+                        className="sbar-minimize-btn"
+                        style={{ padding: '2px 8px', fontSize: '.65rem' }}
+                        onClick={() => togglePwd(u.id)}
+                      >
+                        {visiblePwds.has(u.id) ? 'Hide' : 'Show'}
+                      </button>
+                      <button
+                        type="button"
+                        className="sbar-minimize-btn"
+                        style={{ padding: '2px 8px', fontSize: '.65rem' }}
+                        onClick={() => { setPwdEditId(u.id); setPwdEditValue(u.password_display ?? '') }}
+                      >
+                        Set
+                      </button>
+                    </div>
+                  )}
+                </td>
+                <td style={{ whiteSpace: 'nowrap' }}>
+                  <button
+                    type="button"
+                    className="ov-toggle-btn"
+                    style={{ marginTop: 0, width: 'auto', marginRight: 6 }}
+                    onClick={() => setEditId(u.id)}
+                  >
                     Edit access
                   </button>
+                  {u.role !== 'super_admin' && (
+                    <button
+                      type="button"
+                      className="sbar-minimize-btn"
+                      style={{ color: 'var(--red)' }}
+                      disabled={deleteMutation.isPending}
+                      onClick={() => handleDelete(u)}
+                    >
+                      Remove
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
+            {(users ?? []).length === 0 && (
+              <tr>
+                <td colSpan={5} style={{ textAlign: 'center', color: 'var(--muted)' }}>No users yet.</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
+
       {editId && (
         <EditAccessModal
           userId={editId}

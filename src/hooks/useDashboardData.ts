@@ -14,17 +14,37 @@ declare global {
   }
 }
 
-async function loadDashboardData(): Promise<DashboardData> {
-  const url = import.meta.env.VITE_DASHBOARD_DATA_URL as string
-  if (!url) throw new Error('VITE_DASHBOARD_DATA_URL not set')
+function resolveDataUrl(base: string): string {
+  const sep = base.includes('?') ? '&' : '?'
+  return `${base}${sep}t=${Date.now()}`
+}
 
-  if (url.endsWith('.js')) {
+async function loadDashboardData(): Promise<DashboardData> {
+  const base =
+    (import.meta.env.DEV && import.meta.env.VITE_DASHBOARD_DATA_URL_DEV) ||
+    (import.meta.env.VITE_DASHBOARD_DATA_URL as string)
+  if (!base) throw new Error('VITE_DASHBOARD_DATA_URL not set')
+
+  if (base.endsWith('.js')) {
+    document
+      .querySelectorAll('script[data-dashboard-loader]')
+      .forEach(el => el.remove())
+    delete window.__DASHBOARD_DATA__
+    delete window.__DEBT_LAST_UPDATE__
+
+    const url = resolveDataUrl(
+      base.startsWith('/')
+        ? `${window.location.origin}${base}`
+        : base,
+    )
+
     await new Promise<void>((resolve, reject) => {
       const s = document.createElement('script')
       s.src = url
       s.charset = 'utf-8'
+      s.dataset.dashboardLoader = '1'
       s.onload = () => resolve()
-      s.onerror = () => reject(new Error('Failed to load data_loader.js'))
+      s.onerror = () => reject(new Error(`Failed to load data_loader.js from ${url}`))
       document.head.appendChild(s)
     })
     const d = window.__DASHBOARD_DATA__
@@ -32,7 +52,7 @@ async function loadDashboardData(): Promise<DashboardData> {
     return d
   }
 
-  const res = await fetch(url)
+  const res = await fetch(resolveDataUrl(base))
   if (!res.ok) throw new Error(`Failed to fetch data: ${res.status}`)
   return res.json() as Promise<DashboardData>
 }
