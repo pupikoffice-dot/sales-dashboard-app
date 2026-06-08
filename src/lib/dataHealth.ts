@@ -1,11 +1,17 @@
-import type { SalesRow } from '../types/dashboard'
+import type { LogicalCompany, SalesRow } from '../types/dashboard'
 
 export interface DataHealthResult {
   ok: boolean
   message: string | null
 }
 
-export function checkOrdersDataHealth(rows: SalesRow[]): DataHealthResult {
+export function checkOrdersDataHealth(
+  rows: SalesRow[],
+  companies: LogicalCompany[],
+): DataHealthResult {
+  const hasPupik = companies.includes('pupik')
+  const hasMt = companies.includes('mt')
+
   let ordersPupik = 0
   let ordersMt = 0
   let openPupik = 0
@@ -30,7 +36,7 @@ export function checkOrdersDataHealth(rows: SalesRow[]): DataHealthResult {
     }
   }
 
-  if (ordersPupik < 1000 && openPupik > 2000) {
+  if (hasPupik && ordersPupik < 1000 && openPupik > 2000) {
     return {
       ok: false,
       message:
@@ -38,7 +44,7 @@ export function checkOrdersDataHealth(rows: SalesRow[]): DataHealthResult {
     }
   }
 
-  if (ordersMt < 1000 && openMt > 500) {
+  if (hasMt && ordersMt < 1000 && openMt > 500) {
     return {
       ok: false,
       message:
@@ -46,7 +52,7 @@ export function checkOrdersDataHealth(rows: SalesRow[]): DataHealthResult {
     }
   }
 
-  if (openPupik === 0 && openMt === 0 && ordersPupik > 0) {
+  if (hasPupik && hasMt && openPupik === 0 && openMt === 0 && ordersPupik > 0) {
     return {
       ok: false,
       message:
@@ -54,11 +60,19 @@ export function checkOrdersDataHealth(rows: SalesRow[]): DataHealthResult {
     }
   }
 
-  if (ordersMt > 1000 && openMt === 0) {
+  if (hasPupik && openPupik === 0 && ordersPupik > 0) {
     return {
       ok: false,
       message:
-        'Monkeytime open orders (721mt) are missing from the export — only Pupik 721 may be present. Check 721mt sheet in the workbook export, then push_to_github.ps1.',
+        'Open Orders (721) data is missing for Pupik. Re-run the Excel export (721pupik sheet), then push_to_github.ps1.',
+    }
+  }
+
+  if (hasMt && ordersMt > 1000 && openMt === 0) {
+    return {
+      ok: false,
+      message:
+        'Monkeytime open orders (721mt) are missing from the export. Check 721mt sheet in the workbook export, then push_to_github.ps1.',
     }
   }
 

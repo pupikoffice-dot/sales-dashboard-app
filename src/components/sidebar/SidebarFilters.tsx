@@ -138,7 +138,7 @@ export function SidebarFilters() {
               className={`tab-btn${f.dateMode === t.id ? ' active' : ''}`}
               onClick={() => {
                 f.setDateMode(t.id)
-                if (t.id === 'openorders') navigate('/open-orders')
+                if (isSuperAdmin && t.id === 'openorders') navigate('/open-orders')
               }}
               disabled={!f.company}
             >

@@ -74,7 +74,7 @@ export function useDashboardData() {
   const { wmsStock, wmsNames } = buildWmsMaps(q.data?.wmsRows)
   const itemCost = buildItemCostMap(q.data?.costRows)
   const itemPrice = buildItemPriceMap(q.data?.priceRows)
-  const dataHealth = checkOrdersDataHealth(allRows)
+  const dataHealth = checkOrdersDataHealth(allRows, access?.companies ?? [])
 
   return {
     ...q,
