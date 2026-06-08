@@ -6,7 +6,7 @@ interface AuthContextValue {
   session: Session | null
   loading: boolean
   isSuperAdmin: boolean
-  signIn: (email: string, password: string) => Promise<{ error: string | null }>
+  signIn: (login: string, password: string) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
 }
 
@@ -34,7 +34,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.rpc('is_super_admin').then(({ data }) => setIsSuperAdmin(!!data))
   }, [session])
 
-  async function signIn(email: string, password: string) {
+  async function signIn(login: string, password: string) {
+    let email = login.trim()
+    if (!email.includes('@')) {
+      const { data, error } = await supabase.rpc('resolve_dashboard_login', { p_login: email })
+      if (error || !data) return { error: 'Invalid login or password' }
+      email = data as string
+    }
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     return { error: error?.message ?? null }
   }

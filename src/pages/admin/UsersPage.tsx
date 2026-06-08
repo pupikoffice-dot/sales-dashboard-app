@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { callUserManagement } from '../../lib/userManagement'
+import { displayLoginId, isEmailLogin, isInternalAuthEmail } from '../../lib/loginIdentifier'
 import { MODULE_REGISTRY } from '../../modules/registry'
 import type { DashboardModuleId, LogicalCompany } from '../../types/dashboard'
 
 interface UserRow {
   id: string
   email: string
+  username: string | null
   name: string
   role: string
   active: boolean
@@ -28,7 +30,7 @@ const COMPANIES: LogicalCompany[] = ['pupik', 'mt', 'grow']
 export function UsersPage() {
   const qc = useQueryClient()
   const [showCreate, setShowCreate] = useState(false)
-  const [newEmail, setNewEmail] = useState('')
+  const [newLogin, setNewLogin] = useState('')
   const [newName, setNewName] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [createError, setCreateError] = useState<string | null>(null)
@@ -42,7 +44,7 @@ export function UsersPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('user_profiles')
-        .select('id,email,name,role,active,password_display')
+        .select('id,email,username,name,role,active,password_display')
         .order('name')
       if (error) throw error
       return (data ?? []) as UserRow[]
@@ -53,14 +55,14 @@ export function UsersPage() {
     mutationFn: () =>
       callUserManagement({
         action: 'create',
-        email: newEmail.trim(),
+        login: newLogin.trim(),
         password: newPassword,
         name: newName.trim() || undefined,
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-users'] })
       setShowCreate(false)
-      setNewEmail('')
+      setNewLogin('')
       setNewName('')
       setNewPassword('')
       setCreateError(null)
@@ -94,7 +96,7 @@ export function UsersPage() {
 
   function handleDelete(user: UserRow) {
     if (user.role === 'super_admin') return
-    if (!confirm(`Delete user "${user.name}" (${user.email})?\nThis cannot be undone.`)) return
+    if (!confirm(`Delete user "${user.name}" (${displayLoginId(user)})?\nThis cannot be undone.`)) return
     deleteMutation.mutate(user.id)
   }
 
@@ -123,24 +125,25 @@ export function UsersPage() {
           <h3 style={{ margin: '0 0 12px', fontSize: '1rem' }}>New user</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <label style={{ fontSize: '.8rem' }}>
-              Name
+              Login (email or username) *
+              <input
+                className="sbar-search"
+                style={{ display: 'block', width: '100%', marginTop: 4, borderRadius: 6 }}
+                type="text"
+                value={newLogin}
+                onChange={e => setNewLogin(e.target.value)}
+                placeholder="user@company.com or jsmith"
+                autoComplete="off"
+              />
+            </label>
+            <label style={{ fontSize: '.8rem' }}>
+              Display name
               <input
                 className="sbar-search"
                 style={{ display: 'block', width: '100%', marginTop: 4, borderRadius: 6 }}
                 value={newName}
                 onChange={e => setNewName(e.target.value)}
-                placeholder="Display name"
-              />
-            </label>
-            <label style={{ fontSize: '.8rem' }}>
-              Email *
-              <input
-                className="sbar-search"
-                style={{ display: 'block', width: '100%', marginTop: 4, borderRadius: 6 }}
-                type="email"
-                value={newEmail}
-                onChange={e => setNewEmail(e.target.value)}
-                placeholder="user@company.com"
+                placeholder={isEmailLogin(newLogin) ? 'Optional' : 'Optional — defaults to username'}
               />
             </label>
             <label style={{ fontSize: '.8rem' }}>
@@ -160,7 +163,7 @@ export function UsersPage() {
                 type="button"
                 className="ov-toggle-btn"
                 style={{ marginTop: 0, width: 'auto' }}
-                disabled={createMutation.isPending || !newEmail.trim() || !newPassword}
+                disabled={createMutation.isPending || !newLogin.trim() || !newPassword}
                 onClick={() => createMutation.mutate()}
               >
                 {createMutation.isPending ? 'Creating…' : 'Create user'}
@@ -178,7 +181,7 @@ export function UsersPage() {
           <thead>
             <tr>
               <th>Name</th>
-              <th>Email</th>
+              <th>Login</th>
               <th>Role</th>
               <th>Password</th>
               <th></th>
@@ -193,7 +196,12 @@ export function UsersPage() {
                     <span style={{ marginLeft: 6, fontSize: '.65rem', color: 'var(--amber)' }}>SUPER</span>
                   )}
                 </td>
-                <td>{u.email}</td>
+                <td>
+                  {displayLoginId(u)}
+                  {u.username && isInternalAuthEmail(u.email) && (
+                    <span style={{ display: 'block', fontSize: '.65rem', color: 'var(--muted)' }}>username login</span>
+                  )}
+                </td>
                 <td>{u.role}</td>
                 <td>
                   {pwdEditId === u.id ? (

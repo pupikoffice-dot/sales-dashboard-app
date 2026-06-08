@@ -6,11 +6,38 @@ const CORS = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
+const USERNAME_AUTH_DOMAIN = 'dashboard.local'
+const USERNAME_RE = /^[a-z0-9][a-z0-9._-]{1,31}$/i
+
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
     headers: { ...CORS, 'Content-Type': 'application/json' },
   })
+}
+
+function normalizeUsername(value: string) {
+  return value.trim().toLowerCase()
+}
+
+function parseLoginInput(raw: string, displayName?: string) {
+  const login = raw.trim()
+  if (!login) return { error: 'login required' as const }
+
+  if (login.includes('@')) {
+    const email = login.toLowerCase()
+    const name = displayName?.trim() || email.split('@')[0]
+    return { email, username: null as string | null, name }
+  }
+
+  const username = normalizeUsername(login)
+  if (!USERNAME_RE.test(username)) {
+    return { error: 'Username must be 2–32 characters: letters, numbers, . _ -' as const }
+  }
+
+  const email = `${username}@${USERNAME_AUTH_DOMAIN}`
+  const name = displayName?.trim() || username
+  return { email, username, name }
 }
 
 async function requireSuperAdmin(callerClient: ReturnType<typeof createClient>) {
@@ -48,11 +75,23 @@ Deno.serve(async (req) => {
   const action = body.action as string
 
   if (action === 'create') {
-    const email = (body.email as string)?.trim()
+    const rawLogin = ((body.login ?? body.email) as string) ?? ''
     const password = body.password as string
-    const name = (body.name as string)?.trim() || email.split('@')[0]
     const role = (body.role as string) || 'viewer'
-    if (!email || !password) return json({ error: 'email and password required' }, 400)
+    if (!password) return json({ error: 'password required' }, 400)
+
+    const parsed = parseLoginInput(rawLogin, body.name as string | undefined)
+    if ('error' in parsed) return json({ error: parsed.error }, 400)
+
+    const { email, username, name } = parsed
+
+    if (username) {
+      const { data: dup } = await admin.from('user_profiles').select('id').ilike('username', username).maybeSingle()
+      if (dup) return json({ error: `Username "${username}" is already taken` }, 400)
+    } else {
+      const { data: dup } = await admin.from('user_profiles').select('id').ilike('email', email).maybeSingle()
+      if (dup) return json({ error: `Email "${email}" is already registered` }, 400)
+    }
 
     let uid: string
 
@@ -60,17 +99,17 @@ Deno.serve(async (req) => {
       email,
       password,
       email_confirm: true,
-      user_metadata: { name, role },
+      user_metadata: { name, role, ...(username ? { username } : {}) },
     })
 
     if (createErr) {
       if (createErr.message?.includes('already been registered') || createErr.message?.includes('already exists')) {
         const { data: { users }, error: listErr } = await admin.auth.admin.listUsers({ perPage: 1000 })
         if (listErr) return json({ error: 'Could not look up existing user: ' + listErr.message }, 500)
-        const existing = users.find(u => u.email === email)
+        const existing = users.find(u => u.email?.toLowerCase() === email)
         if (!existing) return json({ error: 'User exists in Auth but could not be found' }, 500)
         uid = existing.id
-        await admin.auth.admin.updateUserById(uid, { password, user_metadata: { name, role } })
+        await admin.auth.admin.updateUserById(uid, { password, user_metadata: { name, role, ...(username ? { username } : {}) } })
       } else {
         return json({ error: 'Create auth user failed: ' + createErr.message }, 400)
       }
@@ -81,6 +120,7 @@ Deno.serve(async (req) => {
     await admin.from('user_profiles').upsert({
       id: uid,
       email,
+      username,
       name,
       role,
       active: true,
