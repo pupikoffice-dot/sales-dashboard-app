@@ -1,0 +1,246 @@
+import type { DashboardFiltersState } from '../../context/DashboardFiltersContext'
+import { SortableTh } from './SortableTh'
+import { SalesReportUiProvider, useSalesReportUi } from '../../context/SalesReportUiContext'
+import { useReportChart } from '../../hooks/useReportChart'
+import { fmt, fmt0 } from '../../lib/format'
+import { matchesSearch } from '../../lib/salesSearch'
+import { getWmsQty, sumRows } from '../../lib/salesMetrics'
+import type { LogicalCompany, SalesRow } from '../../types/dashboard'
+import type { WmsStockMap } from '../../lib/wmsData'
+import { DualMonthGroupedTable } from './DualMonthGroupedTable'
+import { SalesSection } from './SalesSection'
+import { SalesStatusBar } from './SalesStatusBar'
+import { SalesReportStickySetup } from './SalesReportStickySetup'
+import { SkuSummaryTable } from './SkuSummaryTable'
+import { TableWithExport } from './TableWithExport'
+
+interface SalesItemsViewProps {
+  rows: SalesRow[]
+  filters: DashboardFiltersState
+  companyRows: SalesRow[]
+  wmsStock: WmsStockMap
+}
+
+function groupBySku(rows: SalesRow[]) {
+  const items: Record<string, { name: string; rows: SalesRow[] }> = {}
+  rows.forEach(r => {
+    const sku = r.itemSKU || '(No SKU)'
+    if (!items[sku]) items[sku] = { name: r.itemName || sku, rows: [] }
+    items[sku].rows.push(r)
+  })
+  return items
+}
+
+function itemSectionVisible(
+  searchQuery: string,
+  name: string,
+  sku: string,
+  itemRows: SalesRow[],
+) {
+  if (!searchQuery.trim()) return true
+  if (matchesSearch(searchQuery, name, sku)) return true
+  return itemRows.some(
+    r => r.clientID && matchesSearch(searchQuery, r.clientID, r.clientName),
+  )
+}
+
+function ClientsUnderItemTable({
+  rows,
+  filters,
+  company,
+  companyRows,
+  wmsStock,
+  showAllRows = false,
+  exportId = '',
+  exportName = '',
+}: {
+  rows: SalesRow[]
+  filters: DashboardFiltersState
+  company: LogicalCompany
+  companyRows: SalesRow[]
+  wmsStock: WmsStockMap
+  showAllRows?: boolean
+  exportId?: string
+  exportName?: string
+}) {
+  const { searchQuery } = useSalesReportUi()
+  const sku = rows[0]?.itemSKU || ''
+  const sq = sku ? getWmsQty(sku, company, wmsStock) : null
+  const sqFmt = sq != null ? fmt0(sq) : '—'
+
+  const clients: Record<string, { name: string; rows: SalesRow[] }> = {}
+  rows.forEach(r => {
+    if (!r.clientID) return
+    if (!clients[r.clientID]) {
+      clients[r.clientID] = { name: r.clientName || r.clientID, rows: [] }
+    }
+    clients[r.clientID].rows.push(r)
+  })
+
+  const filteredClients = Object.entries(clients)
+    .filter(([cid, cl]) => showAllRows || matchesSearch(searchQuery, cid, cl.name))
+    .sort((a, b) => a[1].name.localeCompare(b[1].name))
+
+  if (!filteredClients.length) return null
+
+  const isSimple = filters.dateMode === 'range' || filters.dateMode === 'openorders'
+
+  if (isSimple) {
+    let tq = 0
+    let tc = 0
+    const body = filteredClients.map(([cid, cl]) => {
+      const { cash, qty } = sumRows(cl.rows)
+      tq += qty
+      tc += cash
+      return (
+        <tr key={cid}>
+          <td>{cid}</td>
+          <td title={cl.name}>{cl.name}</td>
+          <td data-sv={qty}>{fmt(qty)}</td>
+          <td data-sv={cash}>{fmt(cash)}</td>
+          <td data-sv={sq ?? -1} className="accent2">
+            {sqFmt}
+          </td>
+        </tr>
+      )
+    })
+
+    return (
+      <TableWithExport exportId={exportId} exportName={exportName}>
+        <div className="tw">
+          <table>
+            <thead>
+              <tr>
+                <SortableTh>Client ID</SortableTh>
+                <SortableTh>Client Name</SortableTh>
+                <SortableTh pieQty>Qty</SortableTh>
+                <SortableTh pieCash>Cash</SortableTh>
+                <SortableTh className="accent2">Stock</SortableTh>
+              </tr>
+            </thead>
+            <tbody>{body}</tbody>
+            <tfoot>
+              <tr>
+                <td>—</td>
+                <td>Total</td>
+                <td>{fmt(tq)}</td>
+                <td>{fmt(tc)}</td>
+                <td className="accent2">{sqFmt}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </TableWithExport>
+    )
+  }
+
+  const coRaw = companyRows.filter(r => r.itemSKU === sku)
+  const groups = filteredClients.map(([cid, cl]) => ({
+    key: cid,
+    col1: cid,
+    col2: cl.name,
+    col2Title: cl.name,
+    currentRows: cl.rows,
+    compareRows: coRaw.filter(r => r.clientID === cid),
+  }))
+
+  return (
+    <DualMonthGroupedTable
+      filters={filters}
+      col1Label="Client ID"
+      col2Label="Client Name"
+      groups={groups}
+      showAllRows={showAllRows}
+      exportId={exportId}
+      exportName={exportName}
+      renderTrailing={() => <td className="accent2">{sqFmt}</td>}
+      trailingFooter={<td className="accent2">{sqFmt}</td>}
+    />
+  )
+}
+
+function SalesItemsContent({ rows, filters, companyRows, wmsStock }: SalesItemsViewProps) {
+  const { searchQuery } = useSalesReportUi()
+  useReportChart(filters, rows, { kind: 'item', pieTitle: 'Cash by Item' })
+  const company = filters.company! as LogicalCompany
+  const catLabel = filters.catType === 'tablet' ? 'Tablet' : 'Group'
+  const modeLabel = filters.itemMode === 'clients' ? 'By Clients' : 'Summary'
+
+  if (filters.itemMode === 'items') {
+    return (
+      <div id="sales-report">
+        <SalesReportStickySetup />
+        <SalesStatusBar
+          filters={filters}
+          rows={rows}
+          viewLabel={`Items · ${catLabel} · ${modeLabel}`}
+          count={filters.selectedItemSkus.size}
+        />
+        <SkuSummaryTable
+          rows={rows}
+          filters={filters}
+          company={company}
+          companyRows={companyRows}
+          wmsStock={wmsStock}
+        />
+      </div>
+    )
+  }
+
+  const items = groupBySku(rows)
+  return (
+    <div id="sales-report">
+      <SalesReportStickySetup />
+      <SalesStatusBar
+        filters={filters}
+        rows={rows}
+        viewLabel={`Items · ${catLabel} · ${modeLabel}`}
+        count={Object.keys(items).length}
+      />
+      {Object.entries(items)
+        .sort((a, b) => a[1].name.localeCompare(b[1].name))
+        .map(([sku, it]) => {
+          if (!itemSectionVisible(searchQuery, it.name, sku, it.rows)) return null
+          const nameMatch = matchesSearch(searchQuery, it.name, sku)
+          const { cash, qty } = sumRows(it.rows)
+          const sq = wmsStock[company]?.[sku] ?? null
+          return (
+            <SalesSection
+              key={sku}
+              exportName={it.name}
+              exportId={sku}
+              icon="📦"
+              title={
+                <>
+                  {it.name} <span className="section-meta">{sku}</span>
+                </>
+              }
+              cash={cash}
+              qty={qty}
+              stockQty={sq}
+            >
+              <ClientsUnderItemTable
+                rows={it.rows}
+                filters={filters}
+                company={company}
+                companyRows={companyRows}
+                wmsStock={wmsStock}
+                showAllRows={nameMatch}
+                exportId={sku}
+                exportName={it.name}
+              />
+            </SalesSection>
+          )
+        })}
+    </div>
+  )
+}
+
+export function SalesItemsView(props: SalesItemsViewProps) {
+  const hasSections = props.filters.itemMode === 'clients'
+  return (
+    <SalesReportUiProvider hasSections={hasSections}>
+      <SalesItemsContent {...props} />
+    </SalesReportUiProvider>
+  )
+}

@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useDashboardAccess } from '../context/DashboardAccessContext'
 import { filterRows } from '../lib/permissions'
 import { filterDebtRows, normalizeDebtRows } from '../lib/debtMetrics'
+import { buildItemCostMap, buildItemPriceMap } from '../lib/itemPricing'
 import { buildWmsMaps } from '../lib/wmsData'
 import type { DashboardData, DebtRow, SalesRow } from '../types/dashboard'
 
@@ -50,6 +51,8 @@ export function useDashboardData() {
   const allDebtRows: DebtRow[] = normalizeDebtRows(q.data?.debtRows)
   const debtRows = access ? filterDebtRows(access, allDebtRows) : []
   const { wmsStock, wmsNames } = buildWmsMaps(q.data?.wmsRows)
+  const itemCost = buildItemCostMap(q.data?.costRows)
+  const itemPrice = buildItemPriceMap(q.data?.priceRows)
 
   return {
     ...q,
@@ -59,6 +62,8 @@ export function useDashboardData() {
     debtRows,
     wmsStock,
     wmsNames,
+    itemCost,
+    itemPrice,
     debtLastUpdate: q.data?.debtLastUpdate ?? window.__DEBT_LAST_UPDATE__,
   }
 }

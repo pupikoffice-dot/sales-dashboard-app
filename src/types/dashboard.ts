@@ -30,6 +30,8 @@ export interface SalesRow {
   clientName?: string
   itemSKU?: string
   itemName?: string
+  tabletCat?: string
+  groupCat?: string
   qty?: number
   cash?: number
   [key: string]: unknown
@@ -56,6 +58,20 @@ export interface WmsRow {
   itemName?: string
 }
 
+export interface CostRow {
+  company: string
+  itemSKU: string
+  cost: number
+}
+
+export interface PriceRow {
+  company: string
+  itemSKU: string
+  price: number
+}
+
+export type SkuValueMap = Record<string, Record<string, number>>
+
 export interface DashboardData {
   generated?: string
   totalRows?: number
@@ -63,4 +79,6 @@ export interface DashboardData {
   debtRows?: DebtRow[]
   debtLastUpdate?: string
   wmsRows?: WmsRow[]
+  costRows?: CostRow[]
+  priceRows?: PriceRow[]
 }

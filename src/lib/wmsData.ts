@@ -10,7 +10,7 @@ export interface WmsRow {
 export type WmsStockMap = Record<string, Record<string, number>>
 export type WmsNamesMap = Record<string, Record<string, string>>
 
-function isWmsTotalRow(sku: string): boolean {
+export function isWmsTotalRow(sku: string): boolean {
   return /^[\u0590-\u05FF\s]+$/.test(sku)
 }
 

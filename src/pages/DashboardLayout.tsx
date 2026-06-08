@@ -5,13 +5,17 @@ import { useAuth } from '../context/AuthContext'
 import { useDashboardAccess } from '../context/DashboardAccessContext'
 import { useDashboardData } from '../hooks/useDashboardData'
 import { canShowModule } from '../lib/permissions'
+import { SidebarFilters } from '../components/sidebar/SidebarFilters'
 import { MODULE_REGISTRY } from '../modules/registry'
+import { useLocation } from 'react-router-dom'
 
 export function DashboardLayout() {
   const { signOut, isSuperAdmin } = useAuth()
   const { access, loading } = useDashboardAccess()
   const { allRows, debtRows, isLoading: dataLoading } = useDashboardData()
   const queryClient = useQueryClient()
+  const location = useLocation()
+  const showFilters = !location.pathname.startsWith('/admin')
 
   if (loading) return <p className="status-msg p-6">Loading permissions…</p>
   if (!access?.active) return <p className="status-msg error p-6">No dashboard access configured.</p>
@@ -88,6 +92,7 @@ export function DashboardLayout() {
               </>
             )}
           </nav>
+          {showFilters && <SidebarFilters />}
         </aside>
         <main className="dashboard-main">
           <Outlet />

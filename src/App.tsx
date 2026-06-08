@@ -6,6 +6,7 @@ import { LoginPage } from './pages/LoginPage'
 import { DashboardLayout, RequireModule } from './pages/DashboardLayout'
 import { OversitePage } from './pages/OversitePage'
 import { PlaceholderModulePage } from './pages/PlaceholderModulePage'
+import { SalesPage } from './pages/SalesPage'
 import { UsersPage } from './pages/admin/UsersPage'
 
 function HomeRedirect() {
@@ -25,7 +26,7 @@ function ProtectedApp() {
       <Route element={<DashboardLayout />}>
         <Route index element={<HomeRedirect />} />
         <Route path="oversite" element={<RequireModule moduleId="oversite"><OversitePage /></RequireModule>} />
-        <Route path="sales" element={<RequireModule moduleId="sales_performance"><PlaceholderModulePage title="Sales Performance" /></RequireModule>} />
+        <Route path="sales" element={<RequireModule moduleId="sales_performance"><SalesPage /></RequireModule>} />
         <Route path="orders" element={<RequireModule moduleId="orders_mtd"><PlaceholderModulePage title="Orders MTD" /></RequireModule>} />
         <Route path="open-orders" element={<RequireModule moduleId="open_orders"><PlaceholderModulePage title="Open Orders" /></RequireModule>} />
         <Route path="returns" element={<RequireModule moduleId="returns"><PlaceholderModulePage title="Returns" /></RequireModule>} />
