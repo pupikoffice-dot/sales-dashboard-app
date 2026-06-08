@@ -37,6 +37,10 @@ export function checkOrdersDataHealth(
     }
   }
 
+  if (hasPupik && ordersPupik === 0 && ordersMt > 1000) {
+    return { ok: false, messageKey: 'health.ordersPupikMissing' }
+  }
+
   if (hasPupik && ordersPupik < 1000 && openPupik > 2000) {
     return { ok: false, messageKey: 'health.ordersTagSwapPupik' }
   }

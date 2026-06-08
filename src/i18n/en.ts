@@ -145,6 +145,8 @@ export const messages = {
   'admin.locale': 'Language',
   'admin.deleteConfirm': 'Delete user "{name}" ({login})?\nThis cannot be undone.',
 
+  'health.ordersPupikMissing':
+    'Pupik Orders MTD (722) data is missing from the live export — orders-pupik has 0 rows. Re-run the Excel export and push_to_github.ps1.',
   'health.ordersTagSwapPupik':
     'Orders data looks wrong: 722 rows are tagged as openorders instead of orders-pupik. Re-run run_export.ps1 on the office PC (not VBA-only export), then push_to_github.ps1.',
   'health.ordersTagSwapMt':

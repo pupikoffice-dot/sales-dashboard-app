@@ -147,6 +147,8 @@ export const messages: Record<keyof typeof en, string> = {
   'admin.locale': 'שפה',
   'admin.deleteConfirm': 'למחוק את המשתמש "{name}" ({login})?\nלא ניתן לבטל פעולה זו.',
 
+  'health.ordersPupikMissing':
+    'נתוני הזמנות Pupik MTD (722) חסרים בייצוא החי — אין שורות orders-pupik. הרץ ייצוא Excel ואז push_to_github.ps1.',
   'health.ordersTagSwapPupik':
     'נתוני ההזמנות נראים שגויים: שורות 722 מתויגות כ-openorders במקום orders-pupik. הרץ run_export.ps1 במחשב המשרד, ואז push_to_github.ps1.',
   'health.ordersTagSwapMt':
