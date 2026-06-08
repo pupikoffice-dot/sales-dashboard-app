@@ -10,7 +10,7 @@ import {
   buildCategoryOptions,
   buildClientOptions,
   buildItemOptions,
-  effectiveCompany,
+  rowsForFilterLists,
 } from '../../lib/salesFilterLists'
 import type { LogicalCompany } from '../../types/dashboard'
 import { FilterCheckList } from './FilterCheckList'
@@ -35,16 +35,21 @@ export function SidebarFilters() {
   const { access } = useDashboardAccess()
   const f = useDashboardFilters()
   const { t, monthNames } = useLocale()
-  const { rows, isLoading } = useDashboardData()
+  const { allRows, isLoading } = useDashboardData()
   const navigate = useNavigate()
   const location = useLocation()
   const allowedCompanies = COMPANY_BUTTONS.filter(c => access?.companies.includes(c.id))
 
-  const effCo = effectiveCompany(f.company, f.dateMode)
   const companyRows = useMemo(
-    () => (effCo ? rows.filter(r => r.company === effCo) : []),
-    [rows, effCo],
+    () => (access ? rowsForFilterLists(access, allRows, f.company, f.dateMode) : []),
+    [access, allRows, f.company, f.dateMode],
   )
+
+  useLayoutEffect(() => {
+    if (!f.company && allowedCompanies.length === 1) {
+      f.setCompany(allowedCompanies[0].id)
+    }
+  }, [f.company, allowedCompanies])
 
   const clientOptions = useMemo(() => buildClientOptions(companyRows), [companyRows])
   const categoryOptions = useMemo(
@@ -101,7 +106,8 @@ export function SidebarFilters() {
 
       f.apply()
 
-      if (!isSuperAdmin) {
+      const canSales = access?.modules.includes('sales_performance')
+      if (!isSuperAdmin && !canSales) {
         window.setTimeout(() => f.finishRendering(), 50)
         return
       }

@@ -18,11 +18,20 @@ interface DashboardAccessContextValue {
 
 const DashboardAccessContext = createContext<DashboardAccessContextValue | null>(null)
 
+const LOGICAL_COMPANIES: LogicalCompany[] = ['pupik', 'mt', 'grow']
+
+function normalizeCompanies(raw: unknown): LogicalCompany[] {
+  if (!Array.isArray(raw)) return []
+  return raw
+    .map(c => String(c).toLowerCase())
+    .filter((c): c is LogicalCompany => LOGICAL_COMPANIES.includes(c as LogicalCompany))
+}
+
 function normalizeAccess(row: Record<string, unknown>, userId: string): DashboardAccess {
   return {
     userId,
     modules: (row.modules as DashboardModuleId[]) ?? [],
-    companies: (row.companies as LogicalCompany[]) ?? [],
+    companies: normalizeCompanies(row.companies),
     agents: row.agents == null ? null : (row.agents as string[]),
     defaultModule: (row.default_module as DashboardModuleId) ?? 'oversite',
     active: row.active !== false,

@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react'
 import { SalesClientsView } from '../components/sales/SalesClientsView'
 import { SalesItemsView } from '../components/sales/SalesItemsView'
 import { SalesStockView } from '../components/sales/SalesStockView'
+import { useDashboardAccess } from '../context/DashboardAccessContext'
 import { useDashboardFilters } from '../context/DashboardFiltersContext'
 import { useLocale } from '../context/LocaleContext'
 import { useDashboardData } from '../hooks/useDashboardData'
@@ -9,8 +10,9 @@ import { getReportRows } from '../lib/salesReportRows'
 
 export function SalesPage() {
   const f = useDashboardFilters()
+  const { access } = useDashboardAccess()
   const { t } = useLocale()
-  const { rows: allRows, wmsStock, wmsNames, itemCost, itemPrice, isLoading, error } =
+  const { allRows, wmsStock, wmsNames, itemCost, itemPrice, isLoading, error } =
     useDashboardData()
 
   const companyRows = useMemo(
@@ -19,9 +21,10 @@ export function SalesPage() {
   )
 
   const reportRows = useMemo(
-    () => (f.applied ? getReportRows(allRows, f) : []),
+    () => (f.applied ? getReportRows(allRows, f, access) : []),
     [
       allRows,
+      access,
       f.applied,
       f.company,
       f.dateMode,
