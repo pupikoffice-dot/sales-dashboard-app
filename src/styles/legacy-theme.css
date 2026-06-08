@@ -62,11 +62,41 @@ body {
   margin-top: 1px;
 }
 
+.hdr-brand {
+  min-width: 0;
+}
+
 .hdr-right {
   margin-left: auto;
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.mobile-menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  background: var(--sur2);
+  border: 1px solid var(--bdr);
+  color: var(--txt);
+  border-radius: 10px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1;
+}
+
+.mobile-menu-btn:hover {
+  border-color: var(--acc);
+  color: var(--acc);
+}
+
+.sidebar-backdrop {
+  display: none;
 }
 
 .data-badge {
@@ -1572,4 +1602,234 @@ label.ck .ck-label {
   max-width: 420px;
   color: var(--muted2);
   margin: 0;
+}
+
+/* ── Responsive (tablet + mobile) ── */
+@media (max-width: 900px) {
+  :root {
+    --header-h: 56px;
+  }
+
+  body.mobile-sidebar-open {
+    overflow: hidden;
+  }
+
+  .dashboard-header {
+    padding: 8px max(12px, env(safe-area-inset-right)) 8px max(12px, env(safe-area-inset-left));
+    height: auto;
+    min-height: var(--header-h);
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .mobile-menu-btn {
+    display: inline-flex;
+  }
+
+  .dashboard-header h1 {
+    font-size: 1rem;
+  }
+
+  .hdr-right {
+    flex: 1 1 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-left: 0;
+  }
+
+  .data-badge {
+    font-size: 0.65rem;
+    padding: 4px 10px;
+    max-width: 100%;
+    text-align: center;
+  }
+
+  .refresh-btn,
+  .sign-out-btn {
+    padding: 8px 12px;
+    font-size: 0.7rem;
+    min-height: 36px;
+  }
+
+  .dashboard-shell {
+    flex-direction: column;
+    min-height: auto;
+  }
+
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    top: var(--header-h);
+    z-index: 85;
+    border: none;
+    padding: 0;
+    margin: 0;
+    background: rgba(0, 0, 0, 0.55);
+    cursor: pointer;
+  }
+
+  .dashboard-sidebar {
+    position: fixed;
+    left: 0;
+    top: var(--header-h);
+    bottom: 0;
+    width: min(320px, 88vw);
+    max-width: 100%;
+    z-index: 90;
+    transform: translateX(-105%);
+    transition: transform 0.22s ease;
+    box-shadow: none;
+    height: calc(100dvh - var(--header-h));
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+  }
+
+  .dashboard-sidebar.is-open {
+    transform: translateX(0);
+    box-shadow: 8px 0 28px rgba(0, 0, 0, 0.45);
+  }
+
+  .dashboard-main {
+    padding: 16px max(12px, env(safe-area-inset-right)) 20px max(12px, env(safe-area-inset-left));
+    width: 100%;
+    min-width: 0;
+  }
+
+  .ov-header h2 {
+    font-size: 1.2rem;
+  }
+
+  .ov-kpi {
+    min-width: calc(50% - 6px);
+  }
+
+  .ov-bar-lbl {
+    width: 52px;
+    font-size: 0.65rem;
+  }
+
+  .ov-bar-val {
+    width: 58px;
+    font-size: 0.68rem;
+  }
+
+  .sbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .sbar-actions {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .sbar-search {
+    width: 100%;
+    max-width: 100%;
+    min-height: 36px;
+  }
+
+  .sbar-minimize-btn,
+  .sbar-chart-btn,
+  .dl-btn {
+    min-height: 36px;
+    padding: 8px 12px;
+  }
+
+  .pie-modal {
+    width: 100%;
+    max-height: 96dvh;
+    border-radius: var(--r);
+  }
+
+  .pie-modal-body {
+    flex-direction: column;
+    padding: 14px;
+    gap: 16px;
+  }
+
+  .pie-modal-hdr {
+    padding: 12px 14px;
+  }
+
+  .debt-overlay {
+    padding: 10px;
+    align-items: flex-end;
+  }
+
+  .debt-modal {
+    max-height: 92dvh;
+    border-radius: var(--r) var(--r) 0 0;
+  }
+
+  .tw table {
+    font-size: 0.74rem;
+  }
+
+  .tw thead th,
+  .tw tbody td,
+  .tw tfoot td {
+    padding: 8px 8px;
+  }
+
+  .tab-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .tab-btn {
+    font-size: 0.62rem;
+    padding: 8px 4px;
+    min-height: 36px;
+  }
+
+  .nav-btn,
+  .btn,
+  .apply-btn {
+    min-height: 40px;
+  }
+
+  .login-shell {
+    padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+  }
+
+  .login-card {
+    padding: 22px 18px;
+  }
+
+  .login-input,
+  .login-submit {
+    min-height: 44px;
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-header .sub {
+    display: none;
+  }
+
+  .hdr-right {
+    justify-content: stretch;
+  }
+
+  .data-badge {
+    flex: 1 1 100%;
+  }
+
+  .refresh-btn,
+  .sign-out-btn {
+    flex: 1;
+    text-align: center;
+  }
+
+  .ov-tab-btn {
+    min-width: 0;
+    flex: 1 1 45%;
+  }
 }

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { NavLink, Outlet, Navigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
@@ -16,6 +16,16 @@ export function DashboardLayout() {
   const queryClient = useQueryClient()
   const location = useLocation()
   const showFilters = !location.pathname.startsWith('/admin')
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  useEffect(() => {
+    setSidebarOpen(false)
+  }, [location.pathname])
+
+  useEffect(() => {
+    document.body.classList.toggle('mobile-sidebar-open', sidebarOpen)
+    return () => document.body.classList.remove('mobile-sidebar-open')
+  }, [sidebarOpen])
 
   if (loading) return <p className="status-msg p-6">Loading permissions…</p>
   if (!access?.active) return <p className="status-msg error p-6">No dashboard access configured.</p>
@@ -31,7 +41,16 @@ export function DashboardLayout() {
   return (
     <>
       <header className="dashboard-header">
-        <div>
+        <button
+          type="button"
+          className="mobile-menu-btn"
+          aria-label={sidebarOpen ? 'Close menu' : 'Open menu'}
+          aria-expanded={sidebarOpen}
+          onClick={() => setSidebarOpen(open => !open)}
+        >
+          {sidebarOpen ? '✕' : '☰'}
+        </button>
+        <div className="hdr-brand">
           <h1>Sales Dashboard</h1>
           <div className="sub">Pupik · Monkeytime · Grow</div>
         </div>
@@ -63,13 +82,22 @@ export function DashboardLayout() {
       </header>
 
       <div className="dashboard-shell">
-        <aside className="dashboard-sidebar">
+        {sidebarOpen && (
+          <button
+            type="button"
+            className="sidebar-backdrop"
+            aria-label="Close menu"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+        <aside className={`dashboard-sidebar${sidebarOpen ? ' is-open' : ''}`}>
           <div className="sidebar-label">Navigation</div>
           <nav>
             {visible.map(m => (
               <NavLink
                 key={m.id}
                 to={m.path}
+                onClick={() => setSidebarOpen(false)}
                 className={({ isActive }) =>
                   `nav-btn${m.id === 'oversite' ? ' oversite-nav' : ''}${isActive ? ' active' : ''}`
                 }
@@ -85,6 +113,7 @@ export function DashboardLayout() {
                 </div>
                 <NavLink
                   to="/admin/users"
+                  onClick={() => setSidebarOpen(false)}
                   className={({ isActive }) => `nav-btn${isActive ? ' active' : ''}`}
                 >
                   Admin — Users
