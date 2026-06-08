@@ -1,6 +1,7 @@
 import { useLayoutEffect, useMemo } from 'react'
 import { flushSync } from 'react-dom'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { useDashboardFilters, type DateMode } from '../../context/DashboardFiltersContext'
 import { useDashboardData } from '../../hooks/useDashboardData'
@@ -30,6 +31,7 @@ const DATE_TABS: { id: DateMode; label: string }[] = [
 const MONTH_YEARS = [2025, 2026]
 
 export function SidebarFilters() {
+  const { isSuperAdmin } = useAuth()
   const { access } = useDashboardAccess()
   const f = useDashboardFilters()
   const { rows, isLoading } = useDashboardData()
@@ -96,6 +98,8 @@ export function SidebarFilters() {
     })
 
     f.apply()
+
+    if (!isSuperAdmin) return
 
     if (f.dateMode === 'openorders') {
       if (!location.pathname.startsWith('/open-orders')) navigate('/open-orders')

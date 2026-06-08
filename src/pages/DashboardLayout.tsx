@@ -92,7 +92,7 @@ export function DashboardLayout() {
               </>
             )}
           </nav>
-          {showFilters && isSuperAdmin && <SidebarFilters />}
+          {showFilters && <SidebarFilters />}
         </aside>
         <main className="dashboard-main">
           {!dataHealth.ok && dataHealth.message && (
