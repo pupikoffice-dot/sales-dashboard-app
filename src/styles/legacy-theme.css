@@ -1691,6 +1691,21 @@ label.ck .ck-label {
     box-shadow: 8px 0 28px rgba(0, 0, 0, 0.45);
   }
 
+  html[dir='rtl'] .dashboard-sidebar,
+  .dashboard-shell.is-rtl .dashboard-sidebar {
+    left: auto;
+    right: 0;
+    transform: translateX(105%);
+    border-right: none;
+    border-left: 1px solid var(--bdr);
+  }
+
+  html[dir='rtl'] .dashboard-sidebar.is-open,
+  .dashboard-shell.is-rtl .dashboard-sidebar.is-open {
+    transform: translateX(0);
+    box-shadow: -8px 0 28px rgba(0, 0, 0, 0.45);
+  }
+
   .dashboard-main {
     padding: 16px max(12px, env(safe-area-inset-right)) 20px max(12px, env(safe-area-inset-left));
     width: 100%;
@@ -1908,18 +1923,31 @@ label.ck .ck-label {
 }
 
 /* ── RTL layout ── */
-[dir='rtl'] .dashboard-shell {
-  flex-direction: row-reverse;
+html[dir='rtl'] .dashboard-shell,
+.dashboard-shell.is-rtl {
+  flex-direction: row;
 }
 
-[dir='rtl'] .dashboard-sidebar {
+html[dir='rtl'] .dashboard-sidebar,
+.dashboard-shell.is-rtl .dashboard-sidebar {
   border-right: none;
   border-left: 1px solid var(--bdr);
 }
 
-[dir='rtl'] .hdr-right {
+html[dir='rtl'] .dashboard-header,
+.dashboard-header.is-rtl {
+  flex-direction: row-reverse;
+}
+
+html[dir='rtl'] .hdr-right,
+.dashboard-header.is-rtl .hdr-right {
   margin-left: 0;
   margin-right: auto;
+}
+
+html[dir='rtl'] .hdr-brand,
+.dashboard-header.is-rtl .hdr-brand {
+  text-align: right;
 }
 
 [dir='rtl'] .nav-btn {

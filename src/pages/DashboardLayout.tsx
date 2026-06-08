@@ -16,7 +16,8 @@ export function DashboardLayout() {
   const { signOut, isSuperAdmin } = useAuth()
   const { access, loading } = useDashboardAccess()
   const { isRendering } = useDashboardFilters()
-  const { locale, setLocale, t } = useLocale()
+  const { locale, setLocale, t, dir } = useLocale()
+  const isRtl = dir === 'rtl'
   const { allRows, debtRows, isLoading: dataLoading, dataHealth } = useDashboardData()
   const queryClient = useQueryClient()
   const location = useLocation()
@@ -43,9 +44,64 @@ export function DashboardLayout() {
     queryClient.invalidateQueries({ queryKey: ['dashboard-data'] })
   }
 
+  const sidebar = (
+    <aside className={`dashboard-sidebar${sidebarOpen ? ' is-open' : ''}`}>
+      <div className="sidebar-label">{t('nav.navigation')}</div>
+      <nav>
+        {visible.map(m => (
+          <NavLink
+            key={m.id}
+            to={m.path}
+            onClick={() => setSidebarOpen(false)}
+            className={({ isActive }) =>
+              `nav-btn${m.id === 'oversite' ? ' oversite-nav' : ''}${isActive ? ' active' : ''}`
+            }
+          >
+            {m.id === 'oversite' ? '🏠 ' : ''}
+            {navLabel(locale, m.id)}
+          </NavLink>
+        ))}
+        {isSuperAdmin && (
+          <>
+            <div className="sidebar-label" style={{ marginTop: 8 }}>
+              {t('nav.admin')}
+            </div>
+            <NavLink
+              to="/admin/users"
+              onClick={() => setSidebarOpen(false)}
+              className={({ isActive }) => `nav-btn${isActive ? ' active' : ''}`}
+            >
+              {t('nav.adminUsers')}
+            </NavLink>
+          </>
+        )}
+      </nav>
+      {showFilters && <SidebarFilters />}
+    </aside>
+  )
+
+  const main = (
+    <main className="dashboard-main">
+      {!dataHealth.ok && dataHealth.messageKey && (
+        <div className="status-msg error" style={{ margin: '0 0 12px' }}>
+          {t(dataHealth.messageKey)}
+        </div>
+      )}
+      {isRendering && (
+        <div className="render-overlay" aria-live="polite">
+          <div className="spin-wrap">
+            <div className="spin" />
+          </div>
+          <p>{t('common.renderingReport')}</p>
+        </div>
+      )}
+      <Outlet />
+    </main>
+  )
+
   return (
     <>
-      <header className="dashboard-header">
+      <header className={`dashboard-header${isRtl ? ' is-rtl' : ''}`}>
         <button
           type="button"
           className="mobile-menu-btn"
@@ -99,7 +155,7 @@ export function DashboardLayout() {
         </div>
       </header>
 
-      <div className="dashboard-shell">
+      <div className={`dashboard-shell${isRtl ? ' is-rtl' : ''}`}>
         {sidebarOpen && (
           <button
             type="button"
@@ -108,55 +164,17 @@ export function DashboardLayout() {
             onClick={() => setSidebarOpen(false)}
           />
         )}
-        <aside className={`dashboard-sidebar${sidebarOpen ? ' is-open' : ''}`}>
-          <div className="sidebar-label">{t('nav.navigation')}</div>
-          <nav>
-            {visible.map(m => (
-              <NavLink
-                key={m.id}
-                to={m.path}
-                onClick={() => setSidebarOpen(false)}
-                className={({ isActive }) =>
-                  `nav-btn${m.id === 'oversite' ? ' oversite-nav' : ''}${isActive ? ' active' : ''}`
-                }
-              >
-                {m.id === 'oversite' ? '🏠 ' : ''}
-                {navLabel(locale, m.id)}
-              </NavLink>
-            ))}
-            {isSuperAdmin && (
-              <>
-                <div className="sidebar-label" style={{ marginTop: 8 }}>
-                  {t('nav.admin')}
-                </div>
-                <NavLink
-                  to="/admin/users"
-                  onClick={() => setSidebarOpen(false)}
-                  className={({ isActive }) => `nav-btn${isActive ? ' active' : ''}`}
-                >
-                  {t('nav.adminUsers')}
-                </NavLink>
-              </>
-            )}
-          </nav>
-          {showFilters && <SidebarFilters />}
-        </aside>
-        <main className="dashboard-main">
-          {!dataHealth.ok && dataHealth.messageKey && (
-            <div className="status-msg error" style={{ margin: '0 0 12px' }}>
-              {t(dataHealth.messageKey)}
-            </div>
-          )}
-          {isRendering && (
-            <div className="render-overlay" aria-live="polite">
-              <div className="spin-wrap">
-                <div className="spin" />
-              </div>
-              <p>{t('common.renderingReport')}</p>
-            </div>
-          )}
-          <Outlet />
-        </main>
+        {isRtl ? (
+          <>
+            {main}
+            {sidebar}
+          </>
+        ) : (
+          <>
+            {sidebar}
+            {main}
+          </>
+        )}
       </div>
     </>
   )
