@@ -220,16 +220,20 @@ export function DashboardFiltersProvider({ children }: { children: ReactNode }) 
     invalidateApply()
   }
 
+  function setsEqual(a: Set<string>, ids: string[]) {
+    return a.size === ids.length && ids.every(id => a.has(id))
+  }
+
   function initClientIds(ids: string[]) {
-    setSelectedClientIds(new Set(ids))
+    setSelectedClientIds(prev => (setsEqual(prev, ids) ? prev : new Set(ids)))
   }
 
   function initCategoryIds(ids: string[]) {
-    setSelectedCategories(new Set(ids))
+    setSelectedCategories(prev => (setsEqual(prev, ids) ? prev : new Set(ids)))
   }
 
   function initItemIds(ids: string[]) {
-    setSelectedItemSkus(new Set(ids))
+    setSelectedItemSkus(prev => (setsEqual(prev, ids) ? prev : new Set(ids)))
   }
 
   function toggleClientId(id: string) {
@@ -340,8 +344,9 @@ export function DashboardFiltersProvider({ children }: { children: ReactNode }) 
 
   const apply = useCallback(() => {
     if (!canApplyFilters(stateRef.current)) return
-    setIsRendering(true)
     setApplied(true)
+    setIsRendering(true)
+    window.requestAnimationFrame(() => setIsRendering(false))
   }, [])
 
   const finishRendering = useCallback(() => {

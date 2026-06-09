@@ -78,6 +78,7 @@ export const messages: Record<keyof typeof en, string> = {
   'filters.loadingItems': 'טוען פריטים…',
   'filters.searchItems': 'חפש פריטים…',
   'filters.searchClients': 'חפש לקוחות…',
+  'filters.listTotal': 'סה״כ',
   'filters.showPerItem': 'הצג לפי פריט',
   'filters.byClients': 'לפי לקוחות',
   'filters.itemsSummary': 'סיכום פריטים',

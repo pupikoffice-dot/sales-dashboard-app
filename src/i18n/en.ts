@@ -76,6 +76,7 @@ export const messages = {
   'filters.loadingItems': 'Loading items…',
   'filters.searchItems': 'Search items…',
   'filters.searchClients': 'Search clients…',
+  'filters.listTotal': 'total',
   'filters.showPerItem': 'Show Per Item',
   'filters.byClients': 'By Clients',
   'filters.itemsSummary': 'Items summary',

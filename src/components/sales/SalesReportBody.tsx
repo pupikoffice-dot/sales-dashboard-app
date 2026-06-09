@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { SalesClientsView } from './SalesClientsView'
 import { SalesItemsView } from './SalesItemsView'
 import { SalesStockView } from './SalesStockView'
@@ -7,6 +7,20 @@ import { useDashboardFilters } from '../../context/DashboardFiltersContext'
 import { useLocale } from '../../context/LocaleContext'
 import { useDashboardData } from '../../hooks/useDashboardData'
 import { getReportRows } from '../../lib/salesReportRows'
+import type { SalesRow } from '../../types/dashboard'
+
+const REPORT_DEFER_MS = 30
+
+function ReportSpinner({ message }: { message: string }) {
+  return (
+    <div className="welcome">
+      <div className="spin-wrap">
+        <div className="spin" />
+      </div>
+      <p>{message}</p>
+    </div>
+  )
+}
 
 /** Rendered sales report after Apply — shared by SalesPage and Oversite (limited users). */
 export function SalesReportBody() {
@@ -16,17 +30,32 @@ export function SalesReportBody() {
   const { allRows, wmsStock, wmsNames, itemCost, itemPrice, isLoading, error } =
     useDashboardData()
 
+  const [reportRows, setReportRows] = useState<SalesRow[]>([])
+  const [reportReady, setReportReady] = useState(false)
+  const [buildingReport, setBuildingReport] = useState(false)
+
   const companyRows = useMemo(
     () => (f.company ? allRows.filter(r => r.company === f.company) : []),
     [allRows, f.company],
   )
 
-  const reportRows = useMemo(
-    () => (f.applied ? getReportRows(allRows, f, access) : []),
+  const filterKey = useMemo(
+    () =>
+      JSON.stringify({
+        company: f.company,
+        dateMode: f.dateMode,
+        dateFrom: f.dateFrom,
+        dateTo: f.dateTo,
+        months: [...f.selectedMonths].sort(),
+        view: f.view,
+        clientMode: f.clientMode,
+        catType: f.catType,
+        itemMode: f.itemMode,
+        clients: [...f.selectedClientIds].sort(),
+        categories: [...f.selectedCategories].sort(),
+        items: [...f.selectedItemSkus].sort(),
+      }),
     [
-      allRows,
-      access,
-      f.applied,
       f.company,
       f.dateMode,
       f.dateFrom,
@@ -43,27 +72,54 @@ export function SalesReportBody() {
   )
 
   useEffect(() => {
-    if (!f.isRendering) return
-    const id = window.setTimeout(() => f.finishRendering(), 0)
+    if (!f.applied || !f.company) {
+      setReportRows([])
+      setReportReady(false)
+      setBuildingReport(false)
+      return
+    }
+
+    if (isLoading) {
+      setReportReady(false)
+      setBuildingReport(false)
+      return
+    }
+
+    setBuildingReport(true)
+    setReportReady(false)
+
+    const id = window.setTimeout(() => {
+      try {
+        if (f.dateMode === 'stock') {
+          setReportRows([])
+        } else {
+          setReportRows(getReportRows(allRows, f, access))
+        }
+        setReportReady(true)
+      } finally {
+        setBuildingReport(false)
+        f.finishRendering()
+      }
+    }, REPORT_DEFER_MS)
+
     return () => window.clearTimeout(id)
-  }, [f.isRendering, f.applied, reportRows, f.finishRendering])
+  }, [f.applied, f.company, isLoading, allRows, access, filterKey, f.finishRendering])
 
   if (!f.company || !f.applied) return null
 
+  if (isLoading) {
+    return <ReportSpinner message={t('common.loadingData')} />
+  }
+
+  if (error) {
+    return <div className="err">{t('sales.loadFailed', { error: (error as Error).message })}</div>
+  }
+
+  if (buildingReport || !reportReady) {
+    return <ReportSpinner message={t('common.renderingReport')} />
+  }
+
   if (f.dateMode === 'stock') {
-    if (isLoading) {
-      return (
-        <div className="welcome">
-          <div className="spin-wrap">
-            <div className="spin" />
-          </div>
-          <p>{t('sales.buildingStock')}</p>
-        </div>
-      )
-    }
-    if (error) {
-      return <div className="err">{t('sales.loadFailed', { error: (error as Error).message })}</div>
-    }
     return (
       <SalesStockView
         allRows={allRows}
@@ -74,21 +130,6 @@ export function SalesReportBody() {
         itemPrice={itemPrice}
       />
     )
-  }
-
-  if (isLoading) {
-    return (
-      <div className="welcome">
-        <div className="spin-wrap">
-          <div className="spin" />
-        </div>
-        <p>{t('common.loadingData')}</p>
-      </div>
-    )
-  }
-
-  if (error) {
-    return <div className="err">{t('sales.loadFailed', { error: (error as Error).message })}</div>
   }
 
   if (!reportRows.length) {

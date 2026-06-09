@@ -5,12 +5,12 @@ import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { useDashboardFilters, type DateMode } from '../../context/DashboardFiltersContext'
 import { useLocale } from '../../context/LocaleContext'
 import { useDashboardData } from '../../hooks/useDashboardData'
+import { effectiveCompany } from '../../lib/salesFilterLists'
 import {
-  buildCategoryOptions,
-  buildClientOptions,
-  buildItemOptions,
-  rowsForFilterLists,
-} from '../../lib/salesFilterLists'
+  getIndexedCategoryOptions,
+  getIndexedClientOptions,
+  getIndexedItemOptions,
+} from '../../lib/salesFilterIndex'
 import type { LogicalCompany } from '../../types/dashboard'
 import { FilterCheckList } from './FilterCheckList'
 
@@ -34,14 +34,15 @@ export function SidebarFilters() {
   const { access } = useDashboardAccess()
   const f = useDashboardFilters()
   const { t, monthNames } = useLocale()
-  const { allRows, isLoading } = useDashboardData()
+  const { filterIndex, isLoading, isFetching } = useDashboardData()
+  const dataBusy = isLoading || isFetching
   const navigate = useNavigate()
   const location = useLocation()
   const allowedCompanies = COMPANY_BUTTONS.filter(c => access?.companies.includes(c.id))
 
-  const companyRows = useMemo(
-    () => (access ? rowsForFilterLists(access, allRows, f.company, f.dateMode) : []),
-    [access, allRows, f.company, f.dateMode],
+  const companyTag = useMemo(
+    () => effectiveCompany(f.company, f.dateMode),
+    [f.company, f.dateMode],
   )
 
   useLayoutEffect(() => {
@@ -50,15 +51,20 @@ export function SidebarFilters() {
     }
   }, [f.company, allowedCompanies])
 
-  const clientOptions = useMemo(() => buildClientOptions(companyRows), [companyRows])
+  const clientOptions = useMemo(
+    () => getIndexedClientOptions(filterIndex, companyTag),
+    [filterIndex, companyTag],
+  )
   const categoryOptions = useMemo(
-    () => (f.catType ? buildCategoryOptions(companyRows, f.catType) : []),
-    [companyRows, f.catType],
+    () => (f.catType ? getIndexedCategoryOptions(filterIndex, companyTag, f.catType) : []),
+    [filterIndex, companyTag, f.catType],
   )
   const itemOptions = useMemo(
     () =>
-      f.catType ? buildItemOptions(companyRows, f.catType, f.selectedCategories) : [],
-    [companyRows, f.catType, f.selectedCategories],
+      f.catType
+        ? getIndexedItemOptions(filterIndex, companyTag, f.catType, f.selectedCategories)
+        : [],
+    [filterIndex, companyTag, f.catType, f.selectedCategories],
   )
 
   const clientKey = clientOptions.map(o => o.id).join('\0')
@@ -254,7 +260,7 @@ export function SidebarFilters() {
         <>
           <div className={`panel${f.viewPanelEnabled ? '' : ' disabled'}`}>
             <div className="panel-title">④ {t('filters.selectClients')}</div>
-            {isLoading ? (
+            {dataBusy || !filterIndex ? (
               <p className="sel-months-list">{t('filters.loadingClients')}</p>
             ) : (
               <FilterCheckList
@@ -325,7 +331,7 @@ export function SidebarFilters() {
                 maxHeight={140}
               />
             )}
-            {f.catType && !hasCats && !isLoading && (
+            {f.catType && !hasCats && !dataBusy && filterIndex && (
               <p className="sel-months-list">{t('filters.noCategories')}</p>
             )}
           </div>
@@ -333,7 +339,7 @@ export function SidebarFilters() {
           {f.catType && (
             <div className={`panel${f.viewPanelEnabled ? '' : ' disabled'}`}>
               <div className="panel-title">⑤ {t('filters.selectItems')}</div>
-              {isLoading ? (
+              {dataBusy || !filterIndex ? (
                 <p className="sel-months-list">{t('filters.loadingItems')}</p>
               ) : (
                 <FilterCheckList

@@ -1,11 +1,11 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { SortableTh } from './SortableTh'
 import type { DashboardFiltersState } from '../../context/DashboardFiltersContext'
 import { SalesReportUiProvider, useSalesReportUi } from '../../context/SalesReportUiContext'
 import { fmt0, fmt2 } from '../../lib/format'
 import { companyLabel } from '../../lib/salesMetrics'
 import { matchesSearch } from '../../lib/salesSearch'
-import { buildStockReport } from '../../lib/stockReport'
+import { buildStockReport, type StockReport } from '../../lib/stockReport'
 import { SalesReportStickySetup } from './SalesReportStickySetup'
 import { TableWithExport } from './TableWithExport'
 import type { LogicalCompany, SalesRow, SkuValueMap } from '../../types/dashboard'
@@ -31,14 +31,26 @@ function SalesStockContent({
   const { searchQuery, setSearchQuery, setReportChart, openChart, reportChart } = useSalesReportUi()
   const company = filters.company as LogicalCompany
 
-  const report = useMemo(
-    () => buildStockReport(allRows, company, wmsStock, wmsNames, itemCost, itemPrice),
-    [allRows, company, wmsStock, wmsNames, itemCost, itemPrice],
-  )
-
-  const visibleRows = report.rows.filter(r => matchesSearch(searchQuery, r.sku, r.name))
+  const [report, setReport] = useState<StockReport | null>(null)
 
   useEffect(() => {
+    setReport(null)
+    const id = window.setTimeout(() => {
+      setReport(buildStockReport(allRows, company, wmsStock, wmsNames, itemCost, itemPrice))
+    }, 0)
+    return () => window.clearTimeout(id)
+  }, [allRows, company, wmsStock, wmsNames, itemCost, itemPrice])
+
+  const visibleRows = useMemo(
+    () => (report?.rows ?? []).filter(r => matchesSearch(searchQuery, r.sku, r.name)),
+    [report, searchQuery],
+  )
+
+  useEffect(() => {
+    if (!report) {
+      setReportChart(null)
+      return
+    }
     const entries = report.rows
       .map(row => ({
         label: row.name,
@@ -51,7 +63,18 @@ function SalesStockContent({
     const title = `Top Items by Total Cost — ${companyLabel(company)}`
     setReportChart(entries.length ? { kind: 'stock', entries, title } : null)
     return () => setReportChart(null)
-  }, [report.rows, company, setReportChart])
+  }, [report, company, setReportChart])
+
+  if (!report) {
+    return (
+      <div className="welcome">
+        <div className="spin-wrap">
+          <div className="spin" />
+        </div>
+        <p>Building stock report…</p>
+      </div>
+    )
+  }
 
   if (!report.rows.length) {
     return <div className="err">No stock data found for this company.</div>
