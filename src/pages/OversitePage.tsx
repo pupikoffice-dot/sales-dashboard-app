@@ -1,6 +1,9 @@
 import { useState } from 'react'
+import { SalesReportBody } from '../components/sales/SalesReportBody'
+import { useAuth } from '../context/AuthContext'
 import { useLocale } from '../context/LocaleContext'
 import { useDashboardAccess } from '../context/DashboardAccessContext'
+import { useDashboardFilters } from '../context/DashboardFiltersContext'
 import { useDashboardData } from '../hooks/useDashboardData'
 import { filterRowsByCompany } from '../lib/permissions'
 import { computeDebtSummary, debtRowsForCompany } from '../lib/debtMetrics'
@@ -31,10 +34,16 @@ import { OversiteTop10Table } from '../components/oversite/OversiteTop10Table'
 
 export function OversitePage() {
   const { t } = useLocale()
+  const { isSuperAdmin } = useAuth()
   const { access } = useDashboardAccess()
+  const f = useDashboardFilters()
   const { allRows, debtRows, debtLastUpdate, wmsStock, wmsNames, isLoading, error, data: dashboardData } =
     useDashboardData()
   const [debtModalCo, setDebtModalCo] = useState<LogicalCompany | null>(null)
+
+  if (!isSuperAdmin && f.applied) {
+    return <SalesReportBody />
+  }
 
   if (isLoading) return <p className="status-msg">{t('common.loadingSalesData')}</p>
   if (error) return <p className="status-msg error">{(error as Error).message}</p>

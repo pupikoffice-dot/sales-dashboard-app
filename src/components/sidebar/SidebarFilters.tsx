@@ -106,9 +106,8 @@ export function SidebarFilters() {
 
       f.apply()
 
-      const canSales = access?.modules.includes('sales_performance')
-      if (!isSuperAdmin && !canSales) {
-        window.setTimeout(() => f.finishRendering(), 50)
+      if (!isSuperAdmin) {
+        if (!location.pathname.startsWith('/oversite')) navigate('/oversite')
         return
       }
 
