@@ -162,7 +162,7 @@ export function OversitePage() {
                     ]}
                   />
                   <OversiteCollapsible label={`↩️ ${t('oversite.top10Returns')} ▾`}>
-                    <OversiteTop10Table items={returnsTop10} emptyLabel={t('oversite.noReturns')} />
+                    <OversiteTop10Table items={returnsTop10} emptyLabel={t('oversite.noReturns')} showSku />
                   </OversiteCollapsible>
                 </OversiteSection>
 

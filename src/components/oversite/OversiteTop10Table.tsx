@@ -1,7 +1,15 @@
 import { fmt } from '../../lib/format'
 import type { Top10Item } from '../../lib/oversiteMetrics'
 
-export function OversiteTop10Table({ items, emptyLabel }: { items: Top10Item[]; emptyLabel: string }) {
+export function OversiteTop10Table({
+  items,
+  emptyLabel,
+  showSku = false,
+}: {
+  items: Top10Item[]
+  emptyLabel: string
+  showSku?: boolean
+}) {
   if (items.length === 0) {
     return <p className="ov-empty">{emptyLabel}</p>
   }
@@ -12,6 +20,7 @@ export function OversiteTop10Table({ items, emptyLabel }: { items: Top10Item[]; 
         <thead>
           <tr>
             <th>#</th>
+            {showSku && <th>SKU</th>}
             <th>Item</th>
             <th>Cash</th>
             <th>Qty</th>
@@ -21,7 +30,8 @@ export function OversiteTop10Table({ items, emptyLabel }: { items: Top10Item[]; 
           {items.map((it, i) => (
             <tr key={it.sku}>
               <td className="cm">{i + 1}</td>
-              <td title={it.sku}>{it.name}</td>
+              {showSku && <td className="cm">{it.sku}</td>}
+              <td title={showSku ? undefined : it.sku}>{it.name}</td>
               <td>{fmt(it.cash)}</td>
               <td className="cm">{fmt(it.qty)}</td>
             </tr>
