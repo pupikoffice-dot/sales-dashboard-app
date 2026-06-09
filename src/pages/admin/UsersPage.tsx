@@ -29,6 +29,18 @@ interface AccessRow {
 
 const COMPANIES: LogicalCompany[] = ['pupik', 'mt', 'grow']
 
+function formatCompanies(companies: string[] | undefined, role: string) {
+  if (role === 'super_admin') return 'all'
+  if (!companies?.length) return '—'
+  return companies.join(', ')
+}
+
+function formatAgents(agents: string[] | null | undefined, role: string) {
+  if (role === 'super_admin') return 'all'
+  if (!agents?.length) return 'all'
+  return agents.join(', ')
+}
+
 export function UsersPage() {
   const qc = useQueryClient()
   const [showCreate, setShowCreate] = useState(false)
@@ -37,21 +49,37 @@ export function UsersPage() {
   const [newPassword, setNewPassword] = useState('')
   const [createError, setCreateError] = useState<string | null>(null)
   const [visiblePwds, setVisiblePwds] = useState<Set<string>>(new Set())
+  const [showAllPasswords, setShowAllPasswords] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [pwdEditId, setPwdEditId] = useState<string | null>(null)
   const [pwdEditValue, setPwdEditValue] = useState('')
 
-  const { data: users, isLoading, error: loadError } = useQuery({
+  const { data, isLoading, error: loadError } = useQuery({
     queryKey: ['admin-users'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('id,email,username,name,role,active,password_display')
-        .order('name')
-      if (error) throw error
-      return (data ?? []) as UserRow[]
+      const [profilesRes, accessRes] = await Promise.all([
+        supabase
+          .from('user_profiles')
+          .select('id,email,username,name,role,active,password_display')
+          .order('name'),
+        supabase
+          .from('dashboard_user_access')
+          .select('user_id, companies, agents, locale'),
+      ])
+      if (profilesRes.error) throw profilesRes.error
+      if (accessRes.error) throw accessRes.error
+      const accessMap = new Map(
+        (accessRes.data ?? []).map(row => [row.user_id as string, row as AccessRow]),
+      )
+      return {
+        users: (profilesRes.data ?? []) as UserRow[],
+        accessMap,
+      }
     },
   })
+
+  const users = data?.users
+  const accessMap = data?.accessMap ?? new Map<string, AccessRow>()
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -117,14 +145,27 @@ export function UsersPage() {
           <h2>Dashboard Users</h2>
           <p className="ov-sub">Add users, set passwords, and assign modules, companies, and agents.</p>
         </div>
-        <button
-          type="button"
-          className="ov-toggle-btn"
-          style={{ marginTop: 0, width: 'auto', flexShrink: 0 }}
-          onClick={() => { setShowCreate(true); setCreateError(null) }}
-        >
-          + Add user
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+          <button
+            type="button"
+            className="sbar-minimize-btn"
+            style={{ marginTop: 0 }}
+            onClick={() => {
+              setShowAllPasswords(prev => !prev)
+              if (showAllPasswords) setVisiblePwds(new Set())
+            }}
+          >
+            {showAllPasswords ? 'Hide all passwords' : 'Show all passwords'}
+          </button>
+          <button
+            type="button"
+            className="ov-toggle-btn"
+            style={{ marginTop: 0, width: 'auto' }}
+            onClick={() => { setShowCreate(true); setCreateError(null) }}
+          >
+            + Add user
+          </button>
+        </div>
       </div>
 
       {showCreate && (
@@ -190,12 +231,17 @@ export function UsersPage() {
               <th>Name</th>
               <th>Login</th>
               <th>Role</th>
+              <th>Companies</th>
+              <th>Agents</th>
               <th>Password</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            {(users ?? []).map(u => (
+            {(users ?? []).map(u => {
+              const access = accessMap.get(u.id)
+              const pwdVisible = showAllPasswords || visiblePwds.has(u.id)
+              return (
               <tr key={u.id}>
                 <td>
                   {u.name}
@@ -210,6 +256,12 @@ export function UsersPage() {
                   )}
                 </td>
                 <td>{u.role}</td>
+                <td style={{ fontSize: '.78rem', textTransform: 'capitalize' }}>
+                  {formatCompanies(access?.companies, u.role)}
+                </td>
+                <td style={{ fontSize: '.78rem' }}>
+                  {formatAgents(access?.agents, u.role)}
+                </td>
                 <td>
                   {pwdEditId === u.id ? (
                     <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
@@ -242,7 +294,7 @@ export function UsersPage() {
                   ) : (
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                       <span style={{ fontFamily: 'monospace', fontSize: '.75rem', color: u.password_display ? undefined : 'var(--muted)' }}>
-                        {visiblePwds.has(u.id)
+                        {pwdVisible
                           ? (u.password_display ?? 'not saved')
                           : (u.password_display ? '••••••••' : '—')}
                       </span>
@@ -252,8 +304,9 @@ export function UsersPage() {
                         style={{ padding: '2px 8px', fontSize: '.65rem' }}
                         onClick={() => togglePwd(u)}
                         title={u.password_display ? undefined : 'Password was never saved — enter it with Set'}
+                        disabled={showAllPasswords && !!u.password_display}
                       >
-                        {visiblePwds.has(u.id) ? 'Hide' : (u.password_display ? 'Show' : 'Set pwd')}
+                        {pwdVisible ? 'Hide' : (u.password_display ? 'Show' : 'Set pwd')}
                       </button>
                       <button
                         type="button"
@@ -288,10 +341,10 @@ export function UsersPage() {
                   )}
                 </td>
               </tr>
-            ))}
+            )})}
             {(users ?? []).length === 0 && (
               <tr>
-                <td colSpan={5} style={{ textAlign: 'center', color: 'var(--muted)' }}>No users yet.</td>
+                <td colSpan={7} style={{ textAlign: 'center', color: 'var(--muted)' }}>No users yet.</td>
               </tr>
             )}
           </tbody>

@@ -10,6 +10,7 @@ import {
 import { createTranslator, isAppLocale, localeDir, monthNamesForLocale } from '../i18n'
 import type { AppLocale } from '../i18n/types'
 import type { MessageKey } from '../i18n/types'
+import { fetchProfileLocale } from '../lib/userLocale'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './AuthContext'
 
@@ -47,18 +48,14 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
         return
       }
       setLoading(true)
-      const { data, error } = await supabase
-        .from('dashboard_user_access')
-        .select('locale')
-        .eq('user_id', session.user.id)
-        .maybeSingle()
+      const profileLocale = await fetchProfileLocale(session.user.id)
 
       if (cancelled) return
 
-      if (!error && data?.locale && isAppLocale(data.locale)) {
-        setLocaleState(data.locale)
+      if (profileLocale) {
+        setLocaleState(profileLocale)
         try {
-          localStorage.setItem(STORAGE_KEY, data.locale)
+          localStorage.setItem(STORAGE_KEY, profileLocale)
         } catch { /* ignore */ }
       } else {
         setLocaleState(readStoredLocale())
@@ -81,11 +78,12 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   const setLocale = useCallback(
     async (next: AppLocale) => {
       setLocaleState(next)
+
+      if (!session?.user.id) return
+
       try {
         localStorage.setItem(STORAGE_KEY, next)
       } catch { /* ignore */ }
-
-      if (!session?.user.id) return
 
       const { error } = await supabase
         .from('dashboard_user_access')

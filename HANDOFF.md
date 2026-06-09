@@ -1,19 +1,91 @@
 # HANDOFF — sales-dashboard-app
 
 ## Current State
-_Last updated: 2026-06-08 07:38:55 by Cursor_
+_Last updated: 2026-06-09 09:44:12 by Cursor_
 
 **Status:** Active
-**Phase:** Sales module — legacy UX parity complete (post-Phase 1)
+**Phase:** Sidebar filters and Oversite UX — deployed on Vercel main
 
-- Works now: Supabase auth, admin Users page, Vercel deploy, Oversite module, full Sales sidebar filters, Apply & Render, all report views (Clients/Items/Stock), monthly dual-year tables, pie/bar chart modals, sticky headers, column inline filters (SKU/Item Name/Price with IN/OUT toggle and footer recalc), status-bar search, Minimize/Expand All, CSV export, column sorting via legacy DOM sort
-- In progress: Nothing active
+- Works now: Year month picker selects full year; Apply preserves client and item picks; Clear on filter lists works and empty selection renders no rows; single-company Oversite uses side-by-side section grid; Oversite nav returns to dashboard after filtered report for limited users; prior Oversite polish, i18n, RTL, and non-super-admin Apply flow all on main (through eb344ae)
+- In progress: Nothing active in app code
 - Blocked: Nothing blocked
-- Next up: User to choose next milestone (deploy refresh, new modules, or additional legacy gaps)
+- Next up: Re-import updated VBA into server workbook on office PC, run Excel macro and push_to_github.ps1 for fresh 721mt and debt data on live export
 
 ---
 
 ## Session Log
+
+### 2026-06-09 09:44:12 — Cursor
+**Done:**
+- Fixed year buttons to select or deselect all months for 2025 and 2026 with Clear in months filter
+- Fixed Apply and Render resetting client and item selections to all
+- Fixed Clear on client, category, and item filter lists using list epoch init so cleared state sticks; empty selection shows no report rows
+- Single-company Oversite layout: inner section cards in three-column grid like legacy Pupik dashboard
+- Oversite nav button clears applied sales report and shows Oversite home again for limited users
+- Committed and pushed three deploys to main ending at eb344ae
+
+**Decisions:**
+- List init keyed by epoch on view or category change, not on user Clear
+- Empty filter selection means no rows, matching legacy dashboard behavior
+- showOversiteDashboard clears applied and rendering state without wiping sidebar filter choices
+
+**Next:**
+- Office PC: re-import VBA, run macro, push_to_github for live Monkeytime open orders and debt dates
+
+---
+
+### 2026-06-09 00:28:55 — Cursor
+**Done:**
+- Removed company names from dashboard header subtitle
+- Oversite subheader shows file update hour from export generated timestamp plus month label
+- Fixed open debt month columns showing Excel serial numbers; filtered debt header rows; open date from dashboardmeta B1 wired through export and UI
+- Fixed Orders MTD using local date instead of UTC; legacy fallback when 722 rows mis-tagged as openorders
+- Stock alerts: SKU before item name, client last-buy qty and SKU, velocity drop SKU and Base/Mo tooltip, Avg Days tooltip
+- Updated VBA export and import macro for debt dates, debtLastUpdate, and 721mt sheet lookup; push script post-processes missing openorders-mt and debtLastUpdate
+- Committed and pushed 57cf6a4 to main for Vercel deploy
+
+**Decisions:**
+- App-side debt month label fix as fallback until next Excel export; VBA formats headers at source going forward
+- push_to_github injects 721mt from workbook or network source when VBA export omits them
+
+**Next:**
+- Re-import VBA on office PC and run macro plus push_to_github to populate Monkeytime open orders in live data
+
+---
+
+### 2026-06-08 17:46:28 — Cursor
+**Done:**
+- Fixed false Monkeytime 721 health banner for users without MT in scope
+- Pushed fresh data_loader.js so Oversite Monkeytime 722 shows real numbers
+- Added Apply & Render loading spinner on button plus main-area overlay while report builds
+- Built Hebrew/English i18n with RTL layout, header toggle, and admin per-user language
+- Pushed commits 929f294 and 18a4ce2 to main; user applied add_user_locale.sql in Supabase
+
+**Decisions:**
+- Lightweight custom i18n (no react-i18next); locale stored on dashboard_user_access with localStorage fallback
+- Data-health checks gated by user company access list
+
+**Next:**
+- Populate 721mt in Excel export for Monkeytime open orders on Oversite
+
+---
+
+### 2026-06-08 07:54:24 — Cursor
+**Done:**
+- Set up dual-target shared package inside sales-dashboard-app so Vercel and legacy HTML share one source of sales logic
+- Wired legacy group and pupik dashboards to dashboard-shared.js for sort and column filters
+- Updated push script to build shared bundle and include it in GitHub Pages deploy
+- Added dual-target protocol doc and Cursor rule
+- Committed and pushed to main; Vercel deploy triggered
+
+**Decisions:**
+- Shared package lives in the React repo (not parent Dashboard folder) so Vercel builds succeed
+- React keeps thin re-exports; legacy delegates to window.DashboardShared
+
+**Next:**
+- Run push_to_github.ps1 to publish legacy dashboards with the shared bundle
+
+---
 
 ### 2026-06-08 07:38:55 — Cursor
 **Done:**

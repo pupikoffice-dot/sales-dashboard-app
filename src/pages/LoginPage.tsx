@@ -2,6 +2,8 @@ import { FormEvent, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLocale } from '../context/LocaleContext'
+import { fetchProfileLocale } from '../lib/userLocale'
+import { supabase } from '../lib/supabase'
 
 export function LoginPage() {
   const { signIn } = useAuth()
@@ -17,9 +19,20 @@ export function LoginPage() {
     setBusy(true)
     setError(null)
     const { error: err } = await signIn(login, password)
+    if (err) {
+      setBusy(false)
+      setError(err)
+      return
+    }
+
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.user.id) {
+      const profileLocale = await fetchProfileLocale(session.user.id)
+      if (profileLocale) await setLocale(profileLocale)
+    }
+
     setBusy(false)
-    if (err) setError(err)
-    else navigate('/')
+    navigate('/')
   }
 
   return (
