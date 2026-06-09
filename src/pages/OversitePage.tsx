@@ -72,7 +72,7 @@ export function OversitePage() {
       {visibleCompanies.length === 0 ? (
         <p className="ov-empty">{t('oversite.noCompanies')}</p>
       ) : (
-        <div className="ov-grid">
+        <div className={`ov-grid${visibleCompanies.length === 1 ? ' ov-grid--single-co' : ''}`}>
           {visibleCompanies.map(co => {
             const ordersTag = resolveOrdersTag(companyRows, co.ordersTag)
             const openOrdersTag = resolveOpenOrdersTag(companyRows, co.openOrdersTag)
@@ -90,7 +90,10 @@ export function OversitePage() {
             const stockAlerts = computeStockAlerts(companyRows, co.id, wmsStock, wmsNames)
 
             return (
-              <div key={co.id} className="ov-col">
+              <div
+                key={co.id}
+                className={`ov-col${visibleCompanies.length === 1 ? ' ov-col--sections-grid' : ''}`}
+              >
                 <div className="ov-col-hdr" style={{ borderLeftColor: co.accentColor }}>
                   {co.label}
                 </div>

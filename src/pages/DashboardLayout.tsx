@@ -15,7 +15,7 @@ import { useLocation } from 'react-router-dom'
 export function DashboardLayout() {
   const { signOut, isSuperAdmin } = useAuth()
   const { access, loading } = useDashboardAccess()
-  const { isRendering } = useDashboardFilters()
+  const { isRendering, showOversiteDashboard } = useDashboardFilters()
   const { locale, setLocale, t, dir } = useLocale()
   const isRtl = dir === 'rtl'
   const { allRows, debtRows, isLoading: dataLoading, dataHealth } = useDashboardData()
@@ -52,7 +52,10 @@ export function DashboardLayout() {
           <NavLink
             key={m.id}
             to={m.path}
-            onClick={() => setSidebarOpen(false)}
+            onClick={() => {
+              setSidebarOpen(false)
+              if (m.id === 'oversite') showOversiteDashboard()
+            }}
             className={({ isActive }) =>
               `nav-btn${m.id === 'oversite' ? ' oversite-nav' : ''}${isActive ? ' active' : ''}`
             }

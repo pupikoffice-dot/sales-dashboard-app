@@ -65,6 +65,7 @@ interface DashboardFiltersValue extends DashboardFiltersState {
   clearItemSkus: () => void
   apply: () => void
   finishRendering: () => void
+  showOversiteDashboard: () => void
   canApply: boolean
   viewPanelEnabled: boolean
 }
@@ -347,6 +348,11 @@ export function DashboardFiltersProvider({ children }: { children: ReactNode }) 
     setIsRendering(false)
   }, [])
 
+  const showOversiteDashboard = useCallback(() => {
+    setApplied(false)
+    setIsRendering(false)
+  }, [])
+
   return (
     <DashboardFiltersContext.Provider
       value={{
@@ -382,6 +388,7 @@ export function DashboardFiltersProvider({ children }: { children: ReactNode }) 
         clearItemSkus,
         apply,
         finishRendering,
+        showOversiteDashboard,
         canApply,
         viewPanelEnabled,
       }}

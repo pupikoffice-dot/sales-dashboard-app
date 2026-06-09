@@ -336,6 +336,10 @@ body {
   gap: 22px;
 }
 
+.ov-grid.ov-grid--single-co {
+  grid-template-columns: 1fr;
+}
+
 @media (max-width: 900px) {
   .ov-grid {
     grid-template-columns: 1fr;
@@ -346,6 +350,29 @@ body {
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+/* Single-company oversite: section cards side-by-side (legacy pupik layout) */
+.ov-col.ov-col--sections-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.ov-col.ov-col--sections-grid .ov-col-hdr {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 900px) {
+  .ov-col.ov-col--sections-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .ov-col.ov-col--sections-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .ov-col-hdr {
