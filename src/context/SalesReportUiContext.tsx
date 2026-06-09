@@ -8,6 +8,7 @@ interface SalesReportUiValue {
   setSearchQuery: (q: string) => void
   globalCollapsed: boolean | null
   toggleCollapseAll: () => void
+  setGlobalCollapsed: (value: boolean | null) => void
   clearGlobalCollapse: () => void
   collapseAllLabel: string
   hasSections: boolean
@@ -50,6 +51,7 @@ export function SalesReportUiProvider({
       setSearchQuery,
       globalCollapsed,
       toggleCollapseAll: () => setGlobalCollapsed(prev => (prev === true ? false : true)),
+      setGlobalCollapsed,
       clearGlobalCollapse: () => setGlobalCollapsed(null),
       collapseAllLabel,
       hasSections,

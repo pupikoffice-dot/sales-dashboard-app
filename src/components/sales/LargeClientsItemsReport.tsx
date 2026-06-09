@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import type { DashboardFiltersState } from '../../context/DashboardFiltersContext'
 import { useSalesReportUi } from '../../context/SalesReportUiContext'
@@ -28,7 +28,10 @@ export function LargeClientsItemsReport({
   defaultCollapsed,
 }: LargeClientsItemsReportProps) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const { globalCollapsed, clearGlobalCollapse } = useSalesReportUi()
+  const filtersRef = useRef(filters)
+  filtersRef.current = filters
+
+  const { globalCollapsed, clearGlobalCollapse, setGlobalCollapsed } = useSalesReportUi()
   const [building, setBuilding] = useState(true)
 
   const clientEntriesKey = useMemo(
@@ -43,6 +46,15 @@ export function LargeClientsItemsReport({
     [companyRows, clientIdSet],
   )
 
+  const filterKey = useMemo(
+    () =>
+      JSON.stringify({
+        dateMode: filters.dateMode,
+        months: [...filters.selectedMonths].sort(),
+      }),
+    [filters.dateMode, filters.selectedMonths],
+  )
+
   // Legacy-style: build entire report HTML in one pass, single DOM insert.
   useEffect(() => {
     let cancelled = false
@@ -54,7 +66,7 @@ export function LargeClientsItemsReport({
       const html = buildAllClientSectionsHtml(
         clientEntries,
         historyIndexes,
-        filters,
+        filtersRef.current,
         company,
         wmsStock,
         defaultCollapsed,
@@ -62,6 +74,7 @@ export function LargeClientsItemsReport({
       if (cancelled || !containerRef.current) return
       containerRef.current.innerHTML = html
       setBuilding(false)
+      if (defaultCollapsed) setGlobalCollapsed(true)
       requestAnimationFrame(() => {
         if (containerRef.current) attachAllTableColumnFilters(containerRef.current)
       })
@@ -75,10 +88,11 @@ export function LargeClientsItemsReport({
     clientEntries,
     clientEntriesKey,
     historyIndexes,
-    filters,
+    filterKey,
     company,
     wmsStock,
     defaultCollapsed,
+    setGlobalCollapsed,
   ])
 
   useEffect(() => {
@@ -96,11 +110,12 @@ export function LargeClientsItemsReport({
     return () => root.removeEventListener('click', onTitleClick)
   }, [building, clearGlobalCollapse])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const root = containerRef.current
     if (!root || globalCollapsed == null || building) return
     root.querySelectorAll('.section').forEach(sec => {
-      sec.classList.toggle('collapsed', globalCollapsed)
+      if (globalCollapsed) sec.classList.add('collapsed')
+      else sec.classList.remove('collapsed')
     })
   }, [globalCollapsed, building])
 
