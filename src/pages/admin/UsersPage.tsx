@@ -57,22 +57,15 @@ export function UsersPage() {
   const { data, isLoading, error: loadError } = useQuery({
     queryKey: ['admin-users'],
     queryFn: async () => {
-      const [profilesRes, accessRes] = await Promise.all([
-        supabase
-          .from('user_profiles')
-          .select('id,email,username,name,role,active,password_display')
-          .order('name'),
-        supabase
-          .from('dashboard_user_access')
-          .select('user_id, companies, agents, locale'),
-      ])
-      if (profilesRes.error) throw profilesRes.error
-      if (accessRes.error) throw accessRes.error
+      const res = await callUserManagement({ action: 'list' }) as {
+        users: UserRow[]
+        access: AccessRow[]
+      }
       const accessMap = new Map(
-        (accessRes.data ?? []).map(row => [row.user_id as string, row as AccessRow]),
+        (res.access ?? []).map(row => [row.user_id, row]),
       )
       return {
-        users: (profilesRes.data ?? []) as UserRow[],
+        users: res.users ?? [],
         accessMap,
       }
     },
@@ -115,18 +108,18 @@ export function UsersPage() {
     },
   })
 
-  function togglePwd(user: UserRow) {
-    if (!user.password_display) {
-      setPwdEditId(user.id)
-      setPwdEditValue('')
-      return
-    }
+  function togglePwdVisible(userId: string) {
     setVisiblePwds(prev => {
       const next = new Set(prev)
-      if (next.has(user.id)) next.delete(user.id)
-      else next.add(user.id)
+      if (next.has(userId)) next.delete(userId)
+      else next.add(userId)
       return next
     })
+  }
+
+  function openPwdEdit(user: UserRow) {
+    setPwdEditId(user.id)
+    setPwdEditValue(user.password_display ?? '')
   }
 
   function handleDelete(user: UserRow) {
@@ -240,6 +233,7 @@ export function UsersPage() {
           <tbody>
             {(users ?? []).map(u => {
               const access = accessMap.get(u.id)
+              const hasStoredPwd = !!u.password_display?.trim()
               const pwdVisible = showAllPasswords || visiblePwds.has(u.id)
               return (
               <tr key={u.id}>
@@ -292,29 +286,30 @@ export function UsersPage() {
                       </button>
                     </div>
                   ) : (
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                      <span style={{ fontFamily: 'monospace', fontSize: '.75rem', color: u.password_display ? undefined : 'var(--muted)' }}>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <span style={{ fontFamily: 'monospace', fontSize: '.75rem', color: hasStoredPwd ? undefined : 'var(--muted)' }}>
                         {pwdVisible
-                          ? (u.password_display ?? 'not saved')
-                          : (u.password_display ? '••••••••' : '—')}
+                          ? (hasStoredPwd ? u.password_display : 'not recorded')
+                          : (hasStoredPwd ? '••••••••' : '—')}
                       </span>
+                      {hasStoredPwd && (
+                        <button
+                          type="button"
+                          className="sbar-minimize-btn"
+                          style={{ padding: '2px 8px', fontSize: '.65rem' }}
+                          onClick={() => togglePwdVisible(u.id)}
+                          disabled={showAllPasswords}
+                        >
+                          {pwdVisible ? 'Hide' : 'Show'}
+                        </button>
+                      )}
                       <button
                         type="button"
                         className="sbar-minimize-btn"
                         style={{ padding: '2px 8px', fontSize: '.65rem' }}
-                        onClick={() => togglePwd(u)}
-                        title={u.password_display ? undefined : 'Password was never saved — enter it with Set'}
-                        disabled={showAllPasswords && !!u.password_display}
+                        onClick={() => openPwdEdit(u)}
                       >
-                        {pwdVisible ? 'Hide' : (u.password_display ? 'Show' : 'Set pwd')}
-                      </button>
-                      <button
-                        type="button"
-                        className="sbar-minimize-btn"
-                        style={{ padding: '2px 8px', fontSize: '.65rem' }}
-                        onClick={() => { setPwdEditId(u.id); setPwdEditValue(u.password_display ?? '') }}
-                      >
-                        Set
+                        {hasStoredPwd ? 'Change' : 'Set password'}
                       </button>
                     </div>
                   )}

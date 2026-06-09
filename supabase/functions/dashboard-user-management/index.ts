@@ -82,6 +82,21 @@ Deno.serve(async (req) => {
   } catch { /* empty */ }
   const action = body.action as string
 
+  if (action === 'list') {
+    const { data: profiles, error: profilesErr } = await admin
+      .from('user_profiles')
+      .select('id,email,username,name,role,active,password_display')
+      .order('name')
+    if (profilesErr) return json({ error: 'List profiles failed: ' + profilesErr.message }, 500)
+
+    const { data: accessRows, error: accessErr } = await admin
+      .from('dashboard_user_access')
+      .select('user_id,modules,companies,agents,default_module,locale,active')
+    if (accessErr) return json({ error: 'List access failed: ' + accessErr.message }, 500)
+
+    return json({ users: profiles ?? [], access: accessRows ?? [] })
+  }
+
   if (action === 'create') {
     const rawLogin = ((body.login ?? body.email) as string) ?? ''
     const password = body.password as string
