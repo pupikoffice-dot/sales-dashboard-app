@@ -66,22 +66,22 @@ export function SidebarFilters() {
   const itemKey = itemOptions.map(o => o.id).join('\0')
 
   useLayoutEffect(() => {
-    if (f.view === 'clients' && clientOptions.length && f.selectedClientIds.size === 0) {
+    if (f.view === 'clients' && clientOptions.length) {
       f.initClientIds(clientOptions.map(o => o.id))
     }
-  }, [f.view, f.company, f.dateMode, clientKey, f.selectedClientIds.size])
+  }, [f.view, f.company, f.dateMode, clientKey, f.clientListEpoch])
 
   useLayoutEffect(() => {
-    if (f.view === 'items' && f.catType && categoryOptions.length && f.selectedCategories.size === 0) {
+    if (f.view === 'items' && f.catType && categoryOptions.length) {
       f.initCategoryIds(categoryOptions.map(o => o.id))
     }
-  }, [f.view, f.catType, f.company, f.dateMode, categoryKey, f.selectedCategories.size])
+  }, [f.view, f.catType, f.company, f.dateMode, categoryKey, f.categoryListEpoch])
 
   useLayoutEffect(() => {
     if (f.view === 'items' && f.catType && itemOptions.length) {
       f.initItemIds(itemOptions.map(o => o.id))
     }
-  }, [f.view, f.catType, itemKey, f.selectedCategories])
+  }, [f.view, f.catType, itemKey, f.itemListEpoch])
 
   const hasCats = categoryOptions.length > 0
 

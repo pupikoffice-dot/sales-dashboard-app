@@ -33,23 +33,19 @@ export function getReportRows(
   }
 
   if (filters.view === 'clients') {
-    if (!filters.selectedClientIds.size) {
-      return rows.filter(r => r.clientID)
-    }
+    if (!filters.selectedClientIds.size) return []
     return rows.filter(r => r.clientID && filters.selectedClientIds.has(r.clientID))
   }
 
   if (filters.view === 'items') {
+    if (!filters.selectedCategories.size || !filters.selectedItemSkus.size) return []
     return rows.filter(r => {
       const cat =
         (filters.catType === 'tablet' ? r.tabletCat : r.groupCat) || '(No Category)'
-      const catOk =
-        !filters.selectedCategories.size ||
-        filters.selectedCategories.has(String(cat))
-      const skuOk =
-        !filters.selectedItemSkus.size ||
+      return (
+        filters.selectedCategories.has(String(cat)) &&
         filters.selectedItemSkus.has(r.itemSKU || '(No SKU)')
-      return catOk && skuOk
+      )
     })
   }
 

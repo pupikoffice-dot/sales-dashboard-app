@@ -31,6 +31,12 @@ export interface DashboardFiltersState {
   selectedItemSkus: Set<string>
   applied: boolean
   isRendering: boolean
+  /** Bumped when the client list should default to all — not when the user clears. */
+  clientListEpoch: number
+  /** Bumped when the category list should default to all — not when the user clears. */
+  categoryListEpoch: number
+  /** Bumped when the item list should default to all (category/type change). */
+  itemListEpoch: number
 }
 
 interface DashboardFiltersValue extends DashboardFiltersState {
@@ -99,6 +105,9 @@ export function DashboardFiltersProvider({ children }: { children: ReactNode }) 
   const [selectedItemSkus, setSelectedItemSkus] = useState<Set<string>>(() => new Set())
   const [applied, setApplied] = useState(false)
   const [isRendering, setIsRendering] = useState(false)
+  const [clientListEpoch, setClientListEpoch] = useState(0)
+  const [categoryListEpoch, setCategoryListEpoch] = useState(0)
+  const [itemListEpoch, setItemListEpoch] = useState(0)
 
   const state: DashboardFiltersState = {
     company,
@@ -115,6 +124,9 @@ export function DashboardFiltersProvider({ children }: { children: ReactNode }) 
     selectedItemSkus,
     applied,
     isRendering,
+    clientListEpoch,
+    categoryListEpoch,
+    itemListEpoch,
   }
 
   const stateRef = useRef(state)
@@ -181,6 +193,8 @@ export function DashboardFiltersProvider({ children }: { children: ReactNode }) 
     setSelectedCategories(lists.selectedCategories)
     setSelectedItemSkus(lists.selectedItemSkus)
     setApplied(false)
+    if (v === 'clients') setClientListEpoch(e => e + 1)
+    if (v === 'items') setCategoryListEpoch(e => e + 1)
   }
 
   function setClientMode(m: ClientMode | null) {
@@ -193,6 +207,10 @@ export function DashboardFiltersProvider({ children }: { children: ReactNode }) 
     setItemModeState(null)
     setSelectedCategories(new Set())
     setSelectedItemSkus(new Set())
+    if (t) {
+      setCategoryListEpoch(e => e + 1)
+      setItemListEpoch(e => e + 1)
+    }
     invalidateApply()
   }
 
@@ -230,6 +248,17 @@ export function DashboardFiltersProvider({ children }: { children: ReactNode }) 
       else next.add(id)
       return next
     })
+    setItemListEpoch(e => e + 1)
+    invalidateApply()
+  }
+
+  function selectCategoryIds(ids: string[]) {
+    setSelectedCategories(prev => {
+      const next = new Set(prev)
+      ids.forEach(id => next.add(id))
+      return next
+    })
+    setItemListEpoch(e => e + 1)
     invalidateApply()
   }
 
@@ -245,15 +274,6 @@ export function DashboardFiltersProvider({ children }: { children: ReactNode }) 
 
   function selectClientIds(ids: string[]) {
     setSelectedClientIds(prev => {
-      const next = new Set(prev)
-      ids.forEach(id => next.add(id))
-      return next
-    })
-    invalidateApply()
-  }
-
-  function selectCategoryIds(ids: string[]) {
-    setSelectedCategories(prev => {
       const next = new Set(prev)
       ids.forEach(id => next.add(id))
       return next
@@ -277,6 +297,7 @@ export function DashboardFiltersProvider({ children }: { children: ReactNode }) 
 
   function clearCategoryIds() {
     setSelectedCategories(new Set())
+    setSelectedItemSkus(new Set())
     invalidateApply()
   }
 
