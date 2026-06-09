@@ -65,11 +65,14 @@ Deno.serve(async (req) => {
   const authHeader = req.headers.get('Authorization') ?? ''
   if (!authHeader.startsWith('Bearer ')) return json({ error: 'No auth header' }, 401)
 
+  const jwt = authHeader.slice(7)
   const callerClient = createClient(supabaseUrl, anonKey, {
     global: { headers: { Authorization: authHeader } },
   })
-  const { data: { user: caller }, error: authErr } = await callerClient.auth.getUser()
-  if (authErr || !caller) return json({ error: 'Auth failed' }, 401)
+  const { data: { user: caller }, error: authErr } = await callerClient.auth.getUser(jwt)
+  if (authErr || !caller) {
+    return json({ error: authErr?.message ? `Auth failed: ${authErr.message}` : 'Auth failed' }, 401)
+  }
 
   const gate = await requireSuperAdmin(callerClient)
   if (!gate.ok) return gate.response

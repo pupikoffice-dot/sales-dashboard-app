@@ -57,34 +57,21 @@ export function UsersPage() {
   const { data, isLoading, error: loadError } = useQuery({
     queryKey: ['admin-users'],
     queryFn: async () => {
-      try {
-        const res = await callUserManagement({ action: 'list' }) as {
-          users: UserRow[]
-          access: AccessRow[]
-        }
-        const accessMap = new Map(
-          (res.access ?? []).map(row => [row.user_id, row]),
-        )
-        return { users: res.users ?? [], accessMap }
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : ''
-        if (!msg.includes('Unknown action')) throw e
-        const [profilesRes, accessRes] = await Promise.all([
-          supabase
-            .from('user_profiles')
-            .select('id,email,username,name,role,active,password_display')
-            .order('name'),
-          supabase
-            .from('dashboard_user_access')
-            .select('user_id, companies, agents, locale'),
-        ])
-        if (profilesRes.error) throw profilesRes.error
-        if (accessRes.error) throw accessRes.error
-        const accessMap = new Map(
-          (accessRes.data ?? []).map(row => [row.user_id as string, row as AccessRow]),
-        )
-        return { users: (profilesRes.data ?? []) as UserRow[], accessMap }
-      }
+      const [profilesRes, accessRes] = await Promise.all([
+        supabase
+          .from('user_profiles')
+          .select('id,email,username,name,role,active,password_display')
+          .order('name'),
+        supabase
+          .from('dashboard_user_access')
+          .select('user_id, companies, agents, locale'),
+      ])
+      if (profilesRes.error) throw profilesRes.error
+      if (accessRes.error) throw accessRes.error
+      const accessMap = new Map(
+        (accessRes.data ?? []).map(row => [row.user_id as string, row as AccessRow]),
+      )
+      return { users: (profilesRes.data ?? []) as UserRow[], accessMap }
     },
   })
 
