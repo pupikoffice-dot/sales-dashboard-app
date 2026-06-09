@@ -39,6 +39,7 @@ interface DashboardFiltersValue extends DashboardFiltersState {
   setDateFrom: (v: string) => void
   setDateTo: (v: string) => void
   toggleMonth: (key: string) => void
+  toggleYearMonths: (year: number) => void
   clearMonths: () => void
   setView: (v: ViewMode | null) => void
   setClientMode: (m: ClientMode | null) => void
@@ -294,6 +295,22 @@ export function DashboardFiltersProvider({ children }: { children: ReactNode }) 
     invalidateApply()
   }
 
+  function toggleYearMonths(year: number) {
+    setSelectedMonths(prev => {
+      const allSelected = Array.from({ length: 12 }, (_, idx) =>
+        prev.has(`${year}-${idx + 1}`),
+      ).every(Boolean)
+      const next = new Set(prev)
+      for (let m = 1; m <= 12; m++) {
+        const key = `${year}-${m}`
+        if (allSelected) next.delete(key)
+        else next.add(key)
+      }
+      return next
+    })
+    invalidateApply()
+  }
+
   function clearMonths() {
     setSelectedMonths(new Set())
     invalidateApply()
@@ -324,6 +341,7 @@ export function DashboardFiltersProvider({ children }: { children: ReactNode }) 
           invalidateApply()
         },
         toggleMonth,
+        toggleYearMonths,
         clearMonths,
         setView,
         setClientMode,

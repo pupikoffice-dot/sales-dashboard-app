@@ -1,5 +1,4 @@
 import { useLayoutEffect, useMemo } from 'react'
-import { flushSync } from 'react-dom'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
@@ -67,16 +66,16 @@ export function SidebarFilters() {
   const itemKey = itemOptions.map(o => o.id).join('\0')
 
   useLayoutEffect(() => {
-    if (f.view === 'clients' && clientOptions.length) {
+    if (f.view === 'clients' && clientOptions.length && f.selectedClientIds.size === 0) {
       f.initClientIds(clientOptions.map(o => o.id))
     }
-  }, [f.view, f.company, f.dateMode, clientKey])
+  }, [f.view, f.company, f.dateMode, clientKey, f.selectedClientIds.size])
 
   useLayoutEffect(() => {
-    if (f.view === 'items' && f.catType && categoryOptions.length) {
+    if (f.view === 'items' && f.catType && categoryOptions.length && f.selectedCategories.size === 0) {
       f.initCategoryIds(categoryOptions.map(o => o.id))
     }
-  }, [f.view, f.catType, f.company, f.dateMode, categoryKey])
+  }, [f.view, f.catType, f.company, f.dateMode, categoryKey, f.selectedCategories.size])
 
   useLayoutEffect(() => {
     if (f.view === 'items' && f.catType && itemOptions.length) {
@@ -90,20 +89,6 @@ export function SidebarFilters() {
     if (!f.canApply || f.isRendering) return
 
     window.setTimeout(() => {
-      flushSync(() => {
-        if (f.view === 'clients' && clientOptions.length) {
-          f.initClientIds(clientOptions.map(o => o.id))
-        }
-        if (f.view === 'items' && f.catType) {
-          if (categoryOptions.length) {
-            f.initCategoryIds(categoryOptions.map(o => o.id))
-          }
-          if (itemOptions.length) {
-            f.initItemIds(itemOptions.map(o => o.id))
-          }
-        }
-      })
-
       f.apply()
 
       if (!isSuperAdmin) {
@@ -183,12 +168,31 @@ export function SidebarFilters() {
 
         {f.dateMode === 'months' && (
           <div className="months-picker active">
+            <div className="yr-row">
+              {MONTH_YEARS.map(yr => (
+                <button
+                  key={yr}
+                  type="button"
+                  className="yr-btn"
+                  onClick={() => f.toggleYearMonths(yr)}
+                  disabled={!f.company}
+                >
+                  {yr}
+                </button>
+              ))}
+              <button
+                type="button"
+                className="yr-btn"
+                onClick={() => f.clearMonths()}
+                disabled={!f.company}
+              >
+                {t('common.clear')}
+              </button>
+            </div>
             {MONTH_YEARS.map(yr => (
-              <div key={yr}>
-                <div className="yr-row">
-                  <span className="yr-btn" style={{ cursor: 'default', opacity: 0.9 }}>
-                    {yr}
-                  </span>
+              <div key={yr} style={yr === 2025 ? { marginTop: 6 } : undefined}>
+                <div style={{ fontSize: '.67rem', color: 'var(--muted)', marginBottom: 4, letterSpacing: '.8px' }}>
+                  {yr}
                 </div>
                 <div className="mo-grid">
                   {monthNames.map((mn, idx) => {
