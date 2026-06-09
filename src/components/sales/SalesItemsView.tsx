@@ -1,3 +1,5 @@
+import { useMemo } from 'react'
+
 import type { DashboardFiltersState } from '../../context/DashboardFiltersContext'
 import { useLocale } from '../../context/LocaleContext'
 import { SortableTh } from './SortableTh'
@@ -6,6 +8,7 @@ import { useReportChart } from '../../hooks/useReportChart'
 import { fmt, fmt0 } from '../../lib/format'
 import { matchesSearch } from '../../lib/salesSearch'
 import { getWmsQty, sumRows } from '../../lib/salesMetrics'
+import { buildMonthTotalsIndex } from '../../lib/salesMonthAggregate'
 import type { LogicalCompany, SalesRow } from '../../types/dashboard'
 import type { WmsStockMap } from '../../lib/wmsData'
 import { DualMonthGroupedTable } from './DualMonthGroupedTable'
@@ -69,18 +72,46 @@ function ClientsUnderItemTable({
   const sq = sku ? getWmsQty(sku, company, wmsStock) : null
   const sqFmt = sq != null ? fmt0(sq) : '—'
 
-  const clients: Record<string, { name: string; rows: SalesRow[] }> = {}
-  rows.forEach(r => {
-    if (!r.clientID) return
-    if (!clients[r.clientID]) {
-      clients[r.clientID] = { name: r.clientName || r.clientID, rows: [] }
-    }
-    clients[r.clientID].rows.push(r)
-  })
+  const filteredClients = useMemo(() => {
+    const clients: Record<string, { name: string; rows: SalesRow[] }> = {}
+    rows.forEach(r => {
+      if (!r.clientID) return
+      if (!clients[r.clientID]) {
+        clients[r.clientID] = { name: r.clientName || r.clientID, rows: [] }
+      }
+      clients[r.clientID].rows.push(r)
+    })
+    return Object.entries(clients)
+      .filter(([cid, cl]) => showAllRows || matchesSearch(searchQuery, cid, cl.name))
+      .sort((a, b) => a[1].name.localeCompare(b[1].name))
+  }, [rows, searchQuery, showAllRows])
 
-  const filteredClients = Object.entries(clients)
-    .filter(([cid, cl]) => showAllRows || matchesSearch(searchQuery, cid, cl.name))
-    .sort((a, b) => a[1].name.localeCompare(b[1].name))
+  const coRawByClient = useMemo(() => {
+    const byClient = new Map<string, SalesRow[]>()
+    for (const r of companyRows) {
+      if (r.itemSKU !== sku || !r.clientID) continue
+      let arr = byClient.get(r.clientID)
+      if (!arr) {
+        arr = []
+        byClient.set(r.clientID, arr)
+      }
+      arr.push(r)
+    }
+    return byClient
+  }, [companyRows, sku])
+
+  const groups = useMemo(
+    () =>
+      filteredClients.map(([cid, cl]) => ({
+        key: cid,
+        col1: cid,
+        col2: cl.name,
+        col2Title: cl.name,
+        currentMonthIndex: buildMonthTotalsIndex(cl.rows),
+        compareMonthIndex: buildMonthTotalsIndex(coRawByClient.get(cid) ?? []),
+      })),
+    [filteredClients, coRawByClient],
+  )
 
   if (!filteredClients.length) return null
 
@@ -135,16 +166,6 @@ function ClientsUnderItemTable({
     )
   }
 
-  const coRaw = companyRows.filter(r => r.itemSKU === sku)
-  const groups = filteredClients.map(([cid, cl]) => ({
-    key: cid,
-    col1: cid,
-    col2: cl.name,
-    col2Title: cl.name,
-    currentRows: cl.rows,
-    compareRows: coRaw.filter(r => r.clientID === cid),
-  }))
-
   return (
     <DualMonthGroupedTable
       filters={filters}
@@ -184,7 +205,7 @@ function SalesItemsContent({ rows, filters, companyRows, wmsStock }: SalesItemsV
           rows={rows}
           filters={filters}
           company={company}
-          companyRows={companyRows}
+          historyRows={companyRows}
           wmsStock={wmsStock}
         />
       </div>
@@ -222,18 +243,19 @@ function SalesItemsContent({ rows, filters, companyRows, wmsStock }: SalesItemsV
               cash={cash}
               qty={qty}
               stockQty={sq}
-            >
-              <ClientsUnderItemTable
-                rows={it.rows}
-                filters={filters}
-                company={company}
-                companyRows={companyRows}
-                wmsStock={wmsStock}
-                showAllRows={nameMatch}
-                exportId={sku}
-                exportName={it.name}
-              />
-            </SalesSection>
+              renderBody={() => (
+                <ClientsUnderItemTable
+                  rows={it.rows}
+                  filters={filters}
+                  company={company}
+                  companyRows={companyRows}
+                  wmsStock={wmsStock}
+                  showAllRows={nameMatch}
+                  exportId={sku}
+                  exportName={it.name}
+                />
+              )}
+            />
           )
         })}
     </div>

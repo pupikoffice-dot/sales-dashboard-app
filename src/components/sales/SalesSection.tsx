@@ -10,7 +10,10 @@ interface SalesSectionProps {
   cash: number
   qty: number
   stockQty?: number | null
-  children: ReactNode
+  defaultCollapsed?: boolean
+  /** Lazy body — only called when section is expanded. */
+  renderBody?: () => ReactNode
+  children?: ReactNode
 }
 
 export function SalesSection({
@@ -21,16 +24,20 @@ export function SalesSection({
   cash,
   qty,
   stockQty,
+  defaultCollapsed = false,
+  renderBody,
   children,
 }: SalesSectionProps) {
   const { globalCollapsed, clearGlobalCollapse } = useSalesReportUi()
-  const [localCollapsed, setLocalCollapsed] = useState(false)
+  const [localCollapsed, setLocalCollapsed] = useState(defaultCollapsed)
   const collapsed = globalCollapsed ?? localCollapsed
 
   function handleTitleClick() {
     clearGlobalCollapse()
     setLocalCollapsed(c => !c)
   }
+
+  const body = !collapsed ? (renderBody ? renderBody() : children) : null
 
   return (
     <div
@@ -64,7 +71,7 @@ export function SalesSection({
           </span>
         )}
       </div>
-      <div className="section-body">{children}</div>
+      {body != null && <div className="section-body">{body}</div>}
     </div>
   )
 }

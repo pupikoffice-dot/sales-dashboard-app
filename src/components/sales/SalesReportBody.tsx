@@ -9,7 +9,7 @@ import { useDashboardData } from '../../hooks/useDashboardData'
 import { getReportRows } from '../../lib/salesReportRows'
 import type { SalesRow } from '../../types/dashboard'
 
-const REPORT_DEFER_MS = 30
+const REPORT_DEFER_MS = 0
 
 function ReportSpinner({ message }: { message: string }) {
   return (

@@ -123,7 +123,15 @@ function initStickyHeaders(rootId: string): () => void {
   }
 }
 
-export function useStickyTableHeaders(rootId = 'sales-report') {
+interface StickyTableHeadersOptions {
+  deferAboveTableCount?: number
+}
+
+export function useStickyTableHeaders(
+  rootId = 'sales-report',
+  options?: StickyTableHeadersOptions,
+) {
+  const deferAbove = options?.deferAboveTableCount
   useLayoutEffect(() => {
     let disposed = false
     let cleanup = () => {}
@@ -133,6 +141,9 @@ export function useStickyTableHeaders(rootId = 'sales-report') {
     const mount = () => {
       cleanup()
       if (disposed) return
+      const root = document.getElementById(rootId)
+      if (!root) return
+      if (deferAbove != null && countStickyTables(root) > deferAbove) return
       cleanup = initStickyHeaders(rootId)
     }
 
@@ -166,5 +177,5 @@ export function useStickyTableHeaders(rootId = 'sales-report') {
       if (pending) cancelAnimationFrame(pending)
       cleanup()
     }
-  }, [rootId])
+  }, [rootId, deferAbove])
 }
