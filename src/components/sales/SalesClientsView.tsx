@@ -4,7 +4,7 @@ import type { DashboardFiltersState } from '../../context/DashboardFiltersContex
 import { useLocale } from '../../context/LocaleContext'
 import { SalesReportUiProvider, useSalesReportUi } from '../../context/SalesReportUiContext'
 import { useReportChart } from '../../hooks/useReportChart'
-import { buildClientHistoryBySku } from '../../lib/clientItemsBreakdownHtml'
+import { buildClientHistoryIndexes } from '../../lib/clientItemsBreakdownHtml'
 import { matchesSearch } from '../../lib/salesSearch'
 import { sumRows } from '../../lib/salesMetrics'
 import type { LogicalCompany, SalesRow } from '../../types/dashboard'
@@ -64,7 +64,7 @@ function SalesClientsContent({
     pieTitle: filters.dateMode === 'openorders' ? 'Cash by Client – Open Orders' : 'Cash by Client',
   })
   const clients = useMemo(() => groupByClient(rows), [rows])
-  const { rowsByClient } = useMemo(() => buildClientHistoryBySku(companyRows), [companyRows])
+  const { rowsByClient } = useMemo(() => buildClientHistoryIndexes(companyRows), [companyRows])
   const company = filters.company! as LogicalCompany
   const modeLabel =
     filters.clientMode === 'cash' ? t('filters.cashSummary') : t('filters.itemsBreakdown')

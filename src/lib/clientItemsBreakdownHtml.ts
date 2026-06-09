@@ -3,7 +3,11 @@ import { fmt, fmt0, MONTH_NAMES } from './format'
 import { escapeHtml } from './escapeHtml'
 import { getWmsQty } from './salesMetrics'
 import { getDualMonthCols } from './salesDateFilter'
-import { buildMonthTotalsIndex, getMonthTotal } from './salesMonthAggregate'
+import {
+  buildMonthTotalsIndex,
+  getMonthTotal,
+  type MonthTotalsIndex,
+} from './salesMonthAggregate'
 import type { LogicalCompany, SalesRow } from '../types/dashboard'
 import type { WmsStockMap } from './wmsData'
 
@@ -36,10 +40,11 @@ function dualMonthCellHtml(
 
 export function buildItemsUnderClientHtml(
   rows: SalesRow[],
-  historyBySku: Map<string, SalesRow[]>,
+  historyMonthIndexBySku: Map<string, MonthTotalsIndex>,
   filters: DashboardFiltersState,
   company: LogicalCompany,
   wmsStock: WmsStockMap,
+  dualMonthCols?: ReturnType<typeof getDualMonthCols>,
 ): string {
   const items = groupBySku(rows)
   const entries = Object.entries(items).sort((a, b) => a[1].name.localeCompare(b[1].name))
@@ -79,7 +84,7 @@ export function buildItemsUnderClientHtml(
     return h
   }
 
-  const cols = getDualMonthCols(filters.selectedMonths)
+  const cols = dualMonthCols ?? getDualMonthCols(filters.selectedMonths)
   let h =
     '<div class="tw tw-months"><table class="tw-dual-months"><thead><tr>' +
     '<th class="sortable">SKU<span class="si"> ↕</span></th>' +
@@ -104,8 +109,7 @@ export function buildItemsUnderClientHtml(
 
   for (const [sku, it] of entries) {
     const curIndex = buildMonthTotalsIndex(it.rows)
-    const compareRows = historyBySku.get(sku) ?? []
-    const cmpIndex = buildMonthTotalsIndex(compareRows)
+    const cmpIndex = historyMonthIndexBySku.get(sku) ?? new Map()
     let rc = 0
     let rq = 0
     h += `<tr><td>${escapeHtml(sku)}</td><td title="${escapeHtml(it.name)}">${escapeHtml(it.name)}</td>`
@@ -145,15 +149,23 @@ export function buildClientSectionHtml(
   cid: string,
   name: string,
   rows: SalesRow[],
-  historyBySku: Map<string, SalesRow[]>,
+  historyMonthIndexBySku: Map<string, MonthTotalsIndex>,
   filters: DashboardFiltersState,
   company: LogicalCompany,
   wmsStock: WmsStockMap,
   cash: number,
   qty: number,
   collapsed: boolean,
+  dualMonthCols?: ReturnType<typeof getDualMonthCols>,
 ): string {
-  const body = buildItemsUnderClientHtml(rows, historyBySku, filters, company, wmsStock)
+  const body = buildItemsUnderClientHtml(
+    rows,
+    historyMonthIndexBySku,
+    filters,
+    company,
+    wmsStock,
+    dualMonthCols,
+  )
   const collapsedClass = collapsed ? ' collapsed' : ''
   return (
     `<div class="section${collapsedClass}" data-export-name="${escapeHtml(name)}" data-export-id="${escapeHtml(cid)}">` +
@@ -165,12 +177,21 @@ export function buildClientSectionHtml(
   )
 }
 
-export function buildClientHistoryBySku(companyRows: SalesRow[]) {
+export interface ClientHistoryIndexes {
+  rowsByClient: Map<string, SalesRow[]>
+  monthIndexBySkuByClient: Map<string, Map<string, MonthTotalsIndex>>
+}
+
+export function buildClientHistoryIndexes(
+  companyRows: SalesRow[],
+  clientIds?: Set<string>,
+): ClientHistoryIndexes {
   const rowsByClient = new Map<string, SalesRow[]>()
-  const bySkuByClient = new Map<string, Map<string, SalesRow[]>>()
+  const skuRowsByClient = new Map<string, Map<string, SalesRow[]>>()
 
   for (const r of companyRows) {
     if (!r.clientID) continue
+    if (clientIds && !clientIds.has(r.clientID)) continue
     let clientRows = rowsByClient.get(r.clientID)
     if (!clientRows) {
       clientRows = []
@@ -179,10 +200,10 @@ export function buildClientHistoryBySku(companyRows: SalesRow[]) {
     clientRows.push(r)
 
     if (!r.itemSKU) continue
-    let skuMap = bySkuByClient.get(r.clientID)
+    let skuMap = skuRowsByClient.get(r.clientID)
     if (!skuMap) {
       skuMap = new Map()
-      bySkuByClient.set(r.clientID, skuMap)
+      skuRowsByClient.set(r.clientID, skuMap)
     }
     let skuRows = skuMap.get(r.itemSKU)
     if (!skuRows) {
@@ -192,5 +213,72 @@ export function buildClientHistoryBySku(companyRows: SalesRow[]) {
     skuRows.push(r)
   }
 
-  return { rowsByClient, bySkuByClient }
+  const monthIndexBySkuByClient = new Map<string, Map<string, MonthTotalsIndex>>()
+  for (const [cid, skuMap] of skuRowsByClient) {
+    const indexMap = new Map<string, MonthTotalsIndex>()
+    for (const [sku, skuRows] of skuMap) {
+      indexMap.set(sku, buildMonthTotalsIndex(skuRows))
+    }
+    monthIndexBySkuByClient.set(cid, indexMap)
+  }
+
+  return { rowsByClient, monthIndexBySkuByClient }
+}
+
+/** @deprecated Use buildClientHistoryIndexes */
+export function buildClientHistoryBySku(companyRows: SalesRow[]) {
+  const { rowsByClient, monthIndexBySkuByClient } = buildClientHistoryIndexes(companyRows)
+  const bySkuByClient = new Map<string, Map<string, SalesRow[]>>()
+  for (const [cid, clientRows] of rowsByClient) {
+    const skuMap = new Map<string, SalesRow[]>()
+    for (const r of clientRows) {
+      if (!r.itemSKU) continue
+      let arr = skuMap.get(r.itemSKU)
+      if (!arr) {
+        arr = []
+        skuMap.set(r.itemSKU, arr)
+      }
+      arr.push(r)
+    }
+    bySkuByClient.set(cid, skuMap)
+  }
+  return { rowsByClient, bySkuByClient, monthIndexBySkuByClient }
+}
+
+export function buildAllClientSectionsHtml(
+  clientEntries: [string, { name: string; rows: SalesRow[] }][],
+  historyIndexes: ClientHistoryIndexes,
+  filters: DashboardFiltersState,
+  company: LogicalCompany,
+  wmsStock: WmsStockMap,
+  collapsed: boolean,
+): string {
+  const dualMonthCols =
+    filters.dateMode === 'months' ? getDualMonthCols(filters.selectedMonths) : undefined
+  const parts: string[] = new Array(clientEntries.length)
+  for (let i = 0; i < clientEntries.length; i++) {
+    const [cid, cl] = clientEntries[i]
+    let cash = 0
+    let qty = 0
+    for (const r of cl.rows) {
+      cash += r.cash || 0
+      qty += r.qty || 0
+    }
+    const historyMonthIndexBySku =
+      historyIndexes.monthIndexBySkuByClient.get(cid) ?? new Map<string, MonthTotalsIndex>()
+    parts[i] = buildClientSectionHtml(
+      cid,
+      cl.name,
+      cl.rows,
+      historyMonthIndexBySku,
+      filters,
+      company,
+      wmsStock,
+      cash,
+      qty,
+      collapsed,
+      dualMonthCols,
+    )
+  }
+  return parts.join('')
 }

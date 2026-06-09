@@ -3,15 +3,12 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { DashboardFiltersState } from '../../context/DashboardFiltersContext'
 import { useSalesReportUi } from '../../context/SalesReportUiContext'
 import {
-  buildClientHistoryBySku,
-  buildClientSectionHtml,
+  buildAllClientSectionsHtml,
+  buildClientHistoryIndexes,
 } from '../../lib/clientItemsBreakdownHtml'
-import { sumRows } from '../../lib/salesMetrics'
 import { attachAllTableColumnFilters } from '../../lib/tableColumnFilters'
 import type { LogicalCompany, SalesRow } from '../../types/dashboard'
 import type { WmsStockMap } from '../../lib/wmsData'
-
-const HTML_BATCH_SIZE = 4
 
 interface LargeClientsItemsReportProps {
   clientEntries: [string, { name: string; rows: SalesRow[] }][]
@@ -32,63 +29,52 @@ export function LargeClientsItemsReport({
 }: LargeClientsItemsReportProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const { globalCollapsed, clearGlobalCollapse } = useSalesReportUi()
-  const [sectionHtml, setSectionHtml] = useState<string[]>([])
-  const [builtCount, setBuiltCount] = useState(0)
-
-  const bySkuByClient = useMemo(
-    () => buildClientHistoryBySku(companyRows).bySkuByClient,
-    [companyRows],
-  )
+  const [building, setBuilding] = useState(true)
 
   const clientEntriesKey = useMemo(
     () => clientEntries.map(([cid]) => cid).join('\u0001'),
     [clientEntries],
   )
 
+  const clientIdSet = useMemo(() => new Set(clientEntries.map(([cid]) => cid)), [clientEntriesKey])
+
+  const historyIndexes = useMemo(
+    () => buildClientHistoryIndexes(companyRows, clientIdSet),
+    [companyRows, clientIdSet],
+  )
+
+  // Legacy-style: build entire report HTML in one pass, single DOM insert.
   useEffect(() => {
     let cancelled = false
-    let index = 0
-    setSectionHtml([])
-    setBuiltCount(0)
+    setBuilding(true)
+    if (containerRef.current) containerRef.current.innerHTML = ''
 
-    const runBatch = () => {
+    const id = window.setTimeout(() => {
       if (cancelled) return
-      const end = Math.min(index + HTML_BATCH_SIZE, clientEntries.length)
-      const batch: string[] = []
-      for (; index < end; index++) {
-        const [cid, cl] = clientEntries[index]
-        const { cash, qty } = sumRows(cl.rows)
-        const historyBySku = bySkuByClient.get(cid) ?? new Map<string, SalesRow[]>()
-        batch.push(
-          buildClientSectionHtml(
-            cid,
-            cl.name,
-            cl.rows,
-            historyBySku,
-            filters,
-            company,
-            wmsStock,
-            cash,
-            qty,
-            defaultCollapsed,
-          ),
-        )
-      }
-      setSectionHtml(prev => [...prev, ...batch])
-      setBuiltCount(index)
-      if (index < clientEntries.length) {
-        window.setTimeout(runBatch, 0)
-      }
-    }
+      const html = buildAllClientSectionsHtml(
+        clientEntries,
+        historyIndexes,
+        filters,
+        company,
+        wmsStock,
+        defaultCollapsed,
+      )
+      if (cancelled || !containerRef.current) return
+      containerRef.current.innerHTML = html
+      setBuilding(false)
+      requestAnimationFrame(() => {
+        if (containerRef.current) attachAllTableColumnFilters(containerRef.current)
+      })
+    }, 0)
 
-    window.setTimeout(runBatch, 0)
     return () => {
       cancelled = true
+      window.clearTimeout(id)
     }
   }, [
     clientEntries,
     clientEntriesKey,
-    bySkuByClient,
+    historyIndexes,
     filters,
     company,
     wmsStock,
@@ -108,41 +94,24 @@ export function LargeClientsItemsReport({
 
     root.addEventListener('click', onTitleClick)
     return () => root.removeEventListener('click', onTitleClick)
-  }, [sectionHtml.length, clearGlobalCollapse])
+  }, [building, clearGlobalCollapse])
 
   useEffect(() => {
     const root = containerRef.current
-    if (!root || globalCollapsed == null) return
+    if (!root || globalCollapsed == null || building) return
     root.querySelectorAll('.section').forEach(sec => {
       sec.classList.toggle('collapsed', globalCollapsed)
     })
-  }, [globalCollapsed, sectionHtml.length])
-
-  // Attach SKU / Item Name IN/OUT column filters as HTML tables are added (legacy parity).
-  useEffect(() => {
-    const root = containerRef.current
-    if (!root || sectionHtml.length === 0) return
-    let pending = 0
-    pending = requestAnimationFrame(() => {
-      attachAllTableColumnFilters(root)
-    })
-    return () => cancelAnimationFrame(pending)
-  }, [sectionHtml.length])
-
-  const building = builtCount < clientEntries.length
+  }, [globalCollapsed, building])
 
   return (
     <>
       {building && (
         <div className="report-progress-hint" style={{ padding: '8px 12px', opacity: 0.75 }}>
-          Building sections… ({builtCount}/{clientEntries.length})
+          Building report…
         </div>
       )}
-      <div ref={containerRef} className="sales-html-sections">
-        {sectionHtml.map((html, i) => (
-          <div key={i} dangerouslySetInnerHTML={{ __html: html }} />
-        ))}
-      </div>
+      <div ref={containerRef} className="sales-html-sections" />
     </>
   )
 }
