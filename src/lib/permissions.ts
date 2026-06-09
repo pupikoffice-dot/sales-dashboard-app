@@ -19,7 +19,8 @@ export function canShowModule(
   isSuperAdmin = false,
 ): boolean {
   if (!access?.active) return false
-  if (SUPER_ADMIN_ONLY_MODULES.includes(moduleId) && !isSuperAdmin) return false
+  if (isSuperAdmin) return true
+  if (SUPER_ADMIN_ONLY_MODULES.includes(moduleId)) return false
   return access.modules.includes(moduleId)
 }
 
