@@ -7,6 +7,7 @@ import {
   buildClientSectionHtml,
 } from '../../lib/clientItemsBreakdownHtml'
 import { sumRows } from '../../lib/salesMetrics'
+import { attachAllTableColumnFilters } from '../../lib/tableColumnFilters'
 import type { LogicalCompany, SalesRow } from '../../types/dashboard'
 import type { WmsStockMap } from '../../lib/wmsData'
 
@@ -116,6 +117,17 @@ export function LargeClientsItemsReport({
       sec.classList.toggle('collapsed', globalCollapsed)
     })
   }, [globalCollapsed, sectionHtml.length])
+
+  // Attach SKU / Item Name IN/OUT column filters as HTML tables are added (legacy parity).
+  useEffect(() => {
+    const root = containerRef.current
+    if (!root || sectionHtml.length === 0) return
+    let pending = 0
+    pending = requestAnimationFrame(() => {
+      attachAllTableColumnFilters(root)
+    })
+    return () => cancelAnimationFrame(pending)
+  }, [sectionHtml.length])
 
   const building = builtCount < clientEntries.length
 
