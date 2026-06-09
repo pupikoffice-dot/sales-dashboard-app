@@ -166,7 +166,11 @@ export interface Top10Item {
   qty: number
 }
 
-export function computeTop10BySku(rows: SalesRow[], limit = 10): Top10Item[] {
+export function computeTop10BySku(
+  rows: SalesRow[],
+  limit = 10,
+  cashSort: 'high-first' | 'low-first' = 'high-first',
+): Top10Item[] {
   const itemMap: Record<string, Top10Item> = {}
   rows.forEach(r => {
     if (!r.itemSKU) return
@@ -175,9 +179,11 @@ export function computeTop10BySku(rows: SalesRow[], limit = 10): Top10Item[] {
     itemMap[sku].cash += Number(r.cash) || 0
     itemMap[sku].qty += Number(r.qty) || 0
   })
-  return Object.values(itemMap)
-    .sort((a, b) => b.cash - a.cash)
-    .slice(0, limit)
+  const cmp =
+    cashSort === 'low-first'
+      ? (a: Top10Item, b: Top10Item) => a.cash - b.cash
+      : (a: Top10Item, b: Top10Item) => b.cash - a.cash
+  return Object.values(itemMap).sort(cmp).slice(0, limit)
 }
 
 export function computeOrdersMtdTop10(
@@ -243,5 +249,5 @@ export function computeReturnsMtdTop10(
   const matched = rows.filter(
     r => r.company === returnsTag && Number(r.year) === curYear && Number(r.month) === curMonth,
   )
-  return computeTop10BySku(matched)
+  return computeTop10BySku(matched, 10, 'low-first')
 }
