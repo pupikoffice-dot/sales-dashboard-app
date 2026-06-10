@@ -69,8 +69,12 @@ export function OrdersMtdPage() {
                       { label: 'Cash', value: fmt(ordersMtd.cash), tone: 'grn' },
                     ]}
                   />
-                  <OversiteCollapsible label="📦 Top 10 Orders ▾">
-                    <OversiteTop10Table items={ordersTop10} emptyLabel="No order items this month" />
+                  <OversiteCollapsible label="📦 Top 10 Items Ordered ▾">
+                    <OversiteTop10Table
+                      items={ordersTop10}
+                      emptyLabel="No order items this month"
+                      showSku
+                    />
                   </OversiteCollapsible>
                 </OversiteSection>
               </div>

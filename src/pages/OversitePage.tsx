@@ -11,6 +11,7 @@ import { fmt } from '../lib/format'
 import type { LogicalCompany } from '../types/dashboard'
 import { DebtModal } from '../components/oversite/DebtModal'
 import { OversiteDebtSummary } from '../components/oversite/OversiteDebtSummary'
+import { OrdersTodayModal } from '../components/oversite/OrdersTodayModal'
 import { OversiteOrdersReportButton } from '../components/oversite/OversiteOrdersReportButton'
 import { StockAlertsPanel } from '../components/oversite/StockAlertsPanel'
 import {
@@ -40,6 +41,11 @@ export function OversitePage() {
   const { allRows, debtRows, debtLastUpdate, wmsStock, wmsNames, isLoading, error, data: dashboardData } =
     useDashboardData()
   const [debtModalCo, setDebtModalCo] = useState<LogicalCompany | null>(null)
+  const [ordersModal, setOrdersModal] = useState<{
+    company: LogicalCompany
+    companyLabel: string
+    ordersTag: string
+  } | null>(null)
 
   if (!isSuperAdmin && f.applied) {
     return <SalesReportBody />
@@ -104,7 +110,11 @@ export function OversitePage() {
                       { label: t('oversite.cash'), value: fmt(ordersToday.cash), tone: 'grn' },
                     ]}
                   />
-                  <OversiteOrdersReportButton />
+                  <OversiteOrdersReportButton
+                    onClick={() =>
+                      setOrdersModal({ company: co.id, companyLabel: co.label, ordersTag })
+                    }
+                  />
                 </OversiteSection>
 
                 <OversiteSection title={`📋 ${t('oversite.ordersMtd', { month: ctx.monthLbl })}`}>
@@ -116,7 +126,11 @@ export function OversitePage() {
                     ]}
                   />
                   <OversiteCollapsible label={`📦 ${t('oversite.top10Orders')} ▾`}>
-                    <OversiteTop10Table items={ordersTop10} emptyLabel={t('oversite.noOrderItems')} />
+                    <OversiteTop10Table
+                      items={ordersTop10}
+                      emptyLabel={t('oversite.noOrderItems')}
+                      showSku
+                    />
                   </OversiteCollapsible>
                 </OversiteSection>
 
@@ -129,7 +143,11 @@ export function OversitePage() {
                     ]}
                   />
                   <OversiteCollapsible label={`📦 ${t('oversite.top10OpenOrders')} ▾`}>
-                    <OversiteTop10Table items={openOrdersTop10} emptyLabel={t('oversite.noOpenOrders')} />
+                    <OversiteTop10Table
+                      items={openOrdersTop10}
+                      emptyLabel={t('oversite.noOpenOrders')}
+                      showSku
+                    />
                   </OversiteCollapsible>
                 </OversiteSection>
 
@@ -189,6 +207,18 @@ export function OversitePage() {
           debtData={debtRowsForCompany(debtRows, debtModalCo)}
           debtLastUpdate={debtLastUpdate}
           onClose={() => setDebtModalCo(null)}
+        />
+      )}
+
+      {ordersModal && (
+        <OrdersTodayModal
+          company={ordersModal.company}
+          companyLabel={ordersModal.companyLabel}
+          ordersTag={ordersModal.ordersTag}
+          companyRows={companyRows}
+          todayStr={ctx.todayStr}
+          todayDisp={ctx.todayDisp}
+          onClose={() => setOrdersModal(null)}
         />
       )}
     </>

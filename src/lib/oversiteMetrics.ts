@@ -112,8 +112,18 @@ export interface OrdersTodayMetrics {
   qty: number
 }
 
+export function getOrdersTodayRows(rows: SalesRow[], ordersTag: string, todayStr: string): SalesRow[] {
+  return rows
+    .filter(r => r.company === ordersTag && r.date === todayStr)
+    .sort((a, b) => {
+      const clientCmp = (a.clientName || a.clientID || '').localeCompare(b.clientName || b.clientID || '')
+      if (clientCmp !== 0) return clientCmp
+      return (a.itemSKU || '').localeCompare(b.itemSKU || '')
+    })
+}
+
 export function computeOrdersToday(rows: SalesRow[], ordersTag: string, todayStr: string): OrdersTodayMetrics {
-  const matched = rows.filter(r => r.company === ordersTag && r.date === todayStr)
+  const matched = getOrdersTodayRows(rows, ordersTag, todayStr)
   const { cash, qty } = sumRows(matched)
   const clients = new Set(matched.map(r => r.clientID).filter(Boolean)).size
   return { clients, cash, qty }
