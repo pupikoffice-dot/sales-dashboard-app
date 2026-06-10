@@ -140,6 +140,7 @@ export const messages: Record<keyof typeof en, string> = {
   'oversite.orderClientName': 'שם לקוח',
   'oversite.orderNumber': 'מס׳ הזמנה',
   'oversite.orderTotal': 'סה״כ',
+  'oversite.sortByTotal': 'מיון לפי סה״כ',
   'oversite.orderItem': 'פריט',
   'oversite.openOrdersMtdPage': 'פתח דף הזמנות חודש',
   'oversite.stockAlerts': 'התראות מלאי',

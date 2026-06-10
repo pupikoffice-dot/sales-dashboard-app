@@ -33,11 +33,20 @@ export function OrdersTodayModal({
   const { access } = useDashboardAccess()
   const { isSuperAdmin } = useAuth()
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [totalSort, setTotalSort] = useState<'desc' | 'asc' | null>(null)
 
   const orders = useMemo(
     () => groupOrdersTodayByDoc(companyRows, ordersTag, todayStr),
     [companyRows, ordersTag, todayStr],
   )
+
+  const sortedOrders = useMemo(() => {
+    if (!totalSort) return orders
+    return [...orders].sort((a, b) => {
+      const cmp = a.cash - b.cash
+      return totalSort === 'asc' ? cmp : -cmp
+    })
+  }, [orders, totalSort])
 
   const totals = useMemo(() => {
     let cash = 0
@@ -57,6 +66,14 @@ export function OrdersTodayModal({
       if (next.has(key)) next.delete(key)
       else next.add(key)
       return next
+    })
+  }
+
+  const toggleTotalSort = () => {
+    setTotalSort(prev => {
+      if (prev === null) return 'desc'
+      if (prev === 'desc') return 'asc'
+      return 'desc'
     })
   }
 
@@ -82,11 +99,20 @@ export function OrdersTodayModal({
                     <th className="ov-order-expand-col" />
                     <th>{t('oversite.orderNumber')}</th>
                     <th>{t('oversite.orderClientName')}</th>
-                    <th>{t('oversite.orderTotal')}</th>
+                    <th
+                      className="sortable"
+                      onClick={toggleTotalSort}
+                      title={t('oversite.sortByTotal')}
+                    >
+                      {t('oversite.orderTotal')}
+                      <span className="si">
+                        {totalSort === 'desc' ? ' ↓' : totalSort === 'asc' ? ' ↑' : ' ↕'}
+                      </span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.map(order => {
+                  {sortedOrders.map(order => {
                     const isOpen = expanded.has(order.key)
                     return (
                       <Fragment key={order.key}>

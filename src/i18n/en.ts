@@ -138,6 +138,7 @@ export const messages = {
   'oversite.orderClientName': 'Client Name',
   'oversite.orderNumber': 'Order #',
   'oversite.orderTotal': 'Total',
+  'oversite.sortByTotal': 'Sort by total',
   'oversite.orderItem': 'Item',
   'oversite.openOrdersMtdPage': 'Open Orders MTD page',
   'oversite.stockAlerts': 'Stock Alerts',
