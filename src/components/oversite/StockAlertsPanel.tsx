@@ -1,11 +1,60 @@
-import { useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useLocale } from '../../context/LocaleContext'
+import { FilterCheckList } from '../sidebar/FilterCheckList'
 import { fmt, fmtDateIso } from '../../lib/format'
-import type { StockAlertsResult } from '../../lib/stockAlerts'
+import {
+  computeStockAlerts,
+  extractGroupCategories,
+  type StockAlertsResult,
+} from '../../lib/stockAlerts'
+import type { LogicalCompany, SalesRow } from '../../types/dashboard'
+import type { WmsNamesMap, WmsStockMap } from '../../lib/wmsData'
 
-export function StockAlertsPanel({ alerts }: { alerts: StockAlertsResult }) {
+interface StockAlertsPanelProps {
+  company: LogicalCompany
+  companyRows: SalesRow[]
+  wmsStock: WmsStockMap
+  wmsNames: WmsNamesMap
+}
+
+export function StockAlertsPanel({
+  company,
+  companyRows,
+  wmsStock,
+  wmsNames,
+}: StockAlertsPanelProps) {
+  const { t } = useLocale()
   const [tab, setTab] = useState(0)
+  const [showCatFilter, setShowCatFilter] = useState(false)
+
+  const groupCategories = useMemo(
+    () => extractGroupCategories(companyRows, company),
+    [companyRows, company],
+  )
+
+  const groupCategoryKey = groupCategories.join('\u0001')
+
+  const [selectedGroupCats, setSelectedGroupCats] = useState<Set<string>>(
+    () => new Set(groupCategories),
+  )
+
+  useEffect(() => {
+    setSelectedGroupCats(new Set(groupCategories))
+  }, [groupCategoryKey, company])
+
+  const categoryOptions = useMemo(
+    () => groupCategories.map(cat => ({ id: cat, label: cat })),
+    [groupCategories],
+  )
+
+  const alerts = useMemo(
+    () => computeStockAlerts(companyRows, company, wmsStock, wmsNames, new Date(), selectedGroupCats),
+    [companyRows, company, wmsStock, wmsNames, selectedGroupCats],
+  )
+
   const smCount = alerts.slowMovers.length + alerts.neverSold.length
   const alertCount = smCount + alerts.clientAlerts.length + alerts.velocityDrops.length
+  const filterActive = selectedGroupCats.size < groupCategories.length
 
   const tabs = [
     { label: `Slow Movers (${smCount})`, content: <SlowMoversTab alerts={alerts} /> },
@@ -16,18 +65,47 @@ export function StockAlertsPanel({ alerts }: { alerts: StockAlertsResult }) {
   return (
     <section className="ov-section">
       <h3 className="ov-section-title">
-        📦 Stock Alerts{' '}
+        📦 {t('oversite.stockAlerts')}{' '}
         <span className={`ov-badge${alertCount === 0 ? ' ov-badge-zero' : ''}`}>{alertCount}</span>
       </h3>
+      <button
+        type="button"
+        className={`ov-toggle-btn${filterActive ? ' active' : ''}`}
+        onClick={() => setShowCatFilter(v => !v)}
+      >
+        📂 {t('oversite.stockAlertsCategories')}
+        {filterActive ? ` (${selectedGroupCats.size}/${groupCategories.length})` : ''}{' '}
+        {showCatFilter ? '▴' : '▾'}
+      </button>
+      {showCatFilter && (
+        <div className="ov-stock-cat-filter">
+          <FilterCheckList
+            items={categoryOptions}
+            selected={selectedGroupCats}
+            onToggle={id => {
+              setSelectedGroupCats(prev => {
+                const next = new Set(prev)
+                if (next.has(id)) next.delete(id)
+                else next.add(id)
+                return next
+              })
+            }}
+            onSelectVisible={ids => setSelectedGroupCats(new Set(ids))}
+            onClear={() => setSelectedGroupCats(new Set())}
+            searchPlaceholder={t('oversite.stockAlertsSearchCategories')}
+            maxHeight={160}
+          />
+        </div>
+      )}
       <div className="ov-tab-btns">
-        {tabs.map((t, i) => (
+        {tabs.map((tb, i) => (
           <button
-            key={t.label}
+            key={tb.label}
             type="button"
             className={`ov-tab-btn${tab === i ? ' active' : ''}`}
             onClick={() => setTab(i)}
           >
-            {t.label}
+            {tb.label}
           </button>
         ))}
       </div>

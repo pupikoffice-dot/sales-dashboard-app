@@ -11,8 +11,8 @@ import { fmt } from '../lib/format'
 import type { LogicalCompany } from '../types/dashboard'
 import { DebtModal } from '../components/oversite/DebtModal'
 import { OversiteDebtSummary } from '../components/oversite/OversiteDebtSummary'
+import { OversiteOrdersReportButton } from '../components/oversite/OversiteOrdersReportButton'
 import { StockAlertsPanel } from '../components/oversite/StockAlertsPanel'
-import { computeStockAlerts } from '../lib/stockAlerts'
 import {
   OVERSITE_COMPANIES,
   computeOpenOrders,
@@ -87,8 +87,6 @@ export function OversitePage() {
             const returnsTop10 = computeReturnsMtdTop10(companyRows, co.returnsTag, ctx.curYear, ctx.curMonth)
             const companyDebt = debtRowsForCompany(debtRows, co.id)
             const debtSummary = computeDebtSummary(companyDebt)
-            const stockAlerts = computeStockAlerts(companyRows, co.id, wmsStock, wmsNames)
-
             return (
               <div
                 key={co.id}
@@ -106,6 +104,7 @@ export function OversitePage() {
                       { label: t('oversite.cash'), value: fmt(ordersToday.cash), tone: 'grn' },
                     ]}
                   />
+                  <OversiteOrdersReportButton />
                 </OversiteSection>
 
                 <OversiteSection title={`📋 ${t('oversite.ordersMtd', { month: ctx.monthLbl })}`}>
@@ -151,7 +150,7 @@ export function OversitePage() {
                 </OversiteSection>
 
                 <OversiteSection title={`🏆 ${t('oversite.top10Items')}`}>
-                  <OversiteTop10Table items={salesTop10} emptyLabel={t('oversite.noSales')} />
+                  <OversiteTop10Table items={salesTop10} emptyLabel={t('oversite.noSales')} showSku />
                 </OversiteSection>
 
                 <OversiteSection title={`↩️ ${t('oversite.returnsMtd')}`}>
@@ -172,7 +171,12 @@ export function OversitePage() {
                   <OversiteDebtSummary summary={debtSummary} onOpenReport={() => setDebtModalCo(co.id)} />
                 </OversiteSection>
 
-                <StockAlertsPanel alerts={stockAlerts} />
+                <StockAlertsPanel
+                  company={co.id}
+                  companyRows={companyRows}
+                  wmsStock={wmsStock}
+                  wmsNames={wmsNames}
+                />
               </div>
             )
           })}

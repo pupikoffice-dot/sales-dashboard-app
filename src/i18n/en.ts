@@ -131,6 +131,10 @@ export const messages = {
   'oversite.noOpenOrders': 'No open orders in export',
   'oversite.noSales': 'No sales data this month',
   'oversite.noReturns': 'No returns this month',
+  'oversite.fullOrdersReport': 'Full Orders Report',
+  'oversite.stockAlerts': 'Stock Alerts',
+  'oversite.stockAlertsCategories': 'Group Categories',
+  'oversite.stockAlertsSearchCategories': 'Search categories…',
 
   'admin.usersTitle': 'Dashboard Users',
   'admin.usersSub': 'Add users, set passwords, and assign modules, companies, and agents.',

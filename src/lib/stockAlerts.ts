@@ -49,12 +49,23 @@ export interface StockAlertsResult {
   velocityDrops: VelocityDropAlert[]
 }
 
+export function extractGroupCategories(rows: SalesRow[], co: LogicalCompany): string[] {
+  const retCo = co === 'pupik' ? 'returns-pupik' : 'returns-mt'
+  const cats = new Set<string>()
+  for (const r of rows) {
+    if (r.company !== co && r.company !== retCo) continue
+    cats.add(String(r.groupCat || '(No Category)'))
+  }
+  return [...cats].sort((a, b) => a.localeCompare(b))
+}
+
 export function computeStockAlerts(
   rows: SalesRow[],
   co: LogicalCompany,
   wmsStock: WmsStockMap,
   wmsNames: WmsNamesMap,
   now = new Date(),
+  allowedGroupCats?: Set<string>,
 ): StockAlertsResult {
   const today = new Date(now)
   today.setHours(0, 0, 0, 0)
@@ -67,6 +78,8 @@ export function computeStockAlerts(
     baseYMs.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
   }
 
+  const skuGroupCat: Record<string, string> = {}
+
   const sm: Record<
     string,
     {
@@ -75,9 +88,17 @@ export function computeStockAlerts(
       netByDate: Record<string, number>
       netByYM: Record<string, number>
       cat: string
+      groupCat: string
       supplier: string
     }
   > = {}
+
+  const skuAllowed = (sku: string) => {
+    if (!allowedGroupCats) return true
+    if (allowedGroupCats.size === 0) return false
+    const cat = skuGroupCat[sku] || '(No Category)'
+    return allowedGroupCats.has(cat)
+  }
 
   const pm: Record<
     string,
@@ -98,8 +119,19 @@ export function computeStockAlerts(
     const sku = String(r.itemSKU)
     const rawQty = Number(r.qty) || 0
     const netQty = isSale ? rawQty : -Math.abs(rawQty)
+    const groupCat = String(r.groupCat || '(No Category)')
+    if (r.groupCat) skuGroupCat[sku] = String(r.groupCat)
+
     if (!sm[sku]) {
-      sm[sku] = { netTotal: 0, lastSaleDate: null, netByDate: {}, netByYM: {}, cat: '', supplier: '' }
+      sm[sku] = {
+        netTotal: 0,
+        lastSaleDate: null,
+        netByDate: {},
+        netByYM: {},
+        cat: '',
+        groupCat,
+        supplier: '',
+      }
     }
     sm[sku].netByDate[r.date] = (sm[sku].netByDate[r.date] || 0) + netQty
     sm[sku].netByYM[r.date.slice(0, 7)] = (sm[sku].netByYM[r.date.slice(0, 7)] || 0) + netQty
@@ -130,6 +162,7 @@ export function computeStockAlerts(
 
   Object.entries(wco).forEach(([sku, qty]) => {
     if (qty < MIN_STOCK) return
+    if (!skuAllowed(sku)) return
     const name = wmsNames[co]?.[sku] || sku
     const s = sm[sku]
     if (!s || s.netTotal <= 0) {
@@ -152,6 +185,7 @@ export function computeStockAlerts(
   const clientAlerts: ClientAlert[] = []
   Object.values(pm).forEach(p => {
     if (!(wco[p.sku] > 0)) return
+    if (!skuAllowed(p.sku)) return
     const pDates = Object.entries(p.netByDate)
       .filter(([, v]) => v > 0)
       .map(([d]) => d)
@@ -182,6 +216,7 @@ export function computeStockAlerts(
   const velocityDrops: VelocityDropAlert[] = []
   Object.entries(wco).forEach(([sku, qty]) => {
     if (qty < MIN_STOCK) return
+    if (!skuAllowed(sku)) return
     const s = sm[sku]
     if (!s) return
     const baseAvg = baseYMs.reduce((a, ym) => a + (s.netByYM[ym] || 0), 0) / baseYMs.length

@@ -467,6 +467,20 @@ body {
   border-color: var(--acc);
 }
 
+.ov-toggle-btn.active {
+  color: var(--acc);
+  border-color: var(--acc);
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.ov-stock-cat-filter {
+  margin: 8px 0 10px;
+  padding: 8px;
+  background: var(--sur2);
+  border: 1px solid var(--bdr);
+  border-radius: var(--r);
+}
+
 .ov-drop {
   margin-top: 8px;
 }

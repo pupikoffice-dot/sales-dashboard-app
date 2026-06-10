@@ -133,6 +133,10 @@ export const messages: Record<keyof typeof en, string> = {
   'oversite.noOpenOrders': 'אין הזמנות פתוחות בייצוא',
   'oversite.noSales': 'אין נתוני מכירות החודש',
   'oversite.noReturns': 'אין החזרות החודש',
+  'oversite.fullOrdersReport': 'דוח הזמנות מלא',
+  'oversite.stockAlerts': 'התראות מלאי',
+  'oversite.stockAlertsCategories': 'קטגוריות קבוצה',
+  'oversite.stockAlertsSearchCategories': 'חיפוש קטגוריות…',
 
   'admin.usersTitle': 'משתמשי לוח הבקרה',
   'admin.usersSub': 'הוסף משתמשים, הגדר סיסמאות, והקצה מודולים, חברות וסוכנים.',

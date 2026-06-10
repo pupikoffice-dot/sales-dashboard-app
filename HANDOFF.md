@@ -1,19 +1,39 @@
 # HANDOFF — sales-dashboard-app
 
 ## Current State
-_Last updated: 2026-06-09 09:44:12 by Cursor_
+_Last updated: 2026-06-09 23:40:36 by Cursor_
 
 **Status:** Active
-**Phase:** Sidebar filters and Oversite UX — deployed on Vercel main
+**Phase:** Sales Clients Items Breakdown performance — deployed on Vercel main
 
-- Works now: Year month picker selects full year; Apply preserves client and item picks; Clear on filter lists works and empty selection renders no rows; single-company Oversite uses side-by-side section grid; Oversite nav returns to dashboard after filtered report for limited users; prior Oversite polish, i18n, RTL, and non-super-admin Apply flow all on main (through eb344ae)
+- Works now: Pupik all-clients items breakdown Jan–May builds in ~9 seconds on Vercel (legacy parity); sections collapsed by default; minimize and expand all; per-table SKU and Item Name IN/OUT column filters; sort; individual section expand; prior sidebar, Oversite, i18n, and filter fixes remain on main
 - In progress: Nothing active in app code
 - Blocked: Nothing blocked
-- Next up: Re-import updated VBA into server workbook on office PC, run Excel macro and push_to_github.ps1 for fresh 721mt and debt data on live export
+- Next up: Optional — verify Export All CSV on large client report; spot-check Cash summary and Items view with many clients; office PC data refresh if needed
 
 ---
 
 ## Session Log
+
+### 2026-06-09 23:40:36 — Cursor
+**Done:**
+- Fixed Vercel Clients Items Breakdown freeze — pre-grouped client history and month indexes removed billions of row scans
+- Added HTML fast path for large reports (15+ clients, items breakdown, months) matching legacy single-pass innerHTML strategy
+- Reduced build time from ~2.5 minutes to ~9 seconds by eliminating per-batch React re-renders and repeated filter attachment
+- Restored SKU and Item Name column IN/OUT filters on HTML client tables
+- Fixed Expand All — synced global collapse state with DOM after build; stable filter deps prevent accidental HTML rebuild
+- Verified on Vercel: clickable report, filters, minimize all, expand all for 384 clients
+- Committed and pushed to main through 8b0f252
+
+**Decisions:**
+- Large client items reports use legacy-style HTML build plus one DOM insert, not per-client React tables
+- Column filters attach once after full report HTML is in the DOM
+- Default collapsed on large reports; globalCollapsed set true after build so Expand All button state matches sections
+
+**Next:**
+- User choice: Export All sanity check, other report modes, or office PC data push
+
+---
 
 ### 2026-06-09 09:44:12 — Cursor
 **Done:**
