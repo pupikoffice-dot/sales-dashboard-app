@@ -122,6 +122,58 @@ export function getOrdersTodayRows(rows: SalesRow[], ordersTag: string, todayStr
     })
 }
 
+export interface OrderTodayGroup {
+  key: string
+  docNum: string
+  clientName: string
+  cash: number
+  qty: number
+  lines: SalesRow[]
+}
+
+function orderDocKey(row: SalesRow): string {
+  const docNum = String(row.docNum ?? '').trim()
+  if (docNum) return docNum
+  return `${row.clientID || ''}|${row.clientName || ''}|no-doc`
+}
+
+export function groupOrdersTodayByDoc(
+  rows: SalesRow[],
+  ordersTag: string,
+  todayStr: string,
+): OrderTodayGroup[] {
+  const matched = getOrdersTodayRows(rows, ordersTag, todayStr)
+  const byDoc = new Map<string, SalesRow[]>()
+
+  for (const row of matched) {
+    const key = orderDocKey(row)
+    const bucket = byDoc.get(key)
+    if (bucket) bucket.push(row)
+    else byDoc.set(key, [row])
+  }
+
+  const groups: OrderTodayGroup[] = []
+  for (const [key, lines] of byDoc) {
+    const { cash, qty } = sumRows(lines)
+    const first = lines[0]
+    const docNum = String(first.docNum ?? '').trim()
+    groups.push({
+      key,
+      docNum: docNum || '—',
+      clientName: first.clientName || first.clientID || '—',
+      cash,
+      qty,
+      lines: [...lines].sort((a, b) => (a.itemSKU || '').localeCompare(b.itemSKU || '')),
+    })
+  }
+
+  return groups.sort((a, b) => {
+    const docCmp = a.docNum.localeCompare(b.docNum, undefined, { numeric: true })
+    if (docCmp !== 0) return docCmp
+    return a.clientName.localeCompare(b.clientName)
+  })
+}
+
 export function computeOrdersToday(rows: SalesRow[], ordersTag: string, todayStr: string): OrdersTodayMetrics {
   const matched = getOrdersTodayRows(rows, ordersTag, todayStr)
   const { cash, qty } = sumRows(matched)

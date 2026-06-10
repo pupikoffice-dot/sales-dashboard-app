@@ -485,6 +485,46 @@ body {
   margin-top: 8px;
 }
 
+.ov-orders-table .ov-order-expand-col {
+  width: 28px;
+  color: var(--muted2);
+}
+
+.ov-order-row {
+  cursor: pointer;
+}
+
+.ov-order-row:hover td {
+  background: var(--sur2);
+}
+
+.ov-order-row-open td {
+  background: rgba(99, 102, 241, 0.06);
+}
+
+.ov-order-detail-row > td {
+  padding: 0 0 8px;
+  border-bottom: 1px solid var(--bdr);
+}
+
+.ov-order-detail {
+  margin: 4px 8px 0 28px;
+  padding: 8px;
+  background: var(--sur2);
+  border: 1px solid var(--bdr);
+  border-radius: var(--r);
+}
+
+.ov-order-detail table {
+  width: 100%;
+  font-size: 0.78rem;
+}
+
+.ov-order-detail th,
+.ov-order-detail td {
+  padding: 4px 8px;
+}
+
 .ov-bar-chart {
   margin-top: 12px;
   display: flex;

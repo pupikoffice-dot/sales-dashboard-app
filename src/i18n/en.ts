@@ -136,6 +136,8 @@ export const messages = {
   'oversite.noOrdersToday': 'No orders today.',
   'oversite.orderClientId': 'Client ID',
   'oversite.orderClientName': 'Client Name',
+  'oversite.orderNumber': 'Order #',
+  'oversite.orderTotal': 'Total',
   'oversite.orderItem': 'Item',
   'oversite.openOrdersMtdPage': 'Open Orders MTD page',
   'oversite.stockAlerts': 'Stock Alerts',

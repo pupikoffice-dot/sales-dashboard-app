@@ -1,11 +1,11 @@
-import { useMemo } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { useLocale } from '../../context/LocaleContext'
 import { fmt } from '../../lib/format'
 import { canShowModule } from '../../lib/permissions'
-import { getOrdersTodayRows } from '../../lib/oversiteMetrics'
+import { groupOrdersTodayByDoc } from '../../lib/oversiteMetrics'
 import { pathForModule } from '../../modules/registry'
 import type { LogicalCompany, SalesRow } from '../../types/dashboard'
 
@@ -32,23 +32,33 @@ export function OrdersTodayModal({
   const navigate = useNavigate()
   const { access } = useDashboardAccess()
   const { isSuperAdmin } = useAuth()
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
-  const rows = useMemo(
-    () => getOrdersTodayRows(companyRows, ordersTag, todayStr),
+  const orders = useMemo(
+    () => groupOrdersTodayByDoc(companyRows, ordersTag, todayStr),
     [companyRows, ordersTag, todayStr],
   )
 
   const totals = useMemo(() => {
     let cash = 0
     let qty = 0
-    for (const r of rows) {
-      cash += r.cash || 0
-      qty += r.qty || 0
+    for (const order of orders) {
+      cash += order.cash
+      qty += order.qty
     }
     return { cash, qty }
-  }, [rows])
+  }, [orders])
 
   const canOpenMtdPage = access && canShowModule(access, 'orders_mtd', isSuperAdmin)
+
+  const toggleOrder = (key: string) => {
+    setExpanded(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
 
   return (
     <div className="debt-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -62,40 +72,69 @@ export function OrdersTodayModal({
           </button>
         </div>
         <div className="debt-modal-body">
-          {!rows.length ? (
+          {!orders.length ? (
             <p className="ov-empty">{t('oversite.noOrdersToday')}</p>
           ) : (
             <div className="tw">
-              <table>
+              <table className="ov-orders-table">
                 <thead>
                   <tr>
-                    <th>{t('oversite.orderClientId')}</th>
+                    <th className="ov-order-expand-col" />
+                    <th>{t('oversite.orderNumber')}</th>
                     <th>{t('oversite.orderClientName')}</th>
-                    <th>SKU</th>
-                    <th>{t('oversite.orderItem')}</th>
-                    <th>{t('oversite.qty')}</th>
-                    <th>{t('oversite.cash')}</th>
+                    <th>{t('oversite.orderTotal')}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((r, i) => (
-                    <tr key={`${r.clientID}-${r.itemSKU}-${i}`}>
-                      <td>{r.clientID || '—'}</td>
-                      <td>{r.clientName || '—'}</td>
-                      <td className="cm">{r.itemSKU || '—'}</td>
-                      <td title={r.itemSKU || undefined}>{r.itemName || '—'}</td>
-                      <td className="cm">{fmt(r.qty || 0)}</td>
-                      <td>{fmt(r.cash || 0)}</td>
-                    </tr>
-                  ))}
+                  {orders.map(order => {
+                    const isOpen = expanded.has(order.key)
+                    return (
+                      <Fragment key={order.key}>
+                        <tr
+                          className={`ov-order-row${isOpen ? ' ov-order-row-open' : ''}`}
+                          onClick={() => toggleOrder(order.key)}
+                        >
+                          <td className="ov-order-expand-col cm">{isOpen ? '▴' : '▾'}</td>
+                          <td className="cm">{order.docNum}</td>
+                          <td>{order.clientName}</td>
+                          <td>{fmt(order.cash)}</td>
+                        </tr>
+                        {isOpen && (
+                          <tr className="ov-order-detail-row">
+                            <td colSpan={4}>
+                              <div className="ov-order-detail">
+                                <table>
+                                  <thead>
+                                    <tr>
+                                      <th>SKU</th>
+                                      <th>{t('oversite.orderItem')}</th>
+                                      <th>{t('oversite.qty')}</th>
+                                      <th>{t('oversite.cash')}</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {order.lines.map((line, i) => (
+                                      <tr key={`${line.itemSKU}-${i}`}>
+                                        <td className="cm">{line.itemSKU || '—'}</td>
+                                        <td title={line.itemSKU || undefined}>{line.itemName || '—'}</td>
+                                        <td className="cm">{fmt(line.qty || 0)}</td>
+                                        <td>{fmt(line.cash || 0)}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
+                    )
+                  })}
                 </tbody>
                 <tfoot>
                   <tr>
-                    <td colSpan={4}>
-                      <b>Total</b>
-                    </td>
-                    <td className="cm">
-                      <b>{fmt(totals.qty)}</b>
+                    <td colSpan={3}>
+                      <b>{t('oversite.orderTotal')}</b>
                     </td>
                     <td>
                       <b>{fmt(totals.cash)}</b>

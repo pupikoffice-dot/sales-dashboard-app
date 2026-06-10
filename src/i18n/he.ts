@@ -138,6 +138,8 @@ export const messages: Record<keyof typeof en, string> = {
   'oversite.noOrdersToday': 'אין הזמנות היום.',
   'oversite.orderClientId': 'מזהה לקוח',
   'oversite.orderClientName': 'שם לקוח',
+  'oversite.orderNumber': 'מס׳ הזמנה',
+  'oversite.orderTotal': 'סה״כ',
   'oversite.orderItem': 'פריט',
   'oversite.openOrdersMtdPage': 'פתח דף הזמנות חודש',
   'oversite.stockAlerts': 'התראות מלאי',

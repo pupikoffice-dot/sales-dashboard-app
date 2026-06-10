@@ -28,6 +28,8 @@ export interface SalesRow {
   agent?: string
   clientID?: string
   clientName?: string
+  docType?: string
+  docNum?: string
   itemSKU?: string
   itemName?: string
   tabletCat?: string
