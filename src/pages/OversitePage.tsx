@@ -7,7 +7,7 @@ import { useDashboardFilters } from '../context/DashboardFiltersContext'
 import { useDashboardData } from '../hooks/useDashboardData'
 import { filterRowsByCompany } from '../lib/permissions'
 import { computeDebtSummary, debtRowsForCompany } from '../lib/debtMetrics'
-import { fmt } from '../lib/format'
+import { fmt, formatGeneratedDisplay } from '../lib/format'
 import type { LogicalCompany } from '../types/dashboard'
 import { DebtModal } from '../components/oversite/DebtModal'
 import { OversiteDebtSummary } from '../components/oversite/OversiteDebtSummary'
@@ -57,7 +57,7 @@ export function OversitePage() {
   const ctx = getOversiteDateContext()
   const visibleCompanies = OVERSITE_COMPANIES.filter(c => access?.companies.includes(c.id))
   const companyRows = access ? filterRowsByCompany(access, allRows) : []
-  const fileUpdatedAt = dashboardData?.generated?.split(' ')[1]?.slice(0, 5) ?? ''
+  const fileUpdatedAt = formatGeneratedDisplay(dashboardData?.generated)
 
   return (
     <>
