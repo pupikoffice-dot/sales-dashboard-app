@@ -292,6 +292,32 @@ export function computeDelivery720Top10(rows: SalesRow[], delivery720Tag: string
   return computeTop10BySku(matched)
 }
 
+export function computeDelivery720Mtd(
+  rows: SalesRow[],
+  delivery720Tag: string,
+  monthStart: string,
+  todayStr: string,
+): Delivery720Metrics {
+  const matched = rows.filter(
+    r => r.company === delivery720Tag && r.date && r.date >= monthStart && r.date <= todayStr,
+  )
+  const { cash, qty } = sumRows(matched)
+  const clients = new Set(matched.map(r => r.clientID).filter(Boolean)).size
+  return { clients, cash, qty }
+}
+
+export function computeDelivery720MtdTop10(
+  rows: SalesRow[],
+  delivery720Tag: string,
+  monthStart: string,
+  todayStr: string,
+): Top10Item[] {
+  const matched = rows.filter(
+    r => r.company === delivery720Tag && r.date && r.date >= monthStart && r.date <= todayStr,
+  )
+  return computeTop10BySku(matched)
+}
+
 export function computeSalesMtdTop10(
   rows: SalesRow[],
   company: string,

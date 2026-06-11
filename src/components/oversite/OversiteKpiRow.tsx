@@ -33,17 +33,21 @@ export function SalesLyBars({
   monthLbl,
   lyMonthLbl,
   cash,
+  deliveryCash = 0,
   lyCash,
   lyChangeCashPct,
 }: {
   monthLbl: string
   lyMonthLbl: string
   cash: number
+  deliveryCash?: number
   lyCash: number
   lyChangeCashPct: number | null
 }) {
-  const barMax = Math.max(cash, lyCash, 1)
-  const curPct = (cash / barMax) * 100
+  const totalCash = cash + deliveryCash
+  const barMax = Math.max(totalCash, lyCash, 1)
+  const salesPct = (cash / barMax) * 100
+  const deliveryPct = (deliveryCash / barMax) * 100
   const lyPct = (lyCash / barMax) * 100
   const delta =
     lyChangeCashPct != null ? (
@@ -55,7 +59,19 @@ export function SalesLyBars({
 
   return (
     <div className="ov-bar-chart">
-      <BarRow label={monthLbl} value={fmt(cash)} widthPct={curPct} fillClass="grn" suffix={delta} />
+      <div className="ov-bar-row">
+        <span className="ov-bar-lbl">{monthLbl}</span>
+        <div className={`ov-bar-track${deliveryCash > 0 ? ' ov-bar-track--stacked' : ''}`}>
+          {salesPct > 0 && (
+            <div className="ov-bar-fill grn" style={{ width: `${salesPct.toFixed(1)}%` }} />
+          )}
+          {deliveryPct > 0 && (
+            <div className="ov-bar-fill delivery" style={{ width: `${deliveryPct.toFixed(1)}%` }} />
+          )}
+        </div>
+        <span className="ov-bar-val">{fmt(totalCash)}</span>
+        {delta}
+      </div>
       <BarRow label={lyMonthLbl} value={fmt(lyCash)} widthPct={lyPct} fillClass="muted" />
     </div>
   )
@@ -71,7 +87,7 @@ function BarRow({
   label: string
   value: string
   widthPct: number
-  fillClass: 'grn' | 'muted'
+  fillClass: 'grn' | 'muted' | 'delivery'
   suffix?: ReactNode
 }) {
   return (

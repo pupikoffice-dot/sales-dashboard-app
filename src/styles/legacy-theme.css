@@ -555,14 +555,42 @@ body {
   overflow: hidden;
 }
 
+.ov-bar-track--stacked {
+  display: flex;
+  flex-direction: row;
+}
+
 .ov-bar-fill {
   height: 100%;
   border-radius: 99px;
   transition: width 0.5s ease;
 }
 
+.ov-bar-track--stacked .ov-bar-fill {
+  border-radius: 0;
+  min-width: 0;
+}
+
+.ov-bar-track--stacked .ov-bar-fill:first-child {
+  border-top-left-radius: 99px;
+  border-bottom-left-radius: 99px;
+}
+
+.ov-bar-track--stacked .ov-bar-fill:last-child {
+  border-top-right-radius: 99px;
+  border-bottom-right-radius: 99px;
+}
+
+.ov-bar-track--stacked .ov-bar-fill:only-child {
+  border-radius: 99px;
+}
+
 .ov-bar-fill.grn {
   background: var(--grn);
+}
+
+.ov-bar-fill.delivery {
+  background: var(--acc2);
 }
 
 .ov-bar-fill.muted {
