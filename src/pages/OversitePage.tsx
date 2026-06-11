@@ -16,6 +16,8 @@ import { OversiteOrdersReportButton } from '../components/oversite/OversiteOrder
 import { StockAlertsPanel } from '../components/oversite/StockAlertsPanel'
 import {
   OVERSITE_COMPANIES,
+  computeDelivery720,
+  computeDelivery720Top10,
   computeOpenOrders,
   computeOpenOrdersTop10,
   computeOrdersMtd,
@@ -86,6 +88,8 @@ export function OversitePage() {
             const ordersMtd = computeOrdersMtd(companyRows, ordersTag, ctx.monthStart, ctx.todayStr)
             const openOrders = computeOpenOrders(companyRows, openOrdersTag)
             const openOrdersTop10 = computeOpenOrdersTop10(companyRows, openOrdersTag)
+            const delivery720 = computeDelivery720(companyRows, co.delivery720Tag)
+            const delivery720Top10 = computeDelivery720Top10(companyRows, co.delivery720Tag)
             const salesMtd = computeSalesMtd(companyRows, co.id, ctx.curYear, ctx.curMonth)
             const ordersTop10 = computeOrdersMtdTop10(companyRows, ordersTag, ctx.monthStart, ctx.todayStr)
             const salesTop10 = computeSalesMtdTop10(companyRows, co.id, ctx.curYear, ctx.curMonth)
@@ -146,6 +150,23 @@ export function OversitePage() {
                     <OversiteTop10Table
                       items={openOrdersTop10}
                       emptyLabel={t('oversite.noOpenOrders')}
+                      showSku
+                    />
+                  </OversiteCollapsible>
+                </OversiteSection>
+
+                <OversiteSection title={`📄 ${t('oversite.deliveryNotes')}`}>
+                  <OversiteKpiRow
+                    kpis={[
+                      { label: t('oversite.clients'), value: String(delivery720.clients) },
+                      { label: t('oversite.qty'), value: fmt(delivery720.qty) },
+                      { label: t('oversite.cash'), value: fmt(delivery720.cash), tone: 'grn' },
+                    ]}
+                  />
+                  <OversiteCollapsible label={`📦 ${t('oversite.top10DeliveryNotes')} ▾`}>
+                    <OversiteTop10Table
+                      items={delivery720Top10}
+                      emptyLabel={t('oversite.noDeliveryNotes')}
                       showSku
                     />
                   </OversiteCollapsible>

@@ -7,6 +7,8 @@ export interface OversiteCompanyDef {
   ordersTag: string
   /** Report 721 — open / undelivered orders */
   openOrdersTag: string
+  /** Report 720 — delivery notes */
+  delivery720Tag: string
   returnsTag: string
   label: string
   accentColor: string
@@ -17,6 +19,7 @@ export const OVERSITE_COMPANIES: OversiteCompanyDef[] = [
     id: 'pupik',
     ordersTag: 'orders-pupik',
     openOrdersTag: 'openorders',
+    delivery720Tag: 'delivery720-pupik',
     returnsTag: 'returns-pupik',
     label: '🏢 Pupik',
     accentColor: 'var(--acc)',
@@ -25,6 +28,7 @@ export const OVERSITE_COMPANIES: OversiteCompanyDef[] = [
     id: 'mt',
     ordersTag: 'orders-mt',
     openOrdersTag: 'openorders-mt',
+    delivery720Tag: 'delivery720-mt',
     returnsTag: 'returns-mt',
     label: '🐒 Monkeytime',
     accentColor: 'var(--acc2)',
@@ -270,6 +274,21 @@ export function computeOpenOrders(rows: SalesRow[], openOrdersTag: string): Open
 
 export function computeOpenOrdersTop10(rows: SalesRow[], openOrdersTag: string): Top10Item[] {
   const matched = rows.filter(r => r.company === openOrdersTag)
+  return computeTop10BySku(matched)
+}
+
+export interface Delivery720Metrics extends OrdersTodayMetrics {}
+
+/** Report 720 — delivery note rows for the company (no date filter). */
+export function computeDelivery720(rows: SalesRow[], delivery720Tag: string): Delivery720Metrics {
+  const matched = rows.filter(r => r.company === delivery720Tag)
+  const { cash, qty } = sumRows(matched)
+  const clients = new Set(matched.map(r => r.clientID).filter(Boolean)).size
+  return { clients, cash, qty }
+}
+
+export function computeDelivery720Top10(rows: SalesRow[], delivery720Tag: string): Top10Item[] {
+  const matched = rows.filter(r => r.company === delivery720Tag)
   return computeTop10BySku(matched)
 }
 

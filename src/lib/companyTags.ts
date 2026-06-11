@@ -9,6 +9,8 @@ const COMPANY_MAP: Record<string, LogicalCompany> = {
   openorders: 'pupik',
   'openorders-mt': 'mt',
   'openorders-grow': 'grow',
+  'delivery720-pupik': 'pupik',
+  'delivery720-mt': 'mt',
   'returns-pupik': 'pupik',
   'returns-mt': 'mt',
 }
