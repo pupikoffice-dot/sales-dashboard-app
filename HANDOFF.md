@@ -1,19 +1,61 @@
 # HANDOFF — sales-dashboard-app
 
 ## Current State
-_Last updated: 2026-06-09 23:40:36 by Cursor_
+_Last updated: 2026-06-14 12:55:14 by Cursor_
 
 **Status:** Active
-**Phase:** Sales Clients Items Breakdown performance — deployed on Vercel main
+**Phase:** Admin UX polish deployed; cost/profit permission design ready for implementation
 
-- Works now: Pupik all-clients items breakdown Jan–May builds in ~9 seconds on Vercel (legacy parity); sections collapsed by default; minimize and expand all; per-table SKU and Item Name IN/OUT column filters; sort; individual section expand; prior sidebar, Oversite, i18n, and filter fixes remain on main
-- In progress: Nothing active in app code
+- Works now: Admin Add user and Edit access modals use dark dashboard theme on Vercel main; prior Oversite delivery notes, Sales MTD stacked bar, Full Orders Report, and export 720 date fix remain live
+- In progress: Per-user item cost and client profit/price permissions — plan written, not coded yet
 - Blocked: Nothing blocked
-- Next up: Optional — verify Export All CSV on large client report; spot-check Cash summary and Items view with many clients; office PC data refresh if needed
+- Next up: Implement show_item_cost and show_client_profit flags in Supabase, Edit Access UI, and Stock view gating per plan
+
+---
+
+## Phase 2 — Server-filtered cost/price data (not implemented)
+
+Phase 1 hides Cost, Total Cost, Price, and cost-based charts in the UI only. The browser still downloads full `data.json` including `costRows` and `priceRows` from rep907. A technical user could read those in DevTools.
+
+**Follow-up:** Edge function or split data bundles so users without `show_item_cost` never receive `costRows`, and users without `show_client_profit` never receive `priceRows`. CSV/XLS exports must respect the same flags. Add calculated profit/margin columns gated by `show_client_profit`.
 
 ---
 
 ## Session Log
+
+### 2026-06-14 12:55:14 — Cursor
+**Done:**
+- Restyled Admin Add user and Edit access dialogs to match dashboard dark modal theme
+- Deployed to main at e7051ef
+- Researched where item costs and client price/profit appear in app and legacy HTML
+- Wrote implementation plan for per-user toggles: show item cost and show client profit and price
+- Confirmed phase one is UI hide only; server-filtered costRows and priceRows deferred to phase two
+
+**Decisions:**
+- Item cost gates rep907 purchase cost in Stock view columns, total cost KPI, and cost-based pie
+- Client profit gates catalog Price now and calculated profit or margin when added later
+- Cash revenue stays visible; deny-by-default for new users; super admin always sees all
+
+**Next:**
+- Run Supabase migration and implement plan starting with Edit Access checkboxes and Stock view gating
+
+---
+
+### 2026-06-11 19:04:48 — Cursor
+**Done:**
+- Pushed Sales MTD stacked bar and delivery notes dropdown to main at 0ed4eef
+- User reported delivery note data zero after export and push — root cause was wrong 720 column mapping in export pipeline, not React
+- Fixed export column layout and always-refresh 720 inject in parent Dashboard run_export.ps1 and ExportDashboardData.bas
+- User re-ran export, push_to_github, and confirmed done
+
+**Decisions:**
+- Delivery MTD KPIs depend on date field in delivery720 export rows — UI filter is correct once data has YYYY-MM-DD dates
+- Export always re-injects 720 from workbook sheets until embedded VBA is manually updated
+
+**Next:**
+- Browser verify stacked Sales MTD bar and delivery notes section on live Vercel app
+
+---
 
 ### 2026-06-09 23:40:36 — Cursor
 **Done:**

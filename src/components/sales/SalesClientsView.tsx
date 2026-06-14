@@ -7,7 +7,7 @@ import { useReportChart } from '../../hooks/useReportChart'
 import { buildClientHistoryIndexes } from '../../lib/clientItemsBreakdownHtml'
 import { matchesSearch } from '../../lib/salesSearch'
 import { sumRows } from '../../lib/salesMetrics'
-import type { LogicalCompany, SalesRow } from '../../types/dashboard'
+import type { LogicalCompany, SalesRow, SkuValueMap } from '../../types/dashboard'
 import type { WmsStockMap } from '../../lib/wmsData'
 import { CashSummaryTable } from './CashSummaryTable'
 import { LargeClientsItemsReport } from './LargeClientsItemsReport'
@@ -24,6 +24,7 @@ interface SalesClientsViewProps {
   filters: DashboardFiltersState
   companyRows: SalesRow[]
   wmsStock: WmsStockMap
+  itemPrice?: SkuValueMap
 }
 
 function groupByClient(rows: SalesRow[]) {
@@ -56,6 +57,7 @@ function SalesClientsContent({
   filters,
   companyRows,
   wmsStock,
+  itemPrice,
 }: SalesClientsViewProps) {
   const { t } = useLocale()
   const { searchQuery } = useSalesReportUi()
@@ -125,6 +127,7 @@ function SalesClientsContent({
           filters={filters}
           company={company}
           wmsStock={wmsStock}
+          itemPrice={itemPrice}
           defaultCollapsed
         />
       ) : (
@@ -162,6 +165,7 @@ function SalesClientsContent({
                     company={company}
                     historyRows={historyRows}
                     wmsStock={wmsStock}
+                    itemPrice={itemPrice}
                     showAllRows={nameMatch}
                     exportId={cid}
                     exportName={cl.name}

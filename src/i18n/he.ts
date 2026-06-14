@@ -162,6 +162,10 @@ export const messages: Record<keyof typeof en, string> = {
   'admin.agents': 'סוכנים (מופרדים בפסיקים, ריק = הכל)',
   'admin.defaultModule': 'מודול ברירת מחדל',
   'admin.locale': 'שפה',
+  'admin.itemsParameters': 'פרמטרי פריטים',
+  'admin.showItemCost': 'הצג עלות פריט',
+  'admin.clientsParameters': 'פרמטרי לקוחות',
+  'admin.showClientProfit': 'הצג רווח ומחיר לקוח',
   'admin.deleteConfirm': 'למחוק את המשתמש "{name}" ({login})?\nלא ניתן לבטל פעולה זו.',
 
   'health.ordersPupikMissing':

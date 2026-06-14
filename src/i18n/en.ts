@@ -160,6 +160,10 @@ export const messages = {
   'admin.agents': 'Agents (comma-separated, empty = all)',
   'admin.defaultModule': 'Default module',
   'admin.locale': 'Language',
+  'admin.itemsParameters': 'Items parameters',
+  'admin.showItemCost': 'Show item cost',
+  'admin.clientsParameters': 'Clients parameters',
+  'admin.showClientProfit': 'Show client profit & price',
   'admin.deleteConfirm': 'Delete user "{name}" ({login})?\nThis cannot be undone.',
 
   'health.ordersPupikMissing':

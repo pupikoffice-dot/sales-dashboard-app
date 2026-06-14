@@ -33,6 +33,7 @@ interface DualMonthGroupedTableProps {
   col2Label: string
   groups: DualMonthGroup[]
   renderTrailing?: (group: DualMonthGroup) => ReactNode
+  trailingHeader?: ReactNode
   trailingFooter?: ReactNode
   showAllRows?: boolean
   exportId?: string
@@ -45,6 +46,7 @@ export function DualMonthGroupedTable({
   col2Label,
   groups,
   renderTrailing,
+  trailingHeader,
   trailingFooter,
   showAllRows = false,
   exportId,
@@ -140,7 +142,7 @@ export function DualMonthGroupedTable({
               ))}
               <SortableTh pieCash>Total Cash</SortableTh>
               <SortableTh pieQty>Total Qty</SortableTh>
-              {renderTrailing && <th className="accent2">Stock</th>}
+              {trailingHeader ?? (renderTrailing ? <th className="accent2">Stock</th> : null)}
             </tr>
           </thead>
           <tbody>{body}</tbody>

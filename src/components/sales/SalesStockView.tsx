@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { SortableTh } from './SortableTh'
 import type { DashboardFiltersState } from '../../context/DashboardFiltersContext'
+import { useAuth } from '../../context/AuthContext'
+import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { SalesReportUiProvider, useSalesReportUi } from '../../context/SalesReportUiContext'
 import { fmt0, fmt2 } from '../../lib/format'
+import { canShowClientProfit, canShowItemCost } from '../../lib/permissions'
 import { companyLabel } from '../../lib/salesMetrics'
 import { matchesSearch } from '../../lib/salesSearch'
 import { buildStockReport, type StockReport } from '../../lib/stockReport'
@@ -29,6 +32,10 @@ function SalesStockContent({
   itemPrice,
 }: SalesStockViewProps) {
   const { searchQuery, setSearchQuery, setReportChart, openChart, reportChart } = useSalesReportUi()
+  const { access } = useDashboardAccess()
+  const { isSuperAdmin } = useAuth()
+  const showItemCost = canShowItemCost(access, isSuperAdmin)
+  const showClientProfit = canShowClientProfit(access, isSuperAdmin)
   const company = filters.company as LogicalCompany
 
   const [report, setReport] = useState<StockReport | null>(null)
@@ -47,7 +54,7 @@ function SalesStockContent({
   )
 
   useEffect(() => {
-    if (!report) {
+    if (!report || !showItemCost) {
       setReportChart(null)
       return
     }
@@ -63,7 +70,7 @@ function SalesStockContent({
     const title = `Top Items by Total Cost — ${companyLabel(company)}`
     setReportChart(entries.length ? { kind: 'stock', entries, title } : null)
     return () => setReportChart(null)
-  }, [report, company, setReportChart])
+  }, [report, company, setReportChart, showItemCost])
 
   if (!report) {
     return (
@@ -108,9 +115,11 @@ function SalesStockContent({
         <span>
           Total Qty: <b className="accent2">{fmt0(totals.wmsQty)}</b>
         </span>
-        <span>
-          Total Cost: <b className="accent">{fmt0(totals.totalCost)}</b>
-        </span>
+        {showItemCost && (
+          <span>
+            Total Cost: <b className="accent">{fmt0(totals.totalCost)}</b>
+          </span>
+        )}
         <div className="sbar-actions">
           <input
             className="sbar-search"
@@ -141,9 +150,13 @@ function SalesStockContent({
                 <SortableTh className="accent2">WMS Stock</SortableTh>
                 <SortableTh>Open Orders Qty</SortableTh>
                 <SortableTh>Available</SortableTh>
-                <SortableTh>Cost</SortableTh>
-                <SortableTh>Total Cost</SortableTh>
-                <SortableTh>Price</SortableTh>
+                {showItemCost && (
+                  <>
+                    <SortableTh>Cost</SortableTh>
+                    <SortableTh>Total Cost</SortableTh>
+                  </>
+                )}
+                {showClientProfit && <SortableTh>Price</SortableTh>}
               </tr>
             </thead>
             <tbody>
@@ -161,11 +174,17 @@ function SalesStockContent({
                     <td data-sv={row.available} className={availClass}>
                       {fmt0(row.available)}
                     </td>
-                    <td data-sv={row.cost ?? ''}>{row.cost != null ? fmt2(row.cost) : '—'}</td>
-                    <td data-sv={row.totalCost ?? ''}>
-                      {row.totalCost != null ? fmt0(row.totalCost) : '—'}
-                    </td>
-                    <td data-sv={row.price ?? ''}>{row.price != null ? fmt2(row.price) : '—'}</td>
+                    {showItemCost && (
+                      <>
+                        <td data-sv={row.cost ?? ''}>{row.cost != null ? fmt2(row.cost) : '—'}</td>
+                        <td data-sv={row.totalCost ?? ''}>
+                          {row.totalCost != null ? fmt0(row.totalCost) : '—'}
+                        </td>
+                      </>
+                    )}
+                    {showClientProfit && (
+                      <td data-sv={row.price ?? ''}>{row.price != null ? fmt2(row.price) : '—'}</td>
+                    )}
                   </tr>
                 )
               })}
@@ -178,9 +197,13 @@ function SalesStockContent({
                 <td className="accent2">{fmt0(totals.wmsQty)}</td>
                 <td>{fmt0(totals.ooQty)}</td>
                 <td className={availStyle}>{fmt0(totals.available)}</td>
-                <td>—</td>
-                <td>{fmt0(totals.totalCost)}</td>
-                <td>—</td>
+                {showItemCost && (
+                  <>
+                    <td>—</td>
+                    <td>{fmt0(totals.totalCost)}</td>
+                  </>
+                )}
+                {showClientProfit && <td>—</td>}
               </tr>
             </tfoot>
             </table>

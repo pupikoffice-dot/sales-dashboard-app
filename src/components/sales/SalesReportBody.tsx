@@ -143,6 +143,7 @@ export function SalesReportBody() {
         filters={f}
         companyRows={companyRows}
         wmsStock={wmsStock}
+        itemPrice={itemPrice}
       />
     )
   }
@@ -154,6 +155,7 @@ export function SalesReportBody() {
         filters={f}
         companyRows={companyRows}
         wmsStock={wmsStock}
+        itemPrice={itemPrice}
       />
     )
   }

@@ -1,25 +1,18 @@
 import { useMemo } from 'react'
 
 import type { DashboardFiltersState } from '../../context/DashboardFiltersContext'
-
+import { useAuth } from '../../context/AuthContext'
+import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { useSalesReportUi } from '../../context/SalesReportUiContext'
-
-import { fmt, fmt0 } from '../../lib/format'
-
+import { fmt, fmt0, fmt2 } from '../../lib/format'
+import { canShowClientProfit } from '../../lib/permissions'
 import { matchesSearch } from '../../lib/salesSearch'
-
 import { getWmsQty, sumRows } from '../../lib/salesMetrics'
-
 import { buildMonthTotalsIndex } from '../../lib/salesMonthAggregate'
-
-import type { LogicalCompany, SalesRow } from '../../types/dashboard'
-
+import type { LogicalCompany, SalesRow, SkuValueMap } from '../../types/dashboard'
 import type { WmsStockMap } from '../../lib/wmsData'
-
 import { DualMonthGroupedTable } from './DualMonthGroupedTable'
-
 import { SortableTh } from './SortableTh'
-
 import { TableWithExport } from './TableWithExport'
 
 interface SkuSummaryTableProps {
@@ -29,6 +22,7 @@ interface SkuSummaryTableProps {
   /** Pre-filtered company history for compare (per-client rows or full company for items summary). */
   historyRows: SalesRow[]
   wmsStock: WmsStockMap
+  itemPrice?: SkuValueMap
   showAllRows?: boolean
   exportId?: string
   exportName?: string
@@ -45,17 +39,28 @@ function groupBySku(rows: SalesRow[]) {
   return items
 }
 
+function skuPrice(itemPrice: SkuValueMap | undefined, company: LogicalCompany, sku: string) {
+  const p = itemPrice?.[company]?.[sku]
+  return p != null ? p : null
+}
+
 export function SkuSummaryTable({
   rows,
   filters,
   company,
   historyRows,
   wmsStock,
+  itemPrice,
   showAllRows = false,
   exportId,
   exportName,
 }: SkuSummaryTableProps) {
   const { searchQuery } = useSalesReportUi()
+  const { access } = useDashboardAccess()
+  const { isSuperAdmin } = useAuth()
+  const showClientProfit = canShowClientProfit(access, isSuperAdmin)
+  const priceData = itemPrice?.[company] ?? {}
+
   const items = useMemo(() => groupBySku(rows), [rows])
   const historyBySku = useMemo(() => groupBySku(historyRows), [historyRows])
   const filteredEntries = useMemo(
@@ -94,6 +99,7 @@ export function SkuSummaryTable({
       tq += qty
       tc += cash
       const sq = getWmsQty(sku, company, wmsStock)
+      const price = priceData[sku]
       return (
         <tr key={sku}>
           <td>{sku}</td>
@@ -103,6 +109,9 @@ export function SkuSummaryTable({
           <td data-sv={sq ?? -1} className="accent2">
             {sq != null ? fmt0(sq) : '—'}
           </td>
+          {showClientProfit && (
+            <td data-sv={price ?? ''}>{price != null ? fmt2(price) : '—'}</td>
+          )}
         </tr>
       )
     })
@@ -118,6 +127,7 @@ export function SkuSummaryTable({
                 <SortableTh pieQty>Qty</SortableTh>
                 <SortableTh pieCash>Cash</SortableTh>
                 <SortableTh>Stock</SortableTh>
+                {showClientProfit && <SortableTh>Price</SortableTh>}
               </tr>
             </thead>
             <tbody>{body}</tbody>
@@ -128,6 +138,7 @@ export function SkuSummaryTable({
                 <td>{fmt(tq)}</td>
                 <td>{fmt(tc)}</td>
                 <td>—</td>
+                {showClientProfit && <td>—</td>}
               </tr>
             </tfoot>
           </table>
@@ -144,15 +155,32 @@ export function SkuSummaryTable({
       groups={groups}
       exportId={exportId}
       exportName={exportName}
+      trailingHeader={
+        <>
+          <th className="accent2">Stock</th>
+          {showClientProfit && <th>Price</th>}
+        </>
+      }
       renderTrailing={group => {
         const sq = getWmsQty(group.key, company, wmsStock)
+        const price = skuPrice(itemPrice, company, group.key)
         return (
-          <td data-sv={sq ?? -1} className="accent2">
-            {sq != null ? fmt0(sq) : '—'}
-          </td>
+          <>
+            <td data-sv={sq ?? -1} className="accent2">
+              {sq != null ? fmt0(sq) : '—'}
+            </td>
+            {showClientProfit && (
+              <td data-sv={price ?? ''}>{price != null ? fmt2(price) : '—'}</td>
+            )}
+          </>
         )
       }}
-      trailingFooter={<td>—</td>}
+      trailingFooter={
+        <>
+          <td>—</td>
+          {showClientProfit && <td>—</td>}
+        </>
+      }
     />
   )
 }

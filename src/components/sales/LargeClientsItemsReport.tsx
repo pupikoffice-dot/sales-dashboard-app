@@ -1,13 +1,16 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import type { DashboardFiltersState } from '../../context/DashboardFiltersContext'
+import { useAuth } from '../../context/AuthContext'
+import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { useSalesReportUi } from '../../context/SalesReportUiContext'
 import {
   buildAllClientSectionsHtml,
   buildClientHistoryIndexes,
 } from '../../lib/clientItemsBreakdownHtml'
+import { canShowClientProfit } from '../../lib/permissions'
 import { attachAllTableColumnFilters } from '../../lib/tableColumnFilters'
-import type { LogicalCompany, SalesRow } from '../../types/dashboard'
+import type { LogicalCompany, SalesRow, SkuValueMap } from '../../types/dashboard'
 import type { WmsStockMap } from '../../lib/wmsData'
 
 interface LargeClientsItemsReportProps {
@@ -16,6 +19,7 @@ interface LargeClientsItemsReportProps {
   filters: DashboardFiltersState
   company: LogicalCompany
   wmsStock: WmsStockMap
+  itemPrice?: SkuValueMap
   defaultCollapsed: boolean
 }
 
@@ -25,11 +29,15 @@ export function LargeClientsItemsReport({
   filters,
   company,
   wmsStock,
+  itemPrice,
   defaultCollapsed,
 }: LargeClientsItemsReportProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const filtersRef = useRef(filters)
   filtersRef.current = filters
+  const { access } = useDashboardAccess()
+  const { isSuperAdmin } = useAuth()
+  const showClientProfit = canShowClientProfit(access, isSuperAdmin)
 
   const { globalCollapsed, clearGlobalCollapse, setGlobalCollapsed } = useSalesReportUi()
   const [building, setBuilding] = useState(true)
@@ -70,6 +78,8 @@ export function LargeClientsItemsReport({
         company,
         wmsStock,
         defaultCollapsed,
+        itemPrice,
+        showClientProfit,
       )
       if (cancelled || !containerRef.current) return
       containerRef.current.innerHTML = html
@@ -91,6 +101,8 @@ export function LargeClientsItemsReport({
     filterKey,
     company,
     wmsStock,
+    itemPrice,
+    showClientProfit,
     defaultCollapsed,
     setGlobalCollapsed,
   ])

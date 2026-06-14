@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useLocale } from '../../context/LocaleContext'
 import { supabase } from '../../lib/supabase'
 import { callUserManagement } from '../../lib/userManagement'
 import { displayLoginId, isEmailLogin, isInternalAuthEmail } from '../../lib/loginIdentifier'
@@ -25,6 +26,8 @@ interface AccessRow {
   default_module: string
   locale?: string
   active: boolean
+  show_item_cost?: boolean
+  show_client_profit?: boolean
 }
 
 const COMPANIES: LogicalCompany[] = ['pupik', 'mt', 'grow']
@@ -390,8 +393,11 @@ function EditAccessModal({
   const [agentsText, setAgentsText] = useState('')
   const [defaultModule, setDefaultModule] = useState<DashboardModuleId>('oversite')
   const [locale, setLocale] = useState<AppLocale>('en')
+  const [showItemCost, setShowItemCost] = useState(false)
+  const [showClientProfit, setShowClientProfit] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { t } = useLocale()
 
   useEffect(() => {
     supabase.from('dashboard_user_access').select('*').eq('user_id', userId).maybeSingle()
@@ -403,6 +409,8 @@ function EditAccessModal({
           setAgentsText(row.agents?.join(', ') ?? '')
           setDefaultModule((row.default_module as DashboardModuleId) ?? 'oversite')
           setLocale(row.locale === 'he' ? 'he' : 'en')
+          setShowItemCost(row.show_item_cost === true)
+          setShowClientProfit(row.show_client_profit === true)
         } else {
           setModules(['oversite'])
           setCompanies(['pupik'])
@@ -432,6 +440,8 @@ function EditAccessModal({
       default_module: defaultModule,
       locale,
       active: true,
+      show_item_cost: showItemCost,
+      show_client_profit: showClientProfit,
       updated_at: new Date().toISOString(),
     })
     setSaving(false)
@@ -474,6 +484,30 @@ function EditAccessModal({
                   </label>
                 ))}
               </div>
+            </div>
+
+            <div>
+              <div className="admin-form-section-title">{t('admin.itemsParameters')}</div>
+              <label className="admin-form-check">
+                <input
+                  type="checkbox"
+                  checked={showItemCost}
+                  onChange={e => setShowItemCost(e.target.checked)}
+                />
+                {t('admin.showItemCost')}
+              </label>
+            </div>
+
+            <div>
+              <div className="admin-form-section-title">{t('admin.clientsParameters')}</div>
+              <label className="admin-form-check">
+                <input
+                  type="checkbox"
+                  checked={showClientProfit}
+                  onChange={e => setShowClientProfit(e.target.checked)}
+                />
+                {t('admin.showClientProfit')}
+              </label>
             </div>
 
             <label>

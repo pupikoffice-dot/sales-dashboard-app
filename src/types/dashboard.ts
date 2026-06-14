@@ -18,6 +18,8 @@ export interface DashboardAccess {
   agents: string[] | null
   defaultModule: DashboardModuleId
   active: boolean
+  showItemCost: boolean
+  showClientProfit: boolean
 }
 
 export interface SalesRow {

@@ -162,6 +162,8 @@ Deno.serve(async (req) => {
       default_module: 'oversite',
       locale: 'en',
       active: true,
+      show_item_cost: false,
+      show_client_profit: false,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id' })
     if (accessErr) return json({ error: 'Access save failed: ' + accessErr.message }, 500)

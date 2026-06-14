@@ -1,5 +1,5 @@
 import type { DashboardFiltersState } from '../context/DashboardFiltersContext'
-import { fmt, fmt0, MONTH_NAMES } from './format'
+import { fmt, fmt0, fmt2, MONTH_NAMES } from './format'
 import { escapeHtml } from './escapeHtml'
 import { getWmsQty } from './salesMetrics'
 import { getDualMonthCols } from './salesDateFilter'
@@ -8,7 +8,7 @@ import {
   getMonthTotal,
   type MonthTotalsIndex,
 } from './salesMonthAggregate'
-import type { LogicalCompany, SalesRow } from '../types/dashboard'
+import type { LogicalCompany, SalesRow, SkuValueMap } from '../types/dashboard'
 import type { WmsStockMap } from './wmsData'
 
 function groupBySku(rows: SalesRow[]) {
@@ -45,11 +45,14 @@ export function buildItemsUnderClientHtml(
   company: LogicalCompany,
   wmsStock: WmsStockMap,
   dualMonthCols?: ReturnType<typeof getDualMonthCols>,
+  itemPrice?: SkuValueMap,
+  showClientProfit = false,
 ): string {
   const items = groupBySku(rows)
   const entries = Object.entries(items).sort((a, b) => a[1].name.localeCompare(b[1].name))
   if (!entries.length) return ''
 
+  const priceData = itemPrice?.[company] ?? {}
   const isSimple = filters.dateMode === 'range' || filters.dateMode === 'openorders'
 
   if (isSimple) {
@@ -59,8 +62,9 @@ export function buildItemsUnderClientHtml(
       '<th class="sortable">Item Name<span class="si"> ↕</span></th>' +
       '<th class="sortable" data-pie-qty>Qty<span class="si"> ↕</span></th>' +
       '<th class="sortable" data-pie-cash>Cash<span class="si"> ↕</span></th>' +
-      '<th class="sortable">Stock<span class="si"> ↕</span></th>' +
-      '</tr></thead><tbody>'
+      '<th class="sortable">Stock<span class="si"> ↕</span></th>'
+    if (showClientProfit) h += '<th class="sortable">Price<span class="si"> ↕</span></th>'
+    h += '</tr></thead><tbody>'
     let tq = 0
     let tc = 0
     for (const [sku, it] of entries) {
@@ -73,14 +77,21 @@ export function buildItemsUnderClientHtml(
       tq += qty
       tc += cash
       const sq = getWmsQty(sku, company, wmsStock)
+      const price = priceData[sku]
       h +=
         `<tr><td>${escapeHtml(sku)}</td>` +
         `<td title="${escapeHtml(it.name)}">${escapeHtml(it.name)}</td>` +
         `<td data-sv="${qty}">${fmt(qty)}</td>` +
         `<td data-sv="${cash}">${fmt(cash)}</td>` +
-        `<td data-sv="${sq ?? -1}" class="accent2">${sq != null ? fmt0(sq) : '—'}</td></tr>`
+        `<td data-sv="${sq ?? -1}" class="accent2">${sq != null ? fmt0(sq) : '—'}</td>`
+      if (showClientProfit) {
+        h += `<td data-sv="${price ?? ''}">${price != null ? fmt2(price) : '—'}</td>`
+      }
+      h += '</tr>'
     }
-    h += `</tbody><tfoot><tr><td>—</td><td>Total</td><td>${fmt(tq)}</td><td>${fmt(tc)}</td><td>—</td></tr></tfoot></table></div>`
+    h += `</tbody><tfoot><tr><td>—</td><td>Total</td><td>${fmt(tq)}</td><td>${fmt(tc)}</td><td>—</td>`
+    if (showClientProfit) h += '<td>—</td>'
+    h += '</tr></tfoot></table></div>'
     return h
   }
 
@@ -98,7 +109,9 @@ export function buildItemsUnderClientHtml(
   h +=
     '<th class="sortable" data-pie-cash>Total Cash<span class="si"> ↕</span></th>' +
     '<th class="sortable" data-pie-qty>Total Qty<span class="si"> ↕</span></th>' +
-    '<th class="sortable accent2">Stock<span class="si"> ↕</span></th></tr></thead><tbody>'
+    '<th class="sortable accent2">Stock<span class="si"> ↕</span></th>'
+  if (showClientProfit) h += '<th class="sortable">Price<span class="si"> ↕</span></th>'
+  h += '</tr></thead><tbody>'
 
   let gc = 0
   let gq = 0
@@ -125,10 +138,15 @@ export function buildItemsUnderClientHtml(
       gmq2[dc.m] = (gmq2[dc.m] || 0) + prev.qty
     }
     const sq = getWmsQty(sku, company, wmsStock)
+    const price = priceData[sku]
     h +=
       `<td data-sv="${rc}" style="font-weight:700">${fmt(rc)}</td>` +
       `<td data-sv="${rq}" class="cm">${fmt(rq)}</td>` +
-      `<td data-sv="${sq ?? -1}" class="accent2">${sq != null ? fmt0(sq) : '—'}</td></tr>`
+      `<td data-sv="${sq ?? -1}" class="accent2">${sq != null ? fmt0(sq) : '—'}</td>`
+    if (showClientProfit) {
+      h += `<td data-sv="${price ?? ''}">${price != null ? fmt2(price) : '—'}</td>`
+    }
+    h += '</tr>'
     gc += rc
     gq += rq
   }
@@ -141,7 +159,9 @@ export function buildItemsUnderClientHtml(
     const q2 = gmq2[dc.m] || 0
     h += dualMonthCellHtml(c1, q1, c2, q2)
   }
-  h += `<td data-sv="${gc}">${fmt(gc)}</td><td data-sv="${gq}" class="cm">${fmt(gq)}</td><td>—</td></tr></tfoot></table></div>`
+  h += `<td data-sv="${gc}">${fmt(gc)}</td><td data-sv="${gq}" class="cm">${fmt(gq)}</td><td>—</td>`
+  if (showClientProfit) h += '<td>—</td>'
+  h += '</tr></tfoot></table></div>'
   return h
 }
 
@@ -157,6 +177,8 @@ export function buildClientSectionHtml(
   qty: number,
   collapsed: boolean,
   dualMonthCols?: ReturnType<typeof getDualMonthCols>,
+  itemPrice?: SkuValueMap,
+  showClientProfit = false,
 ): string {
   const body = buildItemsUnderClientHtml(
     rows,
@@ -165,6 +187,8 @@ export function buildClientSectionHtml(
     company,
     wmsStock,
     dualMonthCols,
+    itemPrice,
+    showClientProfit,
   )
   const collapsedClass = collapsed ? ' collapsed' : ''
   return (
@@ -252,6 +276,8 @@ export function buildAllClientSectionsHtml(
   company: LogicalCompany,
   wmsStock: WmsStockMap,
   collapsed: boolean,
+  itemPrice?: SkuValueMap,
+  showClientProfit = false,
 ): string {
   const dualMonthCols =
     filters.dateMode === 'months' ? getDualMonthCols(filters.selectedMonths) : undefined
@@ -278,6 +304,8 @@ export function buildAllClientSectionsHtml(
       qty,
       collapsed,
       dualMonthCols,
+      itemPrice,
+      showClientProfit,
     )
   }
   return parts.join('')

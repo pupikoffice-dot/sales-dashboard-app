@@ -35,6 +35,8 @@ function normalizeAccess(row: Record<string, unknown>, userId: string): Dashboar
     agents: row.agents == null ? null : (row.agents as string[]),
     defaultModule: (row.default_module as DashboardModuleId) ?? 'oversite',
     active: row.active !== false,
+    showItemCost: row.show_item_cost === true,
+    showClientProfit: row.show_client_profit === true,
   }
 }
 
@@ -60,6 +62,8 @@ export function DashboardAccessProvider({ children }: { children: ReactNode }) {
           agents: null,
           defaultModule: 'oversite',
           active: true,
+          showItemCost: true,
+          showClientProfit: true,
         })
       } else {
         setAccess(null)

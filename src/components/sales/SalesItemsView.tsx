@@ -9,7 +9,7 @@ import { fmt, fmt0 } from '../../lib/format'
 import { matchesSearch } from '../../lib/salesSearch'
 import { getWmsQty, sumRows } from '../../lib/salesMetrics'
 import { buildMonthTotalsIndex } from '../../lib/salesMonthAggregate'
-import type { LogicalCompany, SalesRow } from '../../types/dashboard'
+import type { LogicalCompany, SalesRow, SkuValueMap } from '../../types/dashboard'
 import type { WmsStockMap } from '../../lib/wmsData'
 import { DualMonthGroupedTable } from './DualMonthGroupedTable'
 import { SalesSection } from './SalesSection'
@@ -23,6 +23,7 @@ interface SalesItemsViewProps {
   filters: DashboardFiltersState
   companyRows: SalesRow[]
   wmsStock: WmsStockMap
+  itemPrice?: SkuValueMap
 }
 
 function groupBySku(rows: SalesRow[]) {
@@ -181,7 +182,7 @@ function ClientsUnderItemTable({
   )
 }
 
-function SalesItemsContent({ rows, filters, companyRows, wmsStock }: SalesItemsViewProps) {
+function SalesItemsContent({ rows, filters, companyRows, wmsStock, itemPrice }: SalesItemsViewProps) {
   const { t } = useLocale()
   const { searchQuery } = useSalesReportUi()
   useReportChart(filters, rows, { kind: 'item', pieTitle: 'Cash by Item' })
@@ -207,6 +208,7 @@ function SalesItemsContent({ rows, filters, companyRows, wmsStock }: SalesItemsV
           company={company}
           historyRows={companyRows}
           wmsStock={wmsStock}
+          itemPrice={itemPrice}
         />
       </div>
     )

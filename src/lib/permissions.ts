@@ -49,3 +49,13 @@ export function filterRows(access: DashboardAccess, rows: SalesRow[]): SalesRow[
     return true
   })
 }
+
+export function canShowItemCost(access: DashboardAccess | null, isSuperAdmin = false): boolean {
+  if (isSuperAdmin) return true
+  return access?.active === true && access.showItemCost === true
+}
+
+export function canShowClientProfit(access: DashboardAccess | null, isSuperAdmin = false): boolean {
+  if (isSuperAdmin) return true
+  return access?.active === true && access.showClientProfit === true
+}
