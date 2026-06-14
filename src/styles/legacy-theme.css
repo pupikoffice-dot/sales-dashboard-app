@@ -1118,6 +1118,85 @@ body {
   border-color: var(--acc);
 }
 
+/* ── Admin modals (users, access) ── */
+.admin-modal {
+  max-width: 520px;
+}
+
+.admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-form-section-title {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.admin-form label {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--muted2);
+}
+
+.admin-form .block-input {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  border-radius: 6px;
+}
+
+.admin-form select.block-input {
+  background: var(--sur2);
+  border: 1px solid var(--bdr);
+  color: var(--txt);
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  font-family: inherit;
+}
+
+.admin-form select.block-input:focus {
+  border-color: var(--acc);
+  outline: none;
+}
+
+.admin-form-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--txt);
+  cursor: pointer;
+}
+
+.admin-form-check input {
+  accent-color: var(--acc);
+}
+
+.admin-form-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.admin-form-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-form-checkrow {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
 .cr {
   color: var(--amber);
   text-align: right;

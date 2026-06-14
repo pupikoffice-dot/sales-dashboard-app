@@ -166,56 +166,65 @@ export function UsersPage() {
       </div>
 
       {showCreate && (
-        <div className="tw" style={{ marginTop: 16, maxWidth: 480 }}>
-          <h3 style={{ margin: '0 0 12px', fontSize: '1rem' }}>New user</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <label style={{ fontSize: '.8rem' }}>
-              Login (email or username) *
-              <input
-                className="sbar-search"
-                style={{ display: 'block', width: '100%', marginTop: 4, borderRadius: 6 }}
-                type="text"
-                value={newLogin}
-                onChange={e => setNewLogin(e.target.value)}
-                placeholder="user@company.com or jsmith"
-                autoComplete="off"
-              />
-            </label>
-            <label style={{ fontSize: '.8rem' }}>
-              Display name
-              <input
-                className="sbar-search"
-                style={{ display: 'block', width: '100%', marginTop: 4, borderRadius: 6 }}
-                value={newName}
-                onChange={e => setNewName(e.target.value)}
-                placeholder={isEmailLogin(newLogin) ? 'Optional' : 'Optional — defaults to username'}
-              />
-            </label>
-            <label style={{ fontSize: '.8rem' }}>
-              Password *
-              <input
-                className="sbar-search"
-                style={{ display: 'block', width: '100%', marginTop: 4, borderRadius: 6 }}
-                type="text"
-                value={newPassword}
-                onChange={e => setNewPassword(e.target.value)}
-                placeholder="Set login password"
-              />
-            </label>
-            {createError && <p className="status-msg error" style={{ margin: 0 }}>{createError}</p>}
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                type="button"
-                className="ov-toggle-btn"
-                style={{ marginTop: 0, width: 'auto' }}
-                disabled={createMutation.isPending || !newLogin.trim() || !newPassword}
-                onClick={() => createMutation.mutate()}
-              >
-                {createMutation.isPending ? 'Creating…' : 'Create user'}
+        <div
+          className="debt-overlay"
+          onClick={e => e.target === e.currentTarget && setShowCreate(false)}
+        >
+          <div className="debt-modal admin-modal">
+            <div className="debt-modal-hdr">
+              <span>New user</span>
+              <button type="button" className="debt-modal-close" onClick={() => setShowCreate(false)}>
+                Close
               </button>
-              <button type="button" className="sbar-minimize-btn" onClick={() => setShowCreate(false)}>
-                Cancel
-              </button>
+            </div>
+            <div className="debt-modal-body">
+              <div className="admin-form">
+                <label>
+                  Login (email or username) *
+                  <input
+                    className="sbar-search block-input"
+                    type="text"
+                    value={newLogin}
+                    onChange={e => setNewLogin(e.target.value)}
+                    placeholder="user@company.com or jsmith"
+                    autoComplete="off"
+                  />
+                </label>
+                <label>
+                  Display name
+                  <input
+                    className="sbar-search block-input"
+                    value={newName}
+                    onChange={e => setNewName(e.target.value)}
+                    placeholder={isEmailLogin(newLogin) ? 'Optional' : 'Optional — defaults to username'}
+                  />
+                </label>
+                <label>
+                  Password *
+                  <input
+                    className="sbar-search block-input"
+                    type="text"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    placeholder="Set login password"
+                  />
+                </label>
+                {createError && <p className="status-msg error" style={{ margin: 0 }}>{createError}</p>}
+                <div className="admin-form-actions">
+                  <button type="button" className="sbar-minimize-btn" onClick={() => setShowCreate(false)}>
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="ov-toggle-btn"
+                    style={{ marginTop: 0, width: 'auto' }}
+                    disabled={createMutation.isPending || !newLogin.trim() || !newPassword}
+                    onClick={() => createMutation.mutate()}
+                  >
+                    {createMutation.isPending ? 'Creating…' : 'Create user'}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -431,80 +440,92 @@ function EditAccessModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-lg max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-auto">
-        <h2 className="text-lg font-semibold">Access — {userName}</h2>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-
-        <div>
-          <div className="text-xs font-medium text-slate-500 mb-2">Modules</div>
-          <div className="space-y-1">
-            {MODULE_REGISTRY.map(m => (
-              <label key={m.id} className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={modules.includes(m.id)} onChange={() => toggleModule(m.id)} />
-                {m.label}
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <div className="text-xs font-medium text-slate-500 mb-2">Companies</div>
-          <div className="flex gap-4">
-            {COMPANIES.map(c => (
-              <label key={c} className="flex items-center gap-2 text-sm capitalize">
-                <input type="checkbox" checked={companies.includes(c)} onChange={() => toggleCompany(c)} />
-                {c}
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <label className="text-xs font-medium text-slate-500">Agents (comma-separated, empty = all)</label>
-          <input
-            className="mt-1 w-full border rounded px-3 py-2 text-sm"
-            value={agentsText}
-            onChange={e => setAgentsText(e.target.value)}
-            placeholder="24, 25, 27"
-          />
-        </div>
-
-        <div>
-          <label className="text-xs font-medium text-slate-500">Default module</label>
-          <select
-            className="mt-1 w-full border rounded px-3 py-2 text-sm"
-            value={defaultModule}
-            onChange={e => setDefaultModule(e.target.value as DashboardModuleId)}
-          >
-            {MODULE_REGISTRY.map(m => (
-              <option key={m.id} value={m.id}>{m.label}</option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="text-xs font-medium text-slate-500">Language</label>
-          <select
-            className="mt-1 w-full border rounded px-3 py-2 text-sm"
-            value={locale}
-            onChange={e => setLocale(e.target.value as AppLocale)}
-          >
-            <option value="en">English</option>
-            <option value="he">עברית (Hebrew)</option>
-          </select>
-        </div>
-
-        <div className="flex gap-2 justify-end">
-          <button type="button" onClick={onClose} className="px-4 py-2 text-sm border rounded">Cancel</button>
-          <button
-            type="button"
-            onClick={save}
-            disabled={saving}
-            className="px-4 py-2 text-sm bg-slate-900 text-white rounded disabled:opacity-50"
-          >
-            {saving ? 'Saving…' : 'Save'}
+    <div className="debt-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="debt-modal admin-modal">
+        <div className="debt-modal-hdr">
+          <span>Access — {userName}</span>
+          <button type="button" className="debt-modal-close" onClick={onClose}>
+            Close
           </button>
+        </div>
+        <div className="debt-modal-body">
+          <div className="admin-form">
+            {error && <p className="status-msg error" style={{ margin: 0 }}>{error}</p>}
+
+            <div>
+              <div className="admin-form-section-title">Modules</div>
+              <div className="admin-form-checklist">
+                {MODULE_REGISTRY.map(m => (
+                  <label key={m.id} className="admin-form-check">
+                    <input type="checkbox" checked={modules.includes(m.id)} onChange={() => toggleModule(m.id)} />
+                    {m.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div className="admin-form-section-title">Companies</div>
+              <div className="admin-form-checkrow">
+                {COMPANIES.map(c => (
+                  <label key={c} className="admin-form-check capitalize">
+                    <input type="checkbox" checked={companies.includes(c)} onChange={() => toggleCompany(c)} />
+                    {c}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <label>
+              Agents (comma-separated, empty = all)
+              <input
+                className="sbar-search block-input"
+                value={agentsText}
+                onChange={e => setAgentsText(e.target.value)}
+                placeholder="24, 25, 27"
+              />
+            </label>
+
+            <label>
+              Default module
+              <select
+                className="block-input"
+                value={defaultModule}
+                onChange={e => setDefaultModule(e.target.value as DashboardModuleId)}
+              >
+                {MODULE_REGISTRY.map(m => (
+                  <option key={m.id} value={m.id}>{m.label}</option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Language
+              <select
+                className="block-input"
+                value={locale}
+                onChange={e => setLocale(e.target.value as AppLocale)}
+              >
+                <option value="en">English</option>
+                <option value="he">עברית (Hebrew)</option>
+              </select>
+            </label>
+
+            <div className="admin-form-actions">
+              <button type="button" className="sbar-minimize-btn" onClick={onClose}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="ov-toggle-btn"
+                style={{ marginTop: 0, width: 'auto' }}
+                onClick={save}
+                disabled={saving}
+              >
+                {saving ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
