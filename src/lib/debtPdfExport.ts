@@ -103,23 +103,45 @@ ${bodyHtml}
 </html>`
 }
 
-function openPrintPdf(html: string, docTitle: string): void {
-  const win = window.open('', '_blank', 'noopener,noreferrer')
-  if (!win) {
-    window.alert('Pop-up blocked — allow pop-ups to export PDF.')
+function printHtmlDocument(html: string, docTitle: string): void {
+  const iframe = document.createElement('iframe')
+  iframe.setAttribute('title', docTitle)
+  iframe.setAttribute('aria-hidden', 'true')
+  iframe.style.cssText =
+    'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;pointer-events:none;'
+  document.body.appendChild(iframe)
+
+  const frameWin = iframe.contentWindow
+  const frameDoc = frameWin?.document
+  if (!frameDoc || !frameWin) {
+    iframe.remove()
+    window.alert('Could not open print preview.')
     return
   }
-  win.document.open()
-  win.document.write(html)
-  win.document.close()
-  win.document.title = docTitle
-  win.focus()
-  const trigger = () => {
-    win.print()
-    win.onafterprint = () => win.close()
+
+  frameDoc.open()
+  frameDoc.write(html)
+  frameDoc.close()
+
+  const cleanup = () => {
+    iframe.remove()
   }
-  if (win.document.readyState === 'complete') trigger()
-  else win.onload = trigger
+
+  const triggerPrint = () => {
+    try {
+      frameWin.focus()
+      frameWin.print()
+    } catch {
+      window.alert('Could not open print preview.')
+      cleanup()
+      return
+    }
+    frameWin.addEventListener('afterprint', cleanup, { once: true })
+    window.setTimeout(cleanup, 60_000)
+  }
+
+  // Brief delay so layout/fonts settle before the print dialog opens.
+  window.setTimeout(triggerPrint, 300)
 }
 
 export function exportDebtSectionsToPdf(
@@ -150,7 +172,7 @@ export function exportDebtSectionsToPdf(
       `</tr></tfoot></table></div>`
   }
 
-  openPrintPdf(buildPrintDocument(docTitle, body), docTitle)
+  printHtmlDocument(buildPrintDocument(docTitle, body), docTitle)
 }
 
 export function exportDebtAgentToPdf(
