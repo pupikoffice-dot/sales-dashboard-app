@@ -1118,6 +1118,49 @@ body {
   border-color: var(--acc);
 }
 
+.debt-agent-filter-btn {
+  margin-bottom: 8px;
+}
+
+.debt-agent-filter {
+  margin-bottom: 14px;
+}
+
+.debt-agent-section {
+  margin-bottom: 22px;
+}
+
+.debt-agent-section:last-of-type {
+  margin-bottom: 12px;
+}
+
+.debt-agent-hdr {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--txt);
+}
+
+.debt-agent-meta {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.debt-grand-total table {
+  width: 100%;
+}
+
+.debt-grand-total tfoot td {
+  font-weight: 700;
+  border-top: 2px solid var(--bdr);
+  padding-top: 8px;
+}
+
 /* ── Admin modals (users, access) ── */
 .admin-modal {
   max-width: 520px;
