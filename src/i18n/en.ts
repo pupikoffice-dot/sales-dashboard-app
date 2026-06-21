@@ -161,6 +161,9 @@ export const messages = {
   'oversite.debtGrandTotal': 'Grand total',
   'oversite.debtClients': 'clients',
   'oversite.debtSortColumn': 'Sort column',
+  'oversite.debtExportPdf': 'Export PDF',
+  'oversite.debtExportPdfAll': 'Export all agent tables to PDF',
+  'oversite.debtExportPdfAgent': 'Export this agent table to PDF',
 
   'admin.usersTitle': 'Dashboard Users',
   'admin.usersSub': 'Add users, set passwords, and assign modules, companies, and agents.',

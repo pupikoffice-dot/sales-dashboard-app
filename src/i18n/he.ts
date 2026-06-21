@@ -163,6 +163,9 @@ export const messages: Record<keyof typeof en, string> = {
   'oversite.debtGrandTotal': 'סה״כ כולל',
   'oversite.debtClients': 'לקוחות',
   'oversite.debtSortColumn': 'מיון עמודה',
+  'oversite.debtExportPdf': 'ייצוא PDF',
+  'oversite.debtExportPdfAll': 'ייצוא כל טבלאות הסוכנים ל-PDF',
+  'oversite.debtExportPdfAgent': 'ייצוא טבלת סוכן זה ל-PDF',
 
   'admin.usersTitle': 'משתמשי לוח הבקרה',
   'admin.usersSub': 'הוסף משתמשים, הגדר סיסמאות, והקצה מודולים, חברות וסוכנים.',

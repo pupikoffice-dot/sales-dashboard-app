@@ -10,6 +10,7 @@ import {
   debtReportRows,
   debtRowTotal,
 } from '../../lib/debtMetrics'
+import { exportDebtAgentToPdf, exportDebtSectionsToPdf } from '../../lib/debtPdfExport'
 import type { DebtRow, LogicalCompany } from '../../types/dashboard'
 import { FilterCheckList } from '../sidebar/FilterCheckList'
 
@@ -74,6 +75,7 @@ export function DebtModal({ company, debtData, debtLastUpdate, onClose }: DebtMo
   const mLabels = reportRows.length ? debtMonths(reportRows[0].months).map(m => m.label) : []
   const { sortCol, sortAsc, onSort, sortIcon } = useColumnSort()
   const [showAgentFilter, setShowAgentFilter] = useState(false)
+  const [collapsedAgents, setCollapsedAgents] = useState<Set<string>>(() => new Set())
 
   const agents = useMemo(() => {
     const ids = new Set<string>()
@@ -124,11 +126,65 @@ export function DebtModal({ company, debtData, debtLastUpdate, onClose }: DebtMo
 
   const filterActive = selectedAgents.size < agents.length
 
-  if (!reportRows.length) return null
+  const toggleAgentCollapsed = (agent: string) => {
+    setCollapsedAgents(prev => {
+      const next = new Set(prev)
+      if (next.has(agent)) next.delete(agent)
+      else next.add(agent)
+      return next
+    })
+  }
 
   const title = `${t('oversite.debtReportTitle', { company: companyDebtLabel(company), min: DEBT_REPORT_MIN_TOTAL })}${
     debtLastUpdate ? ` · ${t('oversite.lastUpdate')}: ${debtLastUpdate}` : ''
   }`
+
+  const pdfLabels = useMemo(
+    () => ({
+      clientId: t('oversite.debtClientId'),
+      clientName: t('oversite.debtClientName'),
+      oldDebt: t('oversite.debtOldDebt'),
+      total: t('oversite.debtTotal'),
+      subtotal: t('oversite.debtSubtotal'),
+      grandTotal: t('oversite.debtGrandTotal'),
+    }),
+    [t],
+  )
+
+  if (!reportRows.length) return null
+
+  const exportAllPdf = () => {
+    const sections = groupedByAgent.map(([agent, rows]) => {
+      const sorted = sortDebtRows(rows, sortCol, sortAsc, mLabels)
+      const agentLabel = agent
+        ? `${t('oversite.debtAgent')} ${agent}`
+        : t('oversite.debtAgentUnassigned')
+      return {
+        title: agentLabel,
+        rows: sorted,
+        footer: computeAgentFooter(sorted, mLabels),
+      }
+    })
+    exportDebtSectionsToPdf(
+      title,
+      sections,
+      mLabels,
+      pdfLabels,
+      groupedByAgent.length > 1 ? grandFooter : undefined,
+    )
+  }
+
+  const exportAgentPdf = (agent: string, rows: DebtRow[]) => {
+    const sorted = sortDebtRows(rows, sortCol, sortAsc, mLabels)
+    const agentLabel = agent
+      ? `${t('oversite.debtAgent')} ${agent}`
+      : t('oversite.debtAgentUnassigned')
+    exportDebtAgentToPdf(`${title} — ${agentLabel}`, {
+      title: agentLabel,
+      rows: sorted,
+      footer: computeAgentFooter(sorted, mLabels),
+    }, mLabels, pdfLabels)
+  }
 
   function renderSortTh(col: number, label: string, align: 'left' | 'right' = 'right') {
     const dir = sortIcon(col)
@@ -150,9 +206,21 @@ export function DebtModal({ company, debtData, debtLastUpdate, onClose }: DebtMo
       <div className="debt-modal">
         <div className="debt-modal-hdr">
           <span>{title}</span>
-          <button type="button" className="debt-modal-close" onClick={onClose}>
-            ✕
-          </button>
+          <div className="debt-modal-hdr-actions">
+            {groupedByAgent.length > 0 && (
+              <button
+                type="button"
+                className="debt-export-pdf-btn"
+                onClick={exportAllPdf}
+                title={t('oversite.debtExportPdfAll')}
+              >
+                📄 {t('oversite.debtExportPdf')}
+              </button>
+            )}
+            <button type="button" className="debt-modal-close" onClick={onClose}>
+              ✕
+            </button>
+          </div>
         </div>
         <div className="debt-modal-body">
           <button
@@ -195,15 +263,39 @@ export function DebtModal({ company, debtData, debtLastUpdate, onClose }: DebtMo
                 const agentLabel = agent
                   ? `${t('oversite.debtAgent')} ${agent}`
                   : t('oversite.debtAgentUnassigned')
+                const isCollapsed = collapsedAgents.has(agent)
 
                 return (
-                  <section key={agent || '__none'} className="debt-agent-section">
-                    <h4 className="debt-agent-hdr">
-                      {agentLabel}
+                  <section
+                    key={agent || '__none'}
+                    className={`debt-agent-section${isCollapsed ? ' debt-agent-section--collapsed' : ''}`}
+                  >
+                    <button
+                      type="button"
+                      className="debt-agent-hdr debt-agent-toggle"
+                      onClick={() => toggleAgentCollapsed(agent)}
+                      aria-expanded={!isCollapsed}
+                    >
+                      <span className="debt-agent-toggle-label">
+                        <span className="debt-agent-chevron">{isCollapsed ? '▾' : '▴'}</span>
+                        {agentLabel}
+                      </span>
                       <span className="debt-agent-meta">
                         {sorted.length} {t('oversite.debtClients')} · {fmt(footer.totGrand)}
+                        <button
+                          type="button"
+                          className="debt-agent-pdf-btn"
+                          onClick={e => {
+                            e.stopPropagation()
+                            exportAgentPdf(agent, rows)
+                          }}
+                          title={t('oversite.debtExportPdfAgent')}
+                        >
+                          📄 PDF
+                        </button>
                       </span>
-                    </h4>
+                    </button>
+                    {!isCollapsed && (
                     <div className="tw">
                       <table>
                         <thead>
@@ -256,6 +348,7 @@ export function DebtModal({ company, debtData, debtLastUpdate, onClose }: DebtMo
                         </tfoot>
                       </table>
                     </div>
+                    )}
                   </section>
                 )
               })}

@@ -1096,6 +1096,64 @@ body {
   border-bottom: 1px solid var(--bdr);
   font-size: 0.85rem;
   font-weight: 600;
+  gap: 12px;
+}
+
+.debt-modal-hdr-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.debt-export-pdf-btn {
+  background: transparent;
+  border: 1px solid var(--bdr);
+  color: var(--muted2);
+  border-radius: 8px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.debt-export-pdf-btn:hover {
+  color: var(--txt);
+  border-color: var(--acc);
+}
+
+.debt-agent-pdf-btn {
+  margin-inline-start: 10px;
+  background: transparent;
+  border: 1px solid var(--bdr);
+  color: var(--muted2);
+  border-radius: 6px;
+  padding: 2px 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.68rem;
+  font-weight: 500;
+  vertical-align: middle;
+}
+
+.debt-agent-pdf-btn:hover {
+  color: var(--txt);
+  border-color: var(--acc);
+}
+
+.debt-agent-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.debt-agent-section .tw {
+  padding: 0 12px 12px;
 }
 
 .debt-modal-body {
@@ -1128,6 +1186,13 @@ body {
 
 .debt-agent-section {
   margin-bottom: 22px;
+  border: 1px solid var(--bdr);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.debt-agent-section--collapsed {
+  margin-bottom: 10px;
 }
 
 .debt-agent-section:last-of-type {
@@ -1139,16 +1204,38 @@ body {
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  margin: 0 0 8px;
+  margin: 0;
+  padding: 10px 12px;
   font-size: 0.82rem;
   font-weight: 700;
   color: var(--txt);
 }
 
-.debt-agent-meta {
-  font-size: 0.72rem;
-  font-weight: 500;
-  color: var(--muted);
+.debt-agent-toggle {
+  width: 100%;
+  text-align: left;
+  background: var(--sur2);
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.debt-agent-toggle:hover {
+  background: var(--sur3, rgba(255, 255, 255, 0.04));
+}
+
+.debt-agent-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.debt-agent-chevron {
+  font-size: 0.75rem;
+  opacity: 0.65;
+  width: 1em;
+  flex-shrink: 0;
 }
 
 .debt-grand-total table {
