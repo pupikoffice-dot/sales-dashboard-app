@@ -20,10 +20,20 @@ export function OversiteKpiRow({ kpis }: { kpis: Kpi[] }) {
   )
 }
 
-export function OversiteSection({ title, children }: { title: string; children: ReactNode }) {
+export function OversiteSection({
+  title,
+  children,
+  updatedAt,
+}: {
+  title: string
+  children: ReactNode
+  /** Optional per-segment data-freshness line (super-admin only). */
+  updatedAt?: string
+}) {
   return (
     <section className="ov-section">
       <h3 className="ov-section-title">{title}</h3>
+      {updatedAt ? <div className="ov-section-synced">{updatedAt}</div> : null}
       {children}
     </section>
   )

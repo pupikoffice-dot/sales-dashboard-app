@@ -76,6 +76,9 @@ export interface PriceRow {
 
 export type SkuValueMap = Record<string, Record<string, number>>
 
+/** Per-segment last-sync time per company: syncTimes[company][segment] = ISO8601. */
+export type SyncTimes = Record<string, Record<string, string>>
+
 export interface DashboardData {
   generated?: string
   totalRows?: number
@@ -85,4 +88,5 @@ export interface DashboardData {
   wmsRows?: WmsRow[]
   costRows?: CostRow[]
   priceRows?: PriceRow[]
+  syncTimes?: SyncTimes
 }

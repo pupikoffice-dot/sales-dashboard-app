@@ -61,6 +61,24 @@ export function OversitePage() {
   const companyRows = access ? filterRowsByCompany(access, allRows) : []
   const fileUpdatedAt = formatGeneratedDisplay(dashboardData?.generated)
 
+  // Per-segment source-file freshness (super-admin only): when that ERP file last synced.
+  const syncTimes = dashboardData?.syncTimes ?? {}
+  const segUpdated = (companyId: string, seg: string): string | undefined => {
+    if (!isSuperAdmin) return undefined
+    const iso = syncTimes[companyId]?.[seg]
+    if (!iso) return undefined
+    const d = new Date(iso)
+    if (Number.isNaN(d.getTime())) return undefined
+    const stamp = d.toLocaleString(undefined, {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+    return `${t('oversite.synced')}: ${stamp}`
+  }
+
   return (
     <>
       <div className="ov-header">
@@ -119,7 +137,7 @@ export function OversitePage() {
                   {co.label}
                 </div>
 
-                <OversiteSection title={`📋 ${t('oversite.ordersToday')}`}>
+                <OversiteSection title={`📋 ${t('oversite.ordersToday')}`} updatedAt={segUpdated(co.id, 'orders')}>
                   <OversiteKpiRow
                     kpis={[
                       { label: t('oversite.clients'), value: String(ordersToday.clients) },
@@ -134,7 +152,7 @@ export function OversitePage() {
                   />
                 </OversiteSection>
 
-                <OversiteSection title={`📋 ${t('oversite.ordersMtd', { month: ctx.monthLbl })}`}>
+                <OversiteSection title={`📋 ${t('oversite.ordersMtd', { month: ctx.monthLbl })}`} updatedAt={segUpdated(co.id, 'orders')}>
                   <OversiteKpiRow
                     kpis={[
                       { label: t('oversite.clients'), value: String(ordersMtd.clients) },
@@ -151,7 +169,7 @@ export function OversitePage() {
                   </OversiteCollapsible>
                 </OversiteSection>
 
-                <OversiteSection title={`📋 ${t('oversite.openOrders')}`}>
+                <OversiteSection title={`📋 ${t('oversite.openOrders')}`} updatedAt={segUpdated(co.id, 'openorders')}>
                   <OversiteKpiRow
                     kpis={[
                       { label: t('oversite.clients'), value: String(openOrders.clients) },
@@ -168,7 +186,7 @@ export function OversitePage() {
                   </OversiteCollapsible>
                 </OversiteSection>
 
-                <OversiteSection title={`💰 ${t('oversite.salesMtd', { month: ctx.monthLbl })}`}>
+                <OversiteSection title={`💰 ${t('oversite.salesMtd', { month: ctx.monthLbl })}`} updatedAt={segUpdated(co.id, 'sales')}>
                   <OversiteKpiRow
                     kpis={[
                       { label: t('oversite.cash'), value: fmt(salesMtd.cash), tone: 'grn' },
@@ -199,11 +217,11 @@ export function OversitePage() {
                   </OversiteCollapsible>
                 </OversiteSection>
 
-                <OversiteSection title={`🏆 ${t('oversite.top10Items')}`}>
+                <OversiteSection title={`🏆 ${t('oversite.top10Items')}`} updatedAt={segUpdated(co.id, 'sales')}>
                   <OversiteTop10Table items={salesTop10} emptyLabel={t('oversite.noSales')} showSku />
                 </OversiteSection>
 
-                <OversiteSection title={`↩️ ${t('oversite.returnsMtd')}`}>
+                <OversiteSection title={`↩️ ${t('oversite.returnsMtd')}`} updatedAt={segUpdated(co.id, 'returns')}>
                   <OversiteKpiRow
                     kpis={[
                       { label: t('oversite.cash'), value: fmt(returnsMtd.cash), tone: 'amber' },
@@ -217,6 +235,7 @@ export function OversitePage() {
 
                 <OversiteSection
                   title={`💳 ${t('oversite.openDebt')}${debtLastUpdate ? ` · ${t('oversite.lastUpdate')}: ${debtLastUpdate}` : ''}`}
+                  updatedAt={segUpdated(co.id, 'debt')}
                 >
                   <OversiteDebtSummary summary={debtSummary} onOpenReport={() => setDebtModalCo(co.id)} />
                 </OversiteSection>

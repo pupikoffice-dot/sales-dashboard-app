@@ -23,7 +23,7 @@ export const messages = {
 
   'nav.navigation': 'Navigation',
   'nav.admin': 'Admin',
-  'nav.oversite': 'Oversite',
+  'nav.oversite': 'Oversight',
   'nav.sales': 'Sales',
   'nav.ordersMtd': 'Orders MTD',
   'nav.openOrders': 'Open Orders',
@@ -108,9 +108,10 @@ export const messages = {
   'sales.periodOpenOrders': 'Open Orders',
   'sales.periodStock': 'Stock',
 
-  'oversite.title': 'Oversite Dashboard',
+  'oversite.title': 'Oversight Dashboard',
   'oversite.today': 'Today',
   'oversite.fileUpdated': 'File updated',
+  'oversite.synced': 'Synced',
   'oversite.month': 'Month',
   'oversite.noCompanies': 'No companies in your access scope.',
   'oversite.ordersToday': 'Orders Today (Doc 36)',

@@ -5,6 +5,7 @@ import type {
   DebtRow,
   PriceRow,
   SalesRow,
+  SyncTimes,
   WmsRow,
 } from '../types/dashboard'
 
@@ -27,6 +28,7 @@ interface AuxPayload {
   costRows?: CostRow[]
   priceRows?: PriceRow[]
   debtLastUpdate?: string
+  syncTimes?: SyncTimes
 }
 
 interface SalesPage {
@@ -64,5 +66,6 @@ export async function loadDashboardDataFromSupabase(): Promise<DashboardData> {
     costRows: aux.costRows ?? [],
     priceRows: aux.priceRows ?? [],
     debtLastUpdate: aux.debtLastUpdate || undefined,
+    syncTimes: aux.syncTimes ?? {},
   }
 }

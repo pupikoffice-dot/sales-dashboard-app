@@ -403,6 +403,13 @@ body {
   margin: 0 0 12px;
 }
 
+.ov-section-synced {
+  font-size: 0.62rem;
+  color: var(--muted);
+  opacity: 0.75;
+  margin: -8px 0 10px;
+}
+
 .ov-kpi-row {
   display: flex;
   gap: 10px;
