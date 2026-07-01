@@ -8,7 +8,7 @@ const ALL_MODULES: DashboardModuleId[] = [
   'debt', 'stock_alerts', 'stock', 'export',
 ]
 
-const ALL_COMPANIES: LogicalCompany[] = ['pupik', 'mt', 'grow']
+const ALL_COMPANIES: LogicalCompany[] = ['pupik', 'mt', 'grow', 'gold']
 
 interface DashboardAccessContextValue {
   access: DashboardAccess | null
@@ -18,7 +18,7 @@ interface DashboardAccessContextValue {
 
 const DashboardAccessContext = createContext<DashboardAccessContextValue | null>(null)
 
-const LOGICAL_COMPANIES: LogicalCompany[] = ['pupik', 'mt', 'grow']
+const LOGICAL_COMPANIES: LogicalCompany[] = ['pupik', 'mt', 'grow', 'gold']
 
 function normalizeCompanies(raw: unknown): LogicalCompany[] {
   if (!Array.isArray(raw)) return []

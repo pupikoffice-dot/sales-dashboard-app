@@ -5,6 +5,7 @@ import { filterDebtRows, normalizeDebtRows } from '../lib/debtMetrics'
 import { buildItemCostMap, buildItemPriceMap } from '../lib/itemPricing'
 import { checkOrdersDataHealth } from '../lib/dataHealth'
 import { fetchDashboardLoader } from '../lib/parseDashboardLoader'
+import { loadDashboardDataFromSupabase } from '../lib/loadFromSupabase'
 import { buildSalesFilterIndex, type SalesFilterIndex } from '../lib/salesFilterIndex'
 import { buildWmsMaps } from '../lib/wmsData'
 import type { DashboardData, DebtRow, SalesRow } from '../types/dashboard'
@@ -26,7 +27,7 @@ function resolveDataUrl(base: string, bustCache = false): string {
   return `${base}${sep}t=${Date.now()}`
 }
 
-async function loadDashboardData(): Promise<LoadedDashboardPayload> {
+async function loadFromBlob(): Promise<DashboardData> {
   const base =
     (import.meta.env.DEV && import.meta.env.VITE_DASHBOARD_DATA_URL_DEV) ||
     (import.meta.env.VITE_DASHBOARD_DATA_URL as string)
@@ -37,16 +38,21 @@ async function loadDashboardData(): Promise<LoadedDashboardPayload> {
     true,
   )
 
-  let data: DashboardData
-
   if (base.endsWith('.js')) {
-    data = await fetchDashboardLoader(url)
+    const data = await fetchDashboardLoader(url)
     window.__DASHBOARD_DATA__ = data
-  } else {
-    const res = await fetch(url)
-    if (!res.ok) throw new Error(`Failed to fetch data: ${res.status}`)
-    data = (await res.json()) as DashboardData
+    return data
   }
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`Failed to fetch data: ${res.status}`)
+  return (await res.json()) as DashboardData
+}
+
+async function loadDashboardData(): Promise<LoadedDashboardPayload> {
+  // Default to the Supabase data path; set VITE_USE_SUPABASE_DATA=false to fall
+  // back to the legacy data_loader.js blob during parallel parity testing.
+  const useSupabase = (import.meta.env.VITE_USE_SUPABASE_DATA ?? 'true') !== 'false'
+  const data = useSupabase ? await loadDashboardDataFromSupabase() : await loadFromBlob()
 
   if (!data?.rows) throw new Error('Dashboard data missing rows')
 

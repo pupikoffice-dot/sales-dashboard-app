@@ -1,4 +1,4 @@
-export type LogicalCompany = 'pupik' | 'mt' | 'grow'
+export type LogicalCompany = 'pupik' | 'mt' | 'grow' | 'gold'
 
 export type DashboardModuleId =
   | 'oversite'

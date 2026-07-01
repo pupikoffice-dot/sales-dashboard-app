@@ -30,7 +30,7 @@ interface AccessRow {
   show_client_profit?: boolean
 }
 
-const COMPANIES: LogicalCompany[] = ['pupik', 'mt', 'grow']
+const COMPANIES: LogicalCompany[] = ['pupik', 'mt', 'grow', 'gold']
 
 function formatCompanies(companies: string[] | undefined, role: string) {
   if (role === 'super_admin') return 'all'
