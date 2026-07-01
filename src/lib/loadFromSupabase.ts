@@ -57,8 +57,20 @@ export async function loadDashboardDataFromSupabase(): Promise<DashboardData> {
   if (auxError) throw new Error(`get_dashboard_aux failed: ${auxError.message}`)
   const aux = (auxData ?? {}) as AuxPayload
 
+  // generated should be the max sync time across all segments, not the browser's current time
+  let generatedTs = new Date().toISOString()
+  if (aux.syncTimes) {
+    const allTimes = Object.values(aux.syncTimes)
+      .flatMap((company: Record<string, string>) => Object.values(company) as string[])
+      .filter(Boolean)
+      .sort()
+    if (allTimes.length > 0) {
+      generatedTs = allTimes[allTimes.length - 1]
+    }
+  }
+
   return {
-    generated: new Date().toISOString(),
+    generated: generatedTs,
     totalRows: rows.length,
     rows,
     debtRows: aux.debtRows ?? [],
