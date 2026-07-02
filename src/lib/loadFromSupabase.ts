@@ -20,7 +20,9 @@ import type {
  * server-side. Keyset paging (id > cursor) keeps every page a fast index seek
  * regardless of depth, unlike OFFSET which re-scans on each page.
  */
-const PAGE_SIZE = 25000
+// Rows per parallel id-range chunk (assumes roughly uniform id density).
+const CHUNK_TARGET_ROWS = 30000
+const MAX_PARALLEL = 6
 
 interface AuxPayload {
   debtRows?: DebtRow[]
@@ -31,26 +33,53 @@ interface AuxPayload {
   syncTimes?: SyncTimes
 }
 
-interface SalesPage {
+interface SalesBounds {
+  min_id?: number | null
+  max_id?: number | null
+  total?: number
+}
+
+interface SalesRangePage {
   rows?: SalesRow[]
-  last_id?: number | null
+}
+
+async function fetchSalesRange(fromId: number, toId: number): Promise<SalesRow[]> {
+  const { data, error } = await supabase.rpc('get_dashboard_sales_range', {
+    p_from_id: fromId,
+    p_to_id: toId,
+  })
+  if (error) throw new Error(`get_dashboard_sales_range failed: ${error.message}`)
+  return ((data ?? {}) as SalesRangePage).rows ?? []
 }
 
 export async function loadDashboardDataFromSupabase(): Promise<DashboardData> {
-  const rows: SalesRow[] = []
-  let afterId = 0
-  // Cursor through sales rows until a short page (or null cursor) signals the end.
-  for (;;) {
-    const { data, error } = await supabase.rpc('get_dashboard_sales_after', {
-      p_after_id: afterId,
-      p_limit: PAGE_SIZE,
+  // Split the accessible id space into equal ranges and fetch them concurrently
+  // (with a small parallelism cap), instead of chaining keyset cursors one after
+  // another — wall time drops to roughly total/parallelism.
+  const { data: boundsData, error: boundsError } = await supabase.rpc('get_dashboard_sales_bounds')
+  if (boundsError) throw new Error(`get_dashboard_sales_bounds failed: ${boundsError.message}`)
+  const bounds = (boundsData ?? {}) as SalesBounds
+
+  let rows: SalesRow[] = []
+  if (bounds.min_id != null && bounds.max_id != null && (bounds.total ?? 0) > 0) {
+    const chunkCount = Math.max(1, Math.ceil((bounds.total ?? 0) / CHUNK_TARGET_ROWS))
+    const span = bounds.max_id - bounds.min_id + 1
+    const step = Math.ceil(span / chunkCount)
+    const ranges: Array<[number, number]> = []
+    for (let from = bounds.min_id; from <= bounds.max_id; from += step) {
+      ranges.push([from, Math.min(from + step - 1, bounds.max_id)])
+    }
+    const results: SalesRow[][] = new Array(ranges.length)
+    let next = 0
+    const workers = Array.from({ length: Math.min(MAX_PARALLEL, ranges.length) }, async () => {
+      while (next < ranges.length) {
+        const i = next++
+        const [from, to] = ranges[i]
+        results[i] = await fetchSalesRange(from, to)
+      }
     })
-    if (error) throw new Error(`get_dashboard_sales_after failed: ${error.message}`)
-    const page = (data ?? {}) as SalesPage
-    const pageRows = page.rows ?? []
-    rows.push(...pageRows)
-    if (pageRows.length < PAGE_SIZE || page.last_id == null) break
-    afterId = page.last_id
+    await Promise.all(workers)
+    rows = results.flat()
   }
 
   const { data: auxData, error: auxError } = await supabase.rpc('get_dashboard_aux')
