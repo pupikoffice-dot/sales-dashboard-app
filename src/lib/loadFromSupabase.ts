@@ -20,9 +20,9 @@ import type {
  * server-side. Keyset paging (id > cursor) keeps every page a fast index seek
  * regardless of depth, unlike OFFSET which re-scans on each page.
  */
-// Rows per parallel id-range chunk (assumes roughly uniform id density).
-const CHUNK_TARGET_ROWS = 30000
-const MAX_PARALLEL = 6
+// Rows per parallel page; boundaries are exact ids computed server-side.
+const PAGE_ROWS = 25000
+const MAX_PARALLEL = 4
 
 interface AuxPayload {
   debtRows?: DebtRow[]
@@ -33,10 +33,9 @@ interface AuxPayload {
   syncTimes?: SyncTimes
 }
 
-interface SalesBounds {
-  min_id?: number | null
+interface SalesBoundaries {
+  boundaries?: number[]
   max_id?: number | null
-  total?: number
 }
 
 interface SalesRangePage {
@@ -53,22 +52,23 @@ async function fetchSalesRange(fromId: number, toId: number): Promise<SalesRow[]
 }
 
 export async function loadDashboardDataFromSupabase(): Promise<DashboardData> {
-  // Split the accessible id space into equal ranges and fetch them concurrently
-  // (with a small parallelism cap), instead of chaining keyset cursors one after
-  // another — wall time drops to roughly total/parallelism.
-  const { data: boundsData, error: boundsError } = await supabase.rpc('get_dashboard_sales_bounds')
-  if (boundsError) throw new Error(`get_dashboard_sales_bounds failed: ${boundsError.message}`)
-  const bounds = (boundsData ?? {}) as SalesBounds
+  // Ids are sparse (gaps left by scope-replace deletes), so equal id spans give
+  // wildly uneven page sizes. get_dashboard_sales_boundaries returns the actual
+  // id at every PAGE_ROWS-th accessible row, so each range is ~PAGE_ROWS rows;
+  // ranges are then fetched concurrently (capped) instead of chained cursors.
+  const { data: boundsData, error: boundsError } = await supabase.rpc(
+    'get_dashboard_sales_boundaries',
+    { p_page_rows: PAGE_ROWS },
+  )
+  if (boundsError) throw new Error(`get_dashboard_sales_boundaries failed: ${boundsError.message}`)
+  const bounds = (boundsData ?? {}) as SalesBoundaries
+  const starts = bounds.boundaries ?? []
 
   let rows: SalesRow[] = []
-  if (bounds.min_id != null && bounds.max_id != null && (bounds.total ?? 0) > 0) {
-    const chunkCount = Math.max(1, Math.ceil((bounds.total ?? 0) / CHUNK_TARGET_ROWS))
-    const span = bounds.max_id - bounds.min_id + 1
-    const step = Math.ceil(span / chunkCount)
-    const ranges: Array<[number, number]> = []
-    for (let from = bounds.min_id; from <= bounds.max_id; from += step) {
-      ranges.push([from, Math.min(from + step - 1, bounds.max_id)])
-    }
+  if (starts.length > 0 && bounds.max_id != null) {
+    const ranges: Array<[number, number]> = starts.map((from, i) =>
+      i + 1 < starts.length ? [from, starts[i + 1] - 1] : [from, bounds.max_id as number],
+    )
     const results: SalesRow[][] = new Array(ranges.length)
     let next = 0
     const workers = Array.from({ length: Math.min(MAX_PARALLEL, ranges.length) }, async () => {
