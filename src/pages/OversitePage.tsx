@@ -69,14 +69,13 @@ export function OversitePage() {
     if (!iso) return undefined
     const d = new Date(iso)
     if (Number.isNaN(d.getTime())) return undefined
-    const stamp = d.toLocaleString(undefined, {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    })
+    // Explicit DD/MM/YYYY HH:MM 24-hour format (not locale-dependent)
+    const day = String(d.getUTCDate()).padStart(2, '0')
+    const month = String(d.getUTCMonth() + 1).padStart(2, '0')
+    const year = d.getUTCFullYear()
+    const hours = String(d.getUTCHours()).padStart(2, '0')
+    const mins = String(d.getUTCMinutes()).padStart(2, '0')
+    const stamp = `${day}/${month}/${year} ${hours}:${mins}`
     return `${t('oversite.synced')}: ${stamp}`
   }
 

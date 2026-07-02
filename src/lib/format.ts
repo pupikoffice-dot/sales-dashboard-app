@@ -6,16 +6,17 @@ export function fmtDateIso(iso: string): string {
   return `${d}/${m}/${y}`
 }
 
-/** Display timestamp from `generated` (ISO 8601 or YYYY-MM-DD HH:MM:SS). */
+/** Display timestamp from `generated` (ISO 8601 or YYYY-MM-DD HH:MM:SS). Format: DD/MM/YYYY HH:MM. */
 export function formatGeneratedDisplay(generated?: string): string {
   if (!generated) return ''
   const s = generated.trim()
-  // ISO 8601: "2026-07-01T15:43:04.000Z" or space: "2026-07-01 15:43:04"
-  const [datePart, timePart] = s.includes('T')
-    ? s.split('T')
-    : s.split(/\s+/)
-  if (!datePart) return ''
-  const formattedDate = fmtDateIso(datePart)
-  const time = timePart?.slice(0, 5) ?? ''
-  return time ? `${formattedDate} ${time}` : formattedDate
+  const d = new Date(s)
+  if (Number.isNaN(d.getTime())) return ''
+  // Explicit DD/MM/YYYY HH:MM 24-hour format (not locale-dependent)
+  const day = String(d.getUTCDate()).padStart(2, '0')
+  const month = String(d.getUTCMonth() + 1).padStart(2, '0')
+  const year = d.getUTCFullYear()
+  const hours = String(d.getUTCHours()).padStart(2, '0')
+  const mins = String(d.getUTCMinutes()).padStart(2, '0')
+  return `${day}/${month}/${year} ${hours}:${mins}`
 }

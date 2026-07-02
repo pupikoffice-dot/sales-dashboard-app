@@ -38,6 +38,16 @@ function escHtml(s: string): string {
     .replace(/"/g, '&quot;')
 }
 
+function formatTimestamp(): string {
+  const d = new Date()
+  const day = String(d.getUTCDate()).padStart(2, '0')
+  const month = String(d.getUTCMonth() + 1).padStart(2, '0')
+  const year = d.getUTCFullYear()
+  const hours = String(d.getUTCHours()).padStart(2, '0')
+  const mins = String(d.getUTCMinutes()).padStart(2, '0')
+  return `${day}/${month}/${year} ${hours}:${mins}`
+}
+
 function buildTableHtml(
   rows: DebtRow[],
   footer: DebtPdfFooter,
@@ -97,7 +107,7 @@ function buildPrintDocument(title: string, bodyHtml: string): string {
 </head>
 <body>
 <h1>${escHtml(title)}</h1>
-<div class="meta">${escHtml(new Date().toLocaleString())}</div>
+<div class="meta">${escHtml(formatTimestamp())}</div>
 ${bodyHtml}
 </body>
 </html>`
