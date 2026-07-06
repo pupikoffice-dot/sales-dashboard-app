@@ -1,6 +1,6 @@
 import { useDashboardAccess } from '../context/DashboardAccessContext'
 import { useDashboardData } from '../hooks/useDashboardData'
-import { filterRowsByCompany } from '../lib/permissions'
+import { filterRows } from '../lib/permissions'
 import { fmt } from '../lib/format'
 import {
   OVERSITE_COMPANIES,
@@ -24,7 +24,7 @@ export function OrdersMtdPage() {
 
   const ctx = getOversiteDateContext()
   const visibleCompanies = OVERSITE_COMPANIES.filter(c => access?.companies.includes(c.id))
-  const companyRows = access ? filterRowsByCompany(access, allRows) : []
+  const companyRows = access ? filterRows(access, allRows) : []
 
   return (
     <>

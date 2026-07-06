@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useAuth } from '../context/AuthContext'
 import { useDashboardAccess } from '../context/DashboardAccessContext'
 import { filterRows } from '../lib/permissions'
 import { filterDebtRows, normalizeDebtRows } from '../lib/debtMetrics'
@@ -62,13 +63,18 @@ async function loadDashboardData(): Promise<LoadedDashboardPayload> {
 
 export function useDashboardData() {
   const { access } = useDashboardAccess()
+  const { session } = useAuth()
 
   const q = useQuery({
-    queryKey: ['dashboard-data'],
+    // Keyed by user id (not just a static string) so cached data from one
+    // user's session is never served to a different user in the same tab —
+    // AuthContext also clears the whole cache on any user change as a
+    // second layer, but a distinct key is the safer primary guard.
+    queryKey: ['dashboard-data', session?.user.id ?? null],
     queryFn: loadDashboardData,
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
-    enabled: !!access,
+    enabled: !!access && !!session,
   })
 
   const allRows: SalesRow[] = q.data?.rows ?? []

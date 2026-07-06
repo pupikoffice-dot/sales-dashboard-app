@@ -5,10 +5,9 @@ import { AuthProvider } from './context/AuthContext'
 import { DashboardAccessProvider } from './context/DashboardAccessContext'
 import { DashboardFiltersProvider } from './context/DashboardFiltersContext'
 import { LocaleProvider } from './context/LocaleContext'
+import { queryClient } from './lib/queryClient'
 import App from './App'
 import './index.css'
-
-const queryClient = new QueryClient()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -1,5 +1,5 @@
 import type { CatType, DateMode } from '../context/DashboardFiltersContext'
-import { filterRowsByCompany } from './permissions'
+import { filterRows } from './permissions'
 import type { DashboardAccess } from '../types/dashboard'
 import type { LogicalCompany, SalesRow } from '../types/dashboard'
 
@@ -19,7 +19,7 @@ export function effectiveCompany(
   return 'openorders'
 }
 
-/** All rows for the selected company tag — used to populate filter lists (legacy: S.raw, not agent-scoped). */
+/** All rows for the selected company tag — used to populate filter lists (agent-scoped). */
 export function rowsForFilterLists(
   access: DashboardAccess,
   allRows: SalesRow[],
@@ -28,7 +28,7 @@ export function rowsForFilterLists(
 ): SalesRow[] {
   const tag = effectiveCompany(company, dateMode)
   if (!tag || !company) return []
-  return filterRowsByCompany(access, allRows).filter(r => r.company === tag)
+  return filterRows(access, allRows).filter(r => r.company === tag)
 }
 
 export function buildClientOptions(rows: SalesRow[]): ListOption[] {

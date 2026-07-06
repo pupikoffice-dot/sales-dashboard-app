@@ -5,7 +5,7 @@ import { useLocale } from '../context/LocaleContext'
 import { useDashboardAccess } from '../context/DashboardAccessContext'
 import { useDashboardFilters } from '../context/DashboardFiltersContext'
 import { useDashboardData } from '../hooks/useDashboardData'
-import { filterRowsByCompany } from '../lib/permissions'
+import { filterRows } from '../lib/permissions'
 import { computeDebtSummary, debtRowsForCompany } from '../lib/debtMetrics'
 import { fmt, formatGeneratedDisplay } from '../lib/format'
 import type { LogicalCompany } from '../types/dashboard'
@@ -58,7 +58,8 @@ export function OversitePage() {
 
   const ctx = getOversiteDateContext()
   const visibleCompanies = OVERSITE_COMPANIES.filter(c => access?.companies.includes(c.id))
-  const companyRows = access ? filterRowsByCompany(access, allRows) : []
+  // Agent-scoped users must never see other agents' company totals on Oversight.
+  const companyRows = access ? filterRows(access, allRows) : []
   const fileUpdatedAt = formatGeneratedDisplay(dashboardData?.generated)
 
   // Per-segment source-file freshness (super-admin only): when that ERP file last synced.
