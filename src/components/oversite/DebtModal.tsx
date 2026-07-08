@@ -75,7 +75,6 @@ export function DebtModal({ company, debtData, debtLastUpdate, onClose }: DebtMo
   const mLabels = reportRows.length ? debtMonths(reportRows[0].months).map(m => m.label) : []
   const { sortCol, sortAsc, onSort, sortIcon } = useColumnSort()
   const [showAgentFilter, setShowAgentFilter] = useState(false)
-  const [collapsedAgents, setCollapsedAgents] = useState<Set<string>>(() => new Set())
 
   const agents = useMemo(() => {
     const ids = new Set<string>()
@@ -85,10 +84,15 @@ export function DebtModal({ company, debtData, debtLastUpdate, onClose }: DebtMo
 
   const agentKey = agents.join('\u0001')
 
+  // Full report opens with every agent section collapsed (agent totals
+  // visible in the section headers), each expandable individually.
+  const [collapsedAgents, setCollapsedAgents] = useState<Set<string>>(() => new Set(agents))
   const [selectedAgents, setSelectedAgents] = useState<Set<string>>(() => new Set(agents))
 
   useEffect(() => {
     setSelectedAgents(new Set(agents))
+    setCollapsedAgents(new Set(agents))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentKey])
 
   const agentOptions = useMemo(

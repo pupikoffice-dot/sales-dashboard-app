@@ -85,6 +85,8 @@ export interface DashboardData {
   rows: SalesRow[]
   debtRows?: DebtRow[]
   debtLastUpdate?: string
+  /** Debt DATA date per company (Debt clients.xlsm tab!B1), DD/MM/YYYY. */
+  debtFileDates?: Record<string, string>
   wmsRows?: WmsRow[]
   costRows?: CostRow[]
   priceRows?: PriceRow[]

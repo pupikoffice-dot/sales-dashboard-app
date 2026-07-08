@@ -6,7 +6,7 @@ import { useDashboardAccess } from '../context/DashboardAccessContext'
 import { useDashboardFilters } from '../context/DashboardFiltersContext'
 import { useDashboardData } from '../hooks/useDashboardData'
 import { filterRows } from '../lib/permissions'
-import { computeDebtSummary, debtRowsForCompany } from '../lib/debtMetrics'
+import { computeDebtAgentMatrix, computeDebtSummary, debtRowsForCompany } from '../lib/debtMetrics'
 import { fmt, formatGeneratedDisplay } from '../lib/format'
 import type { LogicalCompany } from '../types/dashboard'
 import { DebtModal } from '../components/oversite/DebtModal'
@@ -16,6 +16,7 @@ import { OversiteOrdersReportButton } from '../components/oversite/OversiteOrder
 import { StockAlertsPanel } from '../components/oversite/StockAlertsPanel'
 import {
   OVERSITE_COMPANIES,
+  computeAgentBreakdown,
   computeDelivery720Mtd,
   computeDelivery720MtdTop10,
   computeOpenOrders,
@@ -27,10 +28,13 @@ import {
   computeReturnsMtdTop10,
   computeSalesMtd,
   computeSalesMtdTop10,
+  getOrdersMtdRows,
+  getOrdersTodayRows,
   getOversiteDateContext,
   resolveOpenOrdersTag,
   resolveOrdersTag,
 } from '../lib/oversiteMetrics'
+import { OversiteAgentBreakdown } from '../components/oversite/OversiteAgentBreakdown'
 import { OversiteCollapsible } from '../components/oversite/OversiteCollapsible'
 import { OversiteKpiRow, OversiteSection, SalesLyBars } from '../components/oversite/OversiteKpiRow'
 import { OversiteTop10Table } from '../components/oversite/OversiteTop10Table'
@@ -129,6 +133,15 @@ export function OversitePage() {
             const returnsTop10 = computeReturnsMtdTop10(companyRows, co.returnsTag, ctx.curYear, ctx.curMonth)
             const companyDebt = debtRowsForCompany(debtRows, co.id)
             const debtSummary = computeDebtSummary(companyDebt)
+            const debtAgentMatrix = computeDebtAgentMatrix(companyDebt)
+            const ordersTodayByAgent = computeAgentBreakdown(
+              getOrdersTodayRows(companyRows, ordersTag, ctx.todayStr),
+            )
+            const ordersMtdByAgent = computeAgentBreakdown(
+              getOrdersMtdRows(companyRows, ordersTag, ctx.monthStart, ctx.todayStr),
+            )
+            // Debt DATA date (Debt clients.xlsm tab B1) beats sync time.
+            const debtUpdated = dashboardData?.debtFileDates?.[co.id] || debtLastUpdate
             return (
               <div
                 key={co.id}
@@ -146,6 +159,7 @@ export function OversitePage() {
                       { label: t('oversite.cash'), value: fmt(ordersToday.cash), tone: 'grn' },
                     ]}
                   />
+                  <OversiteAgentBreakdown rows={ordersTodayByAgent} />
                   <OversiteOrdersReportButton
                     onClick={() =>
                       setOrdersModal({ company: co.id, companyLabel: co.label, ordersTag })
@@ -161,6 +175,7 @@ export function OversitePage() {
                       { label: t('oversite.cash'), value: fmt(ordersMtd.cash), tone: 'grn' },
                     ]}
                   />
+                  <OversiteAgentBreakdown rows={ordersMtdByAgent} />
                   <OversiteCollapsible label={`📦 ${t('oversite.top10Orders')} ▾`}>
                     <OversiteTop10Table
                       items={ordersTop10}
@@ -235,10 +250,14 @@ export function OversitePage() {
                 </OversiteSection>
 
                 <OversiteSection
-                  title={`💳 ${t('oversite.openDebt')}${debtLastUpdate ? ` · ${t('oversite.lastUpdate')}: ${debtLastUpdate}` : ''}`}
+                  title={`💳 ${t('oversite.openDebt')}${debtUpdated ? ` · ${t('oversite.lastUpdate')}: ${debtUpdated}` : ''}`}
                   updatedAt={segUpdated(co.id, 'debt')}
                 >
-                  <OversiteDebtSummary summary={debtSummary} onOpenReport={() => setDebtModalCo(co.id)} />
+                  <OversiteDebtSummary
+                    summary={debtSummary}
+                    agentMatrix={debtAgentMatrix}
+                    onOpenReport={() => setDebtModalCo(co.id)}
+                  />
                 </OversiteSection>
 
                 <StockAlertsPanel
@@ -257,7 +276,7 @@ export function OversitePage() {
         <DebtModal
           company={debtModalCo}
           debtData={debtRowsForCompany(debtRows, debtModalCo)}
-          debtLastUpdate={debtLastUpdate}
+          debtLastUpdate={dashboardData?.debtFileDates?.[debtModalCo] || debtLastUpdate}
           onClose={() => setDebtModalCo(null)}
         />
       )}

@@ -633,6 +633,60 @@ body {
   gap: 6px;
 }
 
+/* Per-agent breakdown table under Orders Today / Orders MTD KPI tiles */
+.ov-agent-breakdown {
+  margin-top: 8px;
+}
+.ov-agent-breakdown table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.76rem;
+}
+.ov-agent-breakdown th,
+.ov-agent-breakdown td {
+  padding: 3px 8px;
+  border-bottom: 1px solid var(--bdr);
+  text-align: right;
+}
+.ov-agent-breakdown th:first-child,
+.ov-agent-breakdown td:first-child {
+  text-align: left;
+  color: var(--muted2);
+}
+.ov-agent-breakdown th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+}
+
+/* Debt agent-by-month matrix in the Open Debt summary */
+.ov-debt-agent-matrix {
+  overflow-x: auto;
+}
+.ov-debt-agent-matrix table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+.ov-debt-agent-matrix th,
+.ov-debt-agent-matrix td {
+  padding: 3px 6px;
+  border-bottom: 1px solid var(--bdr);
+  text-align: right;
+}
+.ov-debt-agent-matrix th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.66rem;
+  text-transform: uppercase;
+}
+.ov-debt-agent-matrix tfoot td {
+  font-weight: 700;
+  border-top: 1px solid var(--bdr);
+}
+
 .ov-debt-row {
   display: flex;
   justify-content: space-between;

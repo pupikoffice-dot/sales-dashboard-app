@@ -34,6 +34,7 @@ interface AuxPayload {
   costRows?: CostRow[]
   priceRows?: PriceRow[]
   debtLastUpdate?: string
+  debtFileDates?: Record<string, string>
   syncTimes?: SyncTimes
 }
 
@@ -114,6 +115,7 @@ export async function loadDashboardDataFromSupabase(): Promise<DashboardData> {
     costRows: aux.costRows ?? [],
     priceRows: aux.priceRows ?? [],
     debtLastUpdate: aux.debtLastUpdate || undefined,
+    debtFileDates: aux.debtFileDates ?? {},
     syncTimes: aux.syncTimes ?? {},
   }
 }

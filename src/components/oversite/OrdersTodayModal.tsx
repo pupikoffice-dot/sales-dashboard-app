@@ -98,6 +98,7 @@ export function OrdersTodayModal({
                   <tr>
                     <th className="ov-order-expand-col" />
                     <th>{t('oversite.orderNumber')}</th>
+                    <th>{t('oversite.debtAgent')}</th>
                     <th>{t('oversite.orderClientName')}</th>
                     <th
                       className="sortable"
@@ -122,12 +123,13 @@ export function OrdersTodayModal({
                         >
                           <td className="ov-order-expand-col cm">{isOpen ? '▴' : '▾'}</td>
                           <td className="cm">{order.docNum}</td>
+                          <td className="cm">{order.agent || '—'}</td>
                           <td>{order.clientName}</td>
                           <td>{fmt(order.cash)}</td>
                         </tr>
                         {isOpen && (
                           <tr className="ov-order-detail-row">
-                            <td colSpan={4}>
+                            <td colSpan={5}>
                               <div className="ov-order-detail">
                                 <table>
                                   <thead>
@@ -159,7 +161,7 @@ export function OrdersTodayModal({
                 </tbody>
                 <tfoot>
                   <tr>
-                    <td colSpan={3}>
+                    <td colSpan={4}>
                       <b>{t('oversite.orderTotal')}</b>
                     </td>
                     <td>

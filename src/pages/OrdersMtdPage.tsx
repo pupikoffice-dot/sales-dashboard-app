@@ -4,12 +4,16 @@ import { filterRows } from '../lib/permissions'
 import { fmt } from '../lib/format'
 import {
   OVERSITE_COMPANIES,
+  computeAgentBreakdown,
   computeOrdersMtd,
   computeOrdersMtdTop10,
   computeOrdersToday,
+  getOrdersMtdRows,
+  getOrdersTodayRows,
   getOversiteDateContext,
   resolveOrdersTag,
 } from '../lib/oversiteMetrics'
+import { OversiteAgentBreakdown } from '../components/oversite/OversiteAgentBreakdown'
 import { OversiteCollapsible } from '../components/oversite/OversiteCollapsible'
 import { OversiteKpiRow, OversiteSection } from '../components/oversite/OversiteKpiRow'
 import { OversiteTop10Table } from '../components/oversite/OversiteTop10Table'
@@ -44,6 +48,12 @@ export function OrdersMtdPage() {
             const ordersToday = computeOrdersToday(companyRows, ordersTag, ctx.todayStr)
             const ordersMtd = computeOrdersMtd(companyRows, ordersTag, ctx.monthStart, ctx.todayStr)
             const ordersTop10 = computeOrdersMtdTop10(companyRows, ordersTag, ctx.monthStart, ctx.todayStr)
+            const ordersTodayByAgent = computeAgentBreakdown(
+              getOrdersTodayRows(companyRows, ordersTag, ctx.todayStr),
+            )
+            const ordersMtdByAgent = computeAgentBreakdown(
+              getOrdersMtdRows(companyRows, ordersTag, ctx.monthStart, ctx.todayStr),
+            )
 
             return (
               <div key={co.id} className="ov-col">
@@ -59,6 +69,7 @@ export function OrdersMtdPage() {
                       { label: 'Cash', value: fmt(ordersToday.cash), tone: 'grn' },
                     ]}
                   />
+                  <OversiteAgentBreakdown rows={ordersTodayByAgent} />
                 </OversiteSection>
 
                 <OversiteSection title={`📋 Orders MTD — ${ctx.monthLbl}`}>
@@ -69,6 +80,7 @@ export function OrdersMtdPage() {
                       { label: 'Cash', value: fmt(ordersMtd.cash), tone: 'grn' },
                     ]}
                   />
+                  <OversiteAgentBreakdown rows={ordersMtdByAgent} />
                   <OversiteCollapsible label="📦 Top 10 Items Ordered ▾">
                     <OversiteTop10Table
                       items={ordersTop10}

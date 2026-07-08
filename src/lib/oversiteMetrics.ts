@@ -130,6 +130,7 @@ export interface OrderTodayGroup {
   key: string
   docNum: string
   clientName: string
+  agent: string
   cash: number
   qty: number
   lines: SalesRow[]
@@ -165,6 +166,7 @@ export function groupOrdersTodayByDoc(
       key,
       docNum: docNum || '—',
       clientName: first.clientName || first.clientID || '—',
+      agent: String(first.agent ?? '').trim(),
       cash,
       qty,
       lines: [...lines].sort((a, b) => (a.itemSKU || '').localeCompare(b.itemSKU || '')),
@@ -176,6 +178,41 @@ export function groupOrdersTodayByDoc(
     if (docCmp !== 0) return docCmp
     return a.clientName.localeCompare(b.clientName)
   })
+}
+
+export interface AgentBreakdownRow {
+  agent: string
+  clients: number
+  qty: number
+  cash: number
+}
+
+/** Per-agent totals (clients/qty/cash) for a set of already-filtered rows. */
+export function computeAgentBreakdown(rows: SalesRow[]): AgentBreakdownRow[] {
+  const byAgent = new Map<string, { clients: Set<string>; qty: number; cash: number }>()
+  for (const r of rows) {
+    const agent = String(r.agent ?? '').trim()
+    let e = byAgent.get(agent)
+    if (!e) {
+      e = { clients: new Set(), qty: 0, cash: 0 }
+      byAgent.set(agent, e)
+    }
+    if (r.clientID) e.clients.add(String(r.clientID))
+    e.qty += Number(r.qty) || 0
+    e.cash += Number(r.cash) || 0
+  }
+  return [...byAgent.entries()]
+    .map(([agent, e]) => ({ agent, clients: e.clients.size, qty: e.qty, cash: e.cash }))
+    .sort((a, b) => b.cash - a.cash)
+}
+
+export function getOrdersMtdRows(
+  rows: SalesRow[],
+  ordersTag: string,
+  monthStart: string,
+  todayStr: string,
+): SalesRow[] {
+  return rows.filter(r => r.company === ordersTag && r.date && r.date >= monthStart && r.date <= todayStr)
 }
 
 export function computeOrdersToday(rows: SalesRow[], ordersTag: string, todayStr: string): OrdersTodayMetrics {

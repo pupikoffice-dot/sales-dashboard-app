@@ -104,6 +104,52 @@ export function computeDebtSummary(debtData: DebtRow[]): DebtSummary | null {
   return { oldDebt: totOld, monthTotals, grandTotal: grand }
 }
 
+export interface DebtAgentRow {
+  agent: string
+  oldDebt: number
+  monthAmounts: number[]
+  total: number
+}
+
+export interface DebtAgentMatrix {
+  monthLabels: string[]
+  agents: DebtAgentRow[]
+}
+
+/** Per-agent old-debt + per-month sums, matching the summary's month order. */
+export function computeDebtAgentMatrix(debtData: DebtRow[]): DebtAgentMatrix | null {
+  if (!debtData.length) return null
+  const labelSet: string[] = []
+  const seen = new Set<string>()
+  debtData.forEach(r => {
+    debtMonths(r.months).forEach(m => {
+      if (m.label && !seen.has(m.label)) {
+        seen.add(m.label)
+        labelSet.push(m.label)
+      }
+    })
+  })
+  const byAgent = new Map<string, DebtAgentRow>()
+  debtData.forEach(r => {
+    const agent = String(r.agent || '')
+    let e = byAgent.get(agent)
+    if (!e) {
+      e = { agent, oldDebt: 0, monthAmounts: labelSet.map(() => 0), total: 0 }
+      byAgent.set(agent, e)
+    }
+    e.oldDebt += r.oldDebt || 0
+    debtMonths(r.months).forEach(m => {
+      const i = labelSet.indexOf(m.label)
+      if (i >= 0) e.monthAmounts[i] += m.amount || 0
+    })
+    e.total += debtRowTotal(r)
+  })
+  const agents = [...byAgent.values()].sort((a, b) =>
+    a.agent.localeCompare(b.agent, undefined, { numeric: true }),
+  )
+  return { monthLabels: labelSet, agents }
+}
+
 export function debtReportRows(debtData: DebtRow[]): DebtRow[] {
   return debtData
     .filter(r => debtRowTotal(r) >= DEBT_REPORT_MIN_TOTAL)
