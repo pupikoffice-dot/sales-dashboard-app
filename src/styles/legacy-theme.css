@@ -24,6 +24,12 @@
   --header-h: 60px;
 }
 
+html {
+  /* Last-resort guard: no element may cause page-level sideways scroll on
+     phones — wide tables scroll inside their own .tw wrappers instead. */
+  overflow-x: hidden;
+}
+
 body {
   background: var(--bg);
   color: var(--txt);
@@ -219,6 +225,9 @@ body {
 
 .dashboard-main {
   flex: 1;
+  /* min-width: 0 lets this flex child shrink below its content width —
+     without it, one wide table forces the whole page to scroll sideways. */
+  min-width: 0;
   padding: 24px 26px;
   overflow-x: hidden;
 }
@@ -334,6 +343,14 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 22px;
+}
+
+/* Grid/flex children default to min-width auto, which blocks shrinking and
+   causes page-level horizontal scroll on phones — force shrinkable. */
+.ov-grid > *,
+.ov-col > *,
+.ov-section > * {
+  min-width: 0;
 }
 
 .ov-grid.ov-grid--single-co {
@@ -1882,6 +1899,7 @@ label.ck .ck-label {
 .pie-table-side {
   flex: 1;
   min-width: 220px;
+  overflow-x: auto;
 }
 
 .pie-tbl {
@@ -2186,6 +2204,36 @@ label.ck .ck-label {
   .tw tbody td,
   .tw tfoot td {
     padding: 8px 8px;
+  }
+
+  /* Wide month-column tables (debt matrix, agent breakdowns): keep compact
+     and scroll inside their wrapper rather than stretching the section. */
+  .ov-debt-agent-matrix table,
+  .ov-agent-breakdown table {
+    font-size: 0.68rem;
+  }
+
+  .ov-debt-agent-matrix th,
+  .ov-debt-agent-matrix td,
+  .ov-agent-breakdown th,
+  .ov-agent-breakdown td {
+    padding: 3px 5px;
+  }
+
+  .debt-modal,
+  .pie-modal {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .debt-modal-hdr {
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 0.78rem;
+  }
+
+  .ov-order-detail table {
+    font-size: 0.7rem;
   }
 
   .tab-row {
