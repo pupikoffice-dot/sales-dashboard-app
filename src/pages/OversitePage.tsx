@@ -142,6 +142,14 @@ export function OversitePage() {
             )
             // Debt DATA date (Debt clients.xlsm tab B1) beats sync time.
             const debtUpdated = dashboardData?.debtFileDates?.[co.id] || debtLastUpdate
+            // Sales rows for the current month — feeds the per-client drill-down
+            // when a Top 10 Items MTD row is clicked.
+            const salesMtdRows = companyRows.filter(
+              r =>
+                r.company === co.id &&
+                Number(r.year) === ctx.curYear &&
+                Number(r.month) === ctx.curMonth,
+            )
             return (
               <div
                 key={co.id}
@@ -234,7 +242,12 @@ export function OversitePage() {
                 </OversiteSection>
 
                 <OversiteSection title={`🏆 ${t('oversite.top10Items')}`} updatedAt={segUpdated(co.id, 'sales')}>
-                  <OversiteTop10Table items={salesTop10} emptyLabel={t('oversite.noSales')} showSku />
+                  <OversiteTop10Table
+                    items={salesTop10}
+                    emptyLabel={t('oversite.noSales')}
+                    showSku
+                    detailRows={salesMtdRows}
+                  />
                 </OversiteSection>
 
                 <OversiteSection title={`↩️ ${t('oversite.returnsMtd')}`} updatedAt={segUpdated(co.id, 'returns')}>
