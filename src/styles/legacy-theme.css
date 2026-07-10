@@ -640,6 +640,28 @@ body {
   font-style: italic;
 }
 
+/* Receipts (008) monthly bars — current month stands out */
+.ov-bar-fill.receipt {
+  background: var(--acc);
+  opacity: 0.55;
+}
+
+.ov-bar-fill.receipt-cur {
+  background: var(--grn);
+}
+
+.ov-bar-row--current .ov-bar-lbl,
+.ov-bar-row--current .ov-bar-val {
+  color: var(--grn);
+  font-weight: 700;
+}
+
+.ov-receipts-total {
+  margin-top: 8px;
+  font-size: 0.72rem;
+  color: var(--muted2);
+}
+
 .ov-bar-val {
   width: 70px;
   text-align: right;

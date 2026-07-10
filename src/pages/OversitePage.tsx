@@ -35,6 +35,7 @@ import {
   resolveOrdersTag,
 } from '../lib/oversiteMetrics'
 import { OversiteAgentBreakdown } from '../components/oversite/OversiteAgentBreakdown'
+import { OversiteReceipts } from '../components/oversite/OversiteReceipts'
 import { computeSalesForecast } from '../lib/salesForecast'
 import { OversiteCollapsible } from '../components/oversite/OversiteCollapsible'
 import { OversiteKpiRow, OversiteSection, SalesLyBars } from '../components/oversite/OversiteKpiRow'
@@ -281,6 +282,13 @@ export function OversitePage() {
                     onOpenReport={() => setDebtModalCo(co.id)}
                   />
                 </OversiteSection>
+
+                {dashboardData?.receiptsMonthly?.[co.id] &&
+                  Object.keys(dashboardData.receiptsMonthly[co.id]).length > 0 && (
+                    <OversiteSection title={`🧾 ${t('oversite.receipts')}`}>
+                      <OversiteReceipts monthly={dashboardData.receiptsMonthly[co.id]} />
+                    </OversiteSection>
+                  )}
 
                 <StockAlertsPanel
                   company={co.id}

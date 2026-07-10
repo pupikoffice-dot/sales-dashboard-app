@@ -87,6 +87,8 @@ export interface DashboardData {
   debtLastUpdate?: string
   /** Debt DATA date per company (Debt clients.xlsm tab!B1), DD/MM/YYYY. */
   debtFileDates?: Record<string, string>
+  /** Receipts (008): gross monthly sums per company keyed 'YYYY-MM'. Super-admin only. */
+  receiptsMonthly?: Record<string, Record<string, number>>
   wmsRows?: WmsRow[]
   costRows?: CostRow[]
   priceRows?: PriceRow[]
