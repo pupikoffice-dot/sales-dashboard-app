@@ -127,6 +127,8 @@ export const messages: Record<keyof typeof en, string> = {
   'oversite.returnsMtd': 'החזרות חודש',
   'oversite.openDebt': 'חוב פתוח',
   'oversite.lastUpdate': 'עדכון אחרון',
+  'oversite.projected': 'תחזית',
+  'oversite.projectedTitle': 'תחזית לסוף החודש לפי דפוס המכירות התוך-חודשי ב-{months} החודשים האחרונים',
   'oversite.clients': 'לקוחות',
   'oversite.qty': 'כמות',
   'oversite.cash': 'מזומן',

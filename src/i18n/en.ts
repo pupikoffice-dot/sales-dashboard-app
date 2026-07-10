@@ -125,6 +125,8 @@ export const messages = {
   'oversite.returnsMtd': 'Returns MTD',
   'oversite.openDebt': 'Open Debt',
   'oversite.lastUpdate': 'Last Update',
+  'oversite.projected': 'Projected',
+  'oversite.projectedTitle': 'Month-end projection from the last {months} months intra-month sales pattern',
   'oversite.clients': 'Clients',
   'oversite.qty': 'Qty',
   'oversite.cash': 'Cash',

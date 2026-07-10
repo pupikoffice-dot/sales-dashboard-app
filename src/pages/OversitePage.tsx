@@ -35,6 +35,7 @@ import {
   resolveOrdersTag,
 } from '../lib/oversiteMetrics'
 import { OversiteAgentBreakdown } from '../components/oversite/OversiteAgentBreakdown'
+import { computeSalesForecast } from '../lib/salesForecast'
 import { OversiteCollapsible } from '../components/oversite/OversiteCollapsible'
 import { OversiteKpiRow, OversiteSection, SalesLyBars } from '../components/oversite/OversiteKpiRow'
 import { OversiteTop10Table } from '../components/oversite/OversiteTop10Table'
@@ -150,6 +151,7 @@ export function OversitePage() {
                 Number(r.year) === ctx.curYear &&
                 Number(r.month) === ctx.curMonth,
             )
+            const forecast = computeSalesForecast(companyRows, co.id, ctx)
             return (
               <div
                 key={co.id}
@@ -224,6 +226,13 @@ export function OversitePage() {
                     deliveryCash={delivery720Mtd.cash}
                     lyCash={salesMtd.lyCash}
                     lyChangeCashPct={salesMtdCombinedLyPct}
+                    forecastCash={forecast?.projected}
+                    forecastLbl={`🔮 ${t('oversite.projected')}`}
+                    forecastTitle={
+                      forecast
+                        ? t('oversite.projectedTitle', { months: String(forecast.monthsUsed) })
+                        : undefined
+                    }
                   />
                   <OversiteCollapsible label={`📄 ${t('oversite.deliveryNotes')} ▾`}>
                     <OversiteKpiRow

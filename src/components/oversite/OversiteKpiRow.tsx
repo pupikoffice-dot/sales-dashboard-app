@@ -46,6 +46,9 @@ export function SalesLyBars({
   deliveryCash = 0,
   lyCash,
   lyChangeCashPct,
+  forecastCash = null,
+  forecastLbl,
+  forecastTitle,
 }: {
   monthLbl: string
   lyMonthLbl: string
@@ -53,9 +56,13 @@ export function SalesLyBars({
   deliveryCash?: number
   lyCash: number
   lyChangeCashPct: number | null
+  /** Projected month-end total from the historical intra-month pattern. */
+  forecastCash?: number | null
+  forecastLbl?: string
+  forecastTitle?: string
 }) {
   const totalCash = cash + deliveryCash
-  const barMax = Math.max(totalCash, lyCash, 1)
+  const barMax = Math.max(totalCash, lyCash, forecastCash ?? 0, 1)
   const salesPct = (cash / barMax) * 100
   const deliveryPct = (deliveryCash / barMax) * 100
   const lyPct = (lyCash / barMax) * 100
@@ -82,6 +89,24 @@ export function SalesLyBars({
         <span className="ov-bar-val">{fmt(totalCash)}</span>
         {delta}
       </div>
+      {forecastCash != null && forecastCash > 0 && (
+        <div className="ov-bar-row ov-bar-row--forecast" title={forecastTitle}>
+          <span className="ov-bar-lbl">{forecastLbl || 'Projected'}</span>
+          <div className="ov-bar-track">
+            <div
+              className="ov-bar-fill forecast"
+              style={{ width: `${((forecastCash / barMax) * 100).toFixed(1)}%` }}
+            />
+          </div>
+          <span className="ov-bar-val">{fmt(forecastCash)}</span>
+          {lyCash > 0 && (
+            <span className={`ov-bar-delta ${forecastCash >= lyCash ? 'up' : 'down'}`}>
+              {forecastCash >= lyCash ? '▲' : '▼'}
+              {Math.abs(((forecastCash - lyCash) / lyCash) * 100).toFixed(1)}%
+            </span>
+          )}
+        </div>
+      )}
       <BarRow label={lyMonthLbl} value={fmt(lyCash)} widthPct={lyPct} fillClass="muted" />
     </div>
   )
