@@ -36,6 +36,7 @@ interface AuxPayload {
   debtLastUpdate?: string
   debtFileDates?: Record<string, string>
   receiptsMonthly?: Record<string, Record<string, number>>
+  receiptsMonthlyByAgent?: Record<string, Record<string, Record<string, number>>>
   syncTimes?: SyncTimes
 }
 
@@ -118,6 +119,7 @@ export async function loadDashboardDataFromSupabase(): Promise<DashboardData> {
     debtLastUpdate: aux.debtLastUpdate || undefined,
     debtFileDates: aux.debtFileDates ?? {},
     receiptsMonthly: aux.receiptsMonthly ?? {},
+    receiptsMonthlyByAgent: aux.receiptsMonthlyByAgent ?? {},
     syncTimes: aux.syncTimes ?? {},
   }
 }

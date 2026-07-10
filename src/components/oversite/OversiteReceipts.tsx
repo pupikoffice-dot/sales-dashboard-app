@@ -7,6 +7,29 @@ const MONTHS_SHOWN = 12
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
+/** Field-team agents whose receipts get their own confined chart. */
+export const RECEIPTS_TEAM_AGENTS: Record<string, string[]> = {
+  pupik: ['24', '25', '27'],
+  mt: ['54', '55', '56', '57'],
+}
+
+/** Sum the given agents' monthly maps into one 'YYYY-MM' -> gross map. */
+export function sumAgentMonthly(
+  byAgent: Record<string, Record<string, number>> | undefined,
+  agents: string[],
+): Record<string, number> {
+  const out: Record<string, number> = {}
+  if (!byAgent) return out
+  for (const agent of agents) {
+    const months = byAgent[agent]
+    if (!months) continue
+    for (const [ym, v] of Object.entries(months)) {
+      out[ym] = (out[ym] || 0) + (Number(v) || 0)
+    }
+  }
+  return out
+}
+
 interface MonthEntry {
   ym: string
   label: string

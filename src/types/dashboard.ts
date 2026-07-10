@@ -89,6 +89,8 @@ export interface DashboardData {
   debtFileDates?: Record<string, string>
   /** Receipts (008): gross monthly sums per company keyed 'YYYY-MM'. Super-admin only. */
   receiptsMonthly?: Record<string, Record<string, number>>
+  /** Receipts per agent: company -> agent -> 'YYYY-MM' -> gross sum. Super-admin only. */
+  receiptsMonthlyByAgent?: Record<string, Record<string, Record<string, number>>>
   wmsRows?: WmsRow[]
   costRows?: CostRow[]
   priceRows?: PriceRow[]

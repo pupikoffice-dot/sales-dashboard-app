@@ -35,7 +35,11 @@ import {
   resolveOrdersTag,
 } from '../lib/oversiteMetrics'
 import { OversiteAgentBreakdown } from '../components/oversite/OversiteAgentBreakdown'
-import { OversiteReceipts } from '../components/oversite/OversiteReceipts'
+import {
+  OversiteReceipts,
+  RECEIPTS_TEAM_AGENTS,
+  sumAgentMonthly,
+} from '../components/oversite/OversiteReceipts'
 import { computeSalesForecast } from '../lib/salesForecast'
 import { OversiteCollapsible } from '../components/oversite/OversiteCollapsible'
 import { OversiteKpiRow, OversiteSection, SalesLyBars } from '../components/oversite/OversiteKpiRow'
@@ -287,6 +291,23 @@ export function OversitePage() {
                   Object.keys(dashboardData.receiptsMonthly[co.id]).length > 0 && (
                     <OversiteSection title={`🧾 ${t('oversite.receipts')}`}>
                       <OversiteReceipts monthly={dashboardData.receiptsMonthly[co.id]} />
+                      {(() => {
+                        const teamAgents = RECEIPTS_TEAM_AGENTS[co.id]
+                        if (!teamAgents) return null
+                        const teamMonthly = sumAgentMonthly(
+                          dashboardData?.receiptsMonthlyByAgent?.[co.id],
+                          teamAgents,
+                        )
+                        if (Object.keys(teamMonthly).length === 0) return null
+                        return (
+                          <>
+                            <h4 className="ov-receipts-subtitle">
+                              {t('oversite.receiptsTeam')} {teamAgents.join(', ')}
+                            </h4>
+                            <OversiteReceipts monthly={teamMonthly} />
+                          </>
+                        )
+                      })()}
                     </OversiteSection>
                   )}
 

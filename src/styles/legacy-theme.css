@@ -685,6 +685,17 @@ body {
   color: var(--muted2);
 }
 
+.ov-receipts-subtitle {
+  margin: 14px 0 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--bdr);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted2);
+}
+
 .ov-bar-val {
   width: 70px;
   text-align: right;
