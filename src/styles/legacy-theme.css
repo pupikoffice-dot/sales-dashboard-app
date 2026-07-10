@@ -656,6 +656,29 @@ body {
   font-weight: 700;
 }
 
+.ov-bar-fill.receipt-avg {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--acc),
+    var(--acc) 5px,
+    transparent 5px,
+    transparent 9px
+  );
+  opacity: 0.8;
+}
+
+.ov-bar-row--receipt-avg {
+  border-top: 1px dashed var(--bdr);
+  margin-top: 4px;
+  padding-top: 4px;
+}
+
+.ov-bar-row--receipt-avg .ov-bar-lbl,
+.ov-bar-row--receipt-avg .ov-bar-val {
+  color: var(--muted2);
+  font-style: italic;
+}
+
 .ov-receipts-total {
   margin-top: 8px;
   font-size: 0.72rem;

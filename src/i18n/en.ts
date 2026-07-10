@@ -128,6 +128,7 @@ export const messages = {
   'oversite.projected': 'Projected',
   'oversite.receipts': 'Receipts',
   'oversite.receiptsTotal12': '12-month total',
+  'oversite.receiptsAvg': 'Monthly avg',
   'oversite.receiptsNetNote': 'net of 18% VAT, by collected date',
   'oversite.projectedTitle': 'Month-end projection from the last {months} months intra-month sales pattern',
   'oversite.clients': 'Clients',

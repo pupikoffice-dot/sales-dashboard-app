@@ -39,6 +39,7 @@ export function OversiteReceipts({ monthly }: { monthly: Record<string, number> 
 
   const max = Math.max(...months.map(m => m.net), 1)
   const total = months.reduce((s, m) => s + m.net, 0)
+  const avg = total / months.length
 
   return (
     <div className="ov-receipts">
@@ -55,9 +56,20 @@ export function OversiteReceipts({ monthly }: { monthly: Record<string, number> 
             <span className="ov-bar-val">{fmt(m.net)}</span>
           </div>
         ))}
+        <div className="ov-bar-row ov-bar-row--receipt-avg">
+          <span className="ov-bar-lbl">{t('oversite.receiptsAvg')}</span>
+          <div className="ov-bar-track">
+            <div
+              className="ov-bar-fill receipt-avg"
+              style={{ width: `${((avg / max) * 100).toFixed(1)}%` }}
+            />
+          </div>
+          <span className="ov-bar-val">{fmt(avg)}</span>
+        </div>
       </div>
       <div className="ov-receipts-total">
-        {t('oversite.receiptsTotal12')}: <b>{fmt(total)}</b> · {t('oversite.receiptsNetNote')}
+        {t('oversite.receiptsTotal12')}: <b>{fmt(total)}</b> · {t('oversite.receiptsAvg')}:{' '}
+        <b>{fmt(avg)}</b> · {t('oversite.receiptsNetNote')}
       </div>
     </div>
   )

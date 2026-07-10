@@ -130,6 +130,7 @@ export const messages: Record<keyof typeof en, string> = {
   'oversite.projected': 'תחזית',
   'oversite.receipts': 'תקבולים',
   'oversite.receiptsTotal12': 'סה"כ 12 חודשים',
+  'oversite.receiptsAvg': 'ממוצע חודשי',
   'oversite.receiptsNetNote': 'ללא מע"מ 18%, לפי תאריך גבייה',
   'oversite.projectedTitle': 'תחזית לסוף החודש לפי דפוס המכירות התוך-חודשי ב-{months} החודשים האחרונים',
   'oversite.clients': 'לקוחות',
