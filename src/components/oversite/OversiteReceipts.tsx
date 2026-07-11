@@ -91,7 +91,7 @@ export function OversiteReceipts({
                       const net = ((byAgent![a] || {})[m.ym] || 0) / VAT_RATE
                       if (net <= 0) return null
                       const pct = ((net / max) * 100).toFixed(1)
-                      const showLabel = Number(pct) > 8 // only label segments > 8% width
+                      const showLabel = Number(pct) > 13 // amount fits only in wider segments
                       return (
                         <div
                           key={a}
@@ -99,7 +99,7 @@ export function OversiteReceipts({
                           style={{ width: `${pct}%` }}
                           title={`${t('oversite.debtAgent')} ${a}: ${fmt(net)}`}
                         >
-                          {showLabel && <span className="ov-bar-label">{a}</span>}
+                          {showLabel && <span className="ov-bar-label">{fmt(net)}</span>}
                         </div>
                       )
                     })
