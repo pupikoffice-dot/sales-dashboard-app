@@ -57,14 +57,22 @@ export function OversiteReceipts({
 
   const stacked = !!byAgent && !!agents && agents.length > 0
 
+  // Per-agent 12-month totals for legend
+  const agentTotals = stacked
+    ? agents!.map(a => ({
+        agent: a,
+        total: months.reduce((s, m) => s + ((byAgent![a] || {})[m.ym] || 0) / VAT_RATE, 0),
+      }))
+    : []
+
   return (
     <div className="ov-receipts">
       {stacked && (
         <div className="ov-receipts-legend">
-          {agents!.map((a, i) => (
-            <span key={a} className="ov-receipts-legend-item">
+          {agentTotals.map((at, i) => (
+            <span key={at.agent} className="ov-receipts-legend-item">
               <span className={`ov-receipts-swatch agent-c${i % AGENT_COLOR_COUNT}`} />
-              {t('oversite.debtAgent')} {a}
+              {t('oversite.debtAgent')} {at.agent}: <b>{fmt(at.total)}</b>
             </span>
           ))}
         </div>
@@ -78,13 +86,17 @@ export function OversiteReceipts({
                 ? agents!.map((a, i) => {
                     const net = ((byAgent![a] || {})[m.ym] || 0) / VAT_RATE
                     if (net <= 0) return null
+                    const pct = ((net / max) * 100).toFixed(1)
+                    const showLabel = Number(pct) > 8 // only label segments > 8% width
                     return (
                       <div
                         key={a}
                         className={`ov-bar-fill agent-c${i % AGENT_COLOR_COUNT}`}
-                        style={{ width: `${((net / max) * 100).toFixed(1)}%` }}
+                        style={{ width: `${pct}%` }}
                         title={`${t('oversite.debtAgent')} ${a}: ${fmt(net)}`}
-                      />
+                      >
+                        {showLabel && <span className="ov-bar-label">{a}</span>}
+                      </div>
                     )
                   })
                 : m.net > 0 && (
