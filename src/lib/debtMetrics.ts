@@ -57,6 +57,28 @@ export function debtMonths(months: DebtRow['months']) {
   return (months || []).filter(m => !ACCUMULATED_BALANCE_RE.test(m.label || ''))
 }
 
+/** "Mon YYYY" → sortable number (e.g. "Feb 2026" → 202602); unknown → null. */
+function monthLabelKey(label: string): number | null {
+  const m = /^([A-Za-z]{3})\s+(\d{4})$/.exec(String(label || '').trim())
+  if (!m) return null
+  const mi = MONTH_SHORT.indexOf(m[1])
+  if (mi < 0) return null
+  return Number(m[2]) * 100 + (mi + 1)
+}
+
+/** Chronological ascending (oldest month first → current month last);
+    unparseable labels keep their relative order at the end. */
+export function sortDebtMonthLabels(labels: string[]): string[] {
+  return [...labels].sort((a, b) => {
+    const ka = monthLabelKey(a)
+    const kb = monthLabelKey(b)
+    if (ka === null && kb === null) return 0
+    if (ka === null) return 1
+    if (kb === null) return -1
+    return ka - kb
+  })
+}
+
 export function debtRowTotal(row: DebtRow): number {
   return row.oldDebt + debtMonths(row.months).reduce((s, m) => s + (m.amount || 0), 0)
 }
@@ -99,7 +121,10 @@ export function computeDebtSummary(debtData: DebtRow[]): DebtSummary | null {
       mTotals[m.label] = (mTotals[m.label] || 0) + (m.amount || 0)
     })
   })
-  const monthTotals = Object.entries(mTotals).map(([label, amount]) => ({ label, amount }))
+  const monthTotals = sortDebtMonthLabels(Object.keys(mTotals)).map(label => ({
+    label,
+    amount: mTotals[label],
+  }))
   const grand = totOld + monthTotals.reduce((a, v) => a + v.amount, 0)
   return { oldDebt: totOld, monthTotals, grandTotal: grand }
 }
@@ -119,16 +144,13 @@ export interface DebtAgentMatrix {
 /** Per-agent old-debt + per-month sums, matching the summary's month order. */
 export function computeDebtAgentMatrix(debtData: DebtRow[]): DebtAgentMatrix | null {
   if (!debtData.length) return null
-  const labelSet: string[] = []
   const seen = new Set<string>()
   debtData.forEach(r => {
     debtMonths(r.months).forEach(m => {
-      if (m.label && !seen.has(m.label)) {
-        seen.add(m.label)
-        labelSet.push(m.label)
-      }
+      if (m.label) seen.add(m.label)
     })
   })
+  const labelSet = sortDebtMonthLabels([...seen])
   const byAgent = new Map<string, DebtAgentRow>()
   debtData.forEach(r => {
     const agent = String(r.agent || '')
