@@ -706,6 +706,30 @@ body {
 .ov-receipts-swatch.agent-c4 { background: #22d3ee; }
 .ov-receipts-swatch.agent-c5 { background: #f472b6; }
 
+/* Per-agent numbers line under each month bar, color-matched to segments */
+.ov-receipts-agents-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 1px 0 5px;
+  padding-inline-start: 52px; /* align under the bar track, past the month label */
+  font-size: 0.66rem;
+}
+
+.ov-receipts-agent-num { white-space: nowrap; }
+.ov-receipts-agent-num.agent-t0 { color: #a5b0fb; }
+.ov-receipts-agent-num.agent-t1 { color: #6ee7b7; }
+.ov-receipts-agent-num.agent-t2 { color: #fcd34d; }
+.ov-receipts-agent-num.agent-t3 { color: #fca5a5; }
+.ov-receipts-agent-num.agent-t4 { color: #67e8f9; }
+.ov-receipts-agent-num.agent-t5 { color: #f9a8d4; }
+
+.ov-receipts-legend-avg {
+  color: var(--muted);
+  font-style: italic;
+  margin-inline-start: 3px;
+}
+
 /* Segment labels inside stacked bar (agent number, only when segment > 8% wide) */
 .ov-bar-fill {
   position: relative;

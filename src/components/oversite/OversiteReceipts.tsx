@@ -57,12 +57,12 @@ export function OversiteReceipts({
 
   const stacked = !!byAgent && !!agents && agents.length > 0
 
-  // Per-agent 12-month totals for legend
+  // Per-agent 12-month totals + monthly averages for legend
   const agentTotals = stacked
-    ? agents!.map(a => ({
-        agent: a,
-        total: months.reduce((s, m) => s + ((byAgent![a] || {})[m.ym] || 0) / VAT_RATE, 0),
-      }))
+    ? agents!.map(a => {
+        const total = months.reduce((s, m) => s + ((byAgent![a] || {})[m.ym] || 0) / VAT_RATE, 0)
+        return { agent: a, total, avg: total / months.length }
+      })
     : []
 
   return (
@@ -73,40 +73,58 @@ export function OversiteReceipts({
             <span key={at.agent} className="ov-receipts-legend-item">
               <span className={`ov-receipts-swatch agent-c${i % AGENT_COLOR_COUNT}`} />
               {t('oversite.debtAgent')} {at.agent}: <b>{fmt(at.total)}</b>
+              <span className="ov-receipts-legend-avg">
+                ({t('oversite.receiptsAvg')} {fmt(at.avg)})
+              </span>
             </span>
           ))}
         </div>
       )}
       <div className="ov-bar-chart">
         {months.map(m => (
-          <div key={m.ym} className={`ov-bar-row${m.isCurrent ? ' ov-bar-row--current' : ''}`}>
-            <span className="ov-bar-lbl">{m.label}</span>
-            <div className="ov-bar-track ov-bar-track--stacked">
-              {stacked
-                ? agents!.map((a, i) => {
-                    const net = ((byAgent![a] || {})[m.ym] || 0) / VAT_RATE
-                    if (net <= 0) return null
-                    const pct = ((net / max) * 100).toFixed(1)
-                    const showLabel = Number(pct) > 8 // only label segments > 8% width
-                    return (
+          <div key={m.ym}>
+            <div className={`ov-bar-row${m.isCurrent ? ' ov-bar-row--current' : ''}`}>
+              <span className="ov-bar-lbl">{m.label}</span>
+              <div className="ov-bar-track ov-bar-track--stacked">
+                {stacked
+                  ? agents!.map((a, i) => {
+                      const net = ((byAgent![a] || {})[m.ym] || 0) / VAT_RATE
+                      if (net <= 0) return null
+                      const pct = ((net / max) * 100).toFixed(1)
+                      const showLabel = Number(pct) > 8 // only label segments > 8% width
+                      return (
+                        <div
+                          key={a}
+                          className={`ov-bar-fill agent-c${i % AGENT_COLOR_COUNT}`}
+                          style={{ width: `${pct}%` }}
+                          title={`${t('oversite.debtAgent')} ${a}: ${fmt(net)}`}
+                        >
+                          {showLabel && <span className="ov-bar-label">{a}</span>}
+                        </div>
+                      )
+                    })
+                  : m.net > 0 && (
                       <div
-                        key={a}
-                        className={`ov-bar-fill agent-c${i % AGENT_COLOR_COUNT}`}
-                        style={{ width: `${pct}%` }}
-                        title={`${t('oversite.debtAgent')} ${a}: ${fmt(net)}`}
-                      >
-                        {showLabel && <span className="ov-bar-label">{a}</span>}
-                      </div>
-                    )
-                  })
-                : m.net > 0 && (
-                    <div
-                      className={`ov-bar-fill ${m.isCurrent ? 'receipt-cur' : 'receipt'}`}
-                      style={{ width: `${((m.net / max) * 100).toFixed(1)}%` }}
-                    />
-                  )}
+                        className={`ov-bar-fill ${m.isCurrent ? 'receipt-cur' : 'receipt'}`}
+                        style={{ width: `${((m.net / max) * 100).toFixed(1)}%` }}
+                      />
+                    )}
+              </div>
+              <span className="ov-bar-val">{fmt(m.net)}</span>
             </div>
-            <span className="ov-bar-val">{fmt(m.net)}</span>
+            {stacked && (
+              <div className="ov-receipts-agents-line">
+                {agents!.map((a, i) => {
+                  const net = ((byAgent![a] || {})[m.ym] || 0) / VAT_RATE
+                  if (net <= 0) return null
+                  return (
+                    <span key={a} className={`ov-receipts-agent-num agent-t${i % AGENT_COLOR_COUNT}`}>
+                      {a}: {fmt(net)}
+                    </span>
+                  )
+                })}
+              </div>
+            )}
           </div>
         ))}
         <div className="ov-bar-row ov-bar-row--receipt-avg">
