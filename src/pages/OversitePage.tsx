@@ -294,17 +294,19 @@ export function OversitePage() {
                       {(() => {
                         const teamAgents = RECEIPTS_TEAM_AGENTS[co.id]
                         if (!teamAgents) return null
-                        const teamMonthly = sumAgentMonthly(
-                          dashboardData?.receiptsMonthlyByAgent?.[co.id],
-                          teamAgents,
-                        )
+                        const agentMaps = dashboardData?.receiptsMonthlyByAgent?.[co.id]
+                        const teamMonthly = sumAgentMonthly(agentMaps, teamAgents)
                         if (Object.keys(teamMonthly).length === 0) return null
                         return (
                           <>
                             <h4 className="ov-receipts-subtitle">
                               {t('oversite.receiptsTeam')} {teamAgents.join(', ')}
                             </h4>
-                            <OversiteReceipts monthly={teamMonthly} />
+                            <OversiteReceipts
+                              monthly={teamMonthly}
+                              byAgent={agentMaps}
+                              agents={teamAgents}
+                            />
                           </>
                         )
                       })()}

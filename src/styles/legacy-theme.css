@@ -621,17 +621,17 @@ body {
   background: var(--muted);
 }
 
-/* Month-end projection bar: striped + translucent so it reads as an
-   estimate, not an actual. */
+/* Month-end projection bar: violet stripes — clearly distinct from the
+   green actual-sales bar, and striped so it reads as an estimate. */
 .ov-bar-fill.forecast {
   background: repeating-linear-gradient(
     45deg,
-    var(--grn),
-    var(--grn) 5px,
+    #a78bfa,
+    #a78bfa 5px,
     transparent 5px,
     transparent 9px
   );
-  opacity: 0.65;
+  opacity: 0.85;
 }
 
 .ov-bar-row--forecast .ov-bar-lbl,
@@ -656,16 +656,55 @@ body {
   font-weight: 700;
 }
 
+/* Monthly average: amber stripes — distinct from both the indigo month bars
+   and the green current month. */
 .ov-bar-fill.receipt-avg {
   background: repeating-linear-gradient(
     45deg,
-    var(--acc),
-    var(--acc) 5px,
+    #fbbf24,
+    #fbbf24 5px,
     transparent 5px,
     transparent 9px
   );
-  opacity: 0.8;
+  opacity: 0.85;
 }
+
+/* Per-agent stacked segments + legend (team receipts chart) */
+.ov-bar-fill.agent-c0 { background: #818cf8; }
+.ov-bar-fill.agent-c1 { background: #34d399; }
+.ov-bar-fill.agent-c2 { background: #fbbf24; }
+.ov-bar-fill.agent-c3 { background: #f87171; }
+.ov-bar-fill.agent-c4 { background: #22d3ee; }
+.ov-bar-fill.agent-c5 { background: #f472b6; }
+
+.ov-receipts-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: 0.68rem;
+  color: var(--muted2);
+}
+
+.ov-receipts-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.ov-receipts-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.ov-receipts-swatch.agent-c0 { background: #818cf8; }
+.ov-receipts-swatch.agent-c1 { background: #34d399; }
+.ov-receipts-swatch.agent-c2 { background: #fbbf24; }
+.ov-receipts-swatch.agent-c3 { background: #f87171; }
+.ov-receipts-swatch.agent-c4 { background: #22d3ee; }
+.ov-receipts-swatch.agent-c5 { background: #f472b6; }
 
 .ov-bar-row--receipt-avg {
   border-top: 1px dashed var(--bdr);
