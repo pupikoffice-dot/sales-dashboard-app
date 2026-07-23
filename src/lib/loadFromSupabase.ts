@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { normalizeSalesDate } from './salesDate'
 import type {
   CostRow,
   DashboardData,
@@ -89,7 +90,7 @@ export async function loadDashboardDataFromSupabase(): Promise<DashboardData> {
       }
     })
     await Promise.all(workers)
-    rows = results.flat()
+    rows = results.flat().map(normalizeSalesRowDates)
   }
 
   const { data: auxData, error: auxError } = await supabase.rpc('get_dashboard_aux')
@@ -122,4 +123,11 @@ export async function loadDashboardDataFromSupabase(): Promise<DashboardData> {
     receiptsMonthlyByAgent: aux.receiptsMonthlyByAgent ?? {},
     syncTimes: aux.syncTimes ?? {},
   }
+}
+
+/** Force every sales row date to YYYY-MM-DD so day charts/KPIs never miss rows. */
+function normalizeSalesRowDates(row: SalesRow): SalesRow {
+  const date = normalizeSalesDate(row.date)
+  if (!date || date === row.date) return row
+  return { ...row, date }
 }

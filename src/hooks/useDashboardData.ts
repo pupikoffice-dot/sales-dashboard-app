@@ -7,6 +7,7 @@ import { buildItemCostMap, buildItemPriceMap } from '../lib/itemPricing'
 import { checkOrdersDataHealth } from '../lib/dataHealth'
 import { fetchDashboardLoader } from '../lib/parseDashboardLoader'
 import { loadDashboardDataFromSupabase } from '../lib/loadFromSupabase'
+import { normalizeSalesDate } from '../lib/salesDate'
 import { buildSalesFilterIndex, type SalesFilterIndex } from '../lib/salesFilterIndex'
 import { buildWmsMaps } from '../lib/wmsData'
 import type { DashboardData, DebtRow, SalesRow } from '../types/dashboard'
@@ -56,6 +57,14 @@ async function loadDashboardData(): Promise<LoadedDashboardPayload> {
   const data = useSupabase ? await loadDashboardDataFromSupabase() : await loadFromBlob()
 
   if (!data?.rows) throw new Error('Dashboard data missing rows')
+
+  // Blob path may still carry ISO/datetime/dd-mm dates — normalize once for all KPIs.
+  if (!useSupabase) {
+    data.rows = data.rows.map(r => {
+      const date = normalizeSalesDate(r.date)
+      return date && date !== r.date ? { ...r, date } : r
+    })
+  }
 
   const filterIndex = buildSalesFilterIndex(data.rows)
   return { ...data, filterIndex }

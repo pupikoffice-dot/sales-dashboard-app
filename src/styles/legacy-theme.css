@@ -865,9 +865,11 @@ body {
 }
 
 .ov-orders7-lbl {
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   color: var(--muted2);
   text-align: center;
+  line-height: 1.15;
+  white-space: nowrap;
 }
 
 .ov-bar-val {

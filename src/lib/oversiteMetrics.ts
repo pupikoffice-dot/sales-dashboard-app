@@ -1,5 +1,6 @@
 import type { LogicalCompany, SalesRow } from '../types/dashboard'
 import { MONTH_NAMES } from './format'
+import { isWeekendFriSat, normalizeSalesDate, weekdayShortEn } from './salesDate'
 
 export interface OversiteCompanyDef {
   id: LogicalCompany
@@ -92,7 +93,10 @@ export function getOversiteDateContext(now = new Date()): OversiteDateContext {
 /** Legacy exports tagged 722 rows as openorders when orders-* sheets were missing. */
 export function resolveOrdersTag(rows: SalesRow[], ordersTag: string): string {
   const count = rows.filter(r => r.company === ordersTag).length
-  if (count >= 100) return ordersTag
+  // Prefer the real orders-* tag whenever any rows exist. The old ">= 100"
+  // threshold wrongly fell back to openorders for agent-scoped logins with
+  // fewer than 100 order lines, wiping day charts / Orders Today.
+  if (count > 0) return ordersTag
   if (ordersTag === 'orders-pupik') {
     const legacy = rows.filter(r => r.company === 'openorders').length
     if (legacy > 2000) return 'openorders'
@@ -118,7 +122,7 @@ export interface OrdersTodayMetrics {
 
 export function getOrdersTodayRows(rows: SalesRow[], ordersTag: string, todayStr: string): SalesRow[] {
   return rows
-    .filter(r => r.company === ordersTag && r.date === todayStr)
+    .filter(r => r.company === ordersTag && normalizeSalesDate(r.date) === todayStr)
     .sort((a, b) => {
       const clientCmp = (a.clientName || a.clientID || '').localeCompare(b.clientName || b.clientID || '')
       if (clientCmp !== 0) return clientCmp
@@ -228,14 +232,15 @@ function shiftLocalDateStr(todayStr: string, dayOffset: number): string {
   return localDateStr(dt)
 }
 
-function dateLabelDdMm(dateStr: string): string {
+function dateLabelDdMmDow(dateStr: string): string {
   const [, m, d] = dateStr.split('-')
-  return `${d}/${m}`
+  const dow = weekdayShortEn(dateStr)
+  return dow ? `${d}/${m} ${dow}` : `${d}/${m}`
 }
 
 /**
- * Last 7 calendar days inclusive of todayStr: cash by day × agent for Doc 36 / 722 orders.
- * Days with no orders still appear with total 0. Agents sorted by window cash desc.
+ * Last 7 Sun–Thu workdays ending on/before todayStr (Israel: skip Fri+Sat).
+ * Cash by day × agent for Doc 36 / 722 orders. Zero-cash workdays still shown.
  */
 export function computeOrdersLast7DaysByAgent(
   rows: SalesRow[],
@@ -243,9 +248,14 @@ export function computeOrdersLast7DaysByAgent(
   todayStr: string,
 ): OrdersLast7DaysResult {
   const dayStrs: string[] = []
-  for (let i = 6; i >= 0; i--) {
-    dayStrs.push(shiftLocalDateStr(todayStr, -i))
+  let offset = 0
+  while (dayStrs.length < 7 && offset < 40) {
+    const ds = shiftLocalDateStr(todayStr, -offset)
+    offset++
+    if (isWeekendFriSat(ds)) continue
+    dayStrs.push(ds)
   }
+  dayStrs.reverse() // oldest → newest
   const daySet = new Set(dayStrs)
 
   const byDayAgent = new Map<string, Map<string, number>>()
@@ -254,11 +264,13 @@ export function computeOrdersLast7DaysByAgent(
   const agentTotals = new Map<string, number>()
 
   for (const r of rows) {
-    if (r.company !== ordersTag || !r.date || !daySet.has(r.date)) continue
+    if (r.company !== ordersTag) continue
+    const date = normalizeSalesDate(r.date)
+    if (!date || !daySet.has(date)) continue
     const agent = String(r.agent ?? '').trim() || '—'
     const cash = Number(r.cash) || 0
     if (cash === 0) continue
-    const dayMap = byDayAgent.get(r.date)!
+    const dayMap = byDayAgent.get(date)!
     dayMap.set(agent, (dayMap.get(agent) || 0) + cash)
     agentTotals.set(agent, (agentTotals.get(agent) || 0) + cash)
   }
@@ -276,10 +288,9 @@ export function computeOrdersLast7DaysByAgent(
       if (v !== 0) byAgent[agent] = v
       total += v
     }
-    // Include any agent that only appears this day but was filtered out of agentTotals somehow — already covered
     return {
       date,
-      label: dateLabelDdMm(date),
+      label: dateLabelDdMmDow(date),
       total,
       byAgent,
       isToday: date === todayStr,
@@ -295,7 +306,11 @@ export function getOrdersMtdRows(
   monthStart: string,
   todayStr: string,
 ): SalesRow[] {
-  return rows.filter(r => r.company === ordersTag && r.date && r.date >= monthStart && r.date <= todayStr)
+  return rows.filter(r => {
+    if (r.company !== ordersTag) return false
+    const date = normalizeSalesDate(r.date)
+    return !!date && date >= monthStart && date <= todayStr
+  })
 }
 
 export function computeOrdersToday(rows: SalesRow[], ordersTag: string, todayStr: string): OrdersTodayMetrics {
@@ -313,7 +328,7 @@ export function computeOrdersMtd(
   monthStart: string,
   todayStr: string,
 ): OrdersMtdMetrics {
-  const matched = rows.filter(r => r.company === ordersTag && r.date && r.date >= monthStart && r.date <= todayStr)
+  const matched = getOrdersMtdRows(rows, ordersTag, monthStart, todayStr)
   const { cash, qty } = sumRows(matched)
   const clients = new Set(matched.map(r => r.clientID).filter(Boolean)).size
   return { clients, cash, qty }
