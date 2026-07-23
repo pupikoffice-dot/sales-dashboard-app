@@ -206,6 +206,89 @@ export function computeAgentBreakdown(rows: SalesRow[]): AgentBreakdownRow[] {
     .sort((a, b) => b.cash - a.cash)
 }
 
+export interface OrdersLast7DayColumn {
+  date: string
+  /** Display label dd/mm */
+  label: string
+  total: number
+  byAgent: Record<string, number>
+  isToday: boolean
+}
+
+export interface OrdersLast7DaysResult {
+  days: OrdersLast7DayColumn[]
+  /** Agents ordered by total cash over the window (desc), stable for color index. */
+  agents: string[]
+}
+
+function shiftLocalDateStr(todayStr: string, dayOffset: number): string {
+  const [y, m, d] = todayStr.split('-').map(Number)
+  const dt = new Date(y, m - 1, d)
+  dt.setDate(dt.getDate() + dayOffset)
+  return localDateStr(dt)
+}
+
+function dateLabelDdMm(dateStr: string): string {
+  const [, m, d] = dateStr.split('-')
+  return `${d}/${m}`
+}
+
+/**
+ * Last 7 calendar days inclusive of todayStr: cash by day × agent for Doc 36 / 722 orders.
+ * Days with no orders still appear with total 0. Agents sorted by window cash desc.
+ */
+export function computeOrdersLast7DaysByAgent(
+  rows: SalesRow[],
+  ordersTag: string,
+  todayStr: string,
+): OrdersLast7DaysResult {
+  const dayStrs: string[] = []
+  for (let i = 6; i >= 0; i--) {
+    dayStrs.push(shiftLocalDateStr(todayStr, -i))
+  }
+  const daySet = new Set(dayStrs)
+
+  const byDayAgent = new Map<string, Map<string, number>>()
+  for (const ds of dayStrs) byDayAgent.set(ds, new Map())
+
+  const agentTotals = new Map<string, number>()
+
+  for (const r of rows) {
+    if (r.company !== ordersTag || !r.date || !daySet.has(r.date)) continue
+    const agent = String(r.agent ?? '').trim() || '—'
+    const cash = Number(r.cash) || 0
+    if (cash === 0) continue
+    const dayMap = byDayAgent.get(r.date)!
+    dayMap.set(agent, (dayMap.get(agent) || 0) + cash)
+    agentTotals.set(agent, (agentTotals.get(agent) || 0) + cash)
+  }
+
+  const agents = [...agentTotals.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([a]) => a)
+
+  const days: OrdersLast7DayColumn[] = dayStrs.map(date => {
+    const dayMap = byDayAgent.get(date)!
+    const byAgent: Record<string, number> = {}
+    let total = 0
+    for (const agent of agents) {
+      const v = dayMap.get(agent) || 0
+      if (v !== 0) byAgent[agent] = v
+      total += v
+    }
+    // Include any agent that only appears this day but was filtered out of agentTotals somehow — already covered
+    return {
+      date,
+      label: dateLabelDdMm(date),
+      total,
+      byAgent,
+      isToday: date === todayStr,
+    }
+  })
+
+  return { days, agents }
+}
+
 export function getOrdersMtdRows(
   rows: SalesRow[],
   ordersTag: string,

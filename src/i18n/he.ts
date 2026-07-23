@@ -117,6 +117,8 @@ export const messages: Record<keyof typeof en, string> = {
   'oversite.month': 'חודש',
   'oversite.noCompanies': 'אין חברות בהיקף הגישה שלך.',
   'oversite.ordersToday': 'הזמנות היום (מסמך 36)',
+  'oversite.ordersLast7Days': 'הזמנות 7 הימים האחרונים',
+  'oversite.ordersLast7DaysEmpty': 'אין הזמנות ב־7 הימים האחרונים.',
   'oversite.ordersMtd': 'הזמנות חודש (722) — {month}',
   'oversite.openOrders': 'הזמנות פתוחות (721)',
   'oversite.deliveryNotes': 'תעודות משלוח (720)',

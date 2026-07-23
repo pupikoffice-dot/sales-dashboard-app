@@ -23,6 +23,7 @@ import {
   computeOpenOrdersTop10,
   computeOrdersMtd,
   computeOrdersMtdTop10,
+  computeOrdersLast7DaysByAgent,
   computeOrdersToday,
   computeReturnsMtd,
   computeReturnsMtdTop10,
@@ -35,6 +36,7 @@ import {
   resolveOrdersTag,
 } from '../lib/oversiteMetrics'
 import { OversiteAgentBreakdown } from '../components/oversite/OversiteAgentBreakdown'
+import { OversiteOrdersLast7Days } from '../components/oversite/OversiteOrdersLast7Days'
 import {
   OversiteReceipts,
   RECEIPTS_TEAM_AGENTS,
@@ -175,6 +177,9 @@ export function OversitePage() {
                     ]}
                   />
                   <OversiteAgentBreakdown rows={ordersTodayByAgent} />
+                  <OversiteOrdersLast7Days
+                    data={computeOrdersLast7DaysByAgent(companyRows, ordersTag, ctx.todayStr)}
+                  />
                   <OversiteOrdersReportButton
                     onClick={() =>
                       setOrdersModal({ company: co.id, companyLabel: co.label, ordersTag })
