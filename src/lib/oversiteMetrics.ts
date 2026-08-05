@@ -15,6 +15,14 @@ export interface OversiteCompanyDef {
   accentColor: string
 }
 
+/** Distinct accents so side-by-side company columns are easy to tell apart. */
+export const COMPANY_ACCENT: Record<LogicalCompany, string> = {
+  pupik: 'var(--co-pupik)',
+  mt: 'var(--co-mt)',
+  grow: 'var(--co-grow)',
+  gold: 'var(--co-gold)',
+}
+
 export const OVERSITE_COMPANIES: OversiteCompanyDef[] = [
   {
     id: 'pupik',
@@ -23,7 +31,7 @@ export const OVERSITE_COMPANIES: OversiteCompanyDef[] = [
     delivery720Tag: 'delivery720-pupik',
     returnsTag: 'returns-pupik',
     label: '🏢 Pupik',
-    accentColor: 'var(--acc)',
+    accentColor: COMPANY_ACCENT.pupik,
   },
   {
     id: 'mt',
@@ -32,7 +40,7 @@ export const OVERSITE_COMPANIES: OversiteCompanyDef[] = [
     delivery720Tag: 'delivery720-mt',
     returnsTag: 'returns-mt',
     label: '🐒 Monkeytime',
-    accentColor: 'var(--acc2)',
+    accentColor: COMPANY_ACCENT.mt,
   },
 ]
 

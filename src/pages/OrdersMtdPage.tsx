@@ -1,3 +1,4 @@
+import { type CSSProperties } from 'react'
 import { useDashboardAccess } from '../context/DashboardAccessContext'
 import { useDashboardData } from '../hooks/useDashboardData'
 import { filterRows } from '../lib/permissions'
@@ -55,9 +56,14 @@ export function OrdersMtdPage() {
               getOrdersMtdRows(companyRows, ordersTag, ctx.monthStart, ctx.todayStr),
             )
 
+            const multiCo = visibleCompanies.length > 1
             return (
-              <div key={co.id} className="ov-col">
-                <div className="ov-col-hdr" style={{ borderLeftColor: co.accentColor }}>
+              <div
+                key={co.id}
+                className={`ov-col${multiCo ? ' ov-col--accented' : ''}`}
+                style={multiCo ? ({ ['--co-accent' as string]: co.accentColor } as CSSProperties) : undefined}
+              >
+                <div className="ov-col-hdr">
                   {co.label}
                 </div>
 

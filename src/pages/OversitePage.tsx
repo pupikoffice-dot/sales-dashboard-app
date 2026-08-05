@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { SalesReportBody } from '../components/sales/SalesReportBody'
 import { useAuth } from '../context/AuthContext'
 import { useLocale } from '../context/LocaleContext'
@@ -159,12 +159,14 @@ export function OversitePage() {
                 Number(r.month) === ctx.curMonth,
             )
             const forecast = computeSalesForecast(companyRows, co.id, ctx)
+            const multiCo = visibleCompanies.length > 1
             return (
               <div
                 key={co.id}
-                className={`ov-col${visibleCompanies.length === 1 ? ' ov-col--sections-grid' : ''}`}
+                className={`ov-col${visibleCompanies.length === 1 ? ' ov-col--sections-grid' : ''}${multiCo ? ' ov-col--accented' : ''}`}
+                style={multiCo ? ({ ['--co-accent' as string]: co.accentColor } as CSSProperties) : undefined}
               >
-                <div className="ov-col-hdr" style={{ borderLeftColor: co.accentColor }}>
+                <div className="ov-col-hdr">
                   {co.label}
                 </div>
 

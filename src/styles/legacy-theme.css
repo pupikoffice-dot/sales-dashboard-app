@@ -14,6 +14,11 @@
   --red: #fbbf24;
   --acc-bg: rgba(129, 140, 248, 0.12);
   --grn-bg: rgba(45, 212, 191, 0.12);
+  /* Per-company accents (multi-column Oversite / Orders MTD) */
+  --co-pupik: #818cf8;
+  --co-mt: #38bdf8;
+  --co-grow: #fbbf24;
+  --co-gold: #eab308;
   --txt: #dae2fd;
   --muted: #908fa0;
   --muted2: #c7c4d7;
@@ -367,6 +372,15 @@ body {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  --ov-accent: var(--acc);
+}
+
+.ov-col--accented {
+  --ov-accent: var(--co-accent, var(--acc));
+}
+
+.ov-col--accented .ov-section {
+  border-top: 2px solid color-mix(in srgb, var(--ov-accent) 45%, transparent);
 }
 
 /* Single-company oversite: section cards side-by-side (legacy pupik layout) */
@@ -398,9 +412,16 @@ body {
   padding: 12px 16px;
   background: rgba(23, 31, 51, 0.7);
   border: 1px solid var(--bdr);
-  border-left-width: 3px;
+  border-left: 3px solid var(--ov-accent, var(--acc));
   border-radius: var(--r);
   letter-spacing: -0.01em;
+  color: var(--ov-accent, var(--txt));
+}
+
+.ov-col--accented .ov-col-hdr {
+  background: color-mix(in srgb, var(--ov-accent) 14%, rgba(23, 31, 51, 0.75));
+  border-color: color-mix(in srgb, var(--ov-accent) 35%, var(--bdr));
+  border-left-color: var(--ov-accent);
 }
 
 .ov-section {
@@ -2665,7 +2686,11 @@ html[dir='rtl'] .hdr-brand,
 
 [dir='rtl'] .ov-col-hdr {
   border-left: none;
-  border-right: 3px solid;
+  border-right: 3px solid var(--ov-accent, var(--acc));
+}
+
+[dir='rtl'] .ov-col--accented .ov-col-hdr {
+  border-right-color: var(--ov-accent);
 }
 
 [dir='rtl'] .panel-title,
