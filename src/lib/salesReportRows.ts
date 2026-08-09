@@ -49,5 +49,10 @@ export function getReportRows(
     })
   }
 
+  if (filters.view === 'suppliers') {
+    if (!filters.selectedSuppliers.size) return []
+    return rows.filter(r => filters.selectedSuppliers.has(String(r.supplier || '(No supplier)')))
+  }
+
   return rows
 }

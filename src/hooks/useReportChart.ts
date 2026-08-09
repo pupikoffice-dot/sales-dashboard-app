@@ -2,13 +2,13 @@ import { useEffect } from 'react'
 import type { ChartModalConfig } from '../components/sales/ChartModal'
 import type { DashboardFiltersState } from '../context/DashboardFiltersContext'
 import { useSalesReportUi } from '../context/SalesReportUiContext'
-import { buildClientPie, buildItemPie, buildMonthlyBarFromRows } from '../lib/pieData'
+import { buildClientPie, buildItemPie, buildMonthlyBarFromRows, buildSupplierPie } from '../lib/pieData'
 import type { SalesRow } from '../types/dashboard'
 
 export function useReportChart(
   filters: DashboardFiltersState,
   rows: SalesRow[],
-  config: { pieTitle: string; barTitle?: string; kind: 'client' | 'item' },
+  config: { pieTitle: string; barTitle?: string; kind: 'client' | 'item' | 'supplier' },
 ) {
   const { setReportChart } = useSalesReportUi()
 
@@ -27,6 +27,8 @@ export function useReportChart(
       }
     } else if (config.kind === 'client') {
       chart = { kind: 'pie', entries: buildClientPie(rows), title: config.pieTitle }
+    } else if (config.kind === 'supplier') {
+      chart = { kind: 'pie', entries: buildSupplierPie(rows), title: config.pieTitle }
     } else {
       chart = { kind: 'pie', entries: buildItemPie(rows), title: config.pieTitle }
     }

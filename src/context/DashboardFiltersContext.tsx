@@ -11,7 +11,7 @@ import { canApplyFilters } from '../lib/filterApply'
 import type { LogicalCompany } from '../types/dashboard'
 
 export type DateMode = 'range' | 'months' | 'openorders' | 'stock'
-export type ViewMode = 'clients' | 'items'
+export type ViewMode = 'clients' | 'items' | 'suppliers'
 export type ClientMode = 'items' | 'cash'
 export type CatType = 'tablet' | 'category'
 export type ItemMode = 'clients' | 'items'
@@ -26,9 +26,12 @@ export interface DashboardFiltersState {
   clientMode: ClientMode | null
   catType: CatType | null
   itemMode: ItemMode | null
+  /** Per-supplier breakdown mode — reuses the client 'items'|'cash' shape. */
+  supplierMode: ClientMode | null
   selectedClientIds: Set<string>
   selectedCategories: Set<string>
   selectedItemSkus: Set<string>
+  selectedSuppliers: Set<string>
   applied: boolean
   isRendering: boolean
   /** Bumped when the client list should default to all — not when the user clears. */
@@ -37,6 +40,8 @@ export interface DashboardFiltersState {
   categoryListEpoch: number
   /** Bumped when the item list should default to all (category/type change). */
   itemListEpoch: number
+  /** Bumped when the supplier list should default to all. */
+  supplierListEpoch: number
 }
 
 interface DashboardFiltersValue extends DashboardFiltersState {
@@ -51,18 +56,23 @@ interface DashboardFiltersValue extends DashboardFiltersState {
   setClientMode: (m: ClientMode | null) => void
   setCatType: (t: CatType | null) => void
   setItemMode: (m: ItemMode | null) => void
+  setSupplierMode: (m: ClientMode | null) => void
   initClientIds: (ids: string[]) => void
   initCategoryIds: (ids: string[]) => void
   initItemIds: (ids: string[]) => void
+  initSupplierIds: (ids: string[]) => void
   toggleClientId: (id: string) => void
   toggleCategoryId: (id: string) => void
   toggleItemSku: (id: string) => void
+  toggleSupplierId: (id: string) => void
   selectClientIds: (ids: string[]) => void
   selectCategoryIds: (ids: string[]) => void
   selectItemSkus: (ids: string[]) => void
+  selectSupplierIds: (ids: string[]) => void
   clearClientIds: () => void
   clearCategoryIds: () => void
   clearItemSkus: () => void
+  clearSupplierIds: () => void
   apply: () => void
   finishRendering: () => void
   showOversiteDashboard: () => void
@@ -77,6 +87,7 @@ function emptyListSelections() {
     selectedClientIds: new Set<string>(),
     selectedCategories: new Set<string>(),
     selectedItemSkus: new Set<string>(),
+    selectedSuppliers: new Set<string>(),
   }
 }
 
@@ -86,6 +97,7 @@ function clearViewChain() {
     clientMode: null as ClientMode | null,
     catType: null as CatType | null,
     itemMode: null as ItemMode | null,
+    supplierMode: null as ClientMode | null,
     applied: false,
     ...emptyListSelections(),
   }
@@ -101,14 +113,17 @@ export function DashboardFiltersProvider({ children }: { children: ReactNode }) 
   const [clientMode, setClientModeState] = useState<ClientMode | null>(null)
   const [catType, setCatTypeState] = useState<CatType | null>(null)
   const [itemMode, setItemModeState] = useState<ItemMode | null>(null)
+  const [supplierMode, setSupplierModeState] = useState<ClientMode | null>(null)
   const [selectedClientIds, setSelectedClientIds] = useState<Set<string>>(() => new Set())
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(() => new Set())
   const [selectedItemSkus, setSelectedItemSkus] = useState<Set<string>>(() => new Set())
+  const [selectedSuppliers, setSelectedSuppliers] = useState<Set<string>>(() => new Set())
   const [applied, setApplied] = useState(false)
   const [isRendering, setIsRendering] = useState(false)
   const [clientListEpoch, setClientListEpoch] = useState(0)
   const [categoryListEpoch, setCategoryListEpoch] = useState(0)
   const [itemListEpoch, setItemListEpoch] = useState(0)
+  const [supplierListEpoch, setSupplierListEpoch] = useState(0)
 
   const state: DashboardFiltersState = {
     company,
@@ -120,14 +135,17 @@ export function DashboardFiltersProvider({ children }: { children: ReactNode }) 
     clientMode,
     catType,
     itemMode,
+    supplierMode,
     selectedClientIds,
     selectedCategories,
     selectedItemSkus,
+    selectedSuppliers,
     applied,
     isRendering,
     clientListEpoch,
     categoryListEpoch,
     itemListEpoch,
+    supplierListEpoch,
   }
 
   const stateRef = useRef(state)
@@ -143,9 +161,11 @@ export function DashboardFiltersProvider({ children }: { children: ReactNode }) 
     clientMode,
     catType,
     itemMode,
+    supplierMode,
     selectedClientIds,
     selectedCategories,
     selectedItemSkus,
+    selectedSuppliers,
   ])
   const viewPanelEnabled = !!company && dateMode !== 'stock'
 
@@ -160,9 +180,11 @@ export function DashboardFiltersProvider({ children }: { children: ReactNode }) 
     setClientModeState(cleared.clientMode)
     setCatTypeState(cleared.catType)
     setItemModeState(cleared.itemMode)
+    setSupplierModeState(cleared.supplierMode)
     setSelectedClientIds(cleared.selectedClientIds)
     setSelectedCategories(cleared.selectedCategories)
     setSelectedItemSkus(cleared.selectedItemSkus)
+    setSelectedSuppliers(cleared.selectedSuppliers)
     setApplied(cleared.applied)
   }
 
@@ -178,9 +200,11 @@ export function DashboardFiltersProvider({ children }: { children: ReactNode }) 
     setClientModeState(cleared.clientMode)
     setCatTypeState(cleared.catType)
     setItemModeState(cleared.itemMode)
+    setSupplierModeState(cleared.supplierMode)
     setSelectedClientIds(cleared.selectedClientIds)
     setSelectedCategories(cleared.selectedCategories)
     setSelectedItemSkus(cleared.selectedItemSkus)
+    setSelectedSuppliers(cleared.selectedSuppliers)
     setApplied(cleared.applied)
   }
 
@@ -189,13 +213,16 @@ export function DashboardFiltersProvider({ children }: { children: ReactNode }) 
     setClientModeState(null)
     setCatTypeState(null)
     setItemModeState(null)
+    setSupplierModeState(null)
     const lists = emptyListSelections()
     setSelectedClientIds(lists.selectedClientIds)
     setSelectedCategories(lists.selectedCategories)
     setSelectedItemSkus(lists.selectedItemSkus)
+    setSelectedSuppliers(lists.selectedSuppliers)
     setApplied(false)
     if (v === 'clients') setClientListEpoch(e => e + 1)
     if (v === 'items') setCategoryListEpoch(e => e + 1)
+    if (v === 'suppliers') setSupplierListEpoch(e => e + 1)
   }
 
   function setClientMode(m: ClientMode | null) {
@@ -217,6 +244,39 @@ export function DashboardFiltersProvider({ children }: { children: ReactNode }) 
 
   function setItemMode(m: ItemMode | null) {
     setItemModeState(m)
+    invalidateApply()
+  }
+
+  function setSupplierMode(m: ClientMode | null) {
+    setSupplierModeState(m)
+    invalidateApply()
+  }
+
+  function initSupplierIds(ids: string[]) {
+    setSelectedSuppliers(prev => (setsEqual(prev, ids) ? prev : new Set(ids)))
+  }
+
+  function toggleSupplierId(id: string) {
+    setSelectedSuppliers(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+    invalidateApply()
+  }
+
+  function selectSupplierIds(ids: string[]) {
+    setSelectedSuppliers(prev => {
+      const next = new Set(prev)
+      ids.forEach(id => next.add(id))
+      return next
+    })
+    invalidateApply()
+  }
+
+  function clearSupplierIds() {
+    setSelectedSuppliers(new Set())
     invalidateApply()
   }
 
@@ -379,18 +439,23 @@ export function DashboardFiltersProvider({ children }: { children: ReactNode }) 
         setClientMode,
         setCatType,
         setItemMode,
+        setSupplierMode,
         initClientIds,
         initCategoryIds,
         initItemIds,
+        initSupplierIds,
         toggleClientId,
         toggleCategoryId,
         toggleItemSku,
+        toggleSupplierId,
         selectClientIds,
         selectCategoryIds,
         selectItemSkus,
+        selectSupplierIds,
         clearClientIds,
         clearCategoryIds,
         clearItemSkus,
+        clearSupplierIds,
         apply,
         finishRendering,
         showOversiteDashboard,

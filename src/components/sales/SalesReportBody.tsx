@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { SalesClientsView } from './SalesClientsView'
 import { SalesItemsView } from './SalesItemsView'
+import { SalesSuppliersView } from './SalesSuppliersView'
 import { SalesStockView } from './SalesStockView'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { useDashboardFilters } from '../../context/DashboardFiltersContext'
@@ -51,9 +52,11 @@ export function SalesReportBody() {
         clientMode: f.clientMode,
         catType: f.catType,
         itemMode: f.itemMode,
+        supplierMode: f.supplierMode,
         clients: [...f.selectedClientIds].sort(),
         categories: [...f.selectedCategories].sort(),
         items: [...f.selectedItemSkus].sort(),
+        suppliers: [...f.selectedSuppliers].sort(),
       }),
     [
       f.company,
@@ -65,9 +68,11 @@ export function SalesReportBody() {
       f.clientMode,
       f.catType,
       f.itemMode,
+      f.supplierMode,
       f.selectedClientIds,
       f.selectedCategories,
       f.selectedItemSkus,
+      f.selectedSuppliers,
     ],
   )
 
@@ -151,6 +156,18 @@ export function SalesReportBody() {
   if (f.view === 'items') {
     return (
       <SalesItemsView
+        rows={reportRows}
+        filters={f}
+        companyRows={companyRows}
+        wmsStock={wmsStock}
+        itemPrice={itemPrice}
+      />
+    )
+  }
+
+  if (f.view === 'suppliers') {
+    return (
+      <SalesSuppliersView
         rows={reportRows}
         filters={f}
         companyRows={companyRows}

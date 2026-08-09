@@ -976,6 +976,64 @@ body {
   border-top: 1px solid var(--bdr);
 }
 
+/* Suppliers monthly-vs-average matrix (Oversight) */
+.ov-supplier-matrix {
+  overflow-x: auto;
+}
+.ov-supplier-matrix table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+.ov-supplier-matrix th,
+.ov-supplier-matrix td {
+  padding: 3px 6px;
+  border-bottom: 1px solid var(--bdr);
+  text-align: right;
+}
+.ov-supplier-matrix td.cr { font-variant-numeric: tabular-nums; }
+.ov-supplier-matrix th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.64rem;
+  text-transform: uppercase;
+}
+.ov-supplier-matrix .ov-sup-name {
+  text-align: left;
+  position: sticky;
+  left: 0;
+  background: var(--bg);
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ov-supplier-matrix th.ov-sup-cur,
+.ov-supplier-matrix td.ov-sup-cur {
+  background: color-mix(in srgb, var(--grn) 12%, transparent);
+  font-weight: 700;
+}
+.ov-supplier-matrix .ov-sup-avg {
+  font-weight: 700;
+  border-left: 1px solid var(--bdr);
+}
+.ov-supplier-matrix td.sup-above { color: var(--grn); }
+.ov-supplier-matrix td.sup-below { color: var(--muted2); }
+.ov-supplier-matrix tfoot td {
+  font-weight: 700;
+  border-top: 1px solid var(--bdr);
+}
+.ov-supplier-matrix-note {
+  margin-top: 6px;
+  font-size: 0.66rem;
+  color: var(--muted2);
+}
+.ov-empty-inline {
+  font-size: 0.74rem;
+  color: var(--muted2);
+  padding: 4px 0;
+}
+
 .ov-debt-row {
   display: flex;
   justify-content: space-between;

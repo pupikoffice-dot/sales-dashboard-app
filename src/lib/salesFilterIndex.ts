@@ -8,6 +8,7 @@ interface TagBuckets {
   groupCats: Set<string>
   tabletItems: Map<string, Map<string, string>>
   groupItems: Map<string, Map<string, string>>
+  suppliers: Set<string>
 }
 
 export interface CompanyFilterIndex {
@@ -16,6 +17,7 @@ export interface CompanyFilterIndex {
   groupCategories: ListOption[]
   itemsByTabletCat: Record<string, ListOption[]>
   itemsByGroupCat: Record<string, ListOption[]>
+  suppliers: ListOption[]
 }
 
 export interface SalesFilterIndex {
@@ -48,6 +50,7 @@ function tagBuckets(store: Record<string, TagBuckets>, tag: string): TagBuckets 
       groupCats: new Set(),
       tabletItems: new Map(),
       groupItems: new Map(),
+      suppliers: new Set(),
     }
   }
   return store[tag]
@@ -88,6 +91,8 @@ export function buildSalesFilterIndex(rows: SalesRow[]): SalesFilterIndex {
     const name = r.itemName || sku
     addItem(b.tabletItems, tabletCat, sku, name)
     addItem(b.groupItems, groupCat, sku, name)
+
+    b.suppliers.add(String(r.supplier || '(No supplier)'))
   }
 
   const byCompanyTag: Record<string, CompanyFilterIndex> = {}
@@ -98,10 +103,19 @@ export function buildSalesFilterIndex(rows: SalesRow[]): SalesFilterIndex {
       groupCategories: toSortedCatOptions(b.groupCats),
       itemsByTabletCat: itemsMapToRecord(b.tabletItems),
       itemsByGroupCat: itemsMapToRecord(b.groupItems),
+      suppliers: toSortedCatOptions(b.suppliers),
     }
   }
 
   return { byCompanyTag }
+}
+
+export function getIndexedSupplierOptions(
+  index: SalesFilterIndex | undefined,
+  companyTag: string | null,
+): ListOption[] {
+  if (!companyTag || !index) return []
+  return index.byCompanyTag[companyTag]?.suppliers ?? []
 }
 
 export function getIndexedClientOptions(

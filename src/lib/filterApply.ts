@@ -14,6 +14,7 @@ export function canApplyFilters(f: DashboardFiltersState): boolean {
   if (!dateOk) return false
   return (
     (f.view === 'clients' && !!f.clientMode) ||
-    (f.view === 'items' && !!f.catType && !!f.itemMode)
+    (f.view === 'items' && !!f.catType && !!f.itemMode) ||
+    (f.view === 'suppliers' && !!f.supplierMode)
   )
 }

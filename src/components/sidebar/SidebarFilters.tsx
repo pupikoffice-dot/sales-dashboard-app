@@ -10,6 +10,7 @@ import {
   getIndexedCategoryOptions,
   getIndexedClientOptions,
   getIndexedItemOptions,
+  getIndexedSupplierOptions,
 } from '../../lib/salesFilterIndex'
 import type { LogicalCompany } from '../../types/dashboard'
 import { FilterCheckList } from './FilterCheckList'
@@ -68,9 +69,15 @@ export function SidebarFilters() {
     [filterIndex, companyTag, f.catType, f.selectedCategories],
   )
 
+  const supplierOptions = useMemo(
+    () => getIndexedSupplierOptions(filterIndex, companyTag),
+    [filterIndex, companyTag],
+  )
+
   const clientKey = clientOptions.map(o => o.id).join('\0')
   const categoryKey = categoryOptions.map(o => o.id).join('\0')
   const itemKey = itemOptions.map(o => o.id).join('\0')
+  const supplierKey = supplierOptions.map(o => o.id).join('\0')
 
   useLayoutEffect(() => {
     if (f.view === 'clients' && clientOptions.length) {
@@ -89,6 +96,12 @@ export function SidebarFilters() {
       f.initItemIds(itemOptions.map(o => o.id))
     }
   }, [f.view, f.catType, itemKey, f.itemListEpoch])
+
+  useLayoutEffect(() => {
+    if (f.view === 'suppliers' && supplierOptions.length) {
+      f.initSupplierIds(supplierOptions.map(o => o.id))
+    }
+  }, [f.view, f.company, f.dateMode, supplierKey, f.supplierListEpoch])
 
   const hasCats = categoryOptions.length > 0
 
@@ -254,6 +267,14 @@ export function SidebarFilters() {
           >
             📦 {t('filters.items')}
           </button>
+          <button
+            type="button"
+            className={`btn${f.view === 'suppliers' ? ' active' : ''}`}
+            onClick={() => f.setView('suppliers')}
+            disabled={!f.viewPanelEnabled}
+          >
+            🏭 {t('filters.suppliers')}
+          </button>
         </div>
       </div>
 
@@ -376,6 +397,48 @@ export function SidebarFilters() {
               </div>
             </div>
           )}
+        </>
+      )}
+
+      {f.view === 'suppliers' && (
+        <>
+          <div className={`panel${f.viewPanelEnabled ? '' : ' disabled'}`}>
+            <div className="panel-title">④ {t('filters.selectSuppliers')}</div>
+            {dataBusy || !filterIndex ? (
+              <p className="sel-months-list">{t('filters.loadingSuppliers')}</p>
+            ) : supplierOptions.length ? (
+              <FilterCheckList
+                items={supplierOptions}
+                selected={f.selectedSuppliers}
+                onToggle={f.toggleSupplierId}
+                onSelectVisible={f.selectSupplierIds}
+                onClear={f.clearSupplierIds}
+                searchPlaceholder={t('filters.searchSuppliers')}
+              />
+            ) : (
+              <p className="sel-months-list">{t('filters.noSuppliers')}</p>
+            )}
+          </div>
+
+          <div className={`panel${f.viewPanelEnabled ? '' : ' disabled'}`}>
+            <div className="panel-title">⑤ {t('filters.showPerSupplier')}</div>
+            <div className="btn-grp">
+              <button
+                type="button"
+                className={`btn${f.supplierMode === 'items' ? ' active' : ''}`}
+                onClick={() => f.setSupplierMode('items')}
+              >
+                📦 {t('filters.itemsBreakdown')}
+              </button>
+              <button
+                type="button"
+                className={`btn${f.supplierMode === 'cash' ? ' active' : ''}`}
+                onClick={() => f.setSupplierMode('cash')}
+              >
+                💰 {t('filters.cashSummary')}
+              </button>
+            </div>
+          </div>
         </>
       )}
 

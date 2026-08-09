@@ -43,6 +43,8 @@ import {
   sumAgentMonthly,
 } from '../components/oversite/OversiteReceipts'
 import { computeSalesForecast } from '../lib/salesForecast'
+import { computeSupplierMonthlyMatrix } from '../lib/supplierMetrics'
+import { OversiteSuppliersMatrix } from '../components/oversite/OversiteSuppliersMatrix'
 import { OversiteCollapsible } from '../components/oversite/OversiteCollapsible'
 import { OversiteKpiRow, OversiteSection, SalesLyBars } from '../components/oversite/OversiteKpiRow'
 import { OversiteTop10Table } from '../components/oversite/OversiteTop10Table'
@@ -159,6 +161,7 @@ export function OversitePage() {
                 Number(r.month) === ctx.curMonth,
             )
             const forecast = computeSalesForecast(companyRows, co.id, ctx)
+            const supplierMatrix = computeSupplierMonthlyMatrix(companyRows, co.id, ctx)
             const multiCo = visibleCompanies.length > 1
             return (
               <div
@@ -269,6 +272,12 @@ export function OversitePage() {
                     showSku
                     detailRows={salesMtdRows}
                   />
+                </OversiteSection>
+
+                <OversiteSection title={`🏭 ${t('oversite.supplierMonthly')}`} updatedAt={segUpdated(co.id, 'sales')}>
+                  <OversiteCollapsible label={`🏭 ${t('oversite.supplierMonthly')} ▾`}>
+                    <OversiteSuppliersMatrix matrix={supplierMatrix} />
+                  </OversiteCollapsible>
                 </OversiteSection>
 
                 <OversiteSection title={`↩️ ${t('oversite.returnsMtd')}`} updatedAt={segUpdated(co.id, 'returns')}>
