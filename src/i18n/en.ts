@@ -144,6 +144,8 @@ export const messages = {
   'oversite.total': 'Total',
   'oversite.noSupplierSales': 'No supplier sales in range',
   'oversite.supplierMatrixNote': 'Monthly sales per supplier (last 12 months) vs each supplier’s monthly average — green = above average, dim = below.',
+  'oversite.top10Suppliers6m': 'Top 10 suppliers — last 6 months',
+  'oversite.sortDesc': 'Sort high → low',
   'oversite.receiptsNetNote': 'net of 18% VAT, by collected date',
   'oversite.projectedTitle': 'Month-end projection from the last {months} months intra-month sales pattern',
   'oversite.clients': 'Clients',

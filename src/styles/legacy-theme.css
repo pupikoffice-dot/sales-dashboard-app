@@ -1028,6 +1028,27 @@ body {
   font-size: 0.66rem;
   color: var(--muted2);
 }
+.ov-supplier-matrix th.ov-sup-sortable {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.ov-supplier-matrix th.ov-sup-sortable:hover {
+  color: var(--fg);
+}
+.ov-supplier-chart {
+  margin-bottom: 10px;
+}
+.ov-supplier-chart-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--muted2);
+  margin-bottom: 6px;
+}
+.ov-bar-fill.supplier {
+  background: var(--acc);
+  opacity: 0.8;
+}
 .ov-empty-inline {
   font-size: 0.74rem;
   color: var(--muted2);
