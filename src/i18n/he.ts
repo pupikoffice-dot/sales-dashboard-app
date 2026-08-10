@@ -148,6 +148,8 @@ export const messages: Record<keyof typeof en, string> = {
   'oversite.supplierMatrixNote': 'מכירות חודשיות לכל ספק (12 חודשים אחרונים) מול הממוצע החודשי של הספק — ירוק = מעל הממוצע, עמום = מתחת.',
   'oversite.top10Suppliers6m': 'טופ 10 ספקים — 6 חודשים אחרונים',
   'oversite.sortDesc': 'מיון גבוה → נמוך',
+  'oversite.other': 'אחר',
+  'oversite.supplierDetails': 'פירוט — טבלת 12 חודשים',
   'oversite.receiptsNetNote': 'ללא מע"מ 18%, לפי תאריך גבייה',
   'oversite.projectedTitle': 'תחזית לסוף החודש לפי דפוס המכירות התוך-חודשי ב-{months} החודשים האחרונים',
   'oversite.clients': 'לקוחות',

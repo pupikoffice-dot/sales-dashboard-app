@@ -977,7 +977,7 @@ body {
 }
 
 /* Suppliers monthly-vs-average matrix (Oversight) */
-.ov-supplier-matrix {
+.ov-supplier-matrix-scroll {
   overflow-x: auto;
 }
 .ov-supplier-matrix table {
@@ -1049,6 +1049,38 @@ body {
   background: var(--acc);
   opacity: 0.8;
 }
+
+/* Per-month-per-supplier stacked chart: legend + 10-colour palette */
+.ov-supplier-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-bottom: 8px;
+  font-size: 0.66rem;
+  color: var(--muted2);
+}
+.ov-supplier-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.ov-supplier-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}
+.ov-bar-fill.sup-c0,  .ov-supplier-swatch.sup-c0 { background: #818cf8; }
+.ov-bar-fill.sup-c1,  .ov-supplier-swatch.sup-c1 { background: #34d399; }
+.ov-bar-fill.sup-c2,  .ov-supplier-swatch.sup-c2 { background: #fbbf24; }
+.ov-bar-fill.sup-c3,  .ov-supplier-swatch.sup-c3 { background: #f87171; }
+.ov-bar-fill.sup-c4,  .ov-supplier-swatch.sup-c4 { background: #22d3ee; }
+.ov-bar-fill.sup-c5,  .ov-supplier-swatch.sup-c5 { background: #f472b6; }
+.ov-bar-fill.sup-c6,  .ov-supplier-swatch.sup-c6 { background: #a78bfa; }
+.ov-bar-fill.sup-c7,  .ov-supplier-swatch.sup-c7 { background: #4ade80; }
+.ov-bar-fill.sup-c8,  .ov-supplier-swatch.sup-c8 { background: #fb923c; }
+.ov-bar-fill.sup-c9,  .ov-supplier-swatch.sup-c9 { background: #38bdf8; }
+.ov-bar-fill.sup-other, .ov-supplier-swatch.sup-other { background: var(--muted2); opacity: 0.55; }
 .ov-empty-inline {
   font-size: 0.74rem;
   color: var(--muted2);

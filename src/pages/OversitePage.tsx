@@ -275,9 +275,7 @@ export function OversitePage() {
                 </OversiteSection>
 
                 <OversiteSection title={`🏭 ${t('oversite.supplierMonthly')}`} updatedAt={segUpdated(co.id, 'sales')}>
-                  <OversiteCollapsible label={`🏭 ${t('oversite.supplierMonthly')} ▾`}>
-                    <OversiteSuppliersMatrix matrix={supplierMatrix} />
-                  </OversiteCollapsible>
+                  <OversiteSuppliersMatrix matrix={supplierMatrix} />
                 </OversiteSection>
 
                 <OversiteSection title={`↩️ ${t('oversite.returnsMtd')}`} updatedAt={segUpdated(co.id, 'returns')}>
