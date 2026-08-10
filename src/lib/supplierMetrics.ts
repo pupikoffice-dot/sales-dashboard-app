@@ -2,6 +2,9 @@ import type { SalesRow } from '../types/dashboard'
 
 const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
+/** Suppliers below this 12-month sales total are dropped from the Oversight matrix. */
+const SUPPLIER_MIN_TOTAL = 5000
+
 /**
  * Supplier buckets that are internal (the companies themselves — where
  * numeric/'*' SKUs land) or a catch-all local vendor — hidden from the
@@ -80,7 +83,7 @@ export function computeSupplierMonthlyMatrix(
       const total = monthly.reduce((a, b) => a + b, 0)
       return { supplier, monthly, total, avg: total / months.length }
     })
-    .filter(s => Math.round(s.total) !== 0)
+    .filter(s => s.total >= SUPPLIER_MIN_TOTAL)
     .sort((a, b) => b.total - a.total)
 
   if (!suppliers.length) return null
