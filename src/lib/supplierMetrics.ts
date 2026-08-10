@@ -2,6 +2,24 @@ import type { SalesRow } from '../types/dashboard'
 
 const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
+/**
+ * Supplier buckets that are internal (the companies themselves — where
+ * numeric/'*' SKUs land) or a catch-all local vendor — hidden from the
+ * supplier-analysis tables (Suppliers view options + Oversight matrix).
+ */
+export const HIDDEN_SUPPLIERS = new Set([
+  'Pupik',
+  'Monkeytime',
+  'Grow',
+  'Gold',
+  'Local Sup',
+  '(No supplier)',
+])
+
+export function isHiddenSupplier(name: string | undefined | null): boolean {
+  return HIDDEN_SUPPLIERS.has(String(name ?? '').trim())
+}
+
 export interface SupplierMonthRow {
   supplier: string
   monthly: number[]
@@ -48,6 +66,7 @@ export function computeSupplierMonthlyMatrix(
     const mi = idx.get(ym)
     if (mi === undefined) continue
     const sup = String(r.supplier || '(No supplier)')
+    if (isHiddenSupplier(sup)) continue // internal/company + Local Sup hidden from supplier tables
     let arr = bySup.get(sup)
     if (!arr) {
       arr = months.map(() => 0)

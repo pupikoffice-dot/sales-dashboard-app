@@ -1,6 +1,7 @@
 import type { CatType } from '../context/DashboardFiltersContext'
 import type { SalesRow } from '../types/dashboard'
 import type { ListOption } from './salesFilterLists'
+import { isHiddenSupplier } from './supplierMetrics'
 
 interface TagBuckets {
   clients: Map<string, string>
@@ -92,7 +93,8 @@ export function buildSalesFilterIndex(rows: SalesRow[]): SalesFilterIndex {
     addItem(b.tabletItems, tabletCat, sku, name)
     addItem(b.groupItems, groupCat, sku, name)
 
-    b.suppliers.add(String(r.supplier || '(No supplier)'))
+    const sup = String(r.supplier || '(No supplier)')
+    if (!isHiddenSupplier(sup)) b.suppliers.add(sup)
   }
 
   const byCompanyTag: Record<string, CompanyFilterIndex> = {}
