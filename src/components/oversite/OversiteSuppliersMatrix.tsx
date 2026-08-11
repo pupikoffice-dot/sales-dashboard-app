@@ -108,7 +108,7 @@ export function OversiteSuppliersMatrix({ matrix }: { matrix: SupplierMonthlyMat
       </div>
 
       {/* Always-visible full 12-month matrix vs average. Column order: Supplier,
-          Avg, current month, then remaining months newest -> oldest. */}
+          Avg, Total, current month, then remaining months newest -> oldest. */}
       <div className="ov-supplier-detail-title">🔎 {t('oversite.supplierDetails')}</div>
       <div className="ov-supplier-matrix-scroll">
           <table>
@@ -122,6 +122,14 @@ export function OversiteSuppliersMatrix({ matrix }: { matrix: SupplierMonthlyMat
                   title={t('oversite.sortDesc')}
                 >
                   {t('oversite.avg')}{sortArrow('avg')}
+                </th>
+                <th
+                  className="ov-sup-avg ov-sup-sortable"
+                  role="button"
+                  onClick={() => setSortKey('total')}
+                  title={t('oversite.sortDesc')}
+                >
+                  {t('oversite.total')}{sortArrow('total')}
                 </th>
                 {colOrder.map(i => (
                   <th
@@ -142,6 +150,7 @@ export function OversiteSuppliersMatrix({ matrix }: { matrix: SupplierMonthlyMat
                 <tr key={s.supplier}>
                   <td className="ov-sup-name" title={s.supplier}>{s.supplier}</td>
                   <td className="cr ov-sup-avg">{fmt(s.avg)}</td>
+                  <td className="cr ov-sup-avg">{fmt(s.total)}</td>
                   {colOrder.map(i => {
                     const v = s.monthly[i]
                     const cls = v > s.avg * 1.05 ? 'sup-above' : v < s.avg * 0.95 ? 'sup-below' : ''
@@ -161,6 +170,7 @@ export function OversiteSuppliersMatrix({ matrix }: { matrix: SupplierMonthlyMat
               <tr>
                 <td className="ov-sup-name">{t('oversite.total')}</td>
                 <td className="cr ov-sup-avg">{fmt(grandAvg)}</td>
+                <td className="cr ov-sup-avg">{fmt(matrix.grandTotal)}</td>
                 {colOrder.map(i => (
                   <td key={months[i].ym} className={`cr${months[i].isCurrent ? ' ov-sup-cur' : ''}`}>
                     {fmt(monthTotals[i])}
