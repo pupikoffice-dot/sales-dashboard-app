@@ -1,8 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useLocale } from '../../context/LocaleContext'
 import { fmt } from '../../lib/format'
 import type { SupplierMonthlyMatrix } from '../../lib/supplierMetrics'
-import { OversiteCollapsible } from './OversiteCollapsible'
 
 type SortKey = 'total' | 'last' | 'avg'
 
@@ -18,8 +17,16 @@ const COLORS = 10 // sup-c0..sup-c9
 export function OversiteSuppliersMatrix({ matrix }: { matrix: SupplierMonthlyMatrix | null }) {
   const { t } = useLocale()
   const [sortKey, setSortKey] = useState<SortKey>('total')
+  const scrollRef = useRef<HTMLDivElement>(null)
 
   const lastIdx = matrix ? matrix.months.length - 1 : 0
+
+  // Keep the wide matrix scrolled to its right end so the current month and the
+  // Avg column are visible without scrolling.
+  useLayoutEffect(() => {
+    const el = scrollRef.current
+    if (el) el.scrollLeft = el.scrollWidth
+  }, [matrix, sortKey])
 
   // Chart: last 6 months, stacked by the top-N suppliers (by 6-month total) + Other.
   const chart = useMemo(() => {
@@ -96,9 +103,10 @@ export function OversiteSuppliersMatrix({ matrix }: { matrix: SupplierMonthlyMat
         ))}
       </div>
 
-      {/* Expandable detail: full 12-month matrix vs average */}
-      <OversiteCollapsible label={`🔎 ${t('oversite.supplierDetails')} ▾`}>
-        <div className="ov-supplier-matrix-scroll">
+      {/* Always-visible full 12-month matrix vs average, scrolled to the right
+          so the current month + Avg are in view. */}
+      <div className="ov-supplier-detail-title">🔎 {t('oversite.supplierDetails')}</div>
+      <div className="ov-supplier-matrix-scroll" ref={scrollRef}>
           <table>
             <thead>
               <tr>
@@ -157,8 +165,7 @@ export function OversiteSuppliersMatrix({ matrix }: { matrix: SupplierMonthlyMat
             </tfoot>
           </table>
         </div>
-        <div className="ov-supplier-matrix-note">{t('oversite.supplierMatrixNote')}</div>
-      </OversiteCollapsible>
+      <div className="ov-supplier-matrix-note">{t('oversite.supplierMatrixNote')}</div>
     </div>
   )
 }
