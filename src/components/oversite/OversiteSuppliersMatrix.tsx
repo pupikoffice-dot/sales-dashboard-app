@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useLocale } from '../../context/LocaleContext'
 import { fmt } from '../../lib/format'
 import type { SupplierMonthlyMatrix } from '../../lib/supplierMetrics'
@@ -11,22 +11,26 @@ const COLORS = 10 // sup-c0..sup-c9
 
 /**
  * Oversight suppliers block: an always-visible per-month-per-supplier stacked
- * chart (last 6 months, top suppliers + Other) on top, then an expandable
- * matrix table (12 months vs each supplier's monthly average) for the detail.
+ * chart (last 6 months, top suppliers + Other) on top, then the full matrix
+ * table (12 months vs each supplier's monthly average) for the detail.
+ *
+ * Detail-table column order: Supplier | Avg | current month | prior months in
+ * descending (newest -> oldest) order — so the two most important figures
+ * (average, current month) sit right next to the name with no scrolling.
  */
 export function OversiteSuppliersMatrix({ matrix }: { matrix: SupplierMonthlyMatrix | null }) {
   const { t } = useLocale()
   const [sortKey, setSortKey] = useState<SortKey>('total')
-  const scrollRef = useRef<HTMLDivElement>(null)
 
   const lastIdx = matrix ? matrix.months.length - 1 : 0
 
-  // Keep the wide matrix scrolled to its right end so the current month and the
-  // Avg column are visible without scrolling.
-  useLayoutEffect(() => {
-    const el = scrollRef.current
-    if (el) el.scrollLeft = el.scrollWidth
-  }, [matrix, sortKey])
+  // Column order for the detail table: current month first, then the rest of
+  // the months newest -> oldest (reverse chronological).
+  const colOrder = useMemo(() => {
+    if (!matrix) return []
+    const idxs = matrix.months.map((_, i) => i)
+    return [lastIdx, ...idxs.filter(i => i !== lastIdx).reverse()]
+  }, [matrix, lastIdx])
 
   // Chart: last 6 months, stacked by the top-N suppliers (by 6-month total) + Other.
   const chart = useMemo(() => {
@@ -103,26 +107,14 @@ export function OversiteSuppliersMatrix({ matrix }: { matrix: SupplierMonthlyMat
         ))}
       </div>
 
-      {/* Always-visible full 12-month matrix vs average, scrolled to the right
-          so the current month + Avg are in view. */}
+      {/* Always-visible full 12-month matrix vs average. Column order: Supplier,
+          Avg, current month, then remaining months newest -> oldest. */}
       <div className="ov-supplier-detail-title">🔎 {t('oversite.supplierDetails')}</div>
-      <div className="ov-supplier-matrix-scroll" ref={scrollRef}>
+      <div className="ov-supplier-matrix-scroll">
           <table>
             <thead>
               <tr>
                 <th className="ov-sup-name">{t('oversite.supplier')}</th>
-                {months.map((m, i) => (
-                  <th
-                    key={m.ym}
-                    className={`${m.isCurrent ? 'ov-sup-cur' : ''}${i === lastIdx ? ' ov-sup-sortable' : ''}`}
-                    {...(i === lastIdx
-                      ? { role: 'button', onClick: () => setSortKey('last'), title: t('oversite.sortDesc') }
-                      : {})}
-                  >
-                    {m.label}
-                    {i === lastIdx ? sortArrow('last') : ''}
-                  </th>
-                ))}
                 <th
                   className="ov-sup-avg ov-sup-sortable"
                   role="button"
@@ -131,13 +123,27 @@ export function OversiteSuppliersMatrix({ matrix }: { matrix: SupplierMonthlyMat
                 >
                   {t('oversite.avg')}{sortArrow('avg')}
                 </th>
+                {colOrder.map(i => (
+                  <th
+                    key={months[i].ym}
+                    className={`${months[i].isCurrent ? 'ov-sup-cur' : ''}${i === lastIdx ? ' ov-sup-sortable' : ''}`}
+                    {...(i === lastIdx
+                      ? { role: 'button', onClick: () => setSortKey('last'), title: t('oversite.sortDesc') }
+                      : {})}
+                  >
+                    {months[i].label}
+                    {i === lastIdx ? sortArrow('last') : ''}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {sorted.map(s => (
                 <tr key={s.supplier}>
                   <td className="ov-sup-name" title={s.supplier}>{s.supplier}</td>
-                  {s.monthly.map((v, i) => {
+                  <td className="cr ov-sup-avg">{fmt(s.avg)}</td>
+                  {colOrder.map(i => {
+                    const v = s.monthly[i]
                     const cls = v > s.avg * 1.05 ? 'sup-above' : v < s.avg * 0.95 ? 'sup-below' : ''
                     return (
                       <td
@@ -148,19 +154,18 @@ export function OversiteSuppliersMatrix({ matrix }: { matrix: SupplierMonthlyMat
                       </td>
                     )
                   })}
-                  <td className="cr ov-sup-avg">{fmt(s.avg)}</td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
               <tr>
                 <td className="ov-sup-name">{t('oversite.total')}</td>
-                {monthTotals.map((v, i) => (
+                <td className="cr ov-sup-avg">{fmt(grandAvg)}</td>
+                {colOrder.map(i => (
                   <td key={months[i].ym} className={`cr${months[i].isCurrent ? ' ov-sup-cur' : ''}`}>
-                    {fmt(v)}
+                    {fmt(monthTotals[i])}
                   </td>
                 ))}
-                <td className="cr ov-sup-avg">{fmt(grandAvg)}</td>
               </tr>
             </tfoot>
           </table>
