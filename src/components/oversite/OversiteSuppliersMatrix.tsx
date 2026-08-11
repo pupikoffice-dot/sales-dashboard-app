@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useLocale } from '../../context/LocaleContext'
-import { fmt } from '../../lib/format'
+import { fmt, fmtCompact } from '../../lib/format'
 import type { SupplierMonthlyMatrix } from '../../lib/supplierMetrics'
 
 type SortKey = 'total' | 'last' | 'avg'
@@ -150,7 +150,7 @@ export function OversiteSuppliersMatrix({ matrix }: { matrix: SupplierMonthlyMat
                 <tr key={s.supplier}>
                   <td className="ov-sup-name" title={s.supplier}>{s.supplier}</td>
                   <td className="cr ov-sup-avg">{fmt(s.avg)}</td>
-                  <td className="cr ov-sup-avg">{fmt(s.total)}</td>
+                  <td className="cr ov-sup-avg" title={fmt(s.total)}>{fmtCompact(s.total)}</td>
                   {colOrder.map(i => {
                     const v = s.monthly[i]
                     const cls = v > s.avg * 1.05 ? 'sup-above' : v < s.avg * 0.95 ? 'sup-below' : ''
@@ -170,7 +170,9 @@ export function OversiteSuppliersMatrix({ matrix }: { matrix: SupplierMonthlyMat
               <tr>
                 <td className="ov-sup-name">{t('oversite.total')}</td>
                 <td className="cr ov-sup-avg">{fmt(grandAvg)}</td>
-                <td className="cr ov-sup-avg">{fmt(matrix.grandTotal)}</td>
+                <td className="cr ov-sup-avg" title={fmt(matrix.grandTotal)}>
+                  {fmtCompact(matrix.grandTotal)}
+                </td>
                 {colOrder.map(i => (
                   <td key={months[i].ym} className={`cr${months[i].isCurrent ? ' ov-sup-cur' : ''}`}>
                     {fmt(monthTotals[i])}

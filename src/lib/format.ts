@@ -1,5 +1,14 @@
 export { fmt, fmt0, fmt2, MONTH_NAMES } from '@dashboard/shared/format'
 
+/** Compact number with K/M suffix (e.g. 12,400 -> "12.4K", 1,250,000 -> "1.25M"). */
+export function fmtCompact(n: number): string {
+  const sign = n < 0 ? '-' : ''
+  const abs = Math.abs(n)
+  if (abs >= 1_000_000) return `${sign}${(abs / 1_000_000).toFixed(abs >= 10_000_000 ? 0 : 2)}M`
+  if (abs >= 1_000) return `${sign}${(abs / 1_000).toFixed(abs >= 100_000 ? 0 : 1)}K`
+  return `${sign}${Math.round(abs)}`
+}
+
 export function fmtDateIso(iso: string): string {
   const [y, m, d] = iso.split('-')
   if (!y || !m || !d) return iso
