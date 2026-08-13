@@ -152,22 +152,30 @@ export function LargeClientsItemsReport({
       setBuiltCount(i)
 
       if (i < entries.length) {
-        handle = window.requestAnimationFrame(step)
+        // setTimeout, NOT requestAnimationFrame: Chrome (and others) all but
+        // stop firing rAF callbacks in a backgrounded tab, which stalled this
+        // build at "Building report… (0/N)" forever the moment a user
+        // switched tabs/apps while it ran — reproduced live: document.hidden
+        // was true and the section count never moved past 0. setTimeout is
+        // only clamped (~1s floor) when hidden, not paused, so a report still
+        // finishes if you tab away mid-build; it's just no slower than that
+        // clamp while you're not looking at it, and unaffected while you are.
+        handle = window.setTimeout(step, 0)
         return
       }
 
       setBuilding(false)
       if (defaultCollapsed) setGlobalCollapsed(true)
-      window.requestAnimationFrame(() => {
+      window.setTimeout(() => {
         if (containerRef.current) attachAllTableColumnFilters(containerRef.current)
-      })
+      }, 0)
     }
 
-    handle = window.requestAnimationFrame(step)
+    handle = window.setTimeout(step, 0)
 
     return () => {
       cancelled = true
-      window.cancelAnimationFrame(handle)
+      window.clearTimeout(handle)
     }
     // Deliberately STABLE dependencies only (keys/primitives, not objects).
     // The build spans many animation frames, so depending on object identities
