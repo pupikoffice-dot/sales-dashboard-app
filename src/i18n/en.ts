@@ -12,6 +12,8 @@ export const messages = {
   'common.closeMenu': 'Close menu',
   'common.noAccess': 'No dashboard access configured.',
   'sales.buildingReport': 'Building report…',
+  'sales.skewWarning':
+    '⚠ {month} {year} holds {pct}% of the cash, and {concentration}% of that comes from just a few rows — the source data may contain year-end accumulation entries in that month.',
   'legend.help': 'What am I seeing?',
   'legend.title': 'How to read this report',
   'legend.curCash': 'Cash this year, for that month',

@@ -25,7 +25,7 @@ export function SalesStatusBar({ filters, rows, viewLabel, count }: SalesStatusB
     reportChart,
     openChart,
   } = useSalesReportUi()
-  const warn = monthSkewWarning(filters, rows)
+  const skew = monthSkewWarning(filters, rows)
   const totals = sumRows(rows)
   const lastOrder =
     filters.dateMode === 'openorders' && rows.length
@@ -44,7 +44,16 @@ export function SalesStatusBar({ filters, rows, viewLabel, count }: SalesStatusB
 
   return (
     <>
-      {warn && <div className="warn">{warn}</div>}
+      {skew && (
+        <div className="warn">
+          {t('sales.skewWarning', {
+            month: monthNames[skew.month - 1],
+            year: String(skew.year),
+            pct: skew.pct.toFixed(0),
+            concentration: skew.concentrationPct.toFixed(0),
+          })}
+        </div>
+      )}
       <div className="sbar">
         <span>
           {t('sales.company')}: <b>{filters.company ? companyLabel(filters.company) : '—'}</b>

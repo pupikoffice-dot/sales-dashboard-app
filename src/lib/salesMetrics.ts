@@ -42,32 +42,86 @@ export function getWmsQty(
   return v != null ? v : null
 }
 
+export interface MonthSkew {
+  year: number
+  /** 1-12 */
+  month: number
+  /** That month's share of total cash, 0-100. */
+  pct: number
+  /** Share of the month's cash carried by its largest few rows, 0-100. */
+  concentrationPct: number
+}
+
+/** Rows in the top slice used to detect accumulation entries (min 3). */
+const SKEW_TOP_SLICE = 0.01
+const SKEW_MIN_SHARE_PCT = 60
+const SKEW_MIN_CONCENTRATION_PCT = 50
+
+/**
+ * Detects the fingerprint of ERP year-end "accumulation" rows: one month
+ * dominating the selected period AND that month's cash being carried by a
+ * handful of huge rows.
+ *
+ * Dominance ALONE is not evidence — it used to be the only test, which meant a
+ * two-month selection warned on any 60/40 split, i.e. on perfectly ordinary
+ * data (e.g. Pupik Feb+Mar 2026: March was 64% simply because it was ~2x the
+ * month February was, spread over 4,573 rows with the largest at 0.8%).
+ * Requiring concentration as well is what separates "a big month" from "a few
+ * bogus rows".
+ *
+ * Returns the facts; the caller formats them (so the copy can be translated).
+ */
 export function monthSkewWarning(
   filters: DashboardFiltersState,
   rows: SalesRow[],
-): string | null {
+): MonthSkew | null {
   if (filters.dateMode !== 'months' || !rows.length) return null
-  const totalCash = rows.reduce((a, r) => a + (r.cash || 0), 0)
+  const months = getSortedMonths(filters.selectedMonths)
+  if (months.length < 2) return null
+
+  // One pass for per-month cash + the overall total.
+  const byMonth = new Map<string, number>()
+  let totalCash = 0
+  for (const r of rows) {
+    const cash = r.cash || 0
+    if (cash <= 0) continue
+    const mk = `${Number(r.year)}-${Number(r.month)}`
+    byMonth.set(mk, (byMonth.get(mk) ?? 0) + cash)
+    totalCash += cash
+  }
   if (totalCash <= 0) return null
 
-  const months = getSortedMonths(filters.selectedMonths)
   let maxMk = ''
   let maxVal = 0
-  months.forEach(mk => {
-    const [y, m] = mk.split('-')
-    const v = rows
-      .filter(r => Number(r.year) === +y && Number(r.month) === +m)
-      .reduce((a, r) => a + (r.cash || 0), 0)
+  for (const mk of months) {
+    const v = byMonth.get(mk) ?? 0
     if (v > maxVal) {
       maxVal = v
       maxMk = mk
     }
-  })
+  }
+  if (!maxMk || maxVal <= 0) return null
 
   const pct = (maxVal / totalCash) * 100
-  if (pct <= 60 || months.length <= 1) return null
-  const [y, m] = maxMk.split('-')
-  return `⚠ ${MONTH_NAMES[+m - 1]} ${y} accounts for ${pct.toFixed(0)}% of total cash — your source data may have year-end accumulation rows in that month.`
+  if (pct <= SKEW_MIN_SHARE_PCT) return null
+
+  // Only now (and only for the one dominant month) pay for the concentration
+  // check, so this stays cheap on every status-bar render.
+  const [y, m] = maxMk.split('-').map(Number)
+  const cashes: number[] = []
+  for (const r of rows) {
+    const cash = r.cash || 0
+    if (cash > 0 && Number(r.year) === y && Number(r.month) === m) cashes.push(cash)
+  }
+  if (cashes.length < 10) return null
+  cashes.sort((a, b) => b - a)
+  const topN = Math.max(3, Math.ceil(cashes.length * SKEW_TOP_SLICE))
+  let top = 0
+  for (let i = 0; i < topN; i++) top += cashes[i]
+  const concentrationPct = (top / maxVal) * 100
+  if (concentrationPct < SKEW_MIN_CONCENTRATION_PCT) return null
+
+  return { year: y, month: m, pct, concentrationPct }
 }
 
 export function formatTotals(cash: number, qty: number): { cash: string; qty: string } {

@@ -14,6 +14,8 @@ export const messages: Record<keyof typeof en, string> = {
   'common.closeMenu': 'סגור תפריט',
   'common.noAccess': 'לא הוגדרה גישה ללוח הבקרה.',
   'sales.buildingReport': 'בונה דוח…',
+  'sales.skewWarning':
+    '⚠ {month} {year} מהווה {pct}% מסך המזומן, ו־{concentration}% מזה מגיע ממספר שורות בודדות — ייתכן שיש בנתוני המקור שורות צבירה של סוף שנה באותו חודש.',
   'legend.help': 'מה אני רואה?',
   'legend.title': 'איך לקרוא את הדוח',
   'legend.curCash': 'מזומן השנה, לאותו חודש',
