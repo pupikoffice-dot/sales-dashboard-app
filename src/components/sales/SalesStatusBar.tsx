@@ -5,6 +5,7 @@ import { exportAllFromReport } from '../../lib/csvExport'
 import { fmt } from '../../lib/format'
 import { companyLabel, getDateLabel, monthSkewWarning, sumRows } from '../../lib/salesMetrics'
 import type { SalesRow } from '../../types/dashboard'
+import { SalesLegend } from './SalesLegend'
 
 interface SalesStatusBarProps {
   filters: DashboardFiltersState
@@ -100,6 +101,9 @@ export function SalesStatusBar({ filters, rows, viewLabel, count }: SalesStatusB
           )}
         </div>
       </div>
+      {/* Sibling of .sbar rather than inside its flex row, so the panel can take
+          full width without fighting the wrapping action buttons. */}
+      <SalesLegend filters={filters} />
     </>
   )
 }

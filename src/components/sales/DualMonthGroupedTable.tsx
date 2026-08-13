@@ -2,6 +2,8 @@ import { useMemo, type ReactNode } from 'react'
 
 import type { DashboardFiltersState } from '../../context/DashboardFiltersContext'
 
+import { useLocale } from '../../context/LocaleContext'
+
 import { useSalesReportUi } from '../../context/SalesReportUiContext'
 
 import { fmt, MONTH_NAMES } from '../../lib/format'
@@ -53,6 +55,7 @@ export function DualMonthGroupedTable({
   exportName,
 }: DualMonthGroupedTableProps) {
   const { searchQuery } = useSalesReportUi()
+  const { t } = useLocale()
   const cols = getDualMonthCols(filters.selectedMonths)
 
   const visibleGroups = useMemo(
@@ -138,6 +141,9 @@ export function DualMonthGroupedTable({
                   <small className="dual-year-label">
                     {dc.cur}/{String(dc.prev).slice(2)}
                   </small>
+                  {/* Micro-label: lives in <thead> so it costs nothing per row. */}
+                  <br />
+                  <small className="col-micro">{t('legend.monthHeaderMicro')}</small>
                 </SortableTh>
               ))}
               <SortableTh pieCash>Total Cash</SortableTh>

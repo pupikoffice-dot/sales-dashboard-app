@@ -104,6 +104,7 @@ export function buildItemsUnderClientHtml(
     h +=
       `<th class="sortable">${MONTH_NAMES[dc.m - 1]}` +
       `<br/><small class="dual-year-label">${dc.cur}/${String(dc.prev).slice(2)}</small>` +
+      (monthMicroLabel ? `<br/><small class="col-micro">${escapeHtml(monthMicroLabel)}</small>` : '') +
       `<span class="si"> ↕</span></th>`
   }
   h +=
@@ -179,6 +180,7 @@ export function buildClientSectionHtml(
   dualMonthCols?: ReturnType<typeof getDualMonthCols>,
   itemPrice?: SkuValueMap,
   showClientProfit = false,
+  monthMicroLabel = '',
 ): string {
   const body = buildItemsUnderClientHtml(
     rows,
@@ -189,6 +191,7 @@ export function buildClientSectionHtml(
     dualMonthCols,
     itemPrice,
     showClientProfit,
+    monthMicroLabel,
   )
   const collapsedClass = collapsed ? ' collapsed' : ''
   return (
@@ -278,6 +281,7 @@ export function buildAllClientSectionsHtml(
   collapsed: boolean,
   itemPrice?: SkuValueMap,
   showClientProfit = false,
+  monthMicroLabel = '',
 ): string {
   const dualMonthCols =
     filters.dateMode === 'months' ? getDualMonthCols(filters.selectedMonths) : undefined
@@ -306,6 +310,7 @@ export function buildAllClientSectionsHtml(
       dualMonthCols,
       itemPrice,
       showClientProfit,
+      monthMicroLabel,
     )
   }
   return parts.join('')

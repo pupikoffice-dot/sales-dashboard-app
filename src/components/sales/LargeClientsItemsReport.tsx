@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { DashboardFiltersState } from '../../context/DashboardFiltersContext'
 import { usePreview } from '../../context/PreviewContext'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
+import { useLocale } from '../../context/LocaleContext'
 import { useSalesReportUi } from '../../context/SalesReportUiContext'
 import {
   buildAllClientSectionsHtml,
@@ -39,6 +40,10 @@ export function LargeClientsItemsReport({
   // Honours the super-admin "View as user" preview.
   const { effectiveIsSuperAdmin: isSuperAdmin } = usePreview()
   const showClientProfit = canShowClientProfit(access, isSuperAdmin)
+  const { t } = useLocale()
+  // Translated once here and passed into the HTML generator (which has no React
+  // context). It is an effect dependency so switching language rebuilds the report.
+  const monthMicroLabel = t('legend.monthHeaderMicro')
 
   const { globalCollapsed, clearGlobalCollapse, setGlobalCollapsed } = useSalesReportUi()
   const [building, setBuilding] = useState(true)
@@ -81,6 +86,7 @@ export function LargeClientsItemsReport({
         defaultCollapsed,
         itemPrice,
         showClientProfit,
+        monthMicroLabel,
       )
       if (cancelled || !containerRef.current) return
       containerRef.current.innerHTML = html
@@ -104,6 +110,7 @@ export function LargeClientsItemsReport({
     wmsStock,
     itemPrice,
     showClientProfit,
+    monthMicroLabel,
     defaultCollapsed,
     setGlobalCollapsed,
   ])

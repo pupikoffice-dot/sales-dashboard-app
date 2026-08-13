@@ -7,6 +7,7 @@ import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { useDashboardFilters } from '../../context/DashboardFiltersContext'
 import { useLocale } from '../../context/LocaleContext'
 import { useDashboardData } from '../../hooks/useDashboardData'
+import { filterRows } from '../../lib/permissions'
 import { getReportRows } from '../../lib/salesReportRows'
 import type { SalesRow } from '../../types/dashboard'
 
@@ -35,9 +36,18 @@ export function SalesReportBody() {
   const [reportReady, setReportReady] = useState(false)
   const [buildingReport, setBuildingReport] = useState(false)
 
+  // History rows behind the year-over-year comparison column. These MUST carry
+  // the same agent scope as the current-year figure (getReportRows ->
+  // applyAgentFilter), otherwise a cell compares one agent's sales this year
+  // against every agent's sales last year. Real agent logins never saw this
+  // (the server only returns their rows), but the "View as" preview loads the
+  // super admin's full dataset, which exposed the mismatch.
   const companyRows = useMemo(
-    () => (f.company ? allRows.filter(r => r.company === f.company) : []),
-    [allRows, f.company],
+    () =>
+      f.company && access
+        ? filterRows(access, allRows).filter(r => r.company === f.company)
+        : [],
+    [allRows, f.company, access],
   )
 
   const filterKey = useMemo(

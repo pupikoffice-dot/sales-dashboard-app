@@ -988,6 +988,132 @@ body {
   border-top: 1px solid var(--bdr);
 }
 
+/* ── "What am I seeing?" legend (sales reports) ──────────────────────────
+   Micro-labels live in <thead> (once per table, no per-row cost); the panel
+   is only mounted when opened, so large reports pay nothing for it. */
+.col-micro {
+  display: block;
+  font-size: 0.58rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--muted2);
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
+.legend-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 0 12px;
+  padding: 4px 12px;
+  border: 1px solid var(--bdr);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 30px;
+}
+.legend-btn:hover {
+  color: var(--fg);
+  border-color: var(--acc);
+}
+
+.legend-panel {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--bdr);
+  border-inline-start: 3px solid var(--acc);
+  border-radius: var(--r);
+  background: rgba(23, 31, 51, 0.75);
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.legend-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  font-weight: 700;
+  color: var(--fg);
+}
+.legend-close {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  min-height: 30px;
+}
+.legend-close:hover { color: var(--fg); }
+
+/* Anatomy: a real DualMonthCell beside numbered callouts. */
+.legend-anatomy {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--bdr);
+}
+.legend-sample {
+  border-collapse: collapse;
+  flex-shrink: 0;
+}
+.legend-sample td {
+  border: 1px dashed var(--acc);
+  border-radius: 4px;
+  padding: 6px 14px;
+  text-align: center;
+  font-size: 0.86rem;
+  color: var(--fg);
+}
+.legend-callouts {
+  margin: 0;
+  padding-inline-start: 20px;
+  min-width: 0;
+}
+.legend-callouts li { margin-bottom: 2px; }
+.legend-note {
+  flex: 1 0 100%;
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--muted2);
+}
+
+.legend-terms { margin: 0; }
+.legend-term-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+.legend-term-row dt {
+  flex-shrink: 0;
+  min-width: 108px;
+  font-weight: 700;
+  color: var(--fg);
+}
+.legend-term-row dd {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 700px) {
+  .legend-panel { font-size: 0.74rem; padding: 10px 12px; }
+  .legend-anatomy { gap: 12px; }
+  .legend-term-row dt { min-width: 0; flex-basis: 100%; }
+  .legend-term-row dd { flex-basis: 100%; }
+}
+
 /* ── Super-admin "View as user" preview ──────────────────────────────────
    Deliberately loud: the banner plus the shell ring must make it impossible
    to mistake a preview for the admin's own view. */
