@@ -13,6 +13,7 @@ import type { MessageKey } from '../i18n/types'
 import { fetchProfileLocale } from '../lib/userLocale'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './AuthContext'
+import { usePreview } from './PreviewContext'
 
 const STORAGE_KEY = 'dashboard-locale'
 
@@ -37,26 +38,36 @@ function readStoredLocale(): AppLocale {
 
 export function LocaleProvider({ children }: { children: ReactNode }) {
   const { session } = useAuth()
+  const { isPreviewing, previewUser } = usePreview()
   const [locale, setLocaleState] = useState<AppLocale>(readStoredLocale)
   const [loading, setLoading] = useState(true)
+
+  // While previewing, follow the TARGET user's language (and therefore RTL) so
+  // the preview shows the layout they actually get. Their preference is only
+  // ever read — see setLocale below, which refuses to write during a preview.
+  const localeUserId = isPreviewing && previewUser ? previewUser.id : session?.user.id
 
   useEffect(() => {
     let cancelled = false
     async function load() {
-      if (!session?.user.id) {
+      if (!localeUserId) {
         setLoading(false)
         return
       }
       setLoading(true)
-      const profileLocale = await fetchProfileLocale(session.user.id)
+      const profileLocale = await fetchProfileLocale(localeUserId)
 
       if (cancelled) return
 
       if (profileLocale) {
         setLocaleState(profileLocale)
-        try {
-          localStorage.setItem(STORAGE_KEY, profileLocale)
-        } catch { /* ignore */ }
+        // Only remember the locale as "mine" when it IS mine — a previewed
+        // user's language must not become the admin's sticky preference.
+        if (!isPreviewing) {
+          try {
+            localStorage.setItem(STORAGE_KEY, profileLocale)
+          } catch { /* ignore */ }
+        }
       } else {
         setLocaleState(readStoredLocale())
       }
@@ -66,7 +77,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [session?.user.id])
+  }, [localeUserId, isPreviewing])
 
   useEffect(() => {
     const dir = localeDir(locale)
@@ -77,6 +88,12 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
 
   const setLocale = useCallback(
     async (next: AppLocale) => {
+      // A preview is strictly read-only: never persist a language change while
+      // previewing (it would write to the wrong row, or silently edit the
+      // previewed user's preference). The switcher is hidden during preview
+      // anyway; this is the backstop.
+      if (isPreviewing) return
+
       setLocaleState(next)
 
       if (!session?.user.id) return
@@ -94,7 +111,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
         console.warn('Could not save locale to profile:', error.message)
       }
     },
-    [session?.user.id],
+    [session?.user.id, isPreviewing],
   )
 
   const value = useMemo<LocaleContextValue>(() => {

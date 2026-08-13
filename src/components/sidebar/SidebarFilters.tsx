@@ -1,6 +1,6 @@
 import { useLayoutEffect, useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
+import { usePreview } from '../../context/PreviewContext'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { useDashboardFilters, type DateMode } from '../../context/DashboardFiltersContext'
 import { useLocale } from '../../context/LocaleContext'
@@ -32,7 +32,8 @@ const DATE_TAB_KEYS: { id: DateMode; key: 'filters.fromTo' | 'filters.months' | 
 const MONTH_YEARS = [2025, 2026]
 
 export function SidebarFilters() {
-  const { isSuperAdmin } = useAuth()
+  // Honours the super-admin "View as user" preview.
+  const { effectiveIsSuperAdmin: isSuperAdmin } = usePreview()
   const { access } = useDashboardAccess()
   const f = useDashboardFilters()
   const { t, monthNames } = useLocale()

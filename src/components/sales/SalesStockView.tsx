@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { SortableTh } from './SortableTh'
 import type { DashboardFiltersState } from '../../context/DashboardFiltersContext'
-import { useAuth } from '../../context/AuthContext'
+import { usePreview } from '../../context/PreviewContext'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { SalesReportUiProvider, useSalesReportUi } from '../../context/SalesReportUiContext'
 import { fmt0, fmt2 } from '../../lib/format'
@@ -33,7 +33,8 @@ function SalesStockContent({
 }: SalesStockViewProps) {
   const { searchQuery, setSearchQuery, setReportChart, openChart, reportChart } = useSalesReportUi()
   const { access } = useDashboardAccess()
-  const { isSuperAdmin } = useAuth()
+  // Honours the super-admin "View as user" preview.
+  const { effectiveIsSuperAdmin: isSuperAdmin } = usePreview()
   const showItemCost = canShowItemCost(access, isSuperAdmin)
   const showClientProfit = canShowClientProfit(access, isSuperAdmin)
   const company = filters.company as LogicalCompany

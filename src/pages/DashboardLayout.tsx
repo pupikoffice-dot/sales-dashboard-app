@@ -5,15 +5,22 @@ import { useAuth } from '../context/AuthContext'
 import { useDashboardAccess } from '../context/DashboardAccessContext'
 import { useDashboardFilters } from '../context/DashboardFiltersContext'
 import { useLocale } from '../context/LocaleContext'
+import { usePreview } from '../context/PreviewContext'
 import { useDashboardData } from '../hooks/useDashboardData'
 import { canShowModule } from '../lib/permissions'
 import { navLabel } from '../i18n'
+import { PreviewBanner } from '../components/admin/PreviewBanner'
+import { ViewAsSwitcher } from '../components/admin/ViewAsSwitcher'
 import { SidebarFilters } from '../components/sidebar/SidebarFilters'
 import { MODULE_REGISTRY } from '../modules/registry'
 import { useLocation } from 'react-router-dom'
 
 export function DashboardLayout() {
+  // `isSuperAdmin` here is the REAL flag: it keeps the Admin section reachable
+  // while previewing, so the admin can walk between the settings editor and the
+  // preview without exiting. Everything else gates on the effective flag.
   const { signOut, isSuperAdmin } = useAuth()
+  const { isPreviewing, effectiveIsSuperAdmin } = usePreview()
   const { access, loading } = useDashboardAccess()
   const { isRendering, showOversiteDashboard } = useDashboardFilters()
   const { locale, setLocale, t, dir } = useLocale()
@@ -33,10 +40,29 @@ export function DashboardLayout() {
     return () => document.body.classList.remove('mobile-sidebar-open')
   }, [sidebarOpen])
 
-  if (loading) return <p className="status-msg p-6">{t('common.loadingPermissions')}</p>
-  if (!access?.active) return <p className="status-msg error p-6">{t('common.noAccess')}</p>
+  // Both early returns keep the banner mounted: previewing an inactive user (or
+  // one with no access row) hits the "no access" screen, and without this the
+  // admin would be stranded with no way to exit the preview.
+  if (loading) {
+    return (
+      <>
+        <PreviewBanner />
+        <p className="status-msg p-6">{t('common.loadingPermissions')}</p>
+      </>
+    )
+  }
+  if (!access?.active) {
+    return (
+      <>
+        <PreviewBanner />
+        <p className="status-msg error p-6">
+          {isPreviewing ? t('preview.targetNoAccess') : t('common.noAccess')}
+        </p>
+      </>
+    )
+  }
 
-  const visible = MODULE_REGISTRY.filter(m => canShowModule(access, m.id, isSuperAdmin))
+  const visible = MODULE_REGISTRY.filter(m => canShowModule(access, m.id, effectiveIsSuperAdmin))
   const rowCount = allRows.length
   const debtCount = debtRows.length
 
@@ -104,6 +130,7 @@ export function DashboardLayout() {
 
   return (
     <>
+      <PreviewBanner />
       <header className={`dashboard-header${isRtl ? ' is-rtl' : ''}`}>
         <button
           type="button"
@@ -118,22 +145,28 @@ export function DashboardLayout() {
           <h1>{t('header.title')}</h1>
         </div>
         <div className="hdr-right">
-          <div className="lang-switch" role="group" aria-label={t('common.language')}>
-            <button
-              type="button"
-              className={`lang-btn${locale === 'en' ? ' active' : ''}`}
-              onClick={() => setLocale('en')}
-            >
-              EN
-            </button>
-            <button
-              type="button"
-              className={`lang-btn${locale === 'he' ? ' active' : ''}`}
-              onClick={() => setLocale('he')}
-            >
-              עב
-            </button>
-          </div>
+          <ViewAsSwitcher />
+          {/* Hidden while previewing: the preview shows the TARGET's language,
+              so a language control here would be ambiguous (and preview is
+              strictly read-only — setLocale refuses to write anyway). */}
+          {!isPreviewing && (
+            <div className="lang-switch" role="group" aria-label={t('common.language')}>
+              <button
+                type="button"
+                className={`lang-btn${locale === 'en' ? ' active' : ''}`}
+                onClick={() => setLocale('en')}
+              >
+                EN
+              </button>
+              <button
+                type="button"
+                className={`lang-btn${locale === 'he' ? ' active' : ''}`}
+                onClick={() => setLocale('he')}
+              >
+                עב
+              </button>
+            </div>
+          )}
           <div className="data-badge">
             {dataLoading ? (
               t('common.loadingData')
@@ -183,9 +216,9 @@ export function DashboardLayout() {
 }
 
 export function RequireModule({ moduleId, children }: { moduleId: string; children: ReactNode }) {
-  const { isSuperAdmin } = useAuth()
+  const { effectiveIsSuperAdmin } = usePreview()
   const { access } = useDashboardAccess()
-  if (!access || !canShowModule(access, moduleId as never, isSuperAdmin)) {
+  if (!access || !canShowModule(access, moduleId as never, effectiveIsSuperAdmin)) {
     return <Navigate to="/oversite" replace />
   }
   return <>{children}</>

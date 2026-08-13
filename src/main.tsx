@@ -5,6 +5,7 @@ import { AuthProvider } from './context/AuthContext'
 import { DashboardAccessProvider } from './context/DashboardAccessContext'
 import { DashboardFiltersProvider } from './context/DashboardFiltersContext'
 import { LocaleProvider } from './context/LocaleContext'
+import { PreviewProvider } from './context/PreviewContext'
 import { queryClient } from './lib/queryClient'
 import App from './App'
 import './index.css'
@@ -13,13 +14,18 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <LocaleProvider>
-          <DashboardAccessProvider>
-            <DashboardFiltersProvider>
-              <App />
-            </DashboardFiltersProvider>
-          </DashboardAccessProvider>
-        </LocaleProvider>
+        {/* PreviewProvider sits below AuthProvider (which owns the real
+            isSuperAdmin) and above Locale/Access so both can follow the
+            previewed user — see PreviewContext for why. */}
+        <PreviewProvider>
+          <LocaleProvider>
+            <DashboardAccessProvider>
+              <DashboardFiltersProvider>
+                <App />
+              </DashboardFiltersProvider>
+            </DashboardAccessProvider>
+          </LocaleProvider>
+        </PreviewProvider>
       </AuthProvider>
     </QueryClientProvider>
   </StrictMode>,

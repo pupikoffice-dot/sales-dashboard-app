@@ -1,6 +1,6 @@
 import { Fragment, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
+import { usePreview } from '../../context/PreviewContext'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { useLocale } from '../../context/LocaleContext'
 import { fmt } from '../../lib/format'
@@ -31,7 +31,8 @@ export function OrdersTodayModal({
   const { t } = useLocale()
   const navigate = useNavigate()
   const { access } = useDashboardAccess()
-  const { isSuperAdmin } = useAuth()
+  // Honours the super-admin "View as user" preview.
+  const { effectiveIsSuperAdmin: isSuperAdmin } = usePreview()
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [totalSort, setTotalSort] = useState<'desc' | 'asc' | null>(null)
 

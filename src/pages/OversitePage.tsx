@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from 'react'
 import { SalesReportBody } from '../components/sales/SalesReportBody'
-import { useAuth } from '../context/AuthContext'
+import { usePreview } from '../context/PreviewContext'
 import { useLocale } from '../context/LocaleContext'
 import { useDashboardAccess } from '../context/DashboardAccessContext'
 import { useDashboardFilters } from '../context/DashboardFiltersContext'
@@ -53,7 +53,8 @@ import { OversiteTop10Table } from '../components/oversite/OversiteTop10Table'
 
 export function OversitePage() {
   const { t } = useLocale()
-  const { isSuperAdmin } = useAuth()
+  // Honours the super-admin "View as user" preview.
+  const { effectiveIsSuperAdmin: isSuperAdmin } = usePreview()
   const { access } = useDashboardAccess()
   const f = useDashboardFilters()
   const { allRows, debtRows, debtLastUpdate, wmsStock, wmsNames, isLoading, error, data: dashboardData } =

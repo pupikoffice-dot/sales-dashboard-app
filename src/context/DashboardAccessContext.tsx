@@ -1,5 +1,6 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useAuth } from './AuthContext'
+import { usePreview } from './PreviewContext'
 import { supabase } from '../lib/supabase'
 import type { DashboardAccess, DashboardModuleId, LogicalCompany } from '../types/dashboard'
 import { ALL_OVERSITE_MODULE_IDS } from '../lib/oversiteModules'
@@ -44,8 +45,12 @@ function normalizeAccess(row: Record<string, unknown>, userId: string): Dashboar
 
 export function DashboardAccessProvider({ children }: { children: ReactNode }) {
   const { session, isSuperAdmin } = useAuth()
+  const { isPreviewing, previewUser } = usePreview()
   const [access, setAccess] = useState<DashboardAccess | null>(null)
   const [loading, setLoading] = useState(true)
+  // Guards against out-of-order responses when the preview target changes
+  // faster than the network replies.
+  const reqToken = useRef(0)
 
   async function refresh() {
     if (!session) {
@@ -53,8 +58,35 @@ export function DashboardAccessProvider({ children }: { children: ReactNode }) {
       setLoading(false)
       return
     }
+    const token = ++reqToken.current
     setLoading(true)
+
+    // While previewing, load the TARGET user's access row with a direct table
+    // select. That path is authorized server-side by the RLS policy
+    // `dashboard_access_select_own` (user_id = auth.uid() OR is_super_admin()),
+    // so a non-super-admin physically cannot read another user's row — the
+    // guarantee is in Postgres rather than in this UI.
+    if (isPreviewing && previewUser) {
+      const { data, error } = await supabase
+        .from('dashboard_user_access')
+        .select('*')
+        .eq('user_id', previewUser.id)
+        .maybeSingle()
+      if (token !== reqToken.current) return
+      // No row (or unreadable) => that user genuinely has no access configured.
+      // Never fall back to the super-admin defaults here: that would show the
+      // admin their own full access while claiming to be the previewed user.
+      setAccess(
+        error || !data
+          ? null
+          : normalizeAccess(data as Record<string, unknown>, previewUser.id),
+      )
+      setLoading(false)
+      return
+    }
+
     const { data, error } = await supabase.rpc('get_dashboard_access', { p_user_id: session.user.id })
+    if (token !== reqToken.current) return
     if (error || !data) {
       if (isSuperAdmin) {
         setAccess({
@@ -79,7 +111,7 @@ export function DashboardAccessProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     refresh()
-  }, [session?.user.id, isSuperAdmin])
+  }, [session?.user.id, isSuperAdmin, isPreviewing, previewUser?.id])
 
   return (
     <DashboardAccessContext.Provider value={{ access, loading, refresh }}>

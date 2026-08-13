@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 
 import type { DashboardFiltersState } from '../../context/DashboardFiltersContext'
-import { useAuth } from '../../context/AuthContext'
+import { usePreview } from '../../context/PreviewContext'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { useSalesReportUi } from '../../context/SalesReportUiContext'
 import { fmt, fmt0, fmt2 } from '../../lib/format'
@@ -57,7 +57,8 @@ export function SkuSummaryTable({
 }: SkuSummaryTableProps) {
   const { searchQuery } = useSalesReportUi()
   const { access } = useDashboardAccess()
-  const { isSuperAdmin } = useAuth()
+  // Honours the super-admin "View as user" preview.
+  const { effectiveIsSuperAdmin: isSuperAdmin } = usePreview()
   const showClientProfit = canShowClientProfit(access, isSuperAdmin)
   const priceData = itemPrice?.[company] ?? {}
 

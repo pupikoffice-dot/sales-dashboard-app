@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocale } from '../../context/LocaleContext'
+import { useDashboardAccess } from '../../context/DashboardAccessContext'
+import { usePreview } from '../../context/PreviewContext'
 import { supabase } from '../../lib/supabase'
 import { callUserManagement } from '../../lib/userManagement'
 import { displayLoginId, isEmailLogin, isInternalAuthEmail } from '../../lib/loginIdentifier'
@@ -48,6 +50,8 @@ function formatAgents(agents: string[] | null | undefined, role: string) {
 
 export function UsersPage() {
   const qc = useQueryClient()
+  const { isPreviewing, previewUser } = usePreview()
+  const { refresh: refreshAccess } = useDashboardAccess()
   const [showCreate, setShowCreate] = useState(false)
   const [newLogin, setNewLogin] = useState('')
   const [newName, setNewName] = useState('')
@@ -369,9 +373,16 @@ export function UsersPage() {
           userId={editId}
           userName={users?.find(u => u.id === editId)?.name ?? ''}
           onClose={() => setEditId(null)}
-          onSaved={() => {
+          onSaved={savedUserId => {
             setEditId(null)
             qc.invalidateQueries({ queryKey: ['admin-users'] })
+            qc.invalidateQueries({ queryKey: ['admin-users-picker'] })
+            // If we're previewing the user whose access just changed, reload it
+            // so the live preview reflects the new settings immediately (no
+            // dashboard-data refetch needed — all narrowing is client-side).
+            if (isPreviewing && previewUser?.id === savedUserId) {
+              refreshAccess()
+            }
           }}
         />
       )}
@@ -388,7 +399,8 @@ function EditAccessModal({
   userId: string
   userName: string
   onClose: () => void
-  onSaved: () => void
+  /** Receives the saved user's id so callers can react (e.g. refresh a live preview). */
+  onSaved: (savedUserId: string) => void
 }) {
   const [modules, setModules] = useState<DashboardModuleId[]>([])
   const [oversiteModules, setOversiteModules] = useState<OversiteModuleId[]>([])
@@ -460,7 +472,7 @@ function EditAccessModal({
     })
     setSaving(false)
     if (err) setError(err.message)
-    else onSaved()
+    else onSaved(userId)
   }
 
   return (

@@ -1,6 +1,8 @@
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { useDashboardAccess } from '../context/DashboardAccessContext'
+import { usePreview } from '../context/PreviewContext'
 import { filterRows } from '../lib/permissions'
 import { filterDebtRows, normalizeDebtRows } from '../lib/debtMetrics'
 import { buildItemCostMap, buildItemPriceMap } from '../lib/itemPricing'
@@ -73,6 +75,7 @@ async function loadDashboardData(): Promise<LoadedDashboardPayload> {
 export function useDashboardData() {
   const { access } = useDashboardAccess()
   const { session } = useAuth()
+  const { isPreviewing, effectiveIsSuperAdmin } = usePreview()
 
   const q = useQuery({
     // Keyed by user id (not just a static string) so cached data from one
@@ -86,18 +89,37 @@ export function useDashboardData() {
     enabled: !!access && !!session,
   })
 
-  const allRows: SalesRow[] = q.data?.rows ?? []
-  const filterIndex = q.data?.filterIndex
+  // The payload was fetched under the REAL session, so while previewing a
+  // non-super-admin it can contain things that user could never receive. Mask
+  // those before anything renders.
+  //   * receipts: get_dashboard_aux gates receiptsMonthly / receiptsMonthlyByAgent
+  //     behind is_super_admin() server-side, so a real non-super-admin gets {}.
+  //   * cost/price: the server only returns these when the caller's
+  //     show_item_cost / show_client_profit are set. The UI also gates them, but
+  //     blanking the maps means a missed gate still cannot leak a number.
+  const maskPreview = isPreviewing && !effectiveIsSuperAdmin
+  const data = useMemo(() => {
+    if (!maskPreview || !q.data) return q.data
+    return { ...q.data, receiptsMonthly: {}, receiptsMonthlyByAgent: {} }
+  }, [q.data, maskPreview])
+
+  const allRows: SalesRow[] = data?.rows ?? []
+  const filterIndex = data?.filterIndex
   const rows = access ? filterRows(access, allRows) : []
-  const allDebtRows: DebtRow[] = normalizeDebtRows(q.data?.debtRows)
+  const allDebtRows: DebtRow[] = normalizeDebtRows(data?.debtRows)
   const debtRows = access ? filterDebtRows(access, allDebtRows) : []
-  const { wmsStock, wmsNames } = buildWmsMaps(q.data?.wmsRows)
-  const itemCost = buildItemCostMap(q.data?.costRows)
-  const itemPrice = buildItemPriceMap(q.data?.priceRows)
+  const { wmsStock, wmsNames } = buildWmsMaps(data?.wmsRows)
+  const itemCost = buildItemCostMap(
+    maskPreview && access?.showItemCost !== true ? undefined : data?.costRows,
+  )
+  const itemPrice = buildItemPriceMap(
+    maskPreview && access?.showClientProfit !== true ? undefined : data?.priceRows,
+  )
   const dataHealth = checkOrdersDataHealth(allRows, access?.companies ?? [])
 
   return {
     ...q,
+    data,
     allRows,
     filterIndex,
     rows,

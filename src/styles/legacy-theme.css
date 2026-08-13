@@ -988,6 +988,85 @@ body {
   border-top: 1px solid var(--bdr);
 }
 
+/* ── Super-admin "View as user" preview ──────────────────────────────────
+   Deliberately loud: the banner plus the shell ring must make it impossible
+   to mistake a preview for the admin's own view. */
+.preview-banner {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 7px 14px;
+  background: var(--amber, #fbbf24);
+  color: #1a1a1a;
+  font-size: 0.78rem;
+  font-weight: 600;
+  box-shadow: 0 1px 6px rgb(0 0 0 / 0.25);
+}
+.preview-banner.is-rtl { direction: rtl; }
+.preview-banner-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.preview-banner-login {
+  font-weight: 400;
+  opacity: 0.75;
+  font-size: 0.72rem;
+}
+.preview-banner-chip {
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: rgb(0 0 0 / 0.16);
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.preview-banner-exit {
+  flex-shrink: 0;
+  padding: 4px 12px;
+  border: 1px solid rgb(0 0 0 / 0.35);
+  border-radius: 5px;
+  background: rgb(0 0 0 / 0.1);
+  color: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.preview-banner-exit:hover { background: rgb(0 0 0 / 0.22); }
+
+/* Persistent ring so the preview is obvious even when scrolled past the banner. */
+body.preview-mode .dashboard-shell {
+  outline: 2px solid var(--amber, #fbbf24);
+  outline-offset: -2px;
+}
+
+.view-as-select {
+  max-width: 190px;
+  padding: 3px 8px;
+  border: 1px solid var(--bdr);
+  border-radius: 5px;
+  background: var(--bg2, var(--bg));
+  color: var(--fg);
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+@media (max-width: 700px) {
+  .preview-banner { font-size: 0.7rem; padding: 6px 10px; }
+  .preview-banner-login,
+  .preview-banner-chip { display: none; }
+  .view-as-select { max-width: 130px; }
+}
+
 /* Suppliers monthly-vs-average matrix (Oversight) */
 .ov-supplier-matrix-scroll {
   overflow-x: auto;
