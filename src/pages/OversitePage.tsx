@@ -359,12 +359,15 @@ export function OversitePage() {
                     </OversiteSection>
                   )}
 
-                <StockAlertsPanel
-                  company={co.id}
-                  companyRows={companyRows}
-                  wmsStock={wmsStock}
-                  wmsNames={wmsNames}
-                />
+                {showModule('stockAlerts') && (
+                  <StockAlertsPanel
+                    company={co.id}
+                    companyRows={companyRows}
+                    wmsStock={wmsStock}
+                    wmsNames={wmsNames}
+                    sourceFile={srcFile(co.id, 'stockAlerts')}
+                  />
+                )}
               </div>
             )
           })}

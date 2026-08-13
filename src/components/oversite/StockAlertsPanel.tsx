@@ -15,6 +15,8 @@ interface StockAlertsPanelProps {
   companyRows: SalesRow[]
   wmsStock: WmsStockMap
   wmsNames: WmsNamesMap
+  /** Raw source-file reference shown as a hover tooltip (super-admin only). */
+  sourceFile?: string
 }
 
 export function StockAlertsPanel({
@@ -22,6 +24,7 @@ export function StockAlertsPanel({
   companyRows,
   wmsStock,
   wmsNames,
+  sourceFile,
 }: StockAlertsPanelProps) {
   const { t } = useLocale()
   const [tab, setTab] = useState(0)
@@ -63,10 +66,11 @@ export function StockAlertsPanel({
   ]
 
   return (
-    <section className="ov-section">
+    <section className="ov-section" title={sourceFile ? `📁 ${sourceFile}` : undefined}>
       <h3 className="ov-section-title">
         📦 {t('oversite.stockAlerts')}{' '}
         <span className={`ov-badge${alertCount === 0 ? ' ov-badge-zero' : ''}`}>{alertCount}</span>
+        {sourceFile ? <span className="ov-section-file-icon"> 📁</span> : null}
       </h3>
       <button
         type="button"

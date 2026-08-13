@@ -19,6 +19,7 @@ export type OversiteSegment =
   | 'returns'
   | 'debt'
   | 'receipts'
+  | 'stockAlerts'
 
 const FILES: Record<OversiteSegment, Partial<Record<LogicalCompany, string>>> = {
   ordersToday: { pupik: '722pupik.xls', mt: '722mt.xls', grow: '722grow.xls', gold: '722gold.xls' },
@@ -31,6 +32,8 @@ const FILES: Record<OversiteSegment, Partial<Record<LogicalCompany, string>>> = 
   returns: { pupik: '855PUP.xls', mt: '855MT.xls' },
   debt: { pupik: 'Debt clients.xlsm (pupik)', mt: 'Debt clients.xlsm (monkey)', grow: 'Debt clients.xlsm (grow)' },
   receipts: { pupik: 'collectyear008pupik.xls', mt: 'collectyear008mt.xls' },
+  // Stock alerts compare sales velocity (rep891) against WMS stock on hand (000*).
+  stockAlerts: { pupik: '000pupik.xls', mt: '000mt.xls' },
 }
 
 /** Source-file label for a section+company, or undefined if none is mapped. */

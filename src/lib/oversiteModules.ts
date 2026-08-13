@@ -16,6 +16,7 @@ export type OversiteModuleId =
   | 'returns'
   | 'debt'
   | 'receipts'
+  | 'stockAlerts'
 
 export interface OversiteModuleDef {
   id: OversiteModuleId
@@ -32,6 +33,7 @@ export const OVERSITE_MODULE_REGISTRY: OversiteModuleDef[] = [
   { id: 'returns', label: 'Returns MTD' },
   { id: 'debt', label: 'Open Debt' },
   { id: 'receipts', label: 'Receipts' },
+  { id: 'stockAlerts', label: 'Stock Alerts' },
 ]
 
 export const ALL_OVERSITE_MODULE_IDS: OversiteModuleId[] = OVERSITE_MODULE_REGISTRY.map(m => m.id)
