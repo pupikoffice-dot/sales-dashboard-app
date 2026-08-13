@@ -47,6 +47,8 @@ export function buildItemsUnderClientHtml(
   dualMonthCols?: ReturnType<typeof getDualMonthCols>,
   itemPrice?: SkuValueMap,
   showClientProfit = false,
+  /** Translated "cash (units)" micro-label for the month headers. */
+  monthMicroLabel = '',
 ): string {
   const items = groupBySku(rows)
   const entries = Object.entries(items).sort((a, b) => a[1].name.localeCompare(b[1].name))
