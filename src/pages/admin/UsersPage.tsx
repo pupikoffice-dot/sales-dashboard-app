@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase'
 import { callUserManagement } from '../../lib/userManagement'
 import { displayLoginId, isEmailLogin, isInternalAuthEmail } from '../../lib/loginIdentifier'
 import { MODULE_REGISTRY } from '../../modules/registry'
+import { OVERSITE_MODULE_REGISTRY, type OversiteModuleId } from '../../lib/oversiteModules'
 import type { AppLocale } from '../../i18n/types'
 import type { DashboardModuleId, LogicalCompany } from '../../types/dashboard'
 
@@ -28,6 +29,7 @@ interface AccessRow {
   active: boolean
   show_item_cost?: boolean
   show_client_profit?: boolean
+  oversite_modules?: string[] | null
 }
 
 const COMPANIES: LogicalCompany[] = ['pupik', 'mt', 'grow', 'gold']
@@ -389,6 +391,7 @@ function EditAccessModal({
   onSaved: () => void
 }) {
   const [modules, setModules] = useState<DashboardModuleId[]>([])
+  const [oversiteModules, setOversiteModules] = useState<OversiteModuleId[]>([])
   const [companies, setCompanies] = useState<LogicalCompany[]>([])
   const [agentsText, setAgentsText] = useState('')
   const [defaultModule, setDefaultModule] = useState<DashboardModuleId>('oversite')
@@ -405,6 +408,11 @@ function EditAccessModal({
         if (data) {
           const row = data as AccessRow
           setModules((row.modules ?? []) as DashboardModuleId[])
+          setOversiteModules(
+            row.oversite_modules != null
+              ? (row.oversite_modules as OversiteModuleId[])
+              : OVERSITE_MODULE_REGISTRY.map(m => m.id), // no row saved yet: prefill all-checked (convenience only, not persisted until Save)
+          )
           setCompanies((row.companies ?? []) as LogicalCompany[])
           setAgentsText(row.agents?.join(', ') ?? '')
           setDefaultModule((row.default_module as DashboardModuleId) ?? 'oversite')
@@ -413,6 +421,7 @@ function EditAccessModal({
           setShowClientProfit(row.show_client_profit === true)
         } else {
           setModules(['oversite'])
+          setOversiteModules(OVERSITE_MODULE_REGISTRY.map(m => m.id))
           setCompanies(['pupik'])
         }
       })
@@ -420,6 +429,10 @@ function EditAccessModal({
 
   function toggleModule(id: DashboardModuleId) {
     setModules(prev => prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id])
+  }
+
+  function toggleOversiteModule(id: OversiteModuleId) {
+    setOversiteModules(prev => prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id])
   }
 
   function toggleCompany(c: LogicalCompany) {
@@ -435,6 +448,7 @@ function EditAccessModal({
     const { error: err } = await supabase.from('dashboard_user_access').upsert({
       user_id: userId,
       modules,
+      oversite_modules: oversiteModules,
       companies,
       agents,
       default_module: defaultModule,
@@ -473,6 +487,27 @@ function EditAccessModal({
                 ))}
               </div>
             </div>
+
+            {modules.includes('oversite') && (
+              <div>
+                <div className="admin-form-section-title">Oversight Modules</div>
+                <p className="ov-sub" style={{ margin: '0 0 6px', fontSize: '.72rem' }}>
+                  Which sections this user sees inside Oversight. Unchecked sections are hidden entirely.
+                </p>
+                <div className="admin-form-checklist">
+                  {OVERSITE_MODULE_REGISTRY.map(m => (
+                    <label key={m.id} className="admin-form-check">
+                      <input
+                        type="checkbox"
+                        checked={oversiteModules.includes(m.id)}
+                        onChange={() => toggleOversiteModule(m.id)}
+                      />
+                      {m.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div>
               <div className="admin-form-section-title">Companies</div>

@@ -20,6 +20,8 @@ export interface DashboardAccess {
   active: boolean
   showItemCost: boolean
   showClientProfit: boolean
+  /** Which individual Oversight sections this user can see. Empty = none (opt-in). */
+  oversiteModules: string[]
 }
 
 export interface SalesRow {

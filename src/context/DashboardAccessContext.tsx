@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import { useAuth } from './AuthContext'
 import { supabase } from '../lib/supabase'
 import type { DashboardAccess, DashboardModuleId, LogicalCompany } from '../types/dashboard'
+import { ALL_OVERSITE_MODULE_IDS } from '../lib/oversiteModules'
 
 const ALL_MODULES: DashboardModuleId[] = [
   'oversite', 'sales_performance', 'orders_mtd', 'open_orders', 'returns',
@@ -37,6 +38,7 @@ function normalizeAccess(row: Record<string, unknown>, userId: string): Dashboar
     active: row.active !== false,
     showItemCost: row.show_item_cost === true,
     showClientProfit: row.show_client_profit === true,
+    oversiteModules: Array.isArray(row.oversite_modules) ? (row.oversite_modules as string[]) : [],
   }
 }
 
@@ -64,6 +66,7 @@ export function DashboardAccessProvider({ children }: { children: ReactNode }) {
           active: true,
           showItemCost: true,
           showClientProfit: true,
+          oversiteModules: ALL_OVERSITE_MODULE_IDS,
         })
       } else {
         setAccess(null)

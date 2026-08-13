@@ -45,6 +45,7 @@ import {
 import { computeSalesForecast } from '../lib/salesForecast'
 import { computeSupplierMonthlyMatrix } from '../lib/supplierMetrics'
 import { getOversiteSourceFile, type OversiteSegment } from '../lib/oversiteSourceFiles'
+import type { OversiteModuleId } from '../lib/oversiteModules'
 import { OversiteSuppliersMatrix } from '../components/oversite/OversiteSuppliersMatrix'
 import { OversiteCollapsible } from '../components/oversite/OversiteCollapsible'
 import { OversiteKpiRow, OversiteSection, SalesLyBars } from '../components/oversite/OversiteKpiRow'
@@ -100,6 +101,11 @@ export function OversitePage() {
   // digging through the ETL.
   const srcFile = (companyId: LogicalCompany, segment: OversiteSegment): string | undefined =>
     isSuperAdmin ? getOversiteSourceFile(segment, companyId) : undefined
+
+  // Per-user Oversight section visibility (admin-configurable). Super-admins
+  // always see everything; everyone else is gated by their granted list.
+  const showModule = (id: OversiteModuleId): boolean =>
+    isSuperAdmin || (access?.oversiteModules?.includes(id) ?? false)
 
   return (
     <>
@@ -180,136 +186,153 @@ export function OversitePage() {
                   {co.label}
                 </div>
 
-                <OversiteSection title={`📋 ${t('oversite.ordersToday')}`} updatedAt={segUpdated(co.id, 'orders')} sourceFile={srcFile(co.id, 'ordersToday')}>
-                  <OversiteKpiRow
-                    kpis={[
-                      { label: t('oversite.clients'), value: String(ordersToday.clients) },
-                      { label: t('oversite.qty'), value: fmt(ordersToday.qty) },
-                      { label: t('oversite.cash'), value: fmt(ordersToday.cash), tone: 'grn' },
-                    ]}
-                  />
-                  <OversiteAgentBreakdown rows={ordersTodayByAgent} />
-                  <OversiteOrdersLast7Days
-                    data={computeOrdersLast7DaysByAgent(companyRows, ordersTag, ctx.todayStr)}
-                  />
-                  <OversiteOrdersReportButton
-                    onClick={() =>
-                      setOrdersModal({ company: co.id, companyLabel: co.label, ordersTag })
-                    }
-                  />
-                </OversiteSection>
-
-                <OversiteSection title={`📋 ${t('oversite.ordersMtd', { month: ctx.monthLbl })}`} updatedAt={segUpdated(co.id, 'orders')} sourceFile={srcFile(co.id, 'ordersMtd')}>
-                  <OversiteKpiRow
-                    kpis={[
-                      { label: t('oversite.clients'), value: String(ordersMtd.clients) },
-                      { label: t('oversite.qty'), value: fmt(ordersMtd.qty) },
-                      { label: t('oversite.cash'), value: fmt(ordersMtd.cash), tone: 'grn' },
-                    ]}
-                  />
-                  <OversiteAgentBreakdown rows={ordersMtdByAgent} />
-                  <OversiteCollapsible label={`📦 ${t('oversite.top10Orders')} ▾`}>
-                    <OversiteTop10Table
-                      items={ordersTop10}
-                      emptyLabel={t('oversite.noOrderItems')}
-                      showSku
-                    />
-                  </OversiteCollapsible>
-                </OversiteSection>
-
-                <OversiteSection title={`📋 ${t('oversite.openOrders')}`} updatedAt={segUpdated(co.id, 'openorders')} sourceFile={srcFile(co.id, 'openOrders')}>
-                  <OversiteKpiRow
-                    kpis={[
-                      { label: t('oversite.clients'), value: String(openOrders.clients) },
-                      { label: t('oversite.qty'), value: fmt(openOrders.qty) },
-                      { label: t('oversite.cash'), value: fmt(openOrders.cash), tone: 'grn' },
-                    ]}
-                  />
-                  <OversiteCollapsible label={`📦 ${t('oversite.top10OpenOrders')} ▾`}>
-                    <OversiteTop10Table
-                      items={openOrdersTop10}
-                      emptyLabel={t('oversite.noOpenOrders')}
-                      showSku
-                    />
-                  </OversiteCollapsible>
-                </OversiteSection>
-
-                <OversiteSection title={`💰 ${t('oversite.salesMtd', { month: ctx.monthLbl })}`} updatedAt={segUpdated(co.id, 'sales')} sourceFile={srcFile(co.id, 'salesMtd')}>
-                  <OversiteKpiRow
-                    kpis={[
-                      { label: t('oversite.cash'), value: fmt(salesMtd.cash), tone: 'grn' },
-                      { label: t('oversite.qty'), value: fmt(salesMtd.qty) },
-                    ]}
-                  />
-                  <SalesLyBars
-                    monthLbl={ctx.monthLbl}
-                    lyMonthLbl={ctx.lyMonthLbl}
-                    cash={salesMtd.cash}
-                    deliveryCash={delivery720Mtd.cash}
-                    lyCash={salesMtd.lyCash}
-                    lyChangeCashPct={salesMtdCombinedLyPct}
-                    forecastCash={forecast?.projected}
-                    forecastLbl={`🔮 ${t('oversite.projected')}`}
-                    forecastTitle={
-                      forecast
-                        ? t('oversite.projectedTitle', { months: String(forecast.monthsUsed) })
-                        : undefined
-                    }
-                  />
-                  <OversiteCollapsible label={`📄 ${t('oversite.deliveryNotes')} ▾`}>
+                {showModule('ordersToday') && (
+                  <OversiteSection title={`📋 ${t('oversite.ordersToday')}`} updatedAt={segUpdated(co.id, 'orders')} sourceFile={srcFile(co.id, 'ordersToday')}>
                     <OversiteKpiRow
                       kpis={[
-                        { label: t('oversite.clients'), value: String(delivery720Mtd.clients) },
-                        { label: t('oversite.qty'), value: fmt(delivery720Mtd.qty) },
-                        { label: t('oversite.cash'), value: fmt(delivery720Mtd.cash), tone: 'grn' },
+                        { label: t('oversite.clients'), value: String(ordersToday.clients) },
+                        { label: t('oversite.qty'), value: fmt(ordersToday.qty) },
+                        { label: t('oversite.cash'), value: fmt(ordersToday.cash), tone: 'grn' },
                       ]}
                     />
-                    <OversiteTop10Table
-                      items={delivery720MtdTop10}
-                      emptyLabel={t('oversite.noDeliveryNotes')}
-                      showSku
+                    <OversiteAgentBreakdown rows={ordersTodayByAgent} />
+                    <OversiteOrdersLast7Days
+                      data={computeOrdersLast7DaysByAgent(companyRows, ordersTag, ctx.todayStr)}
                     />
-                  </OversiteCollapsible>
-                </OversiteSection>
+                    <OversiteOrdersReportButton
+                      onClick={() =>
+                        setOrdersModal({ company: co.id, companyLabel: co.label, ordersTag })
+                      }
+                    />
+                  </OversiteSection>
+                )}
 
-                <OversiteSection title={`🏆 ${t('oversite.top10Items')}`} updatedAt={segUpdated(co.id, 'sales')} sourceFile={srcFile(co.id, 'topItems')}>
-                  <OversiteTop10Table
-                    items={salesTop10}
-                    emptyLabel={t('oversite.noSales')}
-                    showSku
-                    detailRows={salesMtdRows}
-                  />
-                </OversiteSection>
+                {showModule('ordersMtd') && (
+                  <OversiteSection title={`📋 ${t('oversite.ordersMtd', { month: ctx.monthLbl })}`} updatedAt={segUpdated(co.id, 'orders')} sourceFile={srcFile(co.id, 'ordersMtd')}>
+                    <OversiteKpiRow
+                      kpis={[
+                        { label: t('oversite.clients'), value: String(ordersMtd.clients) },
+                        { label: t('oversite.qty'), value: fmt(ordersMtd.qty) },
+                        { label: t('oversite.cash'), value: fmt(ordersMtd.cash), tone: 'grn' },
+                      ]}
+                    />
+                    <OversiteAgentBreakdown rows={ordersMtdByAgent} />
+                    <OversiteCollapsible label={`📦 ${t('oversite.top10Orders')} ▾`}>
+                      <OversiteTop10Table
+                        items={ordersTop10}
+                        emptyLabel={t('oversite.noOrderItems')}
+                        showSku
+                      />
+                    </OversiteCollapsible>
+                  </OversiteSection>
+                )}
 
-                <OversiteSection title={`🏭 ${t('oversite.supplierMonthly')}`} updatedAt={segUpdated(co.id, 'sales')} sourceFile={srcFile(co.id, 'suppliers')}>
-                  <OversiteSuppliersMatrix matrix={supplierMatrix} />
-                </OversiteSection>
+                {showModule('openOrders') && (
+                  <OversiteSection title={`📋 ${t('oversite.openOrders')}`} updatedAt={segUpdated(co.id, 'openorders')} sourceFile={srcFile(co.id, 'openOrders')}>
+                    <OversiteKpiRow
+                      kpis={[
+                        { label: t('oversite.clients'), value: String(openOrders.clients) },
+                        { label: t('oversite.qty'), value: fmt(openOrders.qty) },
+                        { label: t('oversite.cash'), value: fmt(openOrders.cash), tone: 'grn' },
+                      ]}
+                    />
+                    <OversiteCollapsible label={`📦 ${t('oversite.top10OpenOrders')} ▾`}>
+                      <OversiteTop10Table
+                        items={openOrdersTop10}
+                        emptyLabel={t('oversite.noOpenOrders')}
+                        showSku
+                      />
+                    </OversiteCollapsible>
+                  </OversiteSection>
+                )}
 
-                <OversiteSection title={`↩️ ${t('oversite.returnsMtd')}`} updatedAt={segUpdated(co.id, 'returns')} sourceFile={srcFile(co.id, 'returns')}>
-                  <OversiteKpiRow
-                    kpis={[
-                      { label: t('oversite.cash'), value: fmt(returnsMtd.cash), tone: 'amber' },
-                      { label: t('oversite.qty'), value: fmt(returnsMtd.qty) },
-                    ]}
-                  />
-                  <OversiteCollapsible label={`↩️ ${t('oversite.top10Returns')} ▾`}>
-                    <OversiteTop10Table items={returnsTop10} emptyLabel={t('oversite.noReturns')} showSku />
-                  </OversiteCollapsible>
-                </OversiteSection>
+                {showModule('salesMtd') && (
+                  <OversiteSection title={`💰 ${t('oversite.salesMtd', { month: ctx.monthLbl })}`} updatedAt={segUpdated(co.id, 'sales')} sourceFile={srcFile(co.id, 'salesMtd')}>
+                    <OversiteKpiRow
+                      kpis={[
+                        { label: t('oversite.cash'), value: fmt(salesMtd.cash), tone: 'grn' },
+                        { label: t('oversite.qty'), value: fmt(salesMtd.qty) },
+                      ]}
+                    />
+                    <SalesLyBars
+                      monthLbl={ctx.monthLbl}
+                      lyMonthLbl={ctx.lyMonthLbl}
+                      cash={salesMtd.cash}
+                      deliveryCash={delivery720Mtd.cash}
+                      lyCash={salesMtd.lyCash}
+                      lyChangeCashPct={salesMtdCombinedLyPct}
+                      forecastCash={forecast?.projected}
+                      forecastLbl={`🔮 ${t('oversite.projected')}`}
+                      forecastTitle={
+                        forecast
+                          ? t('oversite.projectedTitle', { months: String(forecast.monthsUsed) })
+                          : undefined
+                      }
+                    />
+                    <OversiteCollapsible label={`📄 ${t('oversite.deliveryNotes')} ▾`}>
+                      <OversiteKpiRow
+                        kpis={[
+                          { label: t('oversite.clients'), value: String(delivery720Mtd.clients) },
+                          { label: t('oversite.qty'), value: fmt(delivery720Mtd.qty) },
+                          { label: t('oversite.cash'), value: fmt(delivery720Mtd.cash), tone: 'grn' },
+                        ]}
+                      />
+                      <OversiteTop10Table
+                        items={delivery720MtdTop10}
+                        emptyLabel={t('oversite.noDeliveryNotes')}
+                        showSku
+                      />
+                    </OversiteCollapsible>
+                  </OversiteSection>
+                )}
 
-                <OversiteSection
-                  title={`💳 ${t('oversite.openDebt')}${debtUpdated ? ` · ${t('oversite.lastUpdate')}: ${debtUpdated}` : ''}`}
-                  updatedAt={segUpdated(co.id, 'debt')}
-                  sourceFile={srcFile(co.id, 'debt')}
-                >
-                  <OversiteDebtSummary
-                    summary={debtSummary}
-                    agentMatrix={debtAgentMatrix}
-                    onOpenReport={() => setDebtModalCo(co.id)}
-                  />
-                </OversiteSection>
+                {showModule('topItems') && (
+                  <OversiteSection title={`🏆 ${t('oversite.top10Items')}`} updatedAt={segUpdated(co.id, 'sales')} sourceFile={srcFile(co.id, 'topItems')}>
+                    <OversiteTop10Table
+                      items={salesTop10}
+                      emptyLabel={t('oversite.noSales')}
+                      showSku
+                      detailRows={salesMtdRows}
+                    />
+                  </OversiteSection>
+                )}
 
-                {dashboardData?.receiptsMonthly?.[co.id] &&
+                {showModule('suppliers') && (
+                  <OversiteSection title={`🏭 ${t('oversite.supplierMonthly')}`} updatedAt={segUpdated(co.id, 'sales')} sourceFile={srcFile(co.id, 'suppliers')}>
+                    <OversiteSuppliersMatrix matrix={supplierMatrix} />
+                  </OversiteSection>
+                )}
+
+                {showModule('returns') && (
+                  <OversiteSection title={`↩️ ${t('oversite.returnsMtd')}`} updatedAt={segUpdated(co.id, 'returns')} sourceFile={srcFile(co.id, 'returns')}>
+                    <OversiteKpiRow
+                      kpis={[
+                        { label: t('oversite.cash'), value: fmt(returnsMtd.cash), tone: 'amber' },
+                        { label: t('oversite.qty'), value: fmt(returnsMtd.qty) },
+                      ]}
+                    />
+                    <OversiteCollapsible label={`↩️ ${t('oversite.top10Returns')} ▾`}>
+                      <OversiteTop10Table items={returnsTop10} emptyLabel={t('oversite.noReturns')} showSku />
+                    </OversiteCollapsible>
+                  </OversiteSection>
+                )}
+
+                {showModule('debt') && (
+                  <OversiteSection
+                    title={`💳 ${t('oversite.openDebt')}${debtUpdated ? ` · ${t('oversite.lastUpdate')}: ${debtUpdated}` : ''}`}
+                    updatedAt={segUpdated(co.id, 'debt')}
+                    sourceFile={srcFile(co.id, 'debt')}
+                  >
+                    <OversiteDebtSummary
+                      summary={debtSummary}
+                      agentMatrix={debtAgentMatrix}
+                      onOpenReport={() => setDebtModalCo(co.id)}
+                    />
+                  </OversiteSection>
+                )}
+
+                {showModule('receipts') &&
+                  dashboardData?.receiptsMonthly?.[co.id] &&
                   Object.keys(dashboardData.receiptsMonthly[co.id]).length > 0 && (
                     <OversiteSection title={`🧾 ${t('oversite.receipts')}`} sourceFile={srcFile(co.id, 'receipts')}>
                       <OversiteReceipts monthly={dashboardData.receiptsMonthly[co.id]} />
