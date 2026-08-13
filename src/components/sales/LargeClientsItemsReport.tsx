@@ -6,13 +6,19 @@ import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { useLocale } from '../../context/LocaleContext'
 import { useSalesReportUi } from '../../context/SalesReportUiContext'
 import {
-  buildAllClientSectionsHtml,
   buildClientHistoryIndexes,
+  buildClientSectionHtml,
 } from '../../lib/clientItemsBreakdownHtml'
+import { getDualMonthCols } from '../../lib/salesDateFilter'
 import { canShowClientProfit } from '../../lib/permissions'
 import { attachAllTableColumnFilters } from '../../lib/tableColumnFilters'
 import type { LogicalCompany, SalesRow, SkuValueMap } from '../../types/dashboard'
 import type { WmsStockMap } from '../../lib/wmsData'
+
+/** Max ms of section-building per frame before yielding back to the browser.
+ *  Kept under a 60fps frame so the page stays scrollable while a wide report
+ *  (hundreds of client sections) is still rendering. */
+const BUILD_BUDGET_MS = 12
 
 interface LargeClientsItemsReportProps {
   clientEntries: [string, { name: string; rows: SalesRow[] }][]
@@ -47,6 +53,7 @@ export function LargeClientsItemsReport({
 
   const { globalCollapsed, clearGlobalCollapse, setGlobalCollapsed } = useSalesReportUi()
   const [building, setBuilding] = useState(true)
+  const [builtCount, setBuiltCount] = useState(0)
 
   const clientEntriesKey = useMemo(
     () => clientEntries.map(([cid]) => cid).join('\u0001'),
@@ -69,37 +76,79 @@ export function LargeClientsItemsReport({
     [filters.dateMode, filters.selectedMonths],
   )
 
-  // Legacy-style: build entire report HTML in one pass, single DOM insert.
+  // Build and insert in BATCHES, not one blocking pass.
+  //
+  // A wide report (e.g. Pupik + Jan-Mar = 342 client sections x 8,215 rows x 3
+  // month columns) is ~250k DOM nodes. Building that as a single string and
+  // assigning it in one innerHTML blocks the main thread long enough that the
+  // tab looks frozen rather than slow. Yielding between batches keeps the page
+  // responsive and lets us show real progress.
   useEffect(() => {
     let cancelled = false
     setBuilding(true)
+    setBuiltCount(0)
     if (containerRef.current) containerRef.current.innerHTML = ''
 
-    const id = window.setTimeout(() => {
-      if (cancelled) return
-      const html = buildAllClientSectionsHtml(
-        clientEntries,
-        historyIndexes,
-        filtersRef.current,
-        company,
-        wmsStock,
-        defaultCollapsed,
-        itemPrice,
-        showClientProfit,
-        monthMicroLabel,
-      )
+    const dualMonthCols =
+      filtersRef.current.dateMode === 'months'
+        ? getDualMonthCols(filtersRef.current.selectedMonths)
+        : undefined
+
+    let i = 0
+    let handle = 0
+
+    function step() {
       if (cancelled || !containerRef.current) return
-      containerRef.current.innerHTML = html
+      const start = performance.now()
+      let html = ''
+      // Work for a slice of a frame, then yield — keeps long reports interactive
+      // on phones instead of locking up.
+      while (i < clientEntries.length && performance.now() - start < BUILD_BUDGET_MS) {
+        const [cid, cl] = clientEntries[i]
+        let cash = 0
+        let qty = 0
+        for (const r of cl.rows) {
+          cash += r.cash || 0
+          qty += r.qty || 0
+        }
+        html += buildClientSectionHtml(
+          cid,
+          cl.name,
+          cl.rows,
+          historyIndexes.monthIndexBySkuByClient.get(cid) ?? new Map(),
+          filtersRef.current,
+          company,
+          wmsStock,
+          cash,
+          qty,
+          defaultCollapsed,
+          dualMonthCols,
+          itemPrice,
+          showClientProfit,
+          monthMicroLabel,
+        )
+        i++
+      }
+      containerRef.current.insertAdjacentHTML('beforeend', html)
+      setBuiltCount(i)
+
+      if (i < clientEntries.length) {
+        handle = window.requestAnimationFrame(step)
+        return
+      }
+
       setBuilding(false)
       if (defaultCollapsed) setGlobalCollapsed(true)
-      requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
         if (containerRef.current) attachAllTableColumnFilters(containerRef.current)
       })
-    }, 0)
+    }
+
+    handle = window.requestAnimationFrame(step)
 
     return () => {
       cancelled = true
-      window.clearTimeout(id)
+      window.cancelAnimationFrame(handle)
     }
   }, [
     clientEntries,
@@ -143,7 +192,7 @@ export function LargeClientsItemsReport({
     <>
       {building && (
         <div className="report-progress-hint" style={{ padding: '8px 12px', opacity: 0.75 }}>
-          Building report…
+          {t('sales.buildingReport')} ({builtCount}/{clientEntries.length})
         </div>
       )}
       <div ref={containerRef} className="sales-html-sections" />

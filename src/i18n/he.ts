@@ -13,6 +13,7 @@ export const messages: Record<keyof typeof en, string> = {
   'common.openMenu': 'פתח תפריט',
   'common.closeMenu': 'סגור תפריט',
   'common.noAccess': 'לא הוגדרה גישה ללוח הבקרה.',
+  'sales.buildingReport': 'בונה דוח…',
   'legend.help': 'מה אני רואה?',
   'legend.title': 'איך לקרוא את הדוח',
   'legend.curCash': 'מזומן השנה, לאותו חודש',

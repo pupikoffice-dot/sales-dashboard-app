@@ -11,6 +11,7 @@ export const messages = {
   'common.openMenu': 'Open menu',
   'common.closeMenu': 'Close menu',
   'common.noAccess': 'No dashboard access configured.',
+  'sales.buildingReport': 'Building report…',
   'legend.help': 'What am I seeing?',
   'legend.title': 'How to read this report',
   'legend.curCash': 'Cash this year, for that month',

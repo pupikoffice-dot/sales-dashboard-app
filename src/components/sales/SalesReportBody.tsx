@@ -7,7 +7,6 @@ import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { useDashboardFilters } from '../../context/DashboardFiltersContext'
 import { useLocale } from '../../context/LocaleContext'
 import { useDashboardData } from '../../hooks/useDashboardData'
-import { filterRows } from '../../lib/permissions'
 import { getReportRows } from '../../lib/salesReportRows'
 import type { SalesRow } from '../../types/dashboard'
 
@@ -42,13 +41,23 @@ export function SalesReportBody() {
   // against every agent's sales last year. Real agent logins never saw this
   // (the server only returns their rows), but the "View as" preview loads the
   // super admin's full dataset, which exposed the mismatch.
-  const companyRows = useMemo(
-    () =>
-      f.company && access
-        ? filterRows(access, allRows).filter(r => r.company === f.company)
-        : [],
-    [allRows, f.company, access],
-  )
+  //
+  // Done as ONE pass with the cheap company check first: allRows is ~200k+ rows
+  // and the company test rejects the vast majority immediately. (Calling
+  // filterRows() here instead would walk every row doing company-tag resolution
+  // before this filter ever ran.)
+  const companyRows = useMemo(() => {
+    if (!f.company || !access) return []
+    if (!access.companies.includes(f.company)) return []
+    const agents = access.agents
+    const agentSet =
+      Array.isArray(agents) && agents.length > 0 ? new Set(agents.map(a => String(a))) : null
+    return allRows.filter(r => {
+      if (r.company !== f.company) return false
+      if (agentSet && !agentSet.has(r.agent != null ? String(r.agent) : '')) return false
+      return true
+    })
+  }, [allRows, f.company, access])
 
   const filterKey = useMemo(
     () =>
