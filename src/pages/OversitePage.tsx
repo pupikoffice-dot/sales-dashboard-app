@@ -44,6 +44,7 @@ import {
 } from '../components/oversite/OversiteReceipts'
 import { computeSalesForecast } from '../lib/salesForecast'
 import { computeSupplierMonthlyMatrix } from '../lib/supplierMetrics'
+import { getOversiteSourceFile, type OversiteSegment } from '../lib/oversiteSourceFiles'
 import { OversiteSuppliersMatrix } from '../components/oversite/OversiteSuppliersMatrix'
 import { OversiteCollapsible } from '../components/oversite/OversiteCollapsible'
 import { OversiteKpiRow, OversiteSection, SalesLyBars } from '../components/oversite/OversiteKpiRow'
@@ -93,6 +94,12 @@ export function OversitePage() {
     const stamp = `${day}/${month}/${year} ${hours}:${mins}`
     return `${t('oversite.synced')}: ${stamp}`
   }
+
+  // Source-file provenance tooltip (super-admin only): which raw ERP export a
+  // section's numbers came from, so an admin can trace a figure back without
+  // digging through the ETL.
+  const srcFile = (companyId: LogicalCompany, segment: OversiteSegment): string | undefined =>
+    isSuperAdmin ? getOversiteSourceFile(segment, companyId) : undefined
 
   return (
     <>
@@ -173,7 +180,7 @@ export function OversitePage() {
                   {co.label}
                 </div>
 
-                <OversiteSection title={`📋 ${t('oversite.ordersToday')}`} updatedAt={segUpdated(co.id, 'orders')}>
+                <OversiteSection title={`📋 ${t('oversite.ordersToday')}`} updatedAt={segUpdated(co.id, 'orders')} sourceFile={srcFile(co.id, 'ordersToday')}>
                   <OversiteKpiRow
                     kpis={[
                       { label: t('oversite.clients'), value: String(ordersToday.clients) },
@@ -192,7 +199,7 @@ export function OversitePage() {
                   />
                 </OversiteSection>
 
-                <OversiteSection title={`📋 ${t('oversite.ordersMtd', { month: ctx.monthLbl })}`} updatedAt={segUpdated(co.id, 'orders')}>
+                <OversiteSection title={`📋 ${t('oversite.ordersMtd', { month: ctx.monthLbl })}`} updatedAt={segUpdated(co.id, 'orders')} sourceFile={srcFile(co.id, 'ordersMtd')}>
                   <OversiteKpiRow
                     kpis={[
                       { label: t('oversite.clients'), value: String(ordersMtd.clients) },
@@ -210,7 +217,7 @@ export function OversitePage() {
                   </OversiteCollapsible>
                 </OversiteSection>
 
-                <OversiteSection title={`📋 ${t('oversite.openOrders')}`} updatedAt={segUpdated(co.id, 'openorders')}>
+                <OversiteSection title={`📋 ${t('oversite.openOrders')}`} updatedAt={segUpdated(co.id, 'openorders')} sourceFile={srcFile(co.id, 'openOrders')}>
                   <OversiteKpiRow
                     kpis={[
                       { label: t('oversite.clients'), value: String(openOrders.clients) },
@@ -227,7 +234,7 @@ export function OversitePage() {
                   </OversiteCollapsible>
                 </OversiteSection>
 
-                <OversiteSection title={`💰 ${t('oversite.salesMtd', { month: ctx.monthLbl })}`} updatedAt={segUpdated(co.id, 'sales')}>
+                <OversiteSection title={`💰 ${t('oversite.salesMtd', { month: ctx.monthLbl })}`} updatedAt={segUpdated(co.id, 'sales')} sourceFile={srcFile(co.id, 'salesMtd')}>
                   <OversiteKpiRow
                     kpis={[
                       { label: t('oversite.cash'), value: fmt(salesMtd.cash), tone: 'grn' },
@@ -265,7 +272,7 @@ export function OversitePage() {
                   </OversiteCollapsible>
                 </OversiteSection>
 
-                <OversiteSection title={`🏆 ${t('oversite.top10Items')}`} updatedAt={segUpdated(co.id, 'sales')}>
+                <OversiteSection title={`🏆 ${t('oversite.top10Items')}`} updatedAt={segUpdated(co.id, 'sales')} sourceFile={srcFile(co.id, 'topItems')}>
                   <OversiteTop10Table
                     items={salesTop10}
                     emptyLabel={t('oversite.noSales')}
@@ -274,11 +281,11 @@ export function OversitePage() {
                   />
                 </OversiteSection>
 
-                <OversiteSection title={`🏭 ${t('oversite.supplierMonthly')}`} updatedAt={segUpdated(co.id, 'sales')}>
+                <OversiteSection title={`🏭 ${t('oversite.supplierMonthly')}`} updatedAt={segUpdated(co.id, 'sales')} sourceFile={srcFile(co.id, 'suppliers')}>
                   <OversiteSuppliersMatrix matrix={supplierMatrix} />
                 </OversiteSection>
 
-                <OversiteSection title={`↩️ ${t('oversite.returnsMtd')}`} updatedAt={segUpdated(co.id, 'returns')}>
+                <OversiteSection title={`↩️ ${t('oversite.returnsMtd')}`} updatedAt={segUpdated(co.id, 'returns')} sourceFile={srcFile(co.id, 'returns')}>
                   <OversiteKpiRow
                     kpis={[
                       { label: t('oversite.cash'), value: fmt(returnsMtd.cash), tone: 'amber' },
@@ -293,6 +300,7 @@ export function OversitePage() {
                 <OversiteSection
                   title={`💳 ${t('oversite.openDebt')}${debtUpdated ? ` · ${t('oversite.lastUpdate')}: ${debtUpdated}` : ''}`}
                   updatedAt={segUpdated(co.id, 'debt')}
+                  sourceFile={srcFile(co.id, 'debt')}
                 >
                   <OversiteDebtSummary
                     summary={debtSummary}
@@ -303,7 +311,7 @@ export function OversitePage() {
 
                 {dashboardData?.receiptsMonthly?.[co.id] &&
                   Object.keys(dashboardData.receiptsMonthly[co.id]).length > 0 && (
-                    <OversiteSection title={`🧾 ${t('oversite.receipts')}`}>
+                    <OversiteSection title={`🧾 ${t('oversite.receipts')}`} sourceFile={srcFile(co.id, 'receipts')}>
                       <OversiteReceipts monthly={dashboardData.receiptsMonthly[co.id]} />
                       {(() => {
                         const teamAgents = RECEIPTS_TEAM_AGENTS[co.id]

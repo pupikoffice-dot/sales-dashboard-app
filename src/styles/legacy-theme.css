@@ -448,6 +448,18 @@ body {
   margin: -8px 0 10px;
 }
 
+/* Data-source-file hint (super-admin only): small icon next to the section
+   title; hovering anywhere in the section shows the native tooltip with the
+   raw ERP file the numbers came from. */
+.ov-section-file-icon {
+  opacity: 0.55;
+  font-size: 0.68rem;
+  cursor: help;
+}
+.ov-section[title]:hover .ov-section-file-icon {
+  opacity: 0.9;
+}
+
 .ov-kpi-row {
   display: flex;
   gap: 10px;

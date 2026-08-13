@@ -24,15 +24,21 @@ export function OversiteSection({
   title,
   children,
   updatedAt,
+  sourceFile,
 }: {
   title: string
   children: ReactNode
   /** Optional per-segment data-freshness line (super-admin only). */
   updatedAt?: string
+  /** Optional raw source-file reference, shown as a hover tooltip (super-admin only). */
+  sourceFile?: string
 }) {
   return (
-    <section className="ov-section">
-      <h3 className="ov-section-title">{title}</h3>
+    <section className="ov-section" title={sourceFile ? `📁 ${sourceFile}` : undefined}>
+      <h3 className="ov-section-title">
+        {title}
+        {sourceFile ? <span className="ov-section-file-icon"> 📁</span> : null}
+      </h3>
       {updatedAt ? <div className="ov-section-synced">{updatedAt}</div> : null}
       {children}
     </section>
