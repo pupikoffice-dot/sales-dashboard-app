@@ -8,6 +8,7 @@ import { useSalesReportUi } from '../../context/SalesReportUiContext'
 import {
   buildClientHistoryIndexes,
   buildClientSectionHtml,
+  type ClientHistoryIndexes,
 } from '../../lib/clientItemsBreakdownHtml'
 import { getDualMonthCols } from '../../lib/salesDateFilter'
 import { canShowClientProfit } from '../../lib/permissions'
@@ -42,6 +43,17 @@ export function LargeClientsItemsReport({
   const containerRef = useRef<HTMLDivElement>(null)
   const filtersRef = useRef(filters)
   filtersRef.current = filters
+  // Read through refs inside the build loop. The build now spans many frames,
+  // so any dependency that changes identity on an unrelated re-render would
+  // cancel and restart it from zero — a report that never finishes. Keeping
+  // these out of the dependency list makes the build immune to that.
+  const wmsStockRef = useRef(wmsStock)
+  wmsStockRef.current = wmsStock
+  const itemPriceRef = useRef(itemPrice)
+  itemPriceRef.current = itemPrice
+  const historyRef = useRef<ClientHistoryIndexes | null>(null)
+  const entriesRef = useRef(clientEntries)
+  entriesRef.current = clientEntries
   const { access } = useDashboardAccess()
   // Honours the super-admin "View as user" preview.
   const { effectiveIsSuperAdmin: isSuperAdmin } = usePreview()
@@ -66,6 +78,11 @@ export function LargeClientsItemsReport({
     () => buildClientHistoryIndexes(companyRows, clientIdSet),
     [companyRows, clientIdSet],
   )
+  historyRef.current = historyIndexes
+  // Cheap signature of the history input — used as the effect dependency
+  // instead of the object itself, so a re-created (but equivalent) index does
+  // not restart a build already in progress.
+  const historyKey = `${companyRows.length}:${clientIdSet.size}`
 
   const filterKey = useMemo(
     () =>
@@ -100,11 +117,13 @@ export function LargeClientsItemsReport({
     function step() {
       if (cancelled || !containerRef.current) return
       const start = performance.now()
+      const entries = entriesRef.current
+      const history = historyRef.current
       let html = ''
       // Work for a slice of a frame, then yield — keeps long reports interactive
       // on phones instead of locking up.
-      while (i < clientEntries.length && performance.now() - start < BUILD_BUDGET_MS) {
-        const [cid, cl] = clientEntries[i]
+      while (i < entries.length && performance.now() - start < BUILD_BUDGET_MS) {
+        const [cid, cl] = entries[i]
         let cash = 0
         let qty = 0
         for (const r of cl.rows) {
@@ -115,15 +134,15 @@ export function LargeClientsItemsReport({
           cid,
           cl.name,
           cl.rows,
-          historyIndexes.monthIndexBySkuByClient.get(cid) ?? new Map(),
+          history?.monthIndexBySkuByClient.get(cid) ?? new Map(),
           filtersRef.current,
           company,
-          wmsStock,
+          wmsStockRef.current,
           cash,
           qty,
           defaultCollapsed,
           dualMonthCols,
-          itemPrice,
+          itemPriceRef.current,
           showClientProfit,
           monthMicroLabel,
         )
@@ -132,7 +151,7 @@ export function LargeClientsItemsReport({
       containerRef.current.insertAdjacentHTML('beforeend', html)
       setBuiltCount(i)
 
-      if (i < clientEntries.length) {
+      if (i < entries.length) {
         handle = window.requestAnimationFrame(step)
         return
       }
@@ -150,14 +169,16 @@ export function LargeClientsItemsReport({
       cancelled = true
       window.cancelAnimationFrame(handle)
     }
+    // Deliberately STABLE dependencies only (keys/primitives, not objects).
+    // The build spans many animation frames, so depending on object identities
+    // — clientEntries, historyIndexes, wmsStock, itemPrice — meant any
+    // unrelated re-render cancelled and restarted it, leaving the report stuck
+    // at "Building report… (0/N)". Those values are read through refs instead.
   }, [
-    clientEntries,
     clientEntriesKey,
-    historyIndexes,
+    historyKey,
     filterKey,
     company,
-    wmsStock,
-    itemPrice,
     showClientProfit,
     monthMicroLabel,
     defaultCollapsed,

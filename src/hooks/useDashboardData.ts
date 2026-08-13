@@ -108,12 +108,25 @@ export function useDashboardData() {
   const rows = access ? filterRows(access, allRows) : []
   const allDebtRows: DebtRow[] = normalizeDebtRows(data?.debtRows)
   const debtRows = access ? filterDebtRows(access, allDebtRows) : []
-  const { wmsStock, wmsNames } = buildWmsMaps(data?.wmsRows)
-  const itemCost = buildItemCostMap(
-    maskPreview && access?.showItemCost !== true ? undefined : data?.costRows,
+  // These MUST be memoised. They are passed as props and used as effect
+  // dependencies (e.g. the batched report builder in LargeClientsItemsReport);
+  // rebuilding them on every render gave them a new identity each time, which
+  // restarted long-running effects and could stop a large report from ever
+  // finishing.
+  const { wmsStock, wmsNames } = useMemo(() => buildWmsMaps(data?.wmsRows), [data?.wmsRows])
+  const itemCost = useMemo(
+    () =>
+      buildItemCostMap(
+        maskPreview && access?.showItemCost !== true ? undefined : data?.costRows,
+      ),
+    [data?.costRows, maskPreview, access?.showItemCost],
   )
-  const itemPrice = buildItemPriceMap(
-    maskPreview && access?.showClientProfit !== true ? undefined : data?.priceRows,
+  const itemPrice = useMemo(
+    () =>
+      buildItemPriceMap(
+        maskPreview && access?.showClientProfit !== true ? undefined : data?.priceRows,
+      ),
+    [data?.priceRows, maskPreview, access?.showClientProfit],
   )
   const dataHealth = checkOrdersDataHealth(allRows, access?.companies ?? [])
 
