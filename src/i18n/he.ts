@@ -125,7 +125,7 @@ export const messages: Record<keyof typeof en, string> = {
   'sidebarLegend.title': 'מסנני הסרגל הצדדי, בהסבר',
   'sidebarLegend.companyTerm': 'חברה',
   'sidebarLegend.companyDesc':
-    'בחירת חברה אחת מציגה רק את הנתונים של אותה חברה. "הכל" ממזג את כל החברות שיש לך גישה אליהן לתצוגה משולבת אחת.',
+    'בחירת חברה מציגה רק את הנתונים של אותה חברה. תראה רק את החברות שיש לך גישה אליהן.',
   'sidebarLegend.dateFilterRangeTerm': 'מתאריך / עד תאריך',
   'sidebarLegend.dateFilterRangeDesc': 'טווח תאריכים פשוט — מציג כל מה שקרה בין שני התאריכים.',
   'sidebarLegend.dateFilterMonthsTerm': 'חודשים',

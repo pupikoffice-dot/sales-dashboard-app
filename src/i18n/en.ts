@@ -123,7 +123,7 @@ export const messages = {
   'sidebarLegend.title': 'Sidebar filters, explained',
   'sidebarLegend.companyTerm': 'Company',
   'sidebarLegend.companyDesc':
-    'Picking one company shows only that company’s data. "All" merges every company you have access to into one combined view.',
+    'Picking a company shows only that company’s data. You’ll only see the companies you have access to.',
   'sidebarLegend.dateFilterRangeTerm': 'From / To',
   'sidebarLegend.dateFilterRangeDesc': 'A plain date range — shows everything that happened between the two dates.',
   'sidebarLegend.dateFilterMonthsTerm': 'Months',
