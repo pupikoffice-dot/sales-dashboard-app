@@ -49,6 +49,32 @@ This task builds the two pure, testable pieces first: the `hasSeen`/`markSeen` s
 (copied pattern from `SalesLegend.tsx`, this is where the design review caught a fail-safe-direction
 bug, so it gets a real test) and the `SectionId` union.
 
+**Test environment gap:** `package.json` has no `jsdom`/`happy-dom` dependency and
+`vite.config.ts` sets no `test.environment`, so `vitest run` currently runs in plain Node, where
+`localStorage`/`Storage` are undefined globals. Neither existing test file
+(`src/lib/permissions.test.ts`, `src/lib/classPermissions.test.ts`) touches `localStorage`, so this
+gap has never surfaced before — this task is the first to need it. Fix it before writing the test:
+
+- [ ] **Step 0: Add `happy-dom` and configure vitest to use it**
+
+```bash
+npm install --save-dev happy-dom
+```
+
+Add to `vite.config.ts`'s existing `test: { ... }` block (create one if absent) — the setting is
+project-wide via `environment: 'happy-dom'`, so it applies to all specs, not just this one:
+
+```typescript
+test: {
+  environment: 'happy-dom',
+  // ...any existing test config stays as-is
+},
+```
+
+Run `npm run test` (no filter) once here to confirm the two existing test files still pass under
+the new environment before moving on — a DOM environment shouldn't change pure-function test
+results, but confirm rather than assume.
+
 - [ ] **Step 1: Write the failing test for the storage fail-safe direction**
 
 ```typescript
@@ -244,17 +270,22 @@ interface LegendLine {
   id: SectionId
   term: MessageKey
   desc: MessageKey
-  /** Interpolation values for {noun}-style keys (select's variants only). */
+  /** Interpolation values for {noun}-style keys (select's variant only). */
   values?: Record<string, string>
 }
 
 /**
- * Static content, ordered for display. `select` appears three times (once per
- * view) with a different {noun} value each time rather than as one generic
- * line, so a user who jumps here from a specific view sees wording for THAT
- * view, not a blended generic sentence.
+ * Static content, ordered for display. `select`'s {noun} depends on which
+ * view is currently active (Clients/Items/Suppliers) — passed in from
+ * SidebarFilters via `currentViewNoun` rather than hard-coded, so a user who
+ * jumps here from, say, the Items panel sees "Select Items", not "Select
+ * Clients". Falls back to "filters.clients" only when no view is selected
+ * yet (nothing else to show at the top of a fresh session).
  */
-function buildLines(t: (key: MessageKey, values?: Record<string, string>) => string): LegendLine[] {
+function buildLines(
+  t: (key: MessageKey, values?: Record<string, string>) => string,
+  currentViewNoun: string,
+): LegendLine[] {
   return [
     { id: 'company', term: 'sidebarLegend.companyTerm', desc: 'sidebarLegend.companyDesc' },
     { id: 'dateFilterRange', term: 'sidebarLegend.dateFilterRangeTerm', desc: 'sidebarLegend.dateFilterRangeDesc' },
@@ -263,7 +294,7 @@ function buildLines(t: (key: MessageKey, values?: Record<string, string>) => str
     { id: 'dateFilterStock', term: 'sidebarLegend.dateFilterStockTerm', desc: 'sidebarLegend.dateFilterStockDesc' },
     { id: 'view', term: 'sidebarLegend.viewTerm', desc: 'sidebarLegend.viewDesc' },
     { id: 'itemCategory', term: 'sidebarLegend.itemCategoryTerm', desc: 'sidebarLegend.itemCategoryDesc' },
-    { id: 'select', term: 'sidebarLegend.selectTerm', desc: 'sidebarLegend.selectDesc', values: { noun: t('filters.clients') } },
+    { id: 'select', term: 'sidebarLegend.selectTerm', desc: 'sidebarLegend.selectDesc', values: { noun: currentViewNoun } },
     { id: 'showModeBreakdown', term: 'sidebarLegend.showModeBreakdownTerm', desc: 'sidebarLegend.showModeBreakdownDesc' },
     { id: 'showModeItems', term: 'sidebarLegend.showModeItemsTerm', desc: 'sidebarLegend.showModeItemsDesc' },
   ]
@@ -272,13 +303,18 @@ function buildLines(t: (key: MessageKey, values?: Record<string, string>) => str
 export function SidebarLegend({
   openSection,
   onOpenChange,
+  view,
 }: {
   /** `null` = closed. A SectionId = open and scrolled to that section. */
   openSection: SectionId | null
   onOpenChange: (next: SectionId | null) => void
+  /** Current sidebar view, so the `select` section's {noun} matches it. */
+  view: 'clients' | 'items' | 'suppliers' | null
 }) {
   const { t } = useLocale()
   const panelRef = useRef<HTMLDivElement>(null)
+  const currentViewNoun =
+    view === 'items' ? t('filters.items') : view === 'suppliers' ? t('filters.suppliers') : t('filters.clients')
 
   // Auto-open once ever, on mount, if never seen and not already controlled open.
   useEffect(() => {
@@ -300,7 +336,7 @@ export function SidebarLegend({
     markSidebarLegendSeen()
   }
 
-  const lines = buildLines(t)
+  const lines = buildLines(t, currentViewNoun)
 
   return (
     <>
@@ -343,12 +379,9 @@ export function SidebarLegend({
 }
 ```
 
-**Before writing this, check the exact signature of `t()` in `useLocale()`** — the code above
-assumes `t(key, values?)` supports interpolation (matching `sales.skewWarning`'s `{month}`/`{year}`
-placeholders, per the spec). Read `src/context/LocaleContext.tsx` (or wherever `useLocale` is
-defined) and `src/i18n/index.ts` to confirm the real signature and interpolation syntax before
-copying this verbatim — adjust the `t(...)` calls to match if it differs (e.g. if interpolation
-uses a different placeholder syntax than `{noun}`).
+Confirmed against `src/i18n/index.ts`'s `createTranslator`: `t(key: MessageKey, vars?: Record<string,
+string | number>): string`, `{name}`-style `replaceAll` interpolation — the code above matches this
+exactly, no adjustment needed.
 
 - [ ] **Step 2: Run typecheck**
 
@@ -388,9 +421,13 @@ Change the sidebar label block:
 ```tsx
 <div className="sidebar-label-row">
   <div className="sidebar-label">{t('filters.global')}</div>
-  <SidebarLegend openSection={openLegendSection} onOpenChange={setOpenLegendSection} />
+  <SidebarLegend openSection={openLegendSection} onOpenChange={setOpenLegendSection} view={f.view} />
 </div>
 ```
+
+(`f.view` is already `'clients' | 'items' | 'suppliers' | null` on `DashboardFiltersState` — confirm
+this against `src/context/DashboardFiltersContext.tsx` before wiring; it's what the existing `{f.view
+=== 'clients' && ...}` conditionals in this same file already switch on.)
 
 Check whether `sidebar-label` already sits inside a flex row in the surrounding CSS — if
 `.sidebar-label` isn't already flex-laid-out, add a minimal `.sidebar-label-row { display: flex;
@@ -461,14 +498,16 @@ Add to `src/styles/legacy-theme.css`, near the existing `.legend-btn` rule:
   gap: 8px;
 }
 .panel-title-row .panel-title { margin: 0; }
-
-/* So scrollIntoView doesn't tuck a legend section under the panel header. */
-.legend-term-row { scroll-margin-top: 44px; }
 ```
 
 Check the existing `.panel-title` rule's current margin before adding `.panel-title-row
 .panel-title { margin: 0; }` — only needed if `.panel-title` has its own vertical margin that would
 otherwise misalign the row.
+
+Separately, add `scroll-margin-top: 44px;` to the **existing** `.legend-term-row` rule (already in
+this file around line 1092, with its `dt`/`dd` child selectors right after) rather than declaring a
+second `.legend-term-row { ... }` block — CSS allows repeated selectors but there's no reason to
+split one class's rules across two disconnected places in the same file.
 
 - [ ] **Step 5: Run typecheck**
 
