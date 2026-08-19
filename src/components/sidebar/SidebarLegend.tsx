@@ -60,10 +60,7 @@ interface LegendLine {
  * Clients". Falls back to "filters.clients" only when no view is selected
  * yet (nothing else to show at the top of a fresh session).
  */
-function buildLines(
-  _t: (key: MessageKey, values?: Record<string, string>) => string,
-  currentViewNoun: string,
-): LegendLine[] {
+function buildLines(currentViewNoun: string): LegendLine[] {
   return [
     { id: 'company', term: 'sidebarLegend.companyTerm', desc: 'sidebarLegend.companyDesc' },
     { id: 'dateFilterRange', term: 'sidebarLegend.dateFilterRangeTerm', desc: 'sidebarLegend.dateFilterRangeDesc' },
@@ -114,7 +111,7 @@ export function SidebarLegend({
     markSidebarLegendSeen()
   }
 
-  const lines = buildLines(t, currentViewNoun)
+  const lines = buildLines(currentViewNoun)
 
   return (
     <>
