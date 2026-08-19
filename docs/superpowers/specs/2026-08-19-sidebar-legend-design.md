@@ -71,11 +71,16 @@ depending on which view is active:
    below, including how many (two panels for Clients/Suppliers, three for Items).
 4. **`itemCategory`** (Tablet vs Group) — Items view only, panel ④. The two independent ERP
    category systems and when each is useful. Reachable via inline jump trigger.
-5. **`selectAndShow`** — one shared explanation of what narrowing a Select-list does vs what a
-   "show per X" toggle changes about aggregation, written generically enough to cover all three
-   variants (select-clients/show-per-client, select-items/show-per-item,
-   select-suppliers/show-per-supplier) since the underlying behavior is the same shape in each
-   view; view-specific nouns are interpolated rather than duplicated three times.
+5. **`select`** — one shared explanation of what narrowing a Select-list does, generic across all
+   three views (select-clients/select-items/select-suppliers), since that half genuinely is the
+   same behavior with a different noun — view-specific nouns interpolated rather than duplicated.
+6. **`showMode`** — **not** shared, because the toggle itself asks a different question per view.
+   Clients and Suppliers both offer 📦 Items Breakdown vs 💰 Cash Summary — a
+   representation choice (line-item detail vs a cash total). Items instead offers 👥 By Clients vs
+   📦 Items Summary — a grouping-dimension choice (whose axis to summarize by). These are two
+   different dichotomies, not one sentence with a swapped noun, so `showMode` gets two content
+   variants: `showMode.breakdown` (Clients/Suppliers) and `showMode.items` (Items) — both still
+   reachable from the same `view`-scoped part of the legend, just not collapsed into one key pair.
 
 Content is sourced from the actual current filter/RPC behavior (read during implementation, not
 guessed) so the copy can't drift from what the controls really do.
@@ -104,7 +109,8 @@ New `SidebarLegend.tsx`, structurally parallel to `SalesLegend.tsx`:
 - Not mounted until first opened (matches existing pattern — no cost when unused).
 - `linesFor()`-style content function returning `{term, desc}: MessageKey` pairs per subsection,
   keyed by the section ids above (`company`, `dateFilter.range`, `dateFilter.months`,
-  `dateFilter.openOrders`, `dateFilter.stock`, `view`, `itemCategory`, `selectAndShow`).
+  `dateFilter.openOrders`, `dateFilter.stock`, `view`, `itemCategory`, `select`, `showMode.breakdown`,
+  `showMode.items`).
 - A `scrollToSection(id: SectionId)` helper. Panel open state and target section id are lifted to
   a small piece of state (e.g. `openLegendSection: SectionId | null`, `null` meaning "closed").
   Both the main "?" and the two inline triggers just call the same setter with a different id/`
@@ -114,9 +120,10 @@ New `SidebarLegend.tsx`, structurally parallel to `SalesLegend.tsx`:
 - New i18n keys under a `sidebarLegend.*` namespace in `en.ts`/`he.ts`, dot-nested to mirror the
   section ids above (e.g. `sidebarLegend.dateFilter.monthsTerm` /
   `sidebarLegend.dateFilter.monthsDesc`), following the existing `legend.<x>Term` / `legend.<x>Desc`
-  pairing convention. `selectAndShow` copy uses `{noun}`-style interpolation (matching the
+  pairing convention. `select` copy uses `{noun}`-style interpolation (matching the
   `{month}`/`{year}` placeholder pattern already used in `sales.skewWarning`) for the
-  clients/items/suppliers-specific nouns, rather than three near-duplicate key sets.
+  clients/items/suppliers-specific noun; `showMode` does not interpolate — its two variants
+  (`breakdown`, `items`) are genuinely different copy, per the Panel structure section above.
 
 ## Error handling & testing
 
