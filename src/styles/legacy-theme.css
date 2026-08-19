@@ -1022,6 +1022,28 @@ body {
   border-color: var(--acc);
 }
 
+.legend-btn-sm {
+  padding: 2px 8px;
+  font-size: 0.68rem;
+  min-height: 22px;
+  margin: 0;
+}
+
+.sidebar-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.panel-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.panel-title-row .panel-title { margin: 0; }
+
 .legend-panel {
   margin: 0 0 16px;
   padding: 12px 14px;
@@ -1094,6 +1116,7 @@ body {
   gap: 8px;
   margin-bottom: 4px;
   flex-wrap: wrap;
+  scroll-margin-top: 44px;
 }
 .legend-term-row dt {
   flex-shrink: 0;
