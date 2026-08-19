@@ -3183,3 +3183,73 @@ html[dir='rtl'] .hdr-brand,
   flex-direction: column;
   gap: 8px;
 }
+
+/* ── Explain-access popover ("why?" link per section) ── */
+.explain-popover {
+  position: relative;
+  display: inline-block;
+  margin-left: 8px;
+}
+
+.explain-why-btn {
+  background: none;
+  border: none;
+  color: var(--acc);
+  font-size: 0.7rem;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  font-family: inherit;
+}
+
+.explain-popover-body {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 20;
+  margin-top: 6px;
+  min-width: 260px;
+  max-width: 360px;
+  max-height: 320px;
+  overflow-y: auto;
+  background: var(--sur2);
+  border: 1px solid var(--bdr);
+  border-radius: var(--r);
+  padding: 10px 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.explain-popover-title {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 8px;
+}
+
+.explain-item-group {
+  margin: 0 0 10px;
+}
+
+.explain-item-group:last-child {
+  margin-bottom: 0;
+}
+
+.explain-item-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--txt);
+  margin: 0 0 4px;
+}
+
+.explain-row {
+  font-size: 0.72rem;
+  color: var(--muted2);
+  margin: 0 0 2px;
+}
+
+.explain-row-winning {
+  color: var(--grn);
+  font-weight: 600;
+}
