@@ -3175,6 +3175,12 @@ html[dir='rtl'] .hdr-brand,
   background: rgba(248, 113, 113, 0.12);
 }
 
+.perm-mutation-error {
+  color: #f87171;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
 .perm-nested {
   margin: 6px 0 4px 26px;
   padding-left: 12px;

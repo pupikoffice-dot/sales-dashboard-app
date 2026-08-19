@@ -84,6 +84,11 @@ export function UserPermissionsEditor({ userId }: { userId: string }) {
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['user-grants', userId] }),
   })
+  // Same gap as ClassesPage.tsx's mutations: permissionsApi.ts throws on every Supabase error, but
+  // without onError a failed class-switch or toggle just goes back to idle with nothing shown -- the
+  // admin could believe a permission change took effect when it silently didn't.
+  const switchError = switchClassMutation.error instanceof Error ? switchClassMutation.error.message : null
+  const toggleError = toggleMutation.error instanceof Error ? toggleMutation.error.message : null
 
   return (
     <div className="user-permissions-editor">
@@ -99,6 +104,11 @@ export function UserPermissionsEditor({ userId }: { userId: string }) {
           ))}
         </select>
       </label>
+      {(switchError || toggleError) && (
+        <p className="perm-mutation-error" role="alert">
+          {switchError ?? toggleError}
+        </p>
+      )}
       {/* One "why?" per section, each explaining every item in that section -- not embedded inside
           PermissionSections' own <h3> tags, since that component has no per-section slot to inject
           into. Functionally equivalent to the spec's intent (per-section explain), placed just

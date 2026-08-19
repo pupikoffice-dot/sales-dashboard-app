@@ -82,6 +82,13 @@ export function ClassesPage() {
       setDraft(null)
     },
   })
+  // Every Supabase call in permissionsApi.ts throws on error, but neither mutation defined onError
+  // -- without it, a failed save/delete just goes back to idle with no signal, and an admin could
+  // believe a permission change was saved when it silently wasn't (RLS rejection, network drop,
+  // constraint violation). Surfacing the message inline is the minimum bar for a tool that edits
+  // access control.
+  const saveError = saveMutation.error instanceof Error ? saveMutation.error.message : null
+  const deleteError = deleteMutation.error instanceof Error ? deleteMutation.error.message : null
 
   return (
     <div className="classes-page">
@@ -125,6 +132,11 @@ export function ClassesPage() {
               <button type="button" onClick={() => deleteMutation.mutate(selectedId)} disabled={deleteMutation.isPending}>
                 Delete
               </button>
+            )}
+            {(saveError || deleteError) && (
+              <p className="perm-mutation-error" role="alert">
+                {saveError ?? deleteError}
+              </p>
             )}
           </div>
         </section>
