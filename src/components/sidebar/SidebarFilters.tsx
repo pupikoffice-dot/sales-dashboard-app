@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo } from 'react'
+import { useLayoutEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { usePreview } from '../../context/PreviewContext'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
@@ -14,6 +14,7 @@ import {
 } from '../../lib/salesFilterIndex'
 import type { LogicalCompany } from '../../types/dashboard'
 import { FilterCheckList } from './FilterCheckList'
+import { SidebarLegend, type SectionId } from './SidebarLegend'
 
 const COMPANY_BUTTONS: { id: LogicalCompany; label: string }[] = [
   { id: 'pupik', label: '🏢 Pupik' },
@@ -41,6 +42,7 @@ export function SidebarFilters() {
   const dataBusy = isLoading || isFetching
   const navigate = useNavigate()
   const location = useLocation()
+  const [openLegendSection, setOpenLegendSection] = useState<SectionId | null>(null)
   const allowedCompanies = COMPANY_BUTTONS.filter(c => access?.companies.includes(c.id))
 
   const companyTag = useMemo(
@@ -127,7 +129,10 @@ export function SidebarFilters() {
 
   return (
     <>
-      <div className="sidebar-label">{t('filters.global')}</div>
+      <div className="sidebar-label-row">
+        <div className="sidebar-label">{t('filters.global')}</div>
+        <SidebarLegend openSection={openLegendSection} onOpenChange={setOpenLegendSection} view={f.view} />
+      </div>
 
       <div className="panel">
         <div className="panel-title">① {t('filters.company')}</div>
@@ -162,6 +167,15 @@ export function SidebarFilters() {
               {tab.id === 'openorders' ? `📋 ${t(tab.key)}` : tab.id === 'stock' ? `📦 ${t(tab.key)}` : t(tab.key)}
             </button>
           ))}
+          <button
+            type="button"
+            className="legend-btn legend-btn-sm"
+            title={t('sidebarLegend.help')}
+            aria-label={t('sidebarLegend.help')}
+            onClick={() => setOpenLegendSection('dateFilterOpenOrders')}
+          >
+            ?
+          </button>
         </div>
 
         {f.dateMode === 'range' && (
@@ -322,7 +336,18 @@ export function SidebarFilters() {
       {f.view === 'items' && (
         <>
           <div className={`panel${f.viewPanelEnabled ? '' : ' disabled'}`}>
-            <div className="panel-title">④ {t('filters.itemCategory')}</div>
+            <div className="panel-title-row">
+              <div className="panel-title">④ {t('filters.itemCategory')}</div>
+              <button
+                type="button"
+                className="legend-btn legend-btn-sm"
+                title={t('sidebarLegend.help')}
+                aria-label={t('sidebarLegend.help')}
+                onClick={() => setOpenLegendSection('itemCategory')}
+              >
+                ?
+              </button>
+            </div>
             <div className="btn-grp" style={{ marginBottom: 8 }}>
               <button
                 type="button"

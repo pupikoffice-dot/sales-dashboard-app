@@ -119,6 +119,38 @@ export const messages = {
   'filters.applyRender': 'Apply & Render',
   'filters.rendering': 'Rendering…',
 
+  'sidebarLegend.help': 'What do these filters do?',
+  'sidebarLegend.title': 'Sidebar filters, explained',
+  'sidebarLegend.companyTerm': 'Company',
+  'sidebarLegend.companyDesc':
+    'Picking a company shows only that company’s data. You’ll only see the companies you have access to.',
+  'sidebarLegend.dateFilterRangeTerm': 'From / To',
+  'sidebarLegend.dateFilterRangeDesc': 'A plain date range — shows everything that happened between the two dates.',
+  'sidebarLegend.dateFilterMonthsTerm': 'Months',
+  'sidebarLegend.dateFilterMonthsDesc':
+    'Pick one or more whole months instead of a date range. Selecting several months adds them together into one combined total — it does not show them side by side.',
+  'sidebarLegend.dateFilterOpenOrdersTerm': 'Open Orders',
+  'sidebarLegend.dateFilterOpenOrdersDesc':
+    'Orders placed but not yet delivered (source: file 721). This is a different data source from sales — not a filter on the sales numbers.',
+  'sidebarLegend.dateFilterStockTerm': 'Stock',
+  'sidebarLegend.dateFilterStockDesc':
+    'Switches away from sales entirely and shows current warehouse stock levels instead.',
+  'sidebarLegend.viewTerm': 'View',
+  'sidebarLegend.viewDesc':
+    'Chooses what the report is organized by — Clients, Items, or Suppliers. This changes which filter panels appear below it.',
+  'sidebarLegend.itemCategoryTerm': 'Tablet vs Group Category',
+  'sidebarLegend.itemCategoryDesc':
+    'Two separate category systems from the ERP that don’t line up with each other. "Tablet Category" is the grouping used on the sales tablets at point of sale; "Group Category" is a separate back-office grouping. Picking the wrong one for what you’re trying to find is the most common source of "why is this item missing" confusion.',
+  'sidebarLegend.selectTerm': 'Select {noun}',
+  'sidebarLegend.selectDesc':
+    'Narrows the report to only the {noun} you check. Everything is selected by default; use search to find specific ones quickly.',
+  'sidebarLegend.showModeBreakdownTerm': 'Show mode',
+  'sidebarLegend.showModeBreakdownDesc':
+    '"Items breakdown" lists every line item; "Cash summary" collapses them into one total line. Same data, different level of detail.',
+  'sidebarLegend.showModeItemsTerm': 'Show mode',
+  'sidebarLegend.showModeItemsDesc':
+    '"By Clients" groups the selected items by which client bought them; "Items summary" groups by item instead, across all clients.',
+
   'sales.title': 'Sales Performance',
   'sales.openOrdersTitle': 'Open Orders',
   'sales.pickCompany': 'Select a company in the sidebar, set view options, then click Apply & Render.',
