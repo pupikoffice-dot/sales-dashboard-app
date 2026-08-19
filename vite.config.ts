@@ -30,4 +30,7 @@ export default defineConfig({
       '@dashboard/shared': path.resolve(__dirname, 'shared/src'),
     },
   },
+  test: {
+    environment: 'happy-dom',
+  },
 })
