@@ -10,6 +10,7 @@ import { MODULE_REGISTRY } from '../../modules/registry'
 import { OVERSITE_MODULE_REGISTRY, type OversiteModuleId } from '../../lib/oversiteModules'
 import type { AppLocale } from '../../i18n/types'
 import type { DashboardModuleId, LogicalCompany } from '../../types/dashboard'
+import { UserPermissionsEditor } from './UserPermissionsEditor'
 
 interface UserRow {
   id: string
@@ -566,6 +567,11 @@ function EditAccessModal({
                 placeholder="24, 25, 27"
               />
             </label>
+
+            <div>
+              <div className="admin-form-section-title">Class &amp; permission overrides</div>
+              <UserPermissionsEditor userId={userId} />
+            </div>
 
             <label>
               Default module

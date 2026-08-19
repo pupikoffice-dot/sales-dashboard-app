@@ -3254,6 +3254,21 @@ html[dir='rtl'] .hdr-brand,
   font-weight: 600;
 }
 
+/* ── Per-user class assignment + permission overrides (UsersPage) ── */
+.user-permissions-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.user-permissions-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
 /* ── Classes admin page (class list + editor) ── */
 .classes-page {
   display: flex;
