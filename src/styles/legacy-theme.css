@@ -3253,3 +3253,72 @@ html[dir='rtl'] .hdr-brand,
   color: var(--grn);
   font-weight: 600;
 }
+
+/* ── Classes admin page (class list + editor) ── */
+.classes-page {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.classes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 220px;
+  flex-shrink: 0;
+}
+
+.classes-list-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  background: rgba(23, 31, 51, 0.6);
+  border: 1px solid var(--bdr);
+  border-radius: var(--r);
+  padding: 8px 12px;
+  color: var(--txt);
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.classes-list-item span {
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.classes-list-item.active {
+  border-color: var(--acc);
+  background: var(--sur2);
+}
+
+.class-editor {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.class-editor > input,
+.class-editor > textarea {
+  background: var(--sur2);
+  border: 1px solid var(--bdr);
+  color: var(--txt);
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-family: inherit;
+}
+
+.class-editor > textarea {
+  min-height: 60px;
+  resize: vertical;
+}
+
+.class-editor-actions {
+  display: flex;
+  gap: 10px;
+}

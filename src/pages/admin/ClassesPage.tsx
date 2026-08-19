@@ -1,0 +1,126 @@
+import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  deleteClass, fetchClassGrants, fetchClassUserCounts, fetchClasses,
+  fetchUsersInClass, insertGrants, deleteGrantsByIds, listKnownAgents, upsertClass,
+} from '../../lib/permissionsApi'
+import { diffClassGrants } from '../../lib/classPermissions'
+import { PermissionSections } from '../../components/admin/PermissionSections'
+import type { AppClass } from '../../types/permissions'
+
+function itemKeyOf(kind: string, key: string, value: string | null) {
+  return `${kind}:${key}:${value ?? ''}`
+}
+
+export function ClassesPage() {
+  const qc = useQueryClient()
+  const { data: classes = [] } = useQuery({ queryKey: ['classes'], queryFn: fetchClasses })
+  const { data: userCounts = {} } = useQuery({ queryKey: ['class-user-counts'], queryFn: fetchClassUserCounts })
+  const { data: knownAgents = [] } = useQuery({ queryKey: ['known-agents'], queryFn: listKnownAgents })
+
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [draft, setDraft] = useState<{ id: string; label: string; description: string } | null>(null)
+  const [desiredChecked, setDesiredChecked] = useState<Set<string>>(new Set())
+
+  const { data: currentGrants = [] } = useQuery({
+    queryKey: ['class-grants', selectedId],
+    queryFn: () => fetchClassGrants(selectedId!),
+    enabled: !!selectedId,
+  })
+
+  function selectClass(cls: AppClass) {
+    setSelectedId(cls.id)
+    setDraft({ id: cls.id, label: cls.label, description: cls.description ?? '' })
+    fetchClassGrants(cls.id).then(grants =>
+      setDesiredChecked(new Set(grants.map(g => itemKeyOf(g.kind, g.key, g.value)))),
+    )
+  }
+
+  function newClass() {
+    const id = `class_${Date.now()}` // slug refined by the admin before first save if desired
+    setSelectedId(null)
+    setDraft({ id, label: '', description: '' })
+    setDesiredChecked(new Set())
+  }
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      if (!draft) return
+      await upsertClass({ id: draft.id, label: draft.label, description: draft.description || null })
+      const { toInsert, toDelete } = diffClassGrants(currentGrants, desiredChecked)
+      await insertGrants(toInsert.map(g => ({ classId: draft.id, kind: g.kind, key: g.key, value: g.value, effect: 'allow' as const })))
+      await deleteGrantsByIds(toDelete.map(g => g.id))
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['classes'] })
+      qc.invalidateQueries({ queryKey: ['class-grants', draft?.id] })
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: async (classId: string) => {
+      const users = await fetchUsersInClass(classId)
+      if (users.length > 0) {
+        const names = users.map(u => u.name).join(', ')
+        if (!window.confirm(`${users.length} user(s) are assigned to this class: ${names}. Delete anyway?`)) {
+          return
+        }
+      }
+      await deleteClass(classId)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['classes'] })
+      setSelectedId(null)
+      setDraft(null)
+    },
+  })
+
+  return (
+    <div className="classes-page">
+      <aside className="classes-list">
+        <button type="button" onClick={newClass}>+ New Class</button>
+        {classes.map(c => (
+          <button
+            key={c.id}
+            type="button"
+            className={c.id === selectedId ? 'classes-list-item active' : 'classes-list-item'}
+            onClick={() => selectClass(c)}
+          >
+            <strong>{c.label}</strong>
+            <span>{userCounts[c.id] ?? 0} users</span>
+          </button>
+        ))}
+      </aside>
+      {draft && (
+        <section className="class-editor">
+          <input
+            value={draft.label}
+            placeholder="Class name"
+            onChange={e => setDraft({ ...draft, label: e.target.value })}
+          />
+          <textarea
+            value={draft.description}
+            placeholder="Description"
+            onChange={e => setDraft({ ...draft, description: e.target.value })}
+          />
+          <PermissionSections
+            mode="define"
+            desiredChecked={desiredChecked}
+            onChange={setDesiredChecked}
+            knownAgents={knownAgents}
+          />
+          <div className="class-editor-actions">
+            <button type="button" onClick={() => saveMutation.mutate()} disabled={!draft.label || saveMutation.isPending}>
+              Save
+            </button>
+            {selectedId && (
+              <button type="button" onClick={() => deleteMutation.mutate(selectedId)} disabled={deleteMutation.isPending}>
+                Delete
+              </button>
+            )}
+          </div>
+        </section>
+      )}
+    </div>
+  )
+}
