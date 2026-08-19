@@ -1,3 +1,7 @@
+import { useEffect, useRef } from 'react'
+import type { MessageKey } from '../../i18n/types'
+import { useLocale } from '../../context/LocaleContext'
+
 /**
  * "What does this control do?" legend for the sidebar filter chain.
  * See docs/superpowers/specs/2026-08-19-sidebar-legend-design.md for the design.
@@ -39,3 +43,115 @@ export type SectionId =
   | 'select'
   | 'showModeBreakdown'
   | 'showModeItems'
+
+interface LegendLine {
+  id: SectionId
+  term: MessageKey
+  desc: MessageKey
+  /** Interpolation values for {noun}-style keys (select's variant only). */
+  values?: Record<string, string>
+}
+
+/**
+ * Static content, ordered for display. `select`'s {noun} depends on which
+ * view is currently active (Clients/Items/Suppliers) — passed in from
+ * SidebarFilters via `currentViewNoun` rather than hard-coded, so a user who
+ * jumps here from, say, the Items panel sees "Select Items", not "Select
+ * Clients". Falls back to "filters.clients" only when no view is selected
+ * yet (nothing else to show at the top of a fresh session).
+ */
+function buildLines(
+  _t: (key: MessageKey, values?: Record<string, string>) => string,
+  currentViewNoun: string,
+): LegendLine[] {
+  return [
+    { id: 'company', term: 'sidebarLegend.companyTerm', desc: 'sidebarLegend.companyDesc' },
+    { id: 'dateFilterRange', term: 'sidebarLegend.dateFilterRangeTerm', desc: 'sidebarLegend.dateFilterRangeDesc' },
+    { id: 'dateFilterMonths', term: 'sidebarLegend.dateFilterMonthsTerm', desc: 'sidebarLegend.dateFilterMonthsDesc' },
+    { id: 'dateFilterOpenOrders', term: 'sidebarLegend.dateFilterOpenOrdersTerm', desc: 'sidebarLegend.dateFilterOpenOrdersDesc' },
+    { id: 'dateFilterStock', term: 'sidebarLegend.dateFilterStockTerm', desc: 'sidebarLegend.dateFilterStockDesc' },
+    { id: 'view', term: 'sidebarLegend.viewTerm', desc: 'sidebarLegend.viewDesc' },
+    { id: 'itemCategory', term: 'sidebarLegend.itemCategoryTerm', desc: 'sidebarLegend.itemCategoryDesc' },
+    { id: 'select', term: 'sidebarLegend.selectTerm', desc: 'sidebarLegend.selectDesc', values: { noun: currentViewNoun } },
+    { id: 'showModeBreakdown', term: 'sidebarLegend.showModeBreakdownTerm', desc: 'sidebarLegend.showModeBreakdownDesc' },
+    { id: 'showModeItems', term: 'sidebarLegend.showModeItemsTerm', desc: 'sidebarLegend.showModeItemsDesc' },
+  ]
+}
+
+export function SidebarLegend({
+  openSection,
+  onOpenChange,
+  view,
+}: {
+  /** `null` = closed. A SectionId = open and scrolled to that section. */
+  openSection: SectionId | null
+  onOpenChange: (next: SectionId | null) => void
+  /** Current sidebar view, so the `select` section's {noun} matches it. */
+  view: 'clients' | 'items' | 'suppliers' | null
+}) {
+  const { t } = useLocale()
+  const panelRef = useRef<HTMLDivElement>(null)
+  const currentViewNoun =
+    view === 'items' ? t('filters.items') : view === 'suppliers' ? t('filters.suppliers') : t('filters.clients')
+
+  // Auto-open once ever, on mount, if never seen and not already controlled open.
+  useEffect(() => {
+    if (openSection === null && !hasSeenSidebarLegend()) {
+      onOpenChange('company')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Scroll to the target section once the panel is in the DOM.
+  useEffect(() => {
+    if (!openSection || !panelRef.current) return
+    const el = panelRef.current.querySelector(`[data-section="${openSection}"]`)
+    el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [openSection])
+
+  function close() {
+    onOpenChange(null)
+    markSidebarLegendSeen()
+  }
+
+  const lines = buildLines(t, currentViewNoun)
+
+  return (
+    <>
+      <button
+        type="button"
+        className="legend-btn"
+        aria-expanded={openSection !== null}
+        title={t('sidebarLegend.help')}
+        onClick={() => (openSection !== null ? close() : onOpenChange('company'))}
+      >
+        ? {t('sidebarLegend.help')}
+      </button>
+
+      {openSection !== null && (
+        <div
+          ref={panelRef}
+          className="legend-panel"
+          role="region"
+          aria-label={t('sidebarLegend.help')}
+        >
+          <div className="legend-hdr">
+            <span>💡 {t('sidebarLegend.title')}</span>
+            <button type="button" className="legend-close" onClick={close}>
+              ✕
+            </button>
+          </div>
+
+          <dl className="legend-terms">
+            {lines.map(l => (
+              <div key={l.id} data-section={l.id} className="legend-term-row">
+                <dt>{t(l.term, l.values)}</dt>
+                <dd>{t(l.desc, l.values)}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      )}
+    </>
+  )
+}
