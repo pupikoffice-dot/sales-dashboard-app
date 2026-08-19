@@ -27,6 +27,11 @@ describe('diffClassGrants', () => {
     const { toInsert } = diffClassGrants([], new Set(['scope:company:pupik']))
     expect(toInsert.every(g => !('effect' in g))).toBe(true) // class inserts are always allow, implicit
   })
+
+  it('preserves a non-null value through the insert (not mangled by the string-key parsing)', () => {
+    const { toInsert } = diffClassGrants([], new Set(['scope:company:pupik']))
+    expect(toInsert).toEqual([{ kind: 'scope', key: 'company', value: 'pupik' }])
+  })
 })
 
 describe('resolveOverrideState — the three-state UI logic', () => {
@@ -55,6 +60,16 @@ describe('resolveOverrideState — the three-state UI logic', () => {
     const state = resolveOverrideState([], [], 'scope', 'company', 'gold')
     expect(state).toBe('off')
     expect(state).not.toBe('removed')
+  })
+
+  it('a deny on one value does not affect a different value of the same key', () => {
+    // Class grants mt; user denies pupik. mt must stay 'inherited', unaffected by the pupik deny.
+    const state = resolveOverrideState(
+      [classGrant('scope', 'company', 'mt')],
+      [userGrant('scope', 'company', 'deny', 'pupik')],
+      'scope', 'company', 'mt',
+    )
+    expect(state).toBe('inherited')
   })
 })
 
