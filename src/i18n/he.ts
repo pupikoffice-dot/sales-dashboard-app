@@ -121,6 +121,38 @@ export const messages: Record<keyof typeof en, string> = {
   'filters.applyRender': 'החל ורנדר',
   'filters.rendering': 'מרנדר…',
 
+  'sidebarLegend.help': 'מה עושים המסננים האלה?',
+  'sidebarLegend.title': 'מסנני הסרגל הצדדי, בהסבר',
+  'sidebarLegend.companyTerm': 'חברה',
+  'sidebarLegend.companyDesc':
+    'בחירת חברה אחת מציגה רק את הנתונים של אותה חברה. "הכל" ממזג את כל החברות שיש לך גישה אליהן לתצוגה משולבת אחת.',
+  'sidebarLegend.dateFilterRangeTerm': 'מתאריך / עד תאריך',
+  'sidebarLegend.dateFilterRangeDesc': 'טווח תאריכים פשוט — מציג כל מה שקרה בין שני התאריכים.',
+  'sidebarLegend.dateFilterMonthsTerm': 'חודשים',
+  'sidebarLegend.dateFilterMonthsDesc':
+    'בחר חודש אחד או יותר במקום טווח תאריכים. בחירת כמה חודשים מחברת אותם לסכום משולב אחד — היא לא מציגה אותם זה לצד זה.',
+  'sidebarLegend.dateFilterOpenOrdersTerm': 'הזמנות פתוחות',
+  'sidebarLegend.dateFilterOpenOrdersDesc':
+    'הזמנות שנקלטו אך טרם סופקו (מקור: קובץ 721). זהו מקור נתונים שונה ממכירות — לא סינון על נתוני המכירות.',
+  'sidebarLegend.dateFilterStockTerm': 'מלאי',
+  'sidebarLegend.dateFilterStockDesc':
+    'עובר לגמרי ממכירות ומציג במקום זאת את רמות המלאי הנוכחיות במחסן.',
+  'sidebarLegend.viewTerm': 'תצוגה',
+  'sidebarLegend.viewDesc':
+    'קובע לפי מה הדוח מאורגן — לקוחות, פריטים או ספקים. זה משנה אילו פאנלי סינון מופיעים מתחת.',
+  'sidebarLegend.itemCategoryTerm': 'קטגוריית טאבלט מול קטגוריית קבוצה',
+  'sidebarLegend.itemCategoryDesc':
+    'שתי מערכות קטגוריות נפרדות מה-ERP שלא תואמות זו לזו. "קטגוריית טאבלט" היא הקיבוץ שבשימוש בטאבלטים בנקודת המכירה; "קטגוריית קבוצה" היא קיבוץ נפרד של המשרד האחורי. בחירה בקטגוריה הלא נכונה למה שמחפשים היא המקור הנפוץ ביותר לבלבול מסוג "למה הפריט הזה חסר".',
+  'sidebarLegend.selectTerm': 'בחר {noun}',
+  'sidebarLegend.selectDesc':
+    'מצמצם את הדוח רק ל{noun} שסימנת. הכל מסומן כברירת מחדל; השתמש בחיפוש כדי למצוא פריטים ספציפיים במהירות.',
+  'sidebarLegend.showModeBreakdownTerm': 'מצב תצוגה',
+  'sidebarLegend.showModeBreakdownDesc':
+    '"פירוט פריטים" מציג כל שורת פריט בנפרד; "סיכום מזומן" מכווץ אותן לשורת סכום אחת. אותם נתונים, רמת פירוט שונה.',
+  'sidebarLegend.showModeItemsTerm': 'מצב תצוגה',
+  'sidebarLegend.showModeItemsDesc':
+    '"לפי לקוחות" מקבץ את הפריטים שנבחרו לפי הלקוח שרכש אותם; "סיכום פריטים" מקבץ לפי פריט במקום זאת, על פני כל הלקוחות.',
+
   'sales.title': 'ביצועי מכירות',
   'sales.openOrdersTitle': 'הזמנות פתוחות',
   'sales.pickCompany': 'בחר חברה בסרגל הצד, הגדר אפשרויות תצוגה, ואז לחץ החל ורנדר.',
