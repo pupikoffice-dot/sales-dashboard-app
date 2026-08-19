@@ -26,8 +26,8 @@ const PAGE_EXPLAIN: ExplainItem[] = [
 
 export function UserPermissionsEditor({ userId }: { userId: string }) {
   const qc = useQueryClient()
-  const { data: classes = [] } = useQuery({ queryKey: ['classes'], queryFn: fetchClasses })
-  const { data: knownAgents = [] } = useQuery({ queryKey: ['known-agents'], queryFn: listKnownAgents })
+  const { data: classes = [] } = useQuery({ queryKey: ['classes'], queryFn: fetchClasses, staleTime: 5 * 60_000 })
+  const { data: knownAgents = [] } = useQuery({ queryKey: ['known-agents'], queryFn: listKnownAgents, staleTime: 5 * 60_000 })
 
   const { data: currentClassId } = useQuery({
     queryKey: ['user-class', userId],
@@ -114,7 +114,17 @@ export function UserPermissionsEditor({ userId }: { userId: string }) {
         classGrants={classGrants}
         userGrants={userGrants}
         knownAgents={knownAgents}
-        onToggle={(kind, key, value, nextChecked) => toggleMutation.mutate({ kind, key, value, nextChecked })}
+        onToggle={(kind, key, value, nextChecked) => {
+          // toggleMutation.mutationFn reads classGrants/userGrants from this component's closure,
+          // not from arguments. A second toggle fired before the first's onSuccess invalidation has
+          // landed would compute its diff against the same stale snapshot -- for a re-toggle of the
+          // SAME item within one round trip, that can produce a stray leftover row (an insert with
+          // no matching delete, or vice versa) that silently resurfaces on the next reload. Ignoring
+          // clicks while a toggle is already in flight closes that window; PermissionSections has no
+          // per-item disabled state to wire, so this guards at the call site instead.
+          if (toggleMutation.isPending) return
+          toggleMutation.mutate({ kind, key, value, nextChecked })
+        }}
       />
     </div>
   )
