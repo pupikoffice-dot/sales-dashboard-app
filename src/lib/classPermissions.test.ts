@@ -23,9 +23,12 @@ describe('diffClassGrants', () => {
     expect(toDelete.map(g => g.id)).toEqual([]) // current row has id 0 (test fixture) but is kept
   })
 
-  it('never produces a deny row', () => {
-    const { toInsert } = diffClassGrants([], new Set(['scope:company:pupik']))
-    expect(toInsert.every(g => !('effect' in g))).toBe(true) // class inserts are always allow, implicit
+  it('never produces a deny row -- class inserts always carry a distinct, allow-implied shape', () => {
+    const { toInsert } = diffClassGrants([], new Set(['scope:company:pupik', 'field:item_cost:']))
+    expect(toInsert).toEqual([
+      { kind: 'scope', key: 'company', value: 'pupik' },
+      { kind: 'field', key: 'item_cost', value: null },
+    ])
   })
 
   it('preserves a non-null value through the insert (not mangled by the string-key parsing)', () => {
