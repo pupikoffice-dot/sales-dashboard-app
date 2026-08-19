@@ -1,4 +1,5 @@
-import { debtMonths, debtRowTotal, type DebtRow } from './debtMetrics'
+import { debtMonths, debtRowTotal } from './debtMetrics'
+import type { DebtRow } from '../types/dashboard'
 
 export interface DebtPdfFooter {
   totOld: number

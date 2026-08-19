@@ -1,11 +1,14 @@
 {
   "name": "sales-dashboard-app",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json",
+    "test": "vitest run",
+    "build": "npm run typecheck && vite build",
+    "vercel-build": "npm run typecheck && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -24,6 +27,7 @@
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
     "typescript": "~5.7.2",
-    "vite": "^6.3.1"
+    "vite": "^6.3.1",
+    "vitest": "^3.2.7"
   }
 }

@@ -1,15 +1,16 @@
 # HANDOFF — sales-dashboard-app
 
 ## Current State
-_Last updated: 2026-06-14 12:55:14 by Cursor_
+_Last updated: 2026-08-05 13:59:25 by Cursor_
 
 **Status:** Active
-**Phase:** Admin UX polish deployed; cost/profit permission design ready for implementation
+**Phase:** Multi-company Oversite accents live on main
 
-- Works now: Admin Add user and Edit access modals use dark dashboard theme on Vercel main; prior Oversite delivery notes, Sales MTD stacked bar, Full Orders Report, and export 720 date fix remain live
-- In progress: Per-user item cost and client profit/price permissions — plan written, not coded yet
+- Works now: When Oversite / Orders MTD show 2+ companies, each column uses a distinct accent (Pupik indigo, Monkeytime sky) on header and section edge
+- Works now: Prior — Orders last-7-workdays chart, date normalization, Open Debt full report, permissions Phase 1, delivery notes / Orders Today / stock alerts
+- In progress: Nothing in progress
 - Blocked: Nothing blocked
-- Next up: Implement show_item_cost and show_client_profit flags in Supabase, Edit Access UI, and Stock view gating per plan
+- Next up: Optional — trigger 722-only Supabase sync after office export so Orders Today cannot lag hourly cron; optional Phase 2 server-filtered cost/price
 
 ---
 
@@ -22,6 +23,52 @@ Phase 1 hides Cost, Total Cost, Price, and cost-based charts in the UI only. The
 ---
 
 ## Session Log
+
+### 2026-08-05 13:59:25 — Cursor
+**Done:**
+- Diagnosed empty Orders Today despite fresh 722 pupik file: React reads Supabase; hourly Drive to Supabase sync had not yet loaded todays rows; ran targeted 722 sync so today appeared
+- Gave multi-company Oversite / Orders MTD distinct accents (Pupik indigo, Monkeytime sky); pushed b6fbf32
+
+**Decisions:**
+- Accent styling applies only when 2+ companies are visible
+- Recommended prevention for Orders Today lag: post-export 722-only sync (not implemented yet)
+
+**Next:**
+- Optional wire post-export 722 sync; optional Phase 2 cost/price server filter
+
+---
+
+### 2026-07-23 07:58:36 — Cursor
+**Done:**
+- Added Oversight stacked chart for orders cash over last 7 days under Orders Today; pushed a4a98b2
+- Diagnosed missing 22 Jul bar: Supabase already had 722 pupik cash; brittle date string equality and orders-tag fallback for small agent scopes could wipe day charts
+- Hardened: normalizeSalesDate on load; Orders Today/MTD/7-day chart use normalized dates; resolveOrdersTag prefers orders-* if any rows exist
+- Chart now skips Fri/Sat (last 7 workdays) and labels days as dd/mm + Sun/Mon-style abbr; pushed 875e845
+
+**Decisions:**
+- Israel work week for this chart: exclude Friday and Saturday
+- Prefer durable date normalization at load over chart-only fixes
+
+**Next:**
+- Hard-refresh live app and confirm 22 Jul workday bar matches Excel 722pupik
+
+---
+
+### 2026-06-21 19:02:20 — Cursor
+**Done:**
+- Open Debt Full Report: grouped tables per agent, agent filter with search, sort on every column
+- Added collapsible agent sections (click header to expand/collapse)
+- Added PDF export for full report and per-agent table; fixed pop-up blocked error by using hidden iframe print instead of new window
+- Pushed to GitHub main: 10dc863, e62f792, 321fe8e; Vercel production auto-deploy confirmed READY
+
+**Decisions:**
+- PDF export uses browser print dialog (Save as PDF) — no jspdf dependency; Hebrew client names via RTL print HTML
+- User declined implementing 722pupik always-refresh pipeline fix for now
+
+**Next:**
+- Hard refresh live app and confirm PDF export opens print dialog without pop-up block
+
+---
 
 ### 2026-06-14 12:55:14 — Cursor
 **Done:**

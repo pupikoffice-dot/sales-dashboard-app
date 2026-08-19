@@ -7,7 +7,7 @@ export function sortTableDom(th: HTMLTableCellElement) {
   const idx = th.cellIndex
   const asc = th.dataset.sd !== 'asc'
 
-  table!.querySelectorAll('th.sortable').forEach(h => {
+  table!.querySelectorAll<HTMLTableCellElement>('th.sortable').forEach(h => {
     h.dataset.sd = ''
     const si = h.querySelector('.si')
     if (si) si.textContent = ' ↕'

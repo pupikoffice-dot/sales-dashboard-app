@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from './context/AuthContext'
 import { DashboardAccessProvider } from './context/DashboardAccessContext'
 import { DashboardFiltersProvider } from './context/DashboardFiltersContext'

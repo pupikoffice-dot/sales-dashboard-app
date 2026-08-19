@@ -20,7 +20,6 @@ interface OrdersTodayModalProps {
 }
 
 export function OrdersTodayModal({
-  company,
   companyLabel,
   ordersTag,
   companyRows,

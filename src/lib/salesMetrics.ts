@@ -18,7 +18,12 @@ export function companyLabel(co: LogicalCompany): string {
   return co
 }
 
-export function getDateLabel(filters: DashboardFiltersState, monthNames = MONTH_NAMES): string {
+export function getDateLabel(
+  filters: DashboardFiltersState,
+  // Widened from the inferred 12-tuple of MONTH_NAMES: callers pass the
+  // locale-driven string[] from LocaleContext, and this only ever indexes it.
+  monthNames: readonly string[] = MONTH_NAMES,
+): string {
   if (filters.dateMode === 'openorders') return 'Open Orders'
   if (filters.dateMode === 'stock') return 'Stock'
   if (filters.dateMode === 'range') {

@@ -33,7 +33,10 @@ export function sumMonthRows(rows: SalesRow[], year: number, month: number) {
   }
 }
 
-export function filterByDate(rows: SalesRow[], filters: DateFilterInput): SalesRow[] {
+/** Generic over the row type: this only ever narrows the array, so callers with
+ *  a richer SalesRow (the app's, which adds agent/docNum/etc.) get their own
+ *  type back rather than the widened shared shape. */
+export function filterByDate<T extends SalesRow>(rows: T[], filters: DateFilterInput): T[] {
   if (filters.dateMode === 'range') {
     const from = filters.dateFrom ? new Date(filters.dateFrom) : null
     const to = filters.dateTo ? new Date(filters.dateTo) : null

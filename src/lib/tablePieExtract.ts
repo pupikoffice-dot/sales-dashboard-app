@@ -16,11 +16,11 @@ export function isMonthlyDualTable(table: HTMLTableElement): boolean {
   return table.classList.contains('tw-dual-months')
 }
 
-export function isCashSummaryBarTable(table: HTMLTableElement, wrapper: HTMLElement): boolean {
+export function isCashSummaryBarTable(_table: HTMLTableElement, wrapper: HTMLElement): boolean {
   return wrapper.dataset.barChart === '1'
 }
 
-export function extractPieFromTable(table: HTMLTableElement, sectionTitle?: string): PieEntry[] {
+export function extractPieFromTable(table: HTMLTableElement, _sectionTitle?: string): PieEntry[] {
   const headers = [...table.querySelectorAll('thead th')]
   const cashColIdx = headers.findIndex(th => th.hasAttribute('data-pie-cash'))
   if (cashColIdx === -1) return []
@@ -30,7 +30,7 @@ export function extractPieFromTable(table: HTMLTableElement, sectionTitle?: stri
   const isSkuTable = col0Hdr === 'SKU'
 
   const entries: PieEntry[] = []
-  table.querySelectorAll('tbody tr').forEach(row => {
+  table.querySelectorAll<HTMLTableRowElement>('tbody tr').forEach(row => {
     const labelCell = row.cells[1]
     const valueCell = row.cells[cashColIdx]
     if (!labelCell || !valueCell) return
@@ -61,7 +61,7 @@ export function extractMonthBarFromDualTable(table: HTMLTableElement) {
   const cashVals: number[] = []
   const qtyVals: number[] = []
 
-  table.querySelectorAll('tbody tr').forEach(row => {
+  table.querySelectorAll<HTMLTableRowElement>('tbody tr').forEach(row => {
     months.forEach((_, mi) => {
       const td = row.cells[mi + 2]
       if (!td) return
@@ -84,7 +84,7 @@ export function extractMonthBarFromDualTable(table: HTMLTableElement) {
 export function extractMonthBarFromCashTable(table: HTMLTableElement) {
   const ths = [...table.querySelectorAll('thead th')]
   const months = ths.slice(1, -1).map(cleanThText)
-  const bodyRows = [...table.querySelectorAll('tbody tr')]
+  const bodyRows = [...table.querySelectorAll<HTMLTableRowElement>('tbody tr')]
   const cashRow = bodyRows.find(r => r.cells[0]?.textContent?.includes('Cash'))
   const qtyRow = bodyRows.find(r => r.cells[0]?.textContent?.includes('Qty'))
   const cashVals = cashRow
