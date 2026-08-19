@@ -38,13 +38,19 @@ answer.
 - One "?" pill button next to the `filters.global` sidebar label (`<div className="sidebar-label">`
   at the top of `SidebarFilters.tsx`) — same visual treatment as `SalesLegend`'s `legend.help`
   button. Opens the legend panel scrolled to the top (general intro / ① Company).
-- Two additional small inline "?" triggers, placed next to:
-  - The Tablet/Group category toggle (panel ④ when `f.view === 'items'`).
-  - The Date Filter's Open Orders / Stock tabs (panel ②).
-  Clicking either opens the same panel already scrolled to that control's subsection, instead of
-  the top.
-- No inline trigger anywhere else — Company, View chooser, Months multi-select, and the per-view
-  Select/Show panels are covered by content but reached only via the main "?".
+- Two additional small inline "?" triggers, sized and styled as a scaled-down variant of the same
+  `.legend-btn` class `SalesLegend` uses (no new component, just a size modifier — keeps the
+  narrow-mobile footprint the doc argues for elsewhere), placed:
+  - Inside panel ④'s `panel-title` row, right after `{t('filters.itemCategory')}`, when
+    `f.view === 'items'` — same row style as the main "?" sits next to `filters.global`.
+  - Inside panel ②'s `tab-row`, appended after the `stock` tab button (not floating separately) —
+    one trigger covers both `openOrders` and `stock` since they share this one tab row; it opens
+    the legend at `dateFilter.openOrders` by default (the more commonly confusing of the two).
+- No inline trigger anywhere else — Company, View chooser, and the per-view Select/Show panels are
+  covered by content but reached only via the main "?". Note one same-panel asymmetry worth calling
+  out explicitly: panel ② holds all four date-mode tabs, but only `openOrders`/`stock` get a
+  trigger — `range` and `months` do not, since those two are self-explanatory once seen (visible
+  date pickers / checkboxes) in a way "what does Open Orders even mean" is not.
 
 ### Panel structure
 
@@ -120,10 +126,20 @@ New `SidebarLegend.tsx`, structurally parallel to `SalesLegend.tsx`:
 - New i18n keys under a `sidebarLegend.*` namespace in `en.ts`/`he.ts`, dot-nested to mirror the
   section ids above (e.g. `sidebarLegend.dateFilter.monthsTerm` /
   `sidebarLegend.dateFilter.monthsDesc`), following the existing `legend.<x>Term` / `legend.<x>Desc`
-  pairing convention. `select` copy uses `{noun}`-style interpolation (matching the
-  `{month}`/`{year}` placeholder pattern already used in `sales.skewWarning`) for the
-  clients/items/suppliers-specific noun; `showMode` does not interpolate — its two variants
-  (`breakdown`, `items`) are genuinely different copy, per the Panel structure section above.
+  pairing convention. Concrete key names, so nothing is left for an implementer to invent:
+  - `sidebarLegend.selectTerm` / `sidebarLegend.selectDesc` — `selectDesc` uses `{noun}`-style
+    interpolation (matching the `{month}`/`{year}` placeholder pattern already used in
+    `sales.skewWarning`) for the clients/items/suppliers-specific noun.
+  - `sidebarLegend.showModeBreakdownTerm` / `sidebarLegend.showModeBreakdownDesc` (Clients/Suppliers).
+  - `sidebarLegend.showModeItemsTerm` / `sidebarLegend.showModeItemsDesc` (Items).
+  - `sidebarLegend.dateFilterOpenOrdersTerm` / `...Desc`, `sidebarLegend.dateFilterStockTerm` /
+    `...Desc`, `sidebarLegend.dateFilterMonthsTerm` / `...Desc`, `sidebarLegend.dateFilterRangeTerm`
+    / `...Desc` — flat, not nested (`dateFilter.monthsTerm` reads as JS property access but the
+    i18n catalogs are flat dotted-key strings per `en.ts`'s existing convention, e.g.
+    `legend.totalCashTerm`, so the actual key is one string `dateFilterMonthsTerm`, not a nested
+    object path).
+  - `sidebarLegend.companyTerm` / `...Desc`, `sidebarLegend.viewTerm` / `...Desc`,
+    `sidebarLegend.itemCategoryTerm` / `...Desc`.
 
 ## Error handling & testing
 
