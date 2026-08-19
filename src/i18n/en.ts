@@ -62,6 +62,7 @@ export const messages = {
   'nav.stock': 'Stock',
   'nav.export': 'Export',
   'nav.adminUsers': 'Admin — Users',
+  'nav.adminClasses': 'Admin — Classes',
 
   'header.title': 'Sales Dashboard',
   'header.subtitle': 'Pupik · Monkeytime · Grow',

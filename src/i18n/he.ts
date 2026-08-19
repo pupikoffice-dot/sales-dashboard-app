@@ -64,6 +64,7 @@ export const messages: Record<keyof typeof en, string> = {
   'nav.stock': 'מלאי',
   'nav.export': 'ייצוא',
   'nav.adminUsers': 'ניהול — משתמשים',
+  'nav.adminClasses': 'ניהול — כיתות',
 
   'header.title': 'לוח מכירות',
   'header.subtitle': 'Pupik · Monkeytime · Grow',
