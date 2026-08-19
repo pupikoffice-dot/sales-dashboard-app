@@ -54,21 +54,29 @@ export function ClassesPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['classes'] })
       qc.invalidateQueries({ queryKey: ['class-grants', draft?.id] })
+      // A "+ New Class" save has selectedId still null, so the ['class-grants', selectedId] query
+      // stayed disabled/empty the whole time -- currentGrants would silently keep reading as []
+      // (a stale diff base) for any SECOND save without reselecting, causing already-saved grants
+      // to be re-diffed against nothing and re-inserted. Point selectedId at what was just saved so
+      // the grants query tracks the right class from here on.
+      if (draft && draft.id !== selectedId) setSelectedId(draft.id)
     },
   })
 
   const deleteMutation = useMutation({
-    mutationFn: async (classId: string) => {
+    mutationFn: async (classId: string): Promise<{ deleted: boolean }> => {
       const users = await fetchUsersInClass(classId)
       if (users.length > 0) {
         const names = users.map(u => u.name).join(', ')
         if (!window.confirm(`${users.length} user(s) are assigned to this class: ${names}. Delete anyway?`)) {
-          return
+          return { deleted: false } // cancelled -- onSuccess must not clear editor state as if it worked
         }
       }
       await deleteClass(classId)
+      return { deleted: true }
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      if (!result.deleted) return // cancelled confirm; nothing changed, leave the editor as-is
       qc.invalidateQueries({ queryKey: ['classes'] })
       setSelectedId(null)
       setDraft(null)
