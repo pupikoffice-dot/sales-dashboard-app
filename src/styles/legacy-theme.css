@@ -3048,3 +3048,138 @@ html[dir='rtl'] .hdr-brand,
 [dir='rtl'] .login-lang-row {
   justify-content: flex-start;
 }
+
+/* ── Permission sections (class/user grant editors) ── */
+.perm-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.perm-section {
+  background: rgba(23, 31, 51, 0.6);
+  border: 1px solid var(--bdr);
+  border-radius: var(--r);
+  padding: 14px;
+}
+
+.perm-section h3 {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+
+.perm-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+}
+
+.perm-agent-picker {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.perm-subhead {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 2px;
+}
+
+.perm-agent-picker select {
+  background: var(--sur2);
+  border: 1px solid var(--bdr);
+  color: var(--txt);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-family: inherit;
+  align-self: flex-start;
+}
+
+.perm-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--txt);
+  cursor: pointer;
+}
+
+.perm-item input {
+  accent-color: var(--acc);
+}
+
+/* Inherited: unchecked box, plain/grey label -- nothing overridden. */
+.perm-item-inherited {
+  color: var(--muted2);
+}
+
+/* Off: class never granted this and no override exists -- must look identical to
+   'inherited' (plain, no red); only 'removed' gets the red treatment. */
+.perm-item-off {
+  color: var(--muted2);
+}
+
+/* Added: user-level allow override on top of the class. */
+.perm-item-added {
+  color: var(--grn);
+}
+
+/* Removed: user-level deny override on top of a class grant. */
+.perm-item-removed {
+  color: #f87171;
+}
+
+.perm-item-removed span:first-of-type {
+  text-decoration: line-through;
+  text-decoration-color: rgba(248, 113, 113, 0.6);
+}
+
+.perm-item-disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.perm-item-note {
+  font-size: 0.68rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.perm-badge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: var(--r-full);
+}
+
+.perm-badge-added {
+  color: var(--grn);
+  background: var(--grn-bg);
+}
+
+.perm-badge-removed {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.12);
+}
+
+.perm-nested {
+  margin: 6px 0 4px 26px;
+  padding-left: 12px;
+  border-left: 1px solid var(--bdr-s);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
