@@ -171,6 +171,7 @@ export function SidebarFilters() {
             type="button"
             className="legend-btn legend-btn-sm"
             title={t('sidebarLegend.help')}
+            aria-label={t('sidebarLegend.help')}
             onClick={() => setOpenLegendSection('dateFilterOpenOrders')}
           >
             ?
@@ -341,6 +342,7 @@ export function SidebarFilters() {
                 type="button"
                 className="legend-btn legend-btn-sm"
                 title={t('sidebarLegend.help')}
+                aria-label={t('sidebarLegend.help')}
                 onClick={() => setOpenLegendSection('itemCategory')}
               >
                 ?
