@@ -70,7 +70,8 @@ export async function deleteGrantsByIds(ids: number[]): Promise<void> {
 }
 
 export async function setUserClass(userId: string, classId: string | null): Promise<void> {
-  await supabase.from('app_user_class').delete().eq('user_id', userId)
+  const { error: delErr } = await supabase.from('app_user_class').delete().eq('user_id', userId)
+  if (delErr) throw delErr
   if (classId) {
     const { error } = await supabase.from('app_user_class').insert({ user_id: userId, class_id: classId })
     if (error) throw error
