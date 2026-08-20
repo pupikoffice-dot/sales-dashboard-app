@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { AppUiModule } from '../types/uiModules'
 import {
+  countOversightSuiteItemKeys,
   mapGrantKeysToUiModules,
   parseUiModuleGrantKey,
   pickOversightMode,
@@ -60,6 +61,25 @@ describe('parseUiModuleGrantKey / uiModuleGrantKey', () => {
     expect(parseUiModuleGrantKey('widget.ordersToday')).toBeNull()
     expect(parseUiModuleGrantKey('ui.oversight.sales_manager')).toBeNull()
     expect(parseUiModuleGrantKey('ui.oversight.suite.')).toBeNull()
+  })
+})
+
+describe('countOversightSuiteItemKeys', () => {
+  it('counts only oversight suite node item keys', () => {
+    expect(
+      countOversightSuiteItemKeys([
+        'node:ui.oversight.suite.sales_manager:',
+        'node:ui.oversight.addon.extra_addon:',
+        'node:view.oversite:',
+        'scope:company:pupik',
+      ]),
+    ).toBe(1)
+    expect(
+      countOversightSuiteItemKeys([
+        'node:ui.oversight.suite.sales_manager:',
+        'node:ui.oversight.suite.other_suite:',
+      ]),
+    ).toBe(2)
   })
 })
 

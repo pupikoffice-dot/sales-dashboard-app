@@ -37,6 +37,24 @@ export function parseUiModuleGrantKey(key: string): UiModuleGrantKeyParts | null
 }
 
 /**
+ * Count Oversight suite grants in class-editor item keys (`node:<grantKey>:`).
+ * Used for ≤1 suite validation on save.
+ */
+export function countOversightSuiteItemKeys(itemKeys: Iterable<string>): number {
+  let n = 0
+  for (const item of itemKeys) {
+    if (!item.startsWith('node:')) continue
+    // itemKey format: kind:key:value — UI-module keys use dots, value is ''.
+    const withoutKind = item.slice('node:'.length)
+    const lastColon = withoutKind.lastIndexOf(':')
+    const grantKey = lastColon >= 0 ? withoutKind.slice(0, lastColon) : withoutKind
+    const parsed = parseUiModuleGrantKey(grantKey)
+    if (parsed?.surface === 'oversight' && parsed.kind === 'suite') n += 1
+  }
+  return n
+}
+
+/**
  * Map allow grant keys onto catalog rows.
  * Skips unknown / inactive modules and surface/kind mismatches with the catalog.
  */

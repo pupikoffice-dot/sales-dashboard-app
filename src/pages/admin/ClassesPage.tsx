@@ -5,23 +5,30 @@ import {
   fetchUsersInClass, insertGrants, deleteGrantsByIds, listKnownAgents, upsertClass,
 } from '../../lib/permissionsApi'
 import { diffClassGrants, normalizeClassAgentScope, ALL_AGENTS_ITEM_KEY } from '../../lib/classPermissions'
+import { countOversightSuiteItemKeys } from '../../lib/uiModules'
 import { PermissionSections } from '../../components/admin/PermissionSections'
+import { useUiModuleCatalog } from '../../hooks/useUiModules'
 import type { AppClass } from '../../types/permissions'
 
 function itemKeyOf(kind: string, key: string, value: string | null) {
   return `${kind}:${key}:${value ?? ''}`
 }
 
+const MULTI_SUITE_ERROR = 'A class can have at most one Oversight suite.'
+
 export function ClassesPage() {
   const qc = useQueryClient()
   const { data: classes = [] } = useQuery({ queryKey: ['classes'], queryFn: fetchClasses })
   const { data: userCounts = {} } = useQuery({ queryKey: ['class-user-counts'], queryFn: fetchClassUserCounts })
   const { data: knownAgents = [] } = useQuery({ queryKey: ['known-agents'], queryFn: listKnownAgents })
+  const { data: uiModuleCatalog = [] } = useUiModuleCatalog()
+  const activeUiModules = uiModuleCatalog.filter(m => m.active)
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [draft, setDraft] = useState<{ id: string; label: string; description: string } | null>(null)
   const [desiredChecked, setDesiredChecked] = useState<Set<string>>(new Set())
   const [saveNotice, setSaveNotice] = useState<string | null>(null)
+  const [validationError, setValidationError] = useState<string | null>(null)
 
   const { data: currentGrants = [] } = useQuery({
     queryKey: ['class-grants', selectedId],
@@ -41,6 +48,7 @@ export function ClassesPage() {
 
   function selectClass(cls: AppClass) {
     clearSaveNotice()
+    setValidationError(null)
     setSelectedId(cls.id)
     setDraft({ id: cls.id, label: cls.label, description: cls.description ?? '' })
     fetchClassGrants(cls.id).then(grants =>
@@ -52,6 +60,7 @@ export function ClassesPage() {
 
   function newClass() {
     clearSaveNotice()
+    setValidationError(null)
     const id = `class_${Date.now()}` // slug refined by the admin before first save if desired
     setSelectedId(null)
     setDraft({ id, label: '', description: '' })
@@ -61,13 +70,17 @@ export function ClassesPage() {
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!draft) return
-      await upsertClass({ id: draft.id, label: draft.label, description: draft.description || null })
       const desired = normalizeClassAgentScope(desiredChecked)
+      if (countOversightSuiteItemKeys(desired) > 1) {
+        throw new Error(MULTI_SUITE_ERROR)
+      }
+      await upsertClass({ id: draft.id, label: draft.label, description: draft.description || null })
       const { toInsert, toDelete } = diffClassGrants(currentGrants, desired)
       await insertGrants(toInsert.map(g => ({ classId: draft.id, kind: g.kind, key: g.key, value: g.value, effect: 'allow' as const })))
       await deleteGrantsByIds(toDelete.map(g => g.id))
     },
     onSuccess: () => {
+      setValidationError(null)
       qc.invalidateQueries({ queryKey: ['classes'] })
       qc.invalidateQueries({ queryKey: ['class-grants', draft?.id] })
       // A "+ New Class" save has selectedId still null, so the ['class-grants', selectedId] query
@@ -77,6 +90,11 @@ export function ClassesPage() {
       // the grants query tracks the right class from here on.
       if (draft && draft.id !== selectedId) setSelectedId(draft.id)
       setSaveNotice('Saved')
+    },
+    onError: (err) => {
+      if (err instanceof Error && err.message === MULTI_SUITE_ERROR) {
+        setValidationError(MULTI_SUITE_ERROR)
+      }
     },
   })
 
@@ -95,6 +113,7 @@ export function ClassesPage() {
     onSuccess: (result) => {
       if (!result.deleted) return // cancelled confirm; nothing changed, leave the editor as-is
       clearSaveNotice()
+      setValidationError(null)
       qc.invalidateQueries({ queryKey: ['classes'] })
       setSelectedId(null)
       setDraft(null)
@@ -107,6 +126,7 @@ export function ClassesPage() {
   // access control.
   const saveError = saveMutation.error instanceof Error ? saveMutation.error.message : null
   const deleteError = deleteMutation.error instanceof Error ? deleteMutation.error.message : null
+  const displayError = validationError ?? saveError ?? deleteError
 
   return (
     <div className="classes-page">
@@ -131,6 +151,7 @@ export function ClassesPage() {
             placeholder="Class name"
             onChange={e => {
               clearSaveNotice()
+              setValidationError(null)
               setDraft({ ...draft, label: e.target.value })
             }}
           />
@@ -139,6 +160,7 @@ export function ClassesPage() {
             placeholder="Description"
             onChange={e => {
               clearSaveNotice()
+              setValidationError(null)
               setDraft({ ...draft, description: e.target.value })
             }}
           />
@@ -147,9 +169,11 @@ export function ClassesPage() {
             desiredChecked={desiredChecked}
             onChange={next => {
               clearSaveNotice()
+              setValidationError(null)
               setDesiredChecked(next)
             }}
             knownAgents={knownAgents}
+            uiModules={activeUiModules}
           />
           <div className="class-editor-actions">
             <button type="button" onClick={() => saveMutation.mutate()} disabled={!draft.label || saveMutation.isPending}>
@@ -160,14 +184,14 @@ export function ClassesPage() {
                 Delete
               </button>
             )}
-            {saveNotice && !saveError && (
+            {saveNotice && !displayError && (
               <p className="perm-mutation-saved" role="status" aria-live="polite">
                 {saveNotice}
               </p>
             )}
-            {(saveError || deleteError) && (
+            {displayError && (
               <p className="perm-mutation-error" role="alert">
-                {saveError ?? deleteError}
+                {displayError}
               </p>
             )}
           </div>
