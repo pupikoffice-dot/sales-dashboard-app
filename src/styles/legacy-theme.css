@@ -1102,6 +1102,28 @@ body {
   color: var(--muted);
   line-height: 1.5;
 }
+
+/* Sidebar filter help: float over main content (not inside the 290px rail). */
+.legend-float-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 180;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding-block: 72px 16px;
+  padding-inline-start: calc(var(--sidebar) + 16px);
+  padding-inline-end: 16px;
+  background: rgba(0, 0, 0, 0.4);
+}
+.legend-float-panel {
+  width: min(460px, 100%);
+  max-height: calc(100vh - 88px);
+  overflow-y: auto;
+  margin: 0;
+  background: var(--sur);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
 .legend-hdr {
   display: flex;
   align-items: center;
@@ -1182,6 +1204,13 @@ body {
   .legend-anatomy { gap: 12px; }
   .legend-term-row dt { min-width: 0; flex-basis: 100%; }
   .legend-term-row dd { flex-basis: 100%; }
+  .legend-float-overlay {
+    padding: 56px 12px 12px;
+  }
+  .legend-float-panel {
+    width: 100%;
+    max-height: calc(100vh - 72px);
+  }
 }
 
 /* ── Super-admin "View as user" preview ──────────────────────────────────
