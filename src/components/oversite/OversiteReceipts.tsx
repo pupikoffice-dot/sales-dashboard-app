@@ -1,5 +1,4 @@
 import { useLocale } from '../../context/LocaleContext'
-import { agentColorClass, agentTextClass } from '../../lib/agentColors'
 import { fmt } from '../../lib/format'
 
 /** Receipts amounts arrive gross (column H of the 008 report, incl. 18% VAT). */
@@ -13,6 +12,9 @@ export const RECEIPTS_TEAM_AGENTS: Record<string, string[]> = {
   pupik: ['24', '25', '27'],
   mt: ['54', '55', '56', '57'],
 }
+
+/** Distinct color per agent position (CSS classes agent-c0..c5). */
+const AGENT_COLOR_COUNT = 6
 
 function rollingMonths(): Array<{ ym: string; label: string; isCurrent: boolean }> {
   const now = new Date()
@@ -67,9 +69,9 @@ export function OversiteReceipts({
     <div className="ov-receipts">
       {stacked && (
         <div className="ov-receipts-legend">
-          {agentTotals.map(at => (
+          {agentTotals.map((at, i) => (
             <span key={at.agent} className="ov-receipts-legend-item">
-              <span className={`ov-receipts-swatch ${agentColorClass(at.agent)}`} />
+              <span className={`ov-receipts-swatch agent-c${i % AGENT_COLOR_COUNT}`} />
               {t('oversite.debtAgent')} {at.agent}: <b>{fmt(at.total)}</b>
               <span className="ov-receipts-legend-avg">
                 ({t('oversite.receiptsAvg')} {fmt(at.avg)})
@@ -85,7 +87,7 @@ export function OversiteReceipts({
               <span className="ov-bar-lbl">{m.label}</span>
               <div className="ov-bar-track ov-bar-track--stacked">
                 {stacked
-                  ? agents!.map(a => {
+                  ? agents!.map((a, i) => {
                       const net = ((byAgent![a] || {})[m.ym] || 0) / VAT_RATE
                       if (net <= 0) return null
                       const pct = ((net / max) * 100).toFixed(1)
@@ -93,7 +95,7 @@ export function OversiteReceipts({
                       return (
                         <div
                           key={a}
-                          className={`ov-bar-fill ${agentColorClass(a)}`}
+                          className={`ov-bar-fill agent-c${i % AGENT_COLOR_COUNT}`}
                           style={{ width: `${pct}%` }}
                           title={`${t('oversite.debtAgent')} ${a}: ${fmt(net)}`}
                         >
@@ -112,11 +114,11 @@ export function OversiteReceipts({
             </div>
             {stacked && (
               <div className="ov-receipts-agents-line">
-                {agents!.map(a => {
+                {agents!.map((a, i) => {
                   const net = ((byAgent![a] || {})[m.ym] || 0) / VAT_RATE
                   if (net <= 0) return null
                   return (
-                    <span key={a} className={`ov-receipts-agent-num ${agentTextClass(a)}`}>
+                    <span key={a} className={`ov-receipts-agent-num agent-t${i % AGENT_COLOR_COUNT}`}>
                       {a}: {fmt(net)}
                     </span>
                   )
