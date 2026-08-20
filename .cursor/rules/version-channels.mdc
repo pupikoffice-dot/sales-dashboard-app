@@ -1,0 +1,31 @@
+---
+description: Stable v1 (main) vs beta v2 — where new work may land
+alwaysApply: true
+---
+
+# Sales Dashboard version channels
+
+**This is a hard rule from the product owner. Do not violate it.**
+
+## Channels
+
+| Channel | Git branch | Purpose |
+|---------|------------|---------|
+| **Version 1 (stable)** | `main` | Live org production. Keep working and boring. |
+| **Version 2 (beta)** | `beta` | Track 2 / class-permission architecture and all experimental UI. Test here only. |
+
+## What goes where
+
+- **Default:** ALL new work lands on `beta` only.
+- **Version 1 / `main`:** ONLY when the user **explicitly** asks for a change on version 1 / production / stable.
+- Never push Classes admin, org-hierarchy Phase 2.5 UI, permission-class tooling, or other Track 2 beta features to `main` unless the user explicitly promotes them.
+
+## Before committing or pushing
+
+1. Confirm which channel the user wants (`main` vs `beta`).
+2. If unclear, ask — do not assume `main`.
+3. If currently on `main` and the task is beta work: switch to `beta` first.
+
+## Promotion
+
+Promoting beta → stable is an explicit user decision (merge/cherry-pick + redeploy), never an automatic side effect of finishing a feature.

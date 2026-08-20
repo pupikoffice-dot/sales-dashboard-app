@@ -118,13 +118,6 @@ export function DashboardLayout() {
             >
               {t('nav.adminUsers')}
             </NavLink>
-            <NavLink
-              to="/admin/classes"
-              onClick={() => setSidebarOpen(false)}
-              className={({ isActive }) => `nav-btn${isActive ? ' active' : ''}`}
-            >
-              {t('nav.adminClasses')}
-            </NavLink>
           </>
         )}
       </nav>
