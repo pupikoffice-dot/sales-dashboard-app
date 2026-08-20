@@ -749,19 +749,39 @@ body {
   opacity: 0.85;
 }
 
-/* Per-agent stacked segments + legend (team receipts chart) */
+/* Per-agent stacked segments + legend — 8 high-contrast hues, stable by agent id */
 .ov-bar-fill.agent-c0,
-.ov-orders7-seg.agent-c0 { background: #818cf8; }
+.ov-orders7-seg.agent-c0,
+.ov-receipts-swatch.agent-c0 { background: #6366f1; }
 .ov-bar-fill.agent-c1,
-.ov-orders7-seg.agent-c1 { background: #34d399; }
+.ov-orders7-seg.agent-c1,
+.ov-receipts-swatch.agent-c1 { background: #10b981; }
 .ov-bar-fill.agent-c2,
-.ov-orders7-seg.agent-c2 { background: #fbbf24; }
+.ov-orders7-seg.agent-c2,
+.ov-receipts-swatch.agent-c2 { background: #f59e0b; }
 .ov-bar-fill.agent-c3,
-.ov-orders7-seg.agent-c3 { background: #f87171; }
+.ov-orders7-seg.agent-c3,
+.ov-receipts-swatch.agent-c3 { background: #ef4444; }
 .ov-bar-fill.agent-c4,
-.ov-orders7-seg.agent-c4 { background: #22d3ee; }
+.ov-orders7-seg.agent-c4,
+.ov-receipts-swatch.agent-c4 { background: #06b6d4; }
 .ov-bar-fill.agent-c5,
-.ov-orders7-seg.agent-c5 { background: #f472b6; }
+.ov-orders7-seg.agent-c5,
+.ov-receipts-swatch.agent-c5 { background: #ec4899; }
+.ov-bar-fill.agent-c6,
+.ov-orders7-seg.agent-c6,
+.ov-receipts-swatch.agent-c6 { background: #a855f7; }
+.ov-bar-fill.agent-c7,
+.ov-orders7-seg.agent-c7,
+.ov-receipts-swatch.agent-c7 { background: #84cc16; }
+
+/* Thin separators so adjacent segments stay readable */
+.ov-bar-track--stacked .ov-bar-fill + .ov-bar-fill {
+  box-shadow: inset 1px 0 0 rgba(7, 12, 24, 0.55);
+}
+.ov-orders7-seg + .ov-orders7-seg {
+  box-shadow: 0 -1px 0 rgba(7, 12, 24, 0.55);
+}
 
 .ov-receipts-legend {
   display: flex;
@@ -783,14 +803,8 @@ body {
   height: 10px;
   border-radius: 2px;
   display: inline-block;
+  flex-shrink: 0;
 }
-
-.ov-receipts-swatch.agent-c0 { background: #818cf8; }
-.ov-receipts-swatch.agent-c1 { background: #34d399; }
-.ov-receipts-swatch.agent-c2 { background: #fbbf24; }
-.ov-receipts-swatch.agent-c3 { background: #f87171; }
-.ov-receipts-swatch.agent-c4 { background: #22d3ee; }
-.ov-receipts-swatch.agent-c5 { background: #f472b6; }
 
 /* Per-agent numbers line under each month bar, color-matched to segments */
 .ov-receipts-agents-line {
@@ -802,13 +816,15 @@ body {
   font-size: 0.66rem;
 }
 
-.ov-receipts-agent-num { white-space: nowrap; }
-.ov-receipts-agent-num.agent-t0 { color: #a5b0fb; }
-.ov-receipts-agent-num.agent-t1 { color: #6ee7b7; }
-.ov-receipts-agent-num.agent-t2 { color: #fcd34d; }
-.ov-receipts-agent-num.agent-t3 { color: #fca5a5; }
-.ov-receipts-agent-num.agent-t4 { color: #67e8f9; }
-.ov-receipts-agent-num.agent-t5 { color: #f9a8d4; }
+.ov-receipts-agent-num { white-space: nowrap; font-weight: 600; }
+.ov-receipts-agent-num.agent-t0 { color: #a5b4fc; }
+.ov-receipts-agent-num.agent-t1 { color: #34d399; }
+.ov-receipts-agent-num.agent-t2 { color: #fbbf24; }
+.ov-receipts-agent-num.agent-t3 { color: #f87171; }
+.ov-receipts-agent-num.agent-t4 { color: #22d3ee; }
+.ov-receipts-agent-num.agent-t5 { color: #f472b6; }
+.ov-receipts-agent-num.agent-t6 { color: #c084fc; }
+.ov-receipts-agent-num.agent-t7 { color: #a3e635; }
 
 .ov-receipts-legend-avg {
   color: var(--muted);

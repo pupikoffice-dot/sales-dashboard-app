@@ -1,12 +1,11 @@
 import { useLocale } from '../../context/LocaleContext'
+import { agentColorClass } from '../../lib/agentColors'
 import { fmt } from '../../lib/format'
 import type { OrdersLast7DaysResult } from '../../lib/oversiteMetrics'
 
-const AGENT_COLOR_COUNT = 6
-
 /**
  * Vertical stacked-block chart: last 7 calendar days of orders cash (₪),
- * agents stacked per day. Reuses receipts agent color classes.
+ * agents stacked per day. Stable per-agent colors (same agent = same hue).
  */
 export function OversiteOrdersLast7Days({ data }: { data: OrdersLast7DaysResult }) {
   const { t } = useLocale()
@@ -27,9 +26,9 @@ export function OversiteOrdersLast7Days({ data }: { data: OrdersLast7DaysResult 
       <div className="ov-orders7-title">{t('oversite.ordersLast7Days')}</div>
       {agents.length > 0 && (
         <div className="ov-receipts-legend">
-          {agents.map((a, i) => (
+          {agents.map(a => (
             <span key={a} className="ov-receipts-legend-item">
-              <span className={`ov-receipts-swatch agent-c${i % AGENT_COLOR_COUNT}`} />
+              <span className={`ov-receipts-swatch ${agentColorClass(a)}`} />
               {t('oversite.debtAgent')} {a}
             </span>
           ))}
@@ -43,14 +42,14 @@ export function OversiteOrdersLast7Days({ data }: { data: OrdersLast7DaysResult 
               <div className="ov-orders7-val">{day.total > 0 ? fmt(day.total) : '—'}</div>
               <div className="ov-orders7-plot">
                 <div className="ov-orders7-stack" style={{ height: `${stackPct}%` }}>
-                  {agents.map((a, i) => {
+                  {agents.map(a => {
                     const cash = day.byAgent[a] || 0
                     if (cash <= 0) return null
                     const pctOfDay = day.total > 0 ? (cash / day.total) * 100 : 0
                     return (
                       <div
                         key={a}
-                        className={`ov-orders7-seg agent-c${i % AGENT_COLOR_COUNT}`}
+                        className={`ov-orders7-seg ${agentColorClass(a)}`}
                         style={{ flexGrow: pctOfDay, flexBasis: 0 }}
                         title={`${t('oversite.debtAgent')} ${a}: ${fmt(cash)} · ${day.label}`}
                       />
