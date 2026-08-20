@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { NavLink, Outlet, Navigate } from 'react-router-dom'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { useDashboardAccess } from '../context/DashboardAccessContext'
 import { useDashboardFilters } from '../context/DashboardFiltersContext'
@@ -14,6 +14,17 @@ import { ViewAsSwitcher } from '../components/admin/ViewAsSwitcher'
 import { SidebarFilters } from '../components/sidebar/SidebarFilters'
 import { MODULE_REGISTRY } from '../modules/registry'
 import { useLocation } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
+
+async function fetchActiveAppVersion(): Promise<string> {
+  const { data, error } = await supabase
+    .from('app_runtime_config')
+    .select('active_version')
+    .eq('id', true)
+    .maybeSingle()
+  if (error) throw error
+  return (data?.active_version as string | undefined)?.trim() || '1.0'
+}
 
 export function DashboardLayout() {
   // `isSuperAdmin` here is the REAL flag: it keeps the Admin section reachable
@@ -30,6 +41,11 @@ export function DashboardLayout() {
   const location = useLocation()
   const showFilters = !location.pathname.startsWith('/admin')
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const { data: appVersion = '1.0' } = useQuery({
+    queryKey: ['app-active-version'],
+    queryFn: fetchActiveAppVersion,
+    staleTime: 5 * 60_000,
+  })
 
   useEffect(() => {
     setSidebarOpen(false)
@@ -149,7 +165,12 @@ export function DashboardLayout() {
           {sidebarOpen ? '✕' : '☰'}
         </button>
         <div className="hdr-brand">
-          <h1>{t('header.title')}</h1>
+          <h1>
+            {t('header.title')}
+            <span className="hdr-version" title={t('header.versionLabel', { version: appVersion })}>
+              {appVersion}
+            </span>
+          </h1>
         </div>
         <div className="hdr-right">
           <ViewAsSwitcher />

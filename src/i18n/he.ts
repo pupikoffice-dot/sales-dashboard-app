@@ -103,6 +103,7 @@ export const messages: Record<keyof typeof en, string> = {
   'nav.adminClasses': 'ניהול — תפקידים',
 
   'header.title': 'לוח מכירות',
+  'header.versionLabel': 'גרסת אפליקציה {version}',
   'header.subtitle': 'Pupik · Monkeytime · Grow',
   'header.loadedRows': 'נטענו: {rows} שורות',
   'header.debtClients': '· {count} לקוחות בחוב',

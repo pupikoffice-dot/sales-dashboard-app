@@ -65,6 +65,17 @@ body {
   letter-spacing: -0.01em;
   color: var(--acc);
   margin: 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.45em;
+}
+
+.hdr-version {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  opacity: 0.9;
 }
 
 .dashboard-header .sub {

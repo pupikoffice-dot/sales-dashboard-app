@@ -101,6 +101,7 @@ export const messages = {
   'nav.adminClasses': 'Admin — Classes',
 
   'header.title': 'Sales Dashboard',
+  'header.versionLabel': 'App version {version}',
   'header.subtitle': 'Pupik · Monkeytime · Grow',
   'header.loadedRows': 'Loaded: {rows} rows',
   'header.debtClients': '· {count} debt clients',
