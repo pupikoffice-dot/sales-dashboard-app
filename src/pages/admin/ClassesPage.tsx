@@ -22,7 +22,7 @@ export function ClassesPage() {
   const { data: userCounts = {} } = useQuery({ queryKey: ['class-user-counts'], queryFn: fetchClassUserCounts })
   const { data: knownAgents = [] } = useQuery({ queryKey: ['known-agents'], queryFn: listKnownAgents })
   const { data: uiModuleCatalog = [] } = useUiModuleCatalog()
-  const activeUiModules = uiModuleCatalog.filter(m => m.active)
+  const activeUiModules = uiModuleCatalog.filter(m => m.active && m.surface === 'oversight')
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [draft, setDraft] = useState<{ id: string; label: string; description: string } | null>(null)
@@ -47,8 +47,7 @@ export function ClassesPage() {
   }
 
   function selectClass(cls: AppClass) {
-    clearSaveNotice()
-    setValidationError(null)
+    clearDraftErrors()
     setSelectedId(cls.id)
     setDraft({ id: cls.id, label: cls.label, description: cls.description ?? '' })
     fetchClassGrants(cls.id).then(grants =>
@@ -59,8 +58,7 @@ export function ClassesPage() {
   }
 
   function newClass() {
-    clearSaveNotice()
-    setValidationError(null)
+    clearDraftErrors()
     const id = `class_${Date.now()}` // slug refined by the admin before first save if desired
     setSelectedId(null)
     setDraft({ id, label: '', description: '' })
@@ -71,9 +69,6 @@ export function ClassesPage() {
     mutationFn: async () => {
       if (!draft) return
       const desired = normalizeClassAgentScope(desiredChecked)
-      if (countOversightSuiteItemKeys(desired) > 1) {
-        throw new Error(MULTI_SUITE_ERROR)
-      }
       await upsertClass({ id: draft.id, label: draft.label, description: draft.description || null })
       const { toInsert, toDelete } = diffClassGrants(currentGrants, desired)
       await insertGrants(toInsert.map(g => ({ classId: draft.id, kind: g.kind, key: g.key, value: g.value, effect: 'allow' as const })))
@@ -91,12 +86,24 @@ export function ClassesPage() {
       if (draft && draft.id !== selectedId) setSelectedId(draft.id)
       setSaveNotice('Saved')
     },
-    onError: (err) => {
-      if (err instanceof Error && err.message === MULTI_SUITE_ERROR) {
-        setValidationError(MULTI_SUITE_ERROR)
-      }
-    },
   })
+
+  function clearDraftErrors() {
+    clearSaveNotice()
+    setValidationError(null)
+    saveMutation.reset()
+  }
+
+  function saveClass() {
+    if (!draft) return
+    const desired = normalizeClassAgentScope(desiredChecked)
+    if (countOversightSuiteItemKeys(desired) > 1) {
+      setValidationError(MULTI_SUITE_ERROR)
+      return
+    }
+    setValidationError(null)
+    saveMutation.mutate()
+  }
 
   const deleteMutation = useMutation({
     mutationFn: async (classId: string): Promise<{ deleted: boolean }> => {
@@ -150,8 +157,7 @@ export function ClassesPage() {
             value={draft.label}
             placeholder="Class name"
             onChange={e => {
-              clearSaveNotice()
-              setValidationError(null)
+              clearDraftErrors()
               setDraft({ ...draft, label: e.target.value })
             }}
           />
@@ -159,8 +165,7 @@ export function ClassesPage() {
             value={draft.description}
             placeholder="Description"
             onChange={e => {
-              clearSaveNotice()
-              setValidationError(null)
+              clearDraftErrors()
               setDraft({ ...draft, description: e.target.value })
             }}
           />
@@ -168,15 +173,14 @@ export function ClassesPage() {
             mode="define"
             desiredChecked={desiredChecked}
             onChange={next => {
-              clearSaveNotice()
-              setValidationError(null)
+              clearDraftErrors()
               setDesiredChecked(next)
             }}
             knownAgents={knownAgents}
             uiModules={activeUiModules}
           />
           <div className="class-editor-actions">
-            <button type="button" onClick={() => saveMutation.mutate()} disabled={!draft.label || saveMutation.isPending}>
+            <button type="button" onClick={saveClass} disabled={!draft.label || saveMutation.isPending}>
               {saveMutation.isPending ? 'Saving…' : 'Save'}
             </button>
             {selectedId && (

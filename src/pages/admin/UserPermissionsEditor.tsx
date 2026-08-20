@@ -7,8 +7,6 @@ import {
 import { clearOverridesForClassSwitch, diffUserOverrides } from '../../lib/classPermissions'
 import { FIELDS, OVERSITE_WIDGETS, PermissionSections, VIEWS } from '../../components/admin/PermissionSections'
 import { ExplainAccessPopover, type ExplainItem } from '../../components/admin/ExplainAccessPopover'
-import { useUiModuleCatalog } from '../../hooks/useUiModules'
-import { uiModuleGrantKey } from '../../lib/uiModules'
 import type { GrantKind } from '../../types/permissions'
 
 // explain_access(userId, kind, key) has NO value parameter -- for a 'scope' grant, `key` is the
@@ -16,29 +14,21 @@ import type { GrantKind } from '../../types/permissions'
 // company grant for that user at once (each returned row carries its own `value`), so this section
 // is exactly TWO explain items, not one per company/agent literal like the Fields/Pages sections
 // (where each field/node genuinely has its own distinct `key`).
+// UI modules are class-only (no per-user suite override) — omit from override explain/toggles.
 const COMPANY_AGENT_EXPLAIN: ExplainItem[] = [
   { kind: 'scope', key: 'company', label: 'Companies' },
   { kind: 'scope', key: 'agent', label: 'Agents' },
 ]
 const FIELD_EXPLAIN: ExplainItem[] = FIELDS.map(f => ({ kind: 'field' as const, key: f.key, label: f.label }))
-function buildPageExplain(uiModules: { id: string; label: string; surface: 'oversight' | 'sidebar'; kind: 'suite' | 'addon' }[]): ExplainItem[] {
-  return [
-    ...VIEWS.map(v => ({ kind: 'node' as const, key: `view.${v}`, label: v })),
-    ...OVERSITE_WIDGETS.map(w => ({ kind: 'node' as const, key: `widget.${w}`, label: w })),
-    ...uiModules.map(m => ({
-      kind: 'node' as const,
-      key: uiModuleGrantKey(m.surface, m.kind, m.id),
-      label: `${m.label} (${m.kind})`,
-    })),
-  ]
-}
+const PAGE_EXPLAIN: ExplainItem[] = [
+  ...VIEWS.map(v => ({ kind: 'node' as const, key: `view.${v}`, label: v })),
+  ...OVERSITE_WIDGETS.map(w => ({ kind: 'node' as const, key: `widget.${w}`, label: w })),
+]
 
 export function UserPermissionsEditor({ userId }: { userId: string }) {
   const qc = useQueryClient()
   const { data: classes = [] } = useQuery({ queryKey: ['classes'], queryFn: fetchClasses, staleTime: 5 * 60_000 })
   const { data: knownAgents = [] } = useQuery({ queryKey: ['known-agents'], queryFn: listKnownAgents, staleTime: 5 * 60_000 })
-  const { data: uiModuleCatalog = [] } = useUiModuleCatalog()
-  const activeUiModules = uiModuleCatalog.filter(m => m.active && m.surface === 'oversight')
 
   const { data: currentClassId } = useQuery({
     queryKey: ['user-class', userId],
@@ -130,14 +120,13 @@ export function UserPermissionsEditor({ userId }: { userId: string }) {
         <span>Overrides on top of the class above</span>
         <ExplainAccessPopover userId={userId} items={COMPANY_AGENT_EXPLAIN} sectionLabel="Companies & Agents" />
         <ExplainAccessPopover userId={userId} items={FIELD_EXPLAIN} sectionLabel="Data Fields" />
-        <ExplainAccessPopover userId={userId} items={buildPageExplain(activeUiModules)} sectionLabel="Pages & Widgets" />
+        <ExplainAccessPopover userId={userId} items={PAGE_EXPLAIN} sectionLabel="Pages & Widgets" />
       </div>
       <PermissionSections
         mode="override"
         classGrants={classGrants}
         userGrants={userGrants}
         knownAgents={knownAgents}
-        uiModules={activeUiModules}
         onToggle={(kind, key, value, nextChecked) => {
           // toggleMutation.mutationFn reads classGrants/userGrants from this component's closure,
           // not from arguments. A second toggle fired before the first's onSuccess invalidation has
