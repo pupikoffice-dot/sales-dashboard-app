@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import type { MessageKey } from '../../i18n/types'
 import { useLocale } from '../../context/LocaleContext'
 
@@ -8,6 +9,8 @@ import { useLocale } from '../../context/LocaleContext'
  *
  *  - The panel is NOT mounted until opened (matches SalesLegend — costs nothing
  *    when unused).
+ *  - Opens as a floating card over the main area (not cramped inside the
+ *    290px sidebar column).
  *  - Auto-opens once ever per browser (not per-variant like SalesLegend, since
  *    this content is comprehensive across all views from the start — see spec).
  *  - Two inline "?" triggers elsewhere in SidebarFilters.tsx can jump the panel
@@ -106,49 +109,73 @@ export function SidebarLegend({
     el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [openSection])
 
+  // Esc closes the floating panel.
+  useEffect(() => {
+    if (openSection === null) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') close()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+    // close is stable enough for this mount window; intentional.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openSection])
+
   function close() {
     onOpenChange(null)
     markSidebarLegendSeen()
   }
 
   const lines = buildLines(currentViewNoun)
+  const open = openSection !== null
 
   return (
     <>
       <button
         type="button"
         className="legend-btn"
-        aria-expanded={openSection !== null}
+        aria-expanded={open}
+        aria-haspopup="dialog"
         title={t('sidebarLegend.help')}
-        onClick={() => (openSection !== null ? close() : onOpenChange('company'))}
+        onClick={() => (open ? close() : onOpenChange('company'))}
       >
         ? {t('sidebarLegend.help')}
       </button>
 
-      {openSection !== null && (
-        <div
-          ref={panelRef}
-          className="legend-panel"
-          role="region"
-          aria-label={t('sidebarLegend.help')}
-        >
-          <div className="legend-hdr">
-            <span>💡 {t('sidebarLegend.title')}</span>
-            <button type="button" className="legend-close" onClick={close}>
-              ✕
-            </button>
-          </div>
-
-          <dl className="legend-terms">
-            {lines.map(l => (
-              <div key={l.id} data-section={l.id} className="legend-term-row">
-                <dt>{t(l.term, l.values)}</dt>
-                <dd>{t(l.desc, l.values)}</dd>
+      {open &&
+        createPortal(
+          <div
+            className="legend-float-overlay"
+            onClick={e => {
+              if (e.target === e.currentTarget) close()
+            }}
+          >
+            <div
+              ref={panelRef}
+              className="legend-panel legend-float-panel"
+              role="dialog"
+              aria-modal="true"
+              aria-label={t('sidebarLegend.help')}
+            >
+              <div className="legend-hdr">
+                <span>💡 {t('sidebarLegend.title')}</span>
+                <button type="button" className="legend-close" onClick={close}>
+                  ✕
+                </button>
               </div>
-            ))}
-          </dl>
-        </div>
-      )}
+
+              <dl className="legend-terms">
+                {lines.map(l => (
+                  <div key={l.id} data-section={l.id} className="legend-term-row">
+                    <dt>{t(l.term, l.values)}</dt>
+                    <dd>{t(l.desc, l.values)}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </div>,
+          document.body,
+        )}
     </>
   )
 }
