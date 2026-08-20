@@ -24,9 +24,6 @@ interface UserRow {
   parent_id: string | null
 }
 
-const SYSTEM_ROLES = ['agent', 'manager', 'admin'] as const
-type SystemRole = (typeof SYSTEM_ROLES)[number]
-
 interface AccessRow {
   user_id: string
   modules: string[]
@@ -72,7 +69,7 @@ export function UsersPage() {
   const { data, isLoading, error: loadError } = useQuery({
     queryKey: ['admin-users'],
     queryFn: async () => {
-      const [profilesRes, accessRes] = await Promise.all([
+      const [profilesRes, accessRes, classRes] = await Promise.all([
         supabase
           .from('user_profiles')
           .select('id,email,username,name,role,active,password_display,agent_erp_id,parent_id')
@@ -80,18 +77,28 @@ export function UsersPage() {
         supabase
           .from('dashboard_user_access')
           .select('user_id, companies, agents, locale'),
+        supabase
+          .from('app_user_class')
+          .select('user_id, class_id, app_class(label)'),
       ])
       if (profilesRes.error) throw profilesRes.error
       if (accessRes.error) throw accessRes.error
+      if (classRes.error) throw classRes.error
       const accessMap = new Map(
         (accessRes.data ?? []).map(row => [row.user_id as string, row as AccessRow]),
       )
-      return { users: (profilesRes.data ?? []) as UserRow[], accessMap }
+      const classLabelByUser = new Map<string, string>()
+      for (const row of classRes.data ?? []) {
+        const label = (row as { app_class?: { label?: string } | null }).app_class?.label
+        if (label) classLabelByUser.set(row.user_id as string, label)
+      }
+      return { users: (profilesRes.data ?? []) as UserRow[], accessMap, classLabelByUser }
     },
   })
 
   const users = data?.users
   const accessMap = data?.accessMap ?? new Map<string, AccessRow>()
+  const classLabelByUser = data?.classLabelByUser ?? new Map<string, string>()
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -251,7 +258,7 @@ export function UsersPage() {
             <tr>
               <th>Name</th>
               <th>Login</th>
-              <th>Role</th>
+              <th>Class</th>
               <th>ERP agent</th>
               <th>Reports to</th>
               <th>Companies</th>
@@ -279,7 +286,7 @@ export function UsersPage() {
                     <span style={{ display: 'block', fontSize: '.65rem', color: 'var(--muted)' }}>username login</span>
                   )}
                 </td>
-                <td>{u.role}</td>
+                <td>{u.role === 'super_admin' ? '—' : (classLabelByUser.get(u.id) ?? '—')}</td>
                 <td style={{ fontSize: '.78rem', fontFamily: 'monospace' }}>
                   {u.agent_erp_id?.trim() || '—'}
                 </td>
@@ -429,7 +436,6 @@ function EditAccessModal({
   const [locale, setLocale] = useState<AppLocale>('en')
   const [showItemCost, setShowItemCost] = useState(false)
   const [showClientProfit, setShowClientProfit] = useState(false)
-  const [systemRole, setSystemRole] = useState<SystemRole | 'super_admin'>('agent')
   const [agentErpId, setAgentErpId] = useState('')
   const [parentId, setParentId] = useState('')
   const [saving, setSaving] = useState(false)
@@ -464,7 +470,6 @@ function EditAccessModal({
       })
     const p = users.find(u => u.id === userId)
     if (p) {
-      setSystemRole(p.role as SystemRole | 'super_admin')
       setAgentErpId(p.agent_erp_id ?? '')
       setParentId(p.parent_id ?? '')
     }
@@ -490,12 +495,10 @@ function EditAccessModal({
       : null
 
     if (profile?.role !== 'super_admin') {
-      const role = SYSTEM_ROLES.includes(systemRole as SystemRole) ? systemRole : 'agent'
       const erp = agentErpId.trim() || null
       const { error: orgErr } = await supabase
         .from('user_profiles')
         .update({
-          role,
           agent_erp_id: erp,
           parent_id: parentId.trim() || null,
         })
@@ -542,20 +545,8 @@ function EditAccessModal({
               <div>
                 <div className="admin-form-section-title">Org hierarchy (Phase 2.5)</div>
                 <p className="ov-sub" style={{ margin: '0 0 8px', fontSize: '.72rem' }}>
-                  ERP agent ID links this login to sales rows. Reports-to builds the manager subtree for future permission classes.
+                  ERP agent ID links this login to sales rows. Reports-to builds the manager subtree. Permission Class is set below (not a separate Role field).
                 </p>
-                <label>
-                  System role
-                  <select
-                    className="block-input"
-                    value={systemRole}
-                    onChange={e => setSystemRole(e.target.value as SystemRole)}
-                  >
-                    {SYSTEM_ROLES.map(r => (
-                      <option key={r} value={r}>{r}</option>
-                    ))}
-                  </select>
-                </label>
                 <label>
                   ERP agent ID
                   <input
@@ -575,7 +566,7 @@ function EditAccessModal({
                     <option value="">— none (top level) —</option>
                     {parentOptions.map(u => (
                       <option key={u.id} value={u.id}>
-                        {u.name} ({u.role})
+                        {u.name}
                       </option>
                     ))}
                   </select>

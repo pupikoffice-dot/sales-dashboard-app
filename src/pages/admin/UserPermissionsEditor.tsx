@@ -65,6 +65,8 @@ export function UserPermissionsEditor({ userId }: { userId: string }) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['user-class', userId] })
       qc.invalidateQueries({ queryKey: ['user-grants', userId] })
+      qc.invalidateQueries({ queryKey: ['admin-users'] })
+      qc.invalidateQueries({ queryKey: ['class-user-counts'] })
     },
   })
 
