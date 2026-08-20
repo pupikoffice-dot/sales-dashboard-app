@@ -23,6 +23,9 @@ export interface SmCubeGridProps {
   /** Allowed companies for full Orders report (from access.companies). */
   ordersReportCompanies?: SmOrdersReportTarget[]
   onOpenOrdersReport?: (companyId: LogicalCompany) => void
+  onOpenDebtReport?: () => void
+  onOpenOpenOrdersReport?: () => void
+  onOpenReturnsReport?: () => void
 }
 
 export function SmCubeGrid({
@@ -31,12 +34,22 @@ export function SmCubeGrid({
   monthLbl,
   ordersReportCompanies = [],
   onOpenOrdersReport,
+  onOpenDebtReport,
+  onOpenOpenOrdersReport,
+  onOpenReturnsReport,
 }: SmCubeGridProps) {
   const { t } = useLocale()
   const { salesMtd, openOrders, returnsMtd, openDebt, ordersLast7Days, receipts } = kpis
   const goalDisplay = goalCash == null ? '—' : fmt(goalCash)
   const debtDisplay = openDebt ? fmt(openDebt.grandTotal) : '—'
   const multiCoReport = ordersReportCompanies.length > 1
+
+  const goalPct =
+    goalCash != null && goalCash > 0 ? Math.min(999, (salesMtd.cash / goalCash) * 100) : null
+  const barPct = goalPct == null ? 0 : Math.min(100, Math.max(0, goalPct))
+  const remaining =
+    goalCash != null && goalCash > 0 ? Math.max(0, goalCash - salesMtd.cash) : null
+  const overGoal = goalCash != null && goalCash > 0 && salesMtd.cash > goalCash
 
   return (
     <div className="sm-cube-grid">
@@ -47,6 +60,35 @@ export function SmCubeGrid({
           <span className="sm-cube-sub-lbl">{t('sm.cube.goal')}</span>
           <span className="sm-cube-sub-val">{goalDisplay}</span>
         </div>
+
+        {goalCash != null && goalCash > 0 ? (
+          <div className="sm-goal-progress" aria-label={t('sm.cube.goalProgress')}>
+            <div className="sm-goal-track">
+              <div
+                className={`sm-goal-fill${overGoal ? ' sm-goal-fill--over' : ''}`}
+                style={{ width: `${barPct}%` }}
+              />
+            </div>
+            <div className="sm-goal-meta">
+              <span className={overGoal ? 'sm-goal-pct over' : 'sm-goal-pct'}>
+                {goalPct!.toFixed(0)}%
+              </span>
+              <span className="sm-goal-remain">
+                {overGoal
+                  ? t('sm.cube.goalOver', { amount: fmt(salesMtd.cash - goalCash) })
+                  : t('sm.cube.goalRemaining', { amount: fmt(remaining ?? 0) })}
+              </span>
+            </div>
+          </div>
+        ) : goalCash == null ? (
+          <div className="sm-goal-progress sm-goal-progress--empty">
+            <div className="sm-goal-track" />
+            <div className="sm-goal-meta">
+              <span className="sm-goal-remain">{t('sm.cube.goalUnknown')}</span>
+            </div>
+          </div>
+        ) : null}
+
         {salesMtd.lyChangeCashPct != null && (
           <div className={`sm-cube-delta ${salesMtd.lyChangeCashPct >= 0 ? 'up' : 'down'}`}>
             {salesMtd.lyChangeCashPct >= 0 ? '▲' : '▼'}
@@ -61,6 +103,11 @@ export function SmCubeGrid({
         <div className="sm-cube-meta">
           {t('oversite.clients')}: {openOrders.clients} · {t('oversite.qty')}: {fmt(openOrders.qty)}
         </div>
+        {onOpenOpenOrdersReport ? (
+          <button type="button" className="ov-debt-btn sm-cube-report-btn" onClick={onOpenOpenOrdersReport}>
+            📋 {t('sm.cube.fullReport')}
+          </button>
+        ) : null}
       </div>
 
       <div className="sm-cube sm-cube--returns">
@@ -69,11 +116,21 @@ export function SmCubeGrid({
         <div className="sm-cube-meta">
           {t('oversite.qty')}: {fmt(returnsMtd.qty)}
         </div>
+        {onOpenReturnsReport ? (
+          <button type="button" className="ov-debt-btn sm-cube-report-btn" onClick={onOpenReturnsReport}>
+            📋 {t('sm.cube.fullReport')}
+          </button>
+        ) : null}
       </div>
 
       <div className="sm-cube sm-cube--debt">
         <div className="sm-cube-title">{t('sm.cube.openDebt')}</div>
         <div className="sm-cube-val">{debtDisplay}</div>
+        {onOpenDebtReport ? (
+          <button type="button" className="ov-debt-btn sm-cube-report-btn" onClick={onOpenDebtReport}>
+            📋 {t('sm.cube.fullReport')}
+          </button>
+        ) : null}
       </div>
 
       <div className="sm-cube sm-cube--orders">

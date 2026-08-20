@@ -92,16 +92,36 @@ export function useDashboardData() {
   // The payload was fetched under the REAL session, so while previewing a
   // non-super-admin it can contain things that user could never receive. Mask
   // those before anything renders.
-  //   * receipts: get_dashboard_aux gates receiptsMonthly / receiptsMonthlyByAgent
-  //     behind is_super_admin() server-side, so a real non-super-admin gets {}.
-  //   * cost/price: the server only returns these when the caller's
-  //     show_item_cost / show_client_profit are set. The UI also gates them, but
-  //     blanking the maps means a missed gate still cannot leak a number.
+  //   * receiptsMonthly (company totals): blank in preview — classic Oversight
+  //     would otherwise show full-company receipts.
+  //   * receiptsMonthlyByAgent: keep but trim to the preview user's companies
+  //     + agents so Sales Manager suite View-as still works without leaking.
+  //   * cost/price: blanked unless the preview target has those field flags.
   const maskPreview = isPreviewing && !effectiveIsSuperAdmin
   const data = useMemo(() => {
-    if (!maskPreview || !q.data) return q.data
-    return { ...q.data, receiptsMonthly: {}, receiptsMonthlyByAgent: {} }
-  }, [q.data, maskPreview])
+    if (!maskPreview || !q.data || !access) return q.data
+    const allowedCo = new Set(access.companies.map(String))
+    const agentSet =
+      Array.isArray(access.agents) && access.agents.length > 0
+        ? new Set(access.agents.map(String))
+        : null
+    const src = q.data.receiptsMonthlyByAgent ?? {}
+    const filtered: Record<string, Record<string, Record<string, number>>> = {}
+    for (const [co, agents] of Object.entries(src)) {
+      if (!allowedCo.has(co)) continue
+      const nextAgents: Record<string, Record<string, number>> = {}
+      for (const [agent, months] of Object.entries(agents || {})) {
+        if (agentSet && !agentSet.has(agent)) continue
+        nextAgents[agent] = months
+      }
+      if (Object.keys(nextAgents).length) filtered[co] = nextAgents
+    }
+    return {
+      ...q.data,
+      receiptsMonthly: {},
+      receiptsMonthlyByAgent: filtered,
+    }
+  }, [q.data, maskPreview, access])
 
   const allRows: SalesRow[] = data?.rows ?? []
   const filterIndex = data?.filterIndex

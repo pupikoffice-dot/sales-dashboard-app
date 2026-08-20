@@ -225,6 +225,11 @@ export const messages: Record<keyof typeof en, string> = {
   'sm.cube.openDebt': 'חוב פתוח',
   'sm.cube.receipts': 'תקבולים',
   'sm.cube.receiptsEmpty': 'אין תקבולים בטווח.',
+  'sm.cube.fullReport': 'דוח מלא',
+  'sm.cube.goalProgress': 'התקדמות ליעד',
+  'sm.cube.goalRemaining': 'נותרו {amount} ליעד',
+  'sm.cube.goalOver': '{amount} מעל היעד',
+  'sm.cube.goalUnknown': 'אין יעד',
   'sm.goals.loadError': 'יעדים לא זמינים',
 
   'oversite.title': 'לוח מבט על',

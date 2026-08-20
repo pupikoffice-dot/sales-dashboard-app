@@ -19,6 +19,8 @@ interface DebtModalProps {
   company: LogicalCompany
   debtData: DebtRow[]
   debtLastUpdate?: string
+  /** Optional heading override (e.g. suite multi-company / per-agent window). */
+  titleOverride?: string
   onClose: () => void
 }
 
@@ -70,7 +72,7 @@ function sortIconChar(dir: 'asc' | 'desc' | null): string {
   return ' ↕'
 }
 
-export function DebtModal({ company, debtData, debtLastUpdate, onClose }: DebtModalProps) {
+export function DebtModal({ company, debtData, debtLastUpdate, titleOverride, onClose }: DebtModalProps) {
   const { t } = useLocale()
   const reportRows = debtReportRows(debtData)
   const mLabels = reportRows.length
@@ -142,9 +144,10 @@ export function DebtModal({ company, debtData, debtLastUpdate, onClose }: DebtMo
     })
   }
 
-  const title = `${t('oversite.debtReportTitle', { company: companyDebtLabel(company), min: DEBT_REPORT_MIN_TOTAL })}${
-    debtLastUpdate ? ` · ${t('oversite.lastUpdate')}: ${debtLastUpdate}` : ''
-  }`
+  const title = `${
+    titleOverride ??
+    t('oversite.debtReportTitle', { company: companyDebtLabel(company), min: DEBT_REPORT_MIN_TOTAL })
+  }${debtLastUpdate ? ` · ${t('oversite.lastUpdate')}: ${debtLastUpdate}` : ''}`
 
   const pdfLabels = useMemo(
     () => ({

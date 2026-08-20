@@ -4,12 +4,20 @@ import { useLocale } from '../../../context/LocaleContext'
 import { useDashboardData } from '../../../hooks/useDashboardData'
 import { useSalesAgentTargets } from '../../../hooks/useSalesAgentTargets'
 import { formatGeneratedDisplay } from '../../../lib/format'
-import { getOversiteDateContext, resolveOrdersTag } from '../../../lib/oversiteMetrics'
+import { getOversiteDateContext, resolveOrdersTag, type Top10Item } from '../../../lib/oversiteMetrics'
 import { sortAgentIds, sumGoals } from '../../../lib/uiModules'
-import type { LogicalCompany, SalesRow } from '../../../types/dashboard'
+import type { DebtRow, LogicalCompany, SalesRow } from '../../../types/dashboard'
+import { DebtModal } from '../DebtModal'
 import { OrdersTodayModal } from '../OrdersTodayModal'
 import { SmAgentWindow } from './SmAgentWindow'
-import { buildSmSuiteKpis, listSmOrdersReportCompanies } from './smMetrics'
+import { SmItemsReportModal } from './SmItemsReportModal'
+import {
+  buildSmDebtRows,
+  buildSmOpenOrdersTop10,
+  buildSmReturnsTop10,
+  buildSmSuiteKpis,
+  listSmOrdersReportCompanies,
+} from './smMetrics'
 
 /**
  * Sales Manager Oversight suite — All window + per-agent windows.
@@ -19,7 +27,7 @@ import { buildSmSuiteKpis, listSmOrdersReportCompanies } from './smMetrics'
 export function SalesManagerSuite() {
   const { t } = useLocale()
   const { access } = useDashboardAccess()
-  const { rows, debtRows, isLoading, error, data } = useDashboardData()
+  const { rows, debtRows, isLoading, error, data, debtLastUpdate } = useDashboardData()
   const dateCtx = useMemo(() => getOversiteDateContext(), [])
   const targetsQ = useSalesAgentTargets(dateCtx.curYear, dateCtx.curMonth)
 
@@ -33,6 +41,16 @@ export function SalesManagerSuite() {
     ordersTag: string
     /** Narrow modal rows to these agents; null = all access-scoped rows. */
     agents: string[] | null
+  } | null>(null)
+  const [debtModal, setDebtModal] = useState<{
+    rows: DebtRow[]
+    title: string
+    company: LogicalCompany
+  } | null>(null)
+  const [itemsModal, setItemsModal] = useState<{
+    title: string
+    items: Top10Item[]
+    emptyLabel: string
   } | null>(null)
 
   /** Class agent grant; empty/null = all agents present under access companies. */
@@ -117,6 +135,31 @@ export function SalesManagerSuite() {
     })
   }
 
+  const openDebtReport = (agents: string[] | null, windowTitle: string) => {
+    const scoped = buildSmDebtRows({ debtRows, companies, agents })
+    setDebtModal({
+      rows: scoped,
+      title: `${t('sm.cube.openDebt')} — ${windowTitle}`,
+      company: companies[0] ?? 'pupik',
+    })
+  }
+
+  const openOpenOrdersItems = (agents: string[] | null, windowTitle: string) => {
+    setItemsModal({
+      title: `${t('sm.cube.openOrders')} — ${windowTitle}`,
+      items: buildSmOpenOrdersTop10({ rows, companies, agents }),
+      emptyLabel: t('oversite.noOrderItems'),
+    })
+  }
+
+  const openReturnsItems = (agents: string[] | null, windowTitle: string) => {
+    setItemsModal({
+      title: `${t('sm.cube.returns')} — ${windowTitle}`,
+      items: buildSmReturnsTop10({ rows, companies, agents, dateCtx }),
+      emptyLabel: t('oversite.noReturns'),
+    })
+  }
+
   const modalRows: SalesRow[] = useMemo(() => {
     if (!ordersModal) return []
     if (!ordersModal.agents || ordersModal.agents.length === 0) return rows
@@ -128,6 +171,7 @@ export function SalesManagerSuite() {
   if (error) return <p className="status-msg error">{(error as Error).message}</p>
 
   const fileUpdatedAt = formatGeneratedDisplay(data?.generated)
+  const allAgentsScope = scopedAgents.length > 0 ? scopedAgents : null
 
   return (
     <div className="sm-suite">
@@ -164,22 +208,29 @@ export function SalesManagerSuite() {
             monthLbl={dateCtx.monthLbl}
             agentId={null}
             ordersReportCompanies={ordersReportCompanies}
-            onOpenOrdersReport={companyId =>
-              openOrdersReport(companyId, scopedAgents.length > 0 ? scopedAgents : null)
-            }
+            onOpenOrdersReport={companyId => openOrdersReport(companyId, allAgentsScope)}
+            onOpenDebtReport={() => openDebtReport(allAgentsScope, t('sm.window.allAgents'))}
+            onOpenOpenOrdersReport={() => openOpenOrdersItems(allAgentsScope, t('sm.window.allAgents'))}
+            onOpenReturnsReport={() => openReturnsItems(allAgentsScope, t('sm.window.allAgents'))}
           />
-          {agentWindows.map(({ agentId, kpis, goalCash }) => (
-            <SmAgentWindow
-              key={agentId}
-              title={t('sm.window.agent', { agent: agentId })}
-              kpis={kpis}
-              goalCash={goalCash}
-              monthLbl={dateCtx.monthLbl}
-              agentId={agentId}
-              ordersReportCompanies={ordersReportCompanies}
-              onOpenOrdersReport={companyId => openOrdersReport(companyId, [agentId])}
-            />
-          ))}
+          {agentWindows.map(({ agentId, kpis, goalCash }) => {
+            const winTitle = t('sm.window.agent', { agent: agentId })
+            return (
+              <SmAgentWindow
+                key={agentId}
+                title={winTitle}
+                kpis={kpis}
+                goalCash={goalCash}
+                monthLbl={dateCtx.monthLbl}
+                agentId={agentId}
+                ordersReportCompanies={ordersReportCompanies}
+                onOpenOrdersReport={companyId => openOrdersReport(companyId, [agentId])}
+                onOpenDebtReport={() => openDebtReport([agentId], winTitle)}
+                onOpenOpenOrdersReport={() => openOpenOrdersItems([agentId], winTitle)}
+                onOpenReturnsReport={() => openReturnsItems([agentId], winTitle)}
+              />
+            )
+          })}
         </div>
       )}
 
@@ -192,6 +243,27 @@ export function SalesManagerSuite() {
           todayStr={dateCtx.todayStr}
           todayDisp={dateCtx.todayDisp}
           onClose={() => setOrdersModal(null)}
+        />
+      ) : null}
+
+      {debtModal ? (
+        <DebtModal
+          company={debtModal.company}
+          debtData={debtModal.rows}
+          debtLastUpdate={
+            companies.map(c => data?.debtFileDates?.[c]).find(Boolean) || debtLastUpdate
+          }
+          titleOverride={debtModal.title}
+          onClose={() => setDebtModal(null)}
+        />
+      ) : null}
+
+      {itemsModal ? (
+        <SmItemsReportModal
+          title={itemsModal.title}
+          items={itemsModal.items}
+          emptyLabel={itemsModal.emptyLabel}
+          onClose={() => setItemsModal(null)}
         />
       ) : null}
     </div>

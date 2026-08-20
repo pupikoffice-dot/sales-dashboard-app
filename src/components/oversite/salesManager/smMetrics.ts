@@ -6,6 +6,7 @@ import {
   computeOrdersLast7DaysByAgent,
   computeReturnsMtd,
   computeSalesMtd,
+  computeTop10BySku,
   getOversiteDateContext,
   resolveOpenOrdersTag,
   resolveOrdersTag,
@@ -15,6 +16,7 @@ import {
   type OpenOrdersMetrics,
   type ReturnsMtdMetrics,
   type SalesMtdMetrics,
+  type Top10Item,
 } from '../../../lib/oversiteMetrics'
 /** Sum agent monthly maps into one YYYY-MM → gross map (same as OversiteReceipts). */
 function sumAgentMonthly(
@@ -300,4 +302,56 @@ export function buildSmReceipts(args: BuildSmReceiptsArgs): SmReceiptsMetrics {
 
   const monthly = sumAgentMonthly(byAgent, agents)
   return { monthly, byAgent, agents }
+}
+
+/** Debt rows for a suite window: access companies ∩ optional agent scope. */
+export function buildSmDebtRows(args: {
+  debtRows: DebtRow[]
+  companies: LogicalCompany[]
+  agents?: string[] | null
+}): DebtRow[] {
+  const scoped = narrowByAgents(args.debtRows, args.agents)
+  return args.companies.flatMap(co => debtRowsForCompany(scoped, co))
+}
+
+/** Top 10 open-order SKUs across allowed companies for the window agents. */
+export function buildSmOpenOrdersTop10(args: {
+  rows: SalesRow[]
+  companies: LogicalCompany[]
+  agents?: string[] | null
+}): Top10Item[] {
+  const scoped = narrowByAgents(args.rows, args.agents)
+  const matched: SalesRow[] = []
+  for (const coId of args.companies) {
+    const def = companyDef(coId)
+    if (!def) continue
+    const tag = resolveOpenOrdersTag(scoped, def.openOrdersTag)
+    matched.push(...scoped.filter(r => r.company === tag))
+  }
+  return computeTop10BySku(matched)
+}
+
+/** Top 10 returns SKUs (MTD) across allowed companies for the window agents. */
+export function buildSmReturnsTop10(args: {
+  rows: SalesRow[]
+  companies: LogicalCompany[]
+  agents?: string[] | null
+  dateCtx?: OversiteDateContext
+}): Top10Item[] {
+  const dateCtx = args.dateCtx ?? getOversiteDateContext()
+  const scoped = narrowByAgents(args.rows, args.agents)
+  const matched: SalesRow[] = []
+  for (const coId of args.companies) {
+    const def = companyDef(coId)
+    if (!def) continue
+    matched.push(
+      ...scoped.filter(
+        r =>
+          r.company === def.returnsTag &&
+          Number(r.year) === dateCtx.curYear &&
+          Number(r.month) === dateCtx.curMonth,
+      ),
+    )
+  }
+  return computeTop10BySku(matched, 10, 'low-first')
 }
