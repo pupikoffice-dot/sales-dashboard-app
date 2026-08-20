@@ -110,9 +110,25 @@ function DefineSections(props: DefineModeProps) {
     else next.delete(itemKeyStr)
     props.onChange(next)
   }
+
+  /** Specific ERP ids only — the all-agents wildcard (`scope:agent:`) is not listed as a row. */
   const assignedAgents = [...props.desiredChecked]
     .filter(k => k.startsWith('scope:agent:') && k !== 'scope:agent:')
     .map(k => k.split(':')[2])
+
+  function setAgentChecked(agent: string, checked: boolean) {
+    const next = new Set(props.desiredChecked)
+    const key = `scope:agent:${agent}`
+    if (checked) {
+      next.delete('scope:agent:')
+      next.add(key)
+    } else {
+      next.delete(key)
+      const stillHas = [...next].some(k => k.startsWith('scope:agent:') && k !== 'scope:agent:')
+      if (!stillHas) next.add('scope:agent:')
+    }
+    props.onChange(next)
+  }
 
   return (
     <div className="perm-sections">
@@ -131,7 +147,10 @@ function DefineSections(props: DefineModeProps) {
           ))}
         </div>
         <div className="perm-agent-picker">
-          <p className="perm-subhead">Agents</p>
+          <p className="perm-subhead">Agents <span className="perm-subhead-hint">(none selected = all)</span></p>
+          {assignedAgents.length === 0 && (
+            <p className="perm-agent-all-note">All agents</p>
+          )}
           {assignedAgents.map(a => (
             <Item
               key={a}
@@ -139,7 +158,7 @@ function DefineSections(props: DefineModeProps) {
               itemKey={a}
               mode="define"
               checked={isChecked('scope', 'agent', a)}
-              onSetChecked={(v) => setChecked('scope', 'agent', a, v)}
+              onSetChecked={(v) => setAgentChecked(a, v)}
             />
           ))}
           <select
@@ -147,7 +166,7 @@ function DefineSections(props: DefineModeProps) {
             onChange={e => {
               const agent = e.target.value
               if (!agent) return
-              setChecked('scope', 'agent', agent, true)
+              setAgentChecked(agent, true)
               e.target.value = ''
             }}
           >
@@ -240,7 +259,7 @@ function OverrideSections(props: OverrideModeProps) {
           ))}
         </div>
         <div className="perm-agent-picker">
-          <p className="perm-subhead">Agents</p>
+          <p className="perm-subhead">Agents <span className="perm-subhead-hint">(none selected = all)</span></p>
           {relevantAgents.map(a => (
             <Item
               key={a}

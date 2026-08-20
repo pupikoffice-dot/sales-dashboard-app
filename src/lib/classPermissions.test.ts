@@ -3,7 +3,9 @@ import {
   clearOverridesForClassSwitch,
   diffClassGrants,
   diffUserOverrides,
+  normalizeClassAgentScope,
   resolveOverrideState,
+  ALL_AGENTS_ITEM_KEY,
 } from './classPermissions'
 import type { AppGrant } from '../types/permissions'
 
@@ -34,6 +36,24 @@ describe('diffClassGrants', () => {
   it('preserves a non-null value through the insert (not mangled by the string-key parsing)', () => {
     const { toInsert } = diffClassGrants([], new Set(['scope:company:pupik']))
     expect(toInsert).toEqual([{ kind: 'scope', key: 'company', value: 'pupik' }])
+  })
+
+  it('writes a null agent value for the all-agents wildcard key', () => {
+    const { toInsert } = diffClassGrants([], new Set(['scope:agent:']))
+    expect(toInsert).toEqual([{ kind: 'scope', key: 'agent', value: null }])
+  })
+})
+
+describe('normalizeClassAgentScope', () => {
+  it('adds the all-agents wildcard when no specific agents are checked', () => {
+    const next = normalizeClassAgentScope(new Set(['scope:company:pupik']))
+    expect(next.has(ALL_AGENTS_ITEM_KEY)).toBe(true)
+  })
+
+  it('removes the all-agents wildcard when specific agents are present', () => {
+    const next = normalizeClassAgentScope(new Set([ALL_AGENTS_ITEM_KEY, 'scope:agent:24']))
+    expect(next.has(ALL_AGENTS_ITEM_KEY)).toBe(false)
+    expect(next.has('scope:agent:24')).toBe(true)
   })
 })
 

@@ -5,6 +5,22 @@ function itemKey(kind: GrantKind, key: string, value: string | null): string {
   return `${kind}:${key}:${value ?? ''}`
 }
 
+/** Grant key for agents_all (scope/agent with null value). */
+export const ALL_AGENTS_ITEM_KEY = 'scope:agent:'
+
+/**
+ * Empty agent checklist means all agents (same semantics as Admin Users).
+ * Ensures either the wildcard grant or at least one specific agent id is present —
+ * never neither (which resolve_access would treat as agents_all=false + empty list).
+ */
+export function normalizeClassAgentScope(desired: Set<string>): Set<string> {
+  const next = new Set(desired)
+  const specifics = [...next].filter(k => k.startsWith('scope:agent:') && k !== ALL_AGENTS_ITEM_KEY)
+  if (specifics.length === 0) next.add(ALL_AGENTS_ITEM_KEY)
+  else next.delete(ALL_AGENTS_ITEM_KEY)
+  return next
+}
+
 // ---- Class editor: define mode --------------------------------------------
 
 export interface NewGrant {

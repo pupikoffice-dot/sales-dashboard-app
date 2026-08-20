@@ -4,7 +4,7 @@ import {
   deleteClass, fetchClassGrants, fetchClassUserCounts, fetchClasses,
   fetchUsersInClass, insertGrants, deleteGrantsByIds, listKnownAgents, upsertClass,
 } from '../../lib/permissionsApi'
-import { diffClassGrants } from '../../lib/classPermissions'
+import { diffClassGrants, normalizeClassAgentScope, ALL_AGENTS_ITEM_KEY } from '../../lib/classPermissions'
 import { PermissionSections } from '../../components/admin/PermissionSections'
 import type { AppClass } from '../../types/permissions'
 
@@ -44,7 +44,9 @@ export function ClassesPage() {
     setSelectedId(cls.id)
     setDraft({ id: cls.id, label: cls.label, description: cls.description ?? '' })
     fetchClassGrants(cls.id).then(grants =>
-      setDesiredChecked(new Set(grants.map(g => itemKeyOf(g.kind, g.key, g.value)))),
+      setDesiredChecked(
+        normalizeClassAgentScope(new Set(grants.map(g => itemKeyOf(g.kind, g.key, g.value)))),
+      ),
     )
   }
 
@@ -53,14 +55,15 @@ export function ClassesPage() {
     const id = `class_${Date.now()}` // slug refined by the admin before first save if desired
     setSelectedId(null)
     setDraft({ id, label: '', description: '' })
-    setDesiredChecked(new Set())
+    setDesiredChecked(new Set([ALL_AGENTS_ITEM_KEY]))
   }
 
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!draft) return
       await upsertClass({ id: draft.id, label: draft.label, description: draft.description || null })
-      const { toInsert, toDelete } = diffClassGrants(currentGrants, desiredChecked)
+      const desired = normalizeClassAgentScope(desiredChecked)
+      const { toInsert, toDelete } = diffClassGrants(currentGrants, desired)
       await insertGrants(toInsert.map(g => ({ classId: draft.id, kind: g.kind, key: g.key, value: g.value, effect: 'allow' as const })))
       await deleteGrantsByIds(toDelete.map(g => g.id))
     },

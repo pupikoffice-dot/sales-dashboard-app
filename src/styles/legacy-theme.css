@@ -3193,6 +3193,21 @@ html[dir='rtl'] .hdr-brand,
   margin: 0 0 2px;
 }
 
+.perm-subhead-hint {
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--muted2);
+  font-size: 0.7rem;
+}
+
+.perm-agent-all-note {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--grn);
+  font-weight: 600;
+}
+
 .perm-agent-picker select {
   background: var(--sur2);
   border: 1px solid var(--bdr);
