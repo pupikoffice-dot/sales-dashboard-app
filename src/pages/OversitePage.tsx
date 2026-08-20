@@ -3,6 +3,8 @@ import { usePreview } from '../context/PreviewContext'
 import { useLocale } from '../context/LocaleContext'
 import { useDashboardAccess } from '../context/DashboardAccessContext'
 import { useDashboardData } from '../hooks/useDashboardData'
+import { useResolvedOversightMode } from '../hooks/useResolvedOversightMode'
+import { SalesManagerSuite } from '../components/oversite/salesManager/SalesManagerSuite'
 import { filterRows } from '../lib/permissions'
 import { computeDebtAgentMatrix, computeDebtSummary, debtRowsForCompany } from '../lib/debtMetrics'
 import { fmt, formatGeneratedDisplay } from '../lib/format'
@@ -54,6 +56,22 @@ export function OversitePage() {
   const { t } = useLocale()
   // Honours the super-admin "View as user" preview.
   const { effectiveIsSuperAdmin: isSuperAdmin } = usePreview()
+  const oversightMode = useResolvedOversightMode()
+
+  // Suite replaces classic Oversight entirely (addons ignored while suite active).
+  if (oversightMode.isLoading) {
+    return <p className="status-msg">{t('common.loadingSalesData')}</p>
+  }
+  if (oversightMode.mode === 'suite' && oversightMode.suiteId === 'sales_manager') {
+    return <SalesManagerSuite />
+  }
+
+  return <ClassicOversitePage isSuperAdmin={isSuperAdmin} />
+}
+
+/** Classic company-column Oversight layout (used when no suite grant). */
+function ClassicOversitePage({ isSuperAdmin }: { isSuperAdmin: boolean }) {
+  const { t } = useLocale()
   const { access } = useDashboardAccess()
   const { allRows, debtRows, debtLastUpdate, wmsStock, wmsNames, isLoading, error, data: dashboardData } =
     useDashboardData()
