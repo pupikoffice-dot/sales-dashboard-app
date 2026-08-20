@@ -3490,6 +3490,48 @@ html[dir='rtl'] .hdr-brand,
   backdrop-filter: blur(10px);
 }
 
+/* All-agents window stays neutral; per-agent boxes get distinct soft tints */
+.sm-window--all {
+  background: rgba(23, 31, 51, 0.4);
+  border-color: var(--bdr);
+}
+
+.sm-window--c0 {
+  background: rgba(129, 140, 248, 0.16);
+  border-color: rgba(129, 140, 248, 0.45);
+}
+.sm-window--c0 .sm-window-title { color: #a5b0fb; }
+
+.sm-window--c1 {
+  background: rgba(52, 211, 153, 0.14);
+  border-color: rgba(52, 211, 153, 0.42);
+}
+.sm-window--c1 .sm-window-title { color: #6ee7b7; }
+
+.sm-window--c2 {
+  background: rgba(251, 191, 36, 0.14);
+  border-color: rgba(251, 191, 36, 0.42);
+}
+.sm-window--c2 .sm-window-title { color: #fcd34d; }
+
+.sm-window--c3 {
+  background: rgba(248, 113, 113, 0.14);
+  border-color: rgba(248, 113, 113, 0.42);
+}
+.sm-window--c3 .sm-window-title { color: #fca5a5; }
+
+.sm-window--c4 {
+  background: rgba(34, 211, 238, 0.14);
+  border-color: rgba(34, 211, 238, 0.42);
+}
+.sm-window--c4 .sm-window-title { color: #67e8f9; }
+
+.sm-window--c5 {
+  background: rgba(244, 114, 182, 0.14);
+  border-color: rgba(244, 114, 182, 0.42);
+}
+.sm-window--c5 .sm-window-title { color: #f9a8d4; }
+
 .sm-window-title {
   font-size: 0.78rem;
   font-weight: 700;

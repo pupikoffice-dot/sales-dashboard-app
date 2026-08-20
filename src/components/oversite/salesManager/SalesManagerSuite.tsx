@@ -162,6 +162,7 @@ export function SalesManagerSuite() {
             kpis={allKpis}
             goalCash={allGoal}
             monthLbl={dateCtx.monthLbl}
+            agentId={null}
             ordersReportCompanies={ordersReportCompanies}
             onOpenOrdersReport={companyId =>
               openOrdersReport(companyId, scopedAgents.length > 0 ? scopedAgents : null)
@@ -174,6 +175,7 @@ export function SalesManagerSuite() {
               kpis={kpis}
               goalCash={goalCash}
               monthLbl={dateCtx.monthLbl}
+              agentId={agentId}
               ordersReportCompanies={ordersReportCompanies}
               onOpenOrdersReport={companyId => openOrdersReport(companyId, [agentId])}
             />
