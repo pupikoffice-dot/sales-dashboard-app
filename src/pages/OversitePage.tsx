@@ -1,9 +1,7 @@
 import { useState, type CSSProperties } from 'react'
-import { SalesReportBody } from '../components/sales/SalesReportBody'
 import { usePreview } from '../context/PreviewContext'
 import { useLocale } from '../context/LocaleContext'
 import { useDashboardAccess } from '../context/DashboardAccessContext'
-import { useDashboardFilters } from '../context/DashboardFiltersContext'
 import { useDashboardData } from '../hooks/useDashboardData'
 import { filterRows } from '../lib/permissions'
 import { computeDebtAgentMatrix, computeDebtSummary, debtRowsForCompany } from '../lib/debtMetrics'
@@ -57,7 +55,6 @@ export function OversitePage() {
   // Honours the super-admin "View as user" preview.
   const { effectiveIsSuperAdmin: isSuperAdmin } = usePreview()
   const { access } = useDashboardAccess()
-  const f = useDashboardFilters()
   const { allRows, debtRows, debtLastUpdate, wmsStock, wmsNames, isLoading, error, data: dashboardData } =
     useDashboardData()
   const [debtModalCo, setDebtModalCo] = useState<LogicalCompany | null>(null)
@@ -66,10 +63,6 @@ export function OversitePage() {
     companyLabel: string
     ordersTag: string
   } | null>(null)
-
-  if (!isSuperAdmin && f.applied) {
-    return <SalesReportBody />
-  }
 
   if (isLoading) return <p className="status-msg">{t('common.loadingSalesData')}</p>
   if (error) return <p className="status-msg error">{(error as Error).message}</p>
