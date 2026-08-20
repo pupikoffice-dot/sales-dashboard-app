@@ -3280,6 +3280,14 @@ html[dir='rtl'] .hdr-brand,
   margin-top: 4px;
 }
 
+.perm-mutation-saved {
+  color: var(--grn);
+  font-size: 12px;
+  font-weight: 600;
+  margin: 0;
+  align-self: center;
+}
+
 .perm-nested {
   margin: 6px 0 4px 26px;
   padding-left: 12px;
@@ -3441,4 +3449,6 @@ html[dir='rtl'] .hdr-brand,
 .class-editor-actions {
   display: flex;
   gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
 }

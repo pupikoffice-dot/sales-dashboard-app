@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   deleteClass, fetchClassGrants, fetchClassUserCounts, fetchClasses,
@@ -21,6 +21,7 @@ export function ClassesPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [draft, setDraft] = useState<{ id: string; label: string; description: string } | null>(null)
   const [desiredChecked, setDesiredChecked] = useState<Set<string>>(new Set())
+  const [saveNotice, setSaveNotice] = useState<string | null>(null)
 
   const { data: currentGrants = [] } = useQuery({
     queryKey: ['class-grants', selectedId],
@@ -28,7 +29,18 @@ export function ClassesPage() {
     enabled: !!selectedId,
   })
 
+  useEffect(() => {
+    if (!saveNotice) return
+    const t = window.setTimeout(() => setSaveNotice(null), 3500)
+    return () => window.clearTimeout(t)
+  }, [saveNotice])
+
+  function clearSaveNotice() {
+    setSaveNotice(null)
+  }
+
   function selectClass(cls: AppClass) {
+    clearSaveNotice()
     setSelectedId(cls.id)
     setDraft({ id: cls.id, label: cls.label, description: cls.description ?? '' })
     fetchClassGrants(cls.id).then(grants =>
@@ -37,6 +49,7 @@ export function ClassesPage() {
   }
 
   function newClass() {
+    clearSaveNotice()
     const id = `class_${Date.now()}` // slug refined by the admin before first save if desired
     setSelectedId(null)
     setDraft({ id, label: '', description: '' })
@@ -60,6 +73,7 @@ export function ClassesPage() {
       // to be re-diffed against nothing and re-inserted. Point selectedId at what was just saved so
       // the grants query tracks the right class from here on.
       if (draft && draft.id !== selectedId) setSelectedId(draft.id)
+      setSaveNotice('Saved')
     },
   })
 
@@ -77,6 +91,7 @@ export function ClassesPage() {
     },
     onSuccess: (result) => {
       if (!result.deleted) return // cancelled confirm; nothing changed, leave the editor as-is
+      clearSaveNotice()
       qc.invalidateQueries({ queryKey: ['classes'] })
       setSelectedId(null)
       setDraft(null)
@@ -111,27 +126,41 @@ export function ClassesPage() {
           <input
             value={draft.label}
             placeholder="Class name"
-            onChange={e => setDraft({ ...draft, label: e.target.value })}
+            onChange={e => {
+              clearSaveNotice()
+              setDraft({ ...draft, label: e.target.value })
+            }}
           />
           <textarea
             value={draft.description}
             placeholder="Description"
-            onChange={e => setDraft({ ...draft, description: e.target.value })}
+            onChange={e => {
+              clearSaveNotice()
+              setDraft({ ...draft, description: e.target.value })
+            }}
           />
           <PermissionSections
             mode="define"
             desiredChecked={desiredChecked}
-            onChange={setDesiredChecked}
+            onChange={next => {
+              clearSaveNotice()
+              setDesiredChecked(next)
+            }}
             knownAgents={knownAgents}
           />
           <div className="class-editor-actions">
             <button type="button" onClick={() => saveMutation.mutate()} disabled={!draft.label || saveMutation.isPending}>
-              Save
+              {saveMutation.isPending ? 'Saving…' : 'Save'}
             </button>
             {selectedId && (
               <button type="button" onClick={() => deleteMutation.mutate(selectedId)} disabled={deleteMutation.isPending}>
                 Delete
               </button>
+            )}
+            {saveNotice && !saveError && (
+              <p className="perm-mutation-saved" role="status" aria-live="polite">
+                {saveNotice}
+              </p>
             )}
             {(saveError || deleteError) && (
               <p className="perm-mutation-error" role="alert">
