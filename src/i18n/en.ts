@@ -223,6 +223,7 @@ export const messages = {
   'sm.cube.openDebt': 'Open debt',
   'sm.cube.receipts': 'Receipts',
   'sm.cube.receiptsEmpty': 'No receipts in scope.',
+  'sm.goals.loadError': 'Goals unavailable',
 
   'oversite.title': 'Oversight Dashboard',
   'oversite.today': 'Today',

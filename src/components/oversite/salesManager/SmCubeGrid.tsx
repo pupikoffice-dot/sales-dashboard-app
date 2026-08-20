@@ -1,25 +1,42 @@
+import type { LogicalCompany } from '../../../types/dashboard'
 import { useLocale } from '../../../context/LocaleContext'
 import { fmt } from '../../../lib/format'
 import { OversiteOrdersLast7Days } from '../OversiteOrdersLast7Days'
+import { OversiteOrdersReportButton } from '../OversiteOrdersReportButton'
 import { OversiteReceipts } from '../OversiteReceipts'
 import type { SmSuiteKpis } from './smMetrics'
+
+export interface SmOrdersReportTarget {
+  id: LogicalCompany
+  label: string
+}
 
 export interface SmCubeGridProps {
   kpis: SmSuiteKpis
   /**
    * Monthly cash goal for this window.
-   * `null` = missing target → display em dash (per-agent).
-   * Number (including 0) = show formatted goal (All window uses sumGoals).
+   * `null` = missing target or still loading → display em dash.
+   * Number (including 0) = show formatted goal (All window uses sumGoals once settled).
    */
   goalCash: number | null
   monthLbl: string
+  /** Allowed companies for full Orders report (from access.companies). */
+  ordersReportCompanies?: SmOrdersReportTarget[]
+  onOpenOrdersReport?: (companyId: LogicalCompany) => void
 }
 
-export function SmCubeGrid({ kpis, goalCash, monthLbl }: SmCubeGridProps) {
+export function SmCubeGrid({
+  kpis,
+  goalCash,
+  monthLbl,
+  ordersReportCompanies = [],
+  onOpenOrdersReport,
+}: SmCubeGridProps) {
   const { t } = useLocale()
   const { salesMtd, openOrders, returnsMtd, openDebt, ordersLast7Days, receipts } = kpis
   const goalDisplay = goalCash == null ? '—' : fmt(goalCash)
   const debtDisplay = openDebt ? fmt(openDebt.grandTotal) : '—'
+  const multiCoReport = ordersReportCompanies.length > 1
 
   return (
     <div className="sm-cube-grid">
@@ -61,6 +78,16 @@ export function SmCubeGrid({ kpis, goalCash, monthLbl }: SmCubeGridProps) {
 
       <div className="sm-cube sm-cube--orders">
         <OversiteOrdersLast7Days data={ordersLast7Days} />
+        {onOpenOrdersReport && ordersReportCompanies.length > 0 ? (
+          <div className="sm-orders-report">
+            {ordersReportCompanies.map(co => (
+              <div key={co.id} className="sm-orders-report-row">
+                {multiCoReport ? <span className="sm-orders-report-co">{co.label}</span> : null}
+                <OversiteOrdersReportButton onClick={() => onOpenOrdersReport(co.id)} />
+              </div>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       <div className="sm-cube sm-cube--receipts">

@@ -1,13 +1,15 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useDashboardAccess } from '../../../context/DashboardAccessContext'
 import { useLocale } from '../../../context/LocaleContext'
 import { useDashboardData } from '../../../hooks/useDashboardData'
 import { useSalesAgentTargets } from '../../../hooks/useSalesAgentTargets'
 import { formatGeneratedDisplay } from '../../../lib/format'
-import { getOversiteDateContext } from '../../../lib/oversiteMetrics'
+import { getOversiteDateContext, resolveOrdersTag } from '../../../lib/oversiteMetrics'
 import { sortAgentIds, sumGoals } from '../../../lib/uiModules'
+import type { LogicalCompany, SalesRow } from '../../../types/dashboard'
+import { OrdersTodayModal } from '../OrdersTodayModal'
 import { SmAgentWindow } from './SmAgentWindow'
-import { buildSmSuiteKpis } from './smMetrics'
+import { buildSmSuiteKpis, listSmOrdersReportCompanies } from './smMetrics'
 
 /**
  * Sales Manager Oversight suite — All window + per-agent windows.
@@ -23,6 +25,15 @@ export function SalesManagerSuite() {
 
   const companies = access?.companies ?? []
   const targets = targetsQ.data ?? {}
+  /** Avoid flashing `0` from empty `{}` while targets are still loading / unsettled. */
+  const goalsReady = targetsQ.isSuccess
+  const [ordersModal, setOrdersModal] = useState<{
+    company: LogicalCompany
+    companyLabel: string
+    ordersTag: string
+    /** Narrow modal rows to these agents; null = all access-scoped rows. */
+    agents: string[] | null
+  } | null>(null)
 
   /** Class agent grant; empty/null = all agents present under access companies. */
   const scopedAgents = useMemo(() => {
@@ -37,6 +48,11 @@ export function SalesManagerSuite() {
     return sortAgentIds([...found])
   }, [access?.agents, rows])
 
+  const ordersReportCompanies = useMemo(
+    () => listSmOrdersReportCompanies(companies),
+    [companies],
+  )
+
   const allKpis = useMemo(
     () =>
       buildSmSuiteKpis({
@@ -50,7 +66,10 @@ export function SalesManagerSuite() {
     [rows, debtRows, companies, scopedAgents, dateCtx, data?.receiptsMonthlyByAgent],
   )
 
-  const allGoal = useMemo(() => sumGoals(scopedAgents, targets), [scopedAgents, targets])
+  const allGoal = useMemo(
+    () => (goalsReady ? sumGoals(scopedAgents, targets) : null),
+    [goalsReady, scopedAgents, targets],
+  )
 
   const agentWindows = useMemo(
     () =>
@@ -63,14 +82,47 @@ export function SalesManagerSuite() {
           dateCtx,
           receiptsMonthlyByAgent: data?.receiptsMonthlyByAgent,
         })
-        // Missing target → null so the cube shows — (not 0).
-        const goalCash = Object.prototype.hasOwnProperty.call(targets, agentId)
-          ? targets[agentId]!
-          : null
+        // Loading / error → null (—). Missing target after success → null (—). Present → number (incl. 0).
+        const goalCash =
+          goalsReady && Object.prototype.hasOwnProperty.call(targets, agentId)
+            ? targets[agentId]!
+            : null
         return { agentId, kpis, goalCash }
       }),
-    [scopedAgents, rows, debtRows, companies, dateCtx, data?.receiptsMonthlyByAgent, targets],
+    [
+      scopedAgents,
+      rows,
+      debtRows,
+      companies,
+      dateCtx,
+      data?.receiptsMonthlyByAgent,
+      targets,
+      goalsReady,
+    ],
   )
+
+  const openOrdersReport = (companyId: LogicalCompany, agents: string[] | null) => {
+    const co = ordersReportCompanies.find(c => c.id === companyId)
+    if (!co) return
+    const scopeRows =
+      agents && agents.length > 0
+        ? rows.filter(r => agents.includes(String(r.agent ?? '')))
+        : rows
+    const ordersTag = resolveOrdersTag(scopeRows.length ? scopeRows : rows, co.ordersTag)
+    setOrdersModal({
+      company: co.id,
+      companyLabel: co.label,
+      ordersTag,
+      agents,
+    })
+  }
+
+  const modalRows: SalesRow[] = useMemo(() => {
+    if (!ordersModal) return []
+    if (!ordersModal.agents || ordersModal.agents.length === 0) return rows
+    const set = new Set(ordersModal.agents)
+    return rows.filter(r => set.has(String(r.agent ?? '')))
+  }, [ordersModal, rows])
 
   if (isLoading) return <p className="status-msg">{t('common.loadingSalesData')}</p>
   if (error) return <p className="status-msg error">{(error as Error).message}</p>
@@ -92,6 +144,12 @@ export function SalesManagerSuite() {
             </>
           ) : null}{' '}
           · {t('oversite.month')}: <b>{dateCtx.monthLbl}</b>
+          {targetsQ.isError ? (
+            <>
+              {' '}
+              · <span className="sm-goals-err">{t('sm.goals.loadError')}</span>
+            </>
+          ) : null}
         </div>
       </div>
 
@@ -104,6 +162,10 @@ export function SalesManagerSuite() {
             kpis={allKpis}
             goalCash={allGoal}
             monthLbl={dateCtx.monthLbl}
+            ordersReportCompanies={ordersReportCompanies}
+            onOpenOrdersReport={companyId =>
+              openOrdersReport(companyId, scopedAgents.length > 0 ? scopedAgents : null)
+            }
           />
           {agentWindows.map(({ agentId, kpis, goalCash }) => (
             <SmAgentWindow
@@ -112,10 +174,24 @@ export function SalesManagerSuite() {
               kpis={kpis}
               goalCash={goalCash}
               monthLbl={dateCtx.monthLbl}
+              ordersReportCompanies={ordersReportCompanies}
+              onOpenOrdersReport={companyId => openOrdersReport(companyId, [agentId])}
             />
           ))}
         </div>
       )}
+
+      {ordersModal ? (
+        <OrdersTodayModal
+          company={ordersModal.company}
+          companyLabel={ordersModal.companyLabel}
+          ordersTag={ordersModal.ordersTag}
+          companyRows={modalRows}
+          todayStr={dateCtx.todayStr}
+          todayDisp={dateCtx.todayDisp}
+          onClose={() => setOrdersModal(null)}
+        />
+      ) : null}
     </div>
   )
 }

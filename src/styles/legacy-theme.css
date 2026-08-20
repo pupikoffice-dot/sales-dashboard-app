@@ -3621,6 +3621,35 @@ html[dir='rtl'] .hdr-brand,
   margin-bottom: 8px;
 }
 
+.sm-orders-report {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.sm-orders-report-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.sm-orders-report-row .ov-debt-btn {
+  margin-top: 6px;
+}
+
+.sm-orders-report-co {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.sm-goals-err {
+  color: var(--amber);
+  font-weight: 600;
+}
+
 .sm-cube--receipts .ov-receipts {
   margin-top: 4px;
 }

@@ -60,6 +60,40 @@ function companyDef(id: LogicalCompany): Pick<
   return EXTRA_COMPANY_DEFS[id] ?? null
 }
 
+/** Display labels for suite Orders report buttons (classic Oversight columns + extras). */
+const COMPANY_REPORT_LABELS: Record<LogicalCompany, string> = {
+  pupik: '🏢 Pupik',
+  mt: '🐒 Monkeytime',
+  grow: '🌱 Grow',
+  gold: '🥇 Gold',
+}
+
+export interface SmOrdersReportCompany {
+  id: LogicalCompany
+  label: string
+  /** Base orders tag before `resolveOrdersTag`. */
+  ordersTag: string
+}
+
+/**
+ * Companies eligible for full Orders Today report entry.
+ * CORE RULE: pass `access.companies` only — never sidebar selection.
+ */
+export function listSmOrdersReportCompanies(companies: LogicalCompany[]): SmOrdersReportCompany[] {
+  const out: SmOrdersReportCompany[] = []
+  for (const id of companies) {
+    const def = companyDef(id)
+    if (!def) continue
+    const classic = OVERSITE_COMPANIES.find(c => c.id === id)
+    out.push({
+      id,
+      label: classic?.label ?? COMPANY_REPORT_LABELS[id] ?? id,
+      ordersTag: def.ordersTag,
+    })
+  }
+  return out
+}
+
 function narrowByAgents<T extends { agent?: string | null }>(
   rows: T[],
   agents: string[] | null | undefined,
