@@ -339,6 +339,42 @@ body {
   color: var(--txt);
 }
 
+.ov-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ov-header-row h2 {
+  margin: 0;
+}
+
+.ov-legend-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--bdr);
+  font-size: 0.72rem;
+  color: var(--muted2);
+}
+
+.ov-legend-swatch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ov-legend-swatch i {
+  display: inline-block;
+  width: 14px;
+  height: 10px;
+  border-radius: 2px;
+}
+
 .ov-sub {
   font-size: 0.78rem;
   color: var(--muted2);

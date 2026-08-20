@@ -50,6 +50,7 @@ import { OversiteSuppliersMatrix } from '../components/oversite/OversiteSupplier
 import { OversiteCollapsible } from '../components/oversite/OversiteCollapsible'
 import { OversiteKpiRow, OversiteSection, SalesLyBars } from '../components/oversite/OversiteKpiRow'
 import { OversiteTop10Table } from '../components/oversite/OversiteTop10Table'
+import { OversiteLegend } from '../components/oversite/OversiteLegend'
 
 export function OversitePage() {
   const { t } = useLocale()
@@ -111,7 +112,10 @@ export function OversitePage() {
   return (
     <>
       <div className="ov-header">
-        <h2>🏠 {t('oversite.title')}</h2>
+        <div className="ov-header-row">
+          <h2>🏠 {t('oversite.title')}</h2>
+          <OversiteLegend />
+        </div>
         <div className="ov-sub">
           {t('oversite.today')}: <b>{ctx.todayDisp}</b>
           {fileUpdatedAt ? (

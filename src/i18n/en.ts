@@ -34,6 +34,42 @@ export const messages = {
     'Type to keep only rows containing that text. Tap IN to flip it to OUT and hide them instead.',
   'legend.sortTerm': '↕',
   'legend.sortDesc': 'Tap any column heading to sort by it.',
+  'oversiteLegend.help': 'What am I seeing?',
+  'oversiteLegend.title': 'How to read Oversight',
+  'oversiteLegend.doc36Term': 'Orders Today (Doc 36)',
+  'oversiteLegend.doc36Desc':
+    'Orders placed today from report 722, filtered to today’s date. Cash and qty are order amounts, not invoiced sales.',
+  'oversiteLegend.doc722Term': 'Orders MTD (722)',
+  'oversiteLegend.doc722Desc':
+    'All placed orders this month (report 722) — includes delivered and still-open. Not the same as Open Orders.',
+  'oversiteLegend.doc721Term': 'Open Orders (721)',
+  'oversiteLegend.doc721Desc':
+    'Orders not yet fully delivered (report 721). Smaller than Orders MTD when many orders have already shipped.',
+  'oversiteLegend.doc720Term': 'Delivery Notes (720)',
+  'oversiteLegend.doc720Desc':
+    'Goods shipped but not yet invoiced (report 720). Stacked with invoiced sales in the Sales MTD bar.',
+  'oversiteLegend.salesBarTerm': 'Sales MTD bar (green / teal / muted)',
+  'oversiteLegend.salesBarDesc':
+    'Green = invoiced sales this month. Teal = delivery notes (720). Grey muted = same month last year for comparison.',
+  'oversiteLegend.projectedTerm': 'Projected (dotted)',
+  'oversiteLegend.projectedDesc':
+    'Month-end forecast from how sales usually pace through the month in recent history — not a promise.',
+  'oversiteLegend.debtTerm': 'Open Debt ageing',
+  'oversiteLegend.debtDesc':
+    'Client balances split into age buckets (current → older months). Full Report lists clients with total debt above the minimum.',
+  'oversiteLegend.receiptsTerm': 'Receipts (net of VAT)',
+  'oversiteLegend.receiptsDesc':
+    'Collections by collected date, shown net of 18% VAT. Team chart stacks one colour per agent.',
+  'oversiteLegend.stockAlertsTerm': 'Stock Alerts tabs',
+  'oversiteLegend.stockAlertsDesc':
+    'Items that need attention (low stock vs recent sales). Filter by group category; tabs group alert types.',
+  'oversiteLegend.coloursTerm': 'Agent colours',
+  'oversiteLegend.coloursDesc':
+    'Stacked charts (orders last 7 workdays, receipts) use a fixed colour per agent so the same agent matches across sections.',
+  'oversiteLegend.swatchSales': 'Sales',
+  'oversiteLegend.swatchDelivery': 'Delivery notes',
+  'oversiteLegend.swatchProjected': 'Projected',
+  'oversiteLegend.swatchAgents': 'Agents',
   'preview.viewAs': 'View as…',
   'preview.viewingAs': 'Viewing as',
   'preview.exit': 'Exit preview',

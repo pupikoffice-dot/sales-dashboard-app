@@ -36,6 +36,42 @@ export const messages: Record<keyof typeof en, string> = {
     'הקלידו כדי להשאיר רק שורות שמכילות את הטקסט. לחיצה על IN הופכת ל־OUT ומסתירה אותן במקום.',
   'legend.sortTerm': '↕',
   'legend.sortDesc': 'לחיצה על כותרת עמודה ממיינת לפיה.',
+  'oversiteLegend.help': 'מה אני רואה?',
+  'oversiteLegend.title': 'איך לקרוא את הפיקוח',
+  'oversiteLegend.doc36Term': 'הזמנות היום (מסמך 36)',
+  'oversiteLegend.doc36Desc':
+    'הזמנות שהוזמנו היום מתוך דוח 722, מסוננות לתאריך היום. מזומן וכמות הם סכומי הזמנה — לא מכירות שחויבו.',
+  'oversiteLegend.doc722Term': 'הזמנות מתחילת החודש (722)',
+  'oversiteLegend.doc722Desc':
+    'כל ההזמנות שהוזמנו החודש (דוח 722) — כולל שנמסרו ועדיין פתוחות. לא זהה להזמנות פתוחות.',
+  'oversiteLegend.doc721Term': 'הזמנות פתוחות (721)',
+  'oversiteLegend.doc721Desc':
+    'הזמנות שטרם סופקו במלואן (דוח 721). קטן יותר מהזמנות MTD כשחלק גדול כבר נשלח.',
+  'oversiteLegend.doc720Term': 'תעודות משלוח (720)',
+  'oversiteLegend.doc720Desc':
+    'סחורה שנשלחה ועדיין לא חויבה (דוח 720). מתווספת למכירות בבר של מכירות MTD.',
+  'oversiteLegend.salesBarTerm': 'בר מכירות MTD (ירוק / טורקיז / אפור)',
+  'oversiteLegend.salesBarDesc':
+    'ירוק = מכירות שחויבו החודש. טורקיז = תעודות משלוח (720). אפור = אותו חודש בשנה שעברה להשוואה.',
+  'oversiteLegend.projectedTerm': 'תחזית (מנוקד)',
+  'oversiteLegend.projectedDesc':
+    'תחזית לסוף החודש לפי קצב המכירות הטיפוסי בחודשים אחרונים — לא הבטחה.',
+  'oversiteLegend.debtTerm': 'חוב פתוח לפי גיל',
+  'oversiteLegend.debtDesc':
+    'יתרות לקוחות מחולקות לדלי גיל (שוטף → חודשים ישנים). הדוח המלא מציג לקוחות מעל סף מינימום.',
+  'oversiteLegend.receiptsTerm': 'גביות (נטו ממע״מ)',
+  'oversiteLegend.receiptsDesc':
+    'גביות לפי תאריך גביה, מוצגות נטו ממע״מ 18%. תרשים הצוות עושה שכבות צבע לכל סוכן.',
+  'oversiteLegend.stockAlertsTerm': 'התראות מלאי',
+  'oversiteLegend.stockAlertsDesc':
+    'פריטים שדורשים תשומת לב (מלאי נמוך מול מכירות אחרונות). סינון לפי קטגוריה; לשוניות לפי סוג התראה.',
+  'oversiteLegend.coloursTerm': 'צבעי סוכנים',
+  'oversiteLegend.coloursDesc':
+    'תרשימים בשכבות (הזמנות 7 ימי עבודה, גביות) משתמשים בצבע קבוע לכל סוכן כדי שיתאים בין הסעיפים.',
+  'oversiteLegend.swatchSales': 'מכירות',
+  'oversiteLegend.swatchDelivery': 'תעודות משלוח',
+  'oversiteLegend.swatchProjected': 'תחזית',
+  'oversiteLegend.swatchAgents': 'סוכנים',
   'preview.viewAs': 'צפה בתור…',
   'preview.viewingAs': 'צופה בתור',
   'preview.exit': 'יציאה מתצוגה',
