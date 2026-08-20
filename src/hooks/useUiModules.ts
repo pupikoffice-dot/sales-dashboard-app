@@ -11,7 +11,7 @@ function useEffectiveUserId(): string | null {
   return session?.user.id ?? null
 }
 
-/** Active catalog rows (admin / registry). */
+/** Full UI-module catalog (filter `active` at call site if needed). */
 export function useUiModuleCatalog() {
   return useQuery({
     queryKey: ['ui-modules-catalog'],
