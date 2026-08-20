@@ -1,5 +1,95 @@
 import { describe, expect, it } from 'vitest'
-import { pickOversightMode, sortAgentIds, sumGoals } from './uiModules'
+import type { AppUiModule } from '../types/uiModules'
+import {
+  mapGrantKeysToUiModules,
+  parseUiModuleGrantKey,
+  pickOversightMode,
+  sortAgentIds,
+  sumGoals,
+  uiModuleGrantKey,
+} from './uiModules'
+
+const catalog: AppUiModule[] = [
+  {
+    id: 'sales_manager',
+    label: 'Sales Manager',
+    surface: 'oversight',
+    kind: 'suite',
+    active: true,
+    sortOrder: 10,
+    description: null,
+  },
+  {
+    id: 'extra_addon',
+    label: 'Extra',
+    surface: 'oversight',
+    kind: 'addon',
+    active: true,
+    sortOrder: 20,
+    description: null,
+  },
+  {
+    id: 'inactive_suite',
+    label: 'Off',
+    surface: 'oversight',
+    kind: 'suite',
+    active: false,
+    sortOrder: 30,
+    description: null,
+  },
+]
+
+describe('parseUiModuleGrantKey / uiModuleGrantKey', () => {
+  it('round-trips suite and addon keys', () => {
+    expect(uiModuleGrantKey('oversight', 'suite', 'sales_manager')).toBe(
+      'ui.oversight.suite.sales_manager',
+    )
+    expect(parseUiModuleGrantKey('ui.oversight.suite.sales_manager')).toEqual({
+      surface: 'oversight',
+      kind: 'suite',
+      id: 'sales_manager',
+    })
+    expect(parseUiModuleGrantKey('ui.oversight.addon.extra_addon')).toEqual({
+      surface: 'oversight',
+      kind: 'addon',
+      id: 'extra_addon',
+    })
+  })
+
+  it('rejects legacy widget keys and malformed strings', () => {
+    expect(parseUiModuleGrantKey('widget.ordersToday')).toBeNull()
+    expect(parseUiModuleGrantKey('ui.oversight.sales_manager')).toBeNull()
+    expect(parseUiModuleGrantKey('ui.oversight.suite.')).toBeNull()
+  })
+})
+
+describe('mapGrantKeysToUiModules', () => {
+  it('maps allow keys onto catalog refs', () => {
+    expect(
+      mapGrantKeysToUiModules(
+        ['ui.oversight.suite.sales_manager', 'ui.oversight.addon.extra_addon'],
+        catalog,
+      ),
+    ).toEqual([
+      { id: 'sales_manager', surface: 'oversight', kind: 'suite' },
+      { id: 'extra_addon', surface: 'oversight', kind: 'addon' },
+    ])
+  })
+
+  it('skips unknown, inactive, and surface/kind mismatches', () => {
+    expect(
+      mapGrantKeysToUiModules(
+        [
+          'ui.oversight.suite.missing',
+          'ui.oversight.suite.inactive_suite',
+          'ui.oversight.addon.sales_manager',
+          'widget.ordersToday',
+        ],
+        catalog,
+      ),
+    ).toEqual([])
+  })
+})
 
 describe('pickOversightMode', () => {
   it('returns suite when class has an oversight suite', () => {

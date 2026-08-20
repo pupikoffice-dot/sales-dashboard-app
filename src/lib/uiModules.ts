@@ -1,4 +1,66 @@
-import type { OversightMode, UiModuleRef } from '../types/uiModules'
+import type {
+  AppUiModule,
+  OversightMode,
+  UiModuleGrantKeyParts,
+  UiModuleKind,
+  UiModuleRef,
+  UiModuleSurface,
+} from '../types/uiModules'
+
+/** Grant key prefix for Oversight UI modules (class `node` grants). */
+export const UI_OVERSIGHT_GRANT_PREFIX = 'ui.oversight.'
+
+const UI_MODULE_GRANT_KEY_RE =
+  /^ui\.(oversight|sidebar)\.(suite|addon)\.([a-z0-9_]+)$/
+
+/**
+ * Build class grant key for a UI module.
+ * e.g. `ui.oversight.suite.sales_manager`, `ui.oversight.addon.<id>`.
+ */
+export function uiModuleGrantKey(
+  surface: UiModuleSurface,
+  kind: UiModuleKind,
+  id: string,
+): string {
+  return `ui.${surface}.${kind}.${id}`
+}
+
+/** Parse `ui.<surface>.<kind>.<id>`; returns null if not a UI-module grant key. */
+export function parseUiModuleGrantKey(key: string): UiModuleGrantKeyParts | null {
+  const m = UI_MODULE_GRANT_KEY_RE.exec(key)
+  if (!m) return null
+  return {
+    surface: m[1] as UiModuleSurface,
+    kind: m[2] as UiModuleKind,
+    id: m[3],
+  }
+}
+
+/**
+ * Map allow grant keys onto catalog rows.
+ * Skips unknown / inactive modules and surface/kind mismatches with the catalog.
+ */
+export function mapGrantKeysToUiModules(
+  keys: string[],
+  catalog: AppUiModule[],
+): UiModuleRef[] {
+  const byId = new Map(catalog.map((row) => [row.id, row]))
+  const out: UiModuleRef[] = []
+  const seen = new Set<string>()
+
+  for (const key of keys) {
+    const parsed = parseUiModuleGrantKey(key)
+    if (!parsed) continue
+    const mod = byId.get(parsed.id)
+    if (!mod || !mod.active) continue
+    if (mod.surface !== parsed.surface || mod.kind !== parsed.kind) continue
+    if (seen.has(mod.id)) continue
+    seen.add(mod.id)
+    out.push({ id: mod.id, surface: mod.surface, kind: mod.kind })
+  }
+
+  return out
+}
 
 /**
  * Resolve Oversight layout from class UI-module grants.
