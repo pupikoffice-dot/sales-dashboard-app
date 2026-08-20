@@ -9,7 +9,7 @@ const CORS = {
 const USERNAME_AUTH_DOMAIN = 'dashboard.local'
 const USERNAME_RE = /^[a-z0-9][a-z0-9._-]{1,31}$/i
 /** This Supabase project uses user_role (not dashboard_user_role). */
-const VALID_ROLES = ['super_admin', 'admin', 'manager', 'agent'] as const
+const VALID_ROLES = ['super_admin', 'admin', 'cco', 'manager', 'agent'] as const
 
 function normalizeRole(role?: string): string {
   if (!role || role === 'viewer') return 'agent'

@@ -20,7 +20,12 @@ interface UserRow {
   role: string
   active: boolean
   password_display: string | null
+  agent_erp_id: string | null
+  parent_id: string | null
 }
+
+const SYSTEM_ROLES = ['agent', 'manager', 'admin'] as const
+type SystemRole = (typeof SYSTEM_ROLES)[number]
 
 interface AccessRow {
   user_id: string
@@ -70,7 +75,7 @@ export function UsersPage() {
       const [profilesRes, accessRes] = await Promise.all([
         supabase
           .from('user_profiles')
-          .select('id,email,username,name,role,active,password_display')
+          .select('id,email,username,name,role,active,password_display,agent_erp_id,parent_id')
           .order('name'),
         supabase
           .from('dashboard_user_access')
@@ -150,7 +155,7 @@ export function UsersPage() {
       <div className="ov-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
         <div>
           <h2>Dashboard Users</h2>
-          <p className="ov-sub">Add users, set passwords, and assign modules, companies, and agents.</p>
+          <p className="ov-sub">Add users, set passwords, org hierarchy (ERP agent + manager), and access.</p>
         </div>
         <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
           <button
@@ -247,6 +252,8 @@ export function UsersPage() {
               <th>Name</th>
               <th>Login</th>
               <th>Role</th>
+              <th>ERP agent</th>
+              <th>Reports to</th>
               <th>Companies</th>
               <th>Agents</th>
               <th>Password</th>
@@ -273,6 +280,14 @@ export function UsersPage() {
                   )}
                 </td>
                 <td>{u.role}</td>
+                <td style={{ fontSize: '.78rem', fontFamily: 'monospace' }}>
+                  {u.agent_erp_id?.trim() || '—'}
+                </td>
+                <td style={{ fontSize: '.78rem' }}>
+                  {u.parent_id
+                    ? (users?.find(p => p.id === u.parent_id)?.name ?? u.parent_id.slice(0, 8))
+                    : '—'}
+                </td>
                 <td style={{ fontSize: '.78rem', textTransform: 'capitalize' }}>
                   {formatCompanies(access?.companies, u.role)}
                 </td>
@@ -362,7 +377,7 @@ export function UsersPage() {
             )})}
             {(users ?? []).length === 0 && (
               <tr>
-                <td colSpan={7} style={{ textAlign: 'center', color: 'var(--muted)' }}>No users yet.</td>
+                <td colSpan={9} style={{ textAlign: 'center', color: 'var(--muted)' }}>No users yet.</td>
               </tr>
             )}
           </tbody>
@@ -373,6 +388,7 @@ export function UsersPage() {
         <EditAccessModal
           userId={editId}
           userName={users?.find(u => u.id === editId)?.name ?? ''}
+          users={users ?? []}
           onClose={() => setEditId(null)}
           onSaved={savedUserId => {
             setEditId(null)
@@ -394,11 +410,13 @@ export function UsersPage() {
 function EditAccessModal({
   userId,
   userName,
+  users,
   onClose,
   onSaved,
 }: {
   userId: string
   userName: string
+  users: UserRow[]
   onClose: () => void
   /** Receives the saved user's id so callers can react (e.g. refresh a live preview). */
   onSaved: (savedUserId: string) => void
@@ -411,9 +429,15 @@ function EditAccessModal({
   const [locale, setLocale] = useState<AppLocale>('en')
   const [showItemCost, setShowItemCost] = useState(false)
   const [showClientProfit, setShowClientProfit] = useState(false)
+  const [systemRole, setSystemRole] = useState<SystemRole | 'super_admin'>('agent')
+  const [agentErpId, setAgentErpId] = useState('')
+  const [parentId, setParentId] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { t } = useLocale()
+
+  const profile = users.find(u => u.id === userId)
+  const parentOptions = users.filter(u => u.id !== userId)
 
   useEffect(() => {
     supabase.from('dashboard_user_access').select('*').eq('user_id', userId).maybeSingle()
@@ -438,7 +462,13 @@ function EditAccessModal({
           setCompanies(['pupik'])
         }
       })
-  }, [userId])
+    const p = users.find(u => u.id === userId)
+    if (p) {
+      setSystemRole(p.role as SystemRole | 'super_admin')
+      setAgentErpId(p.agent_erp_id ?? '')
+      setParentId(p.parent_id ?? '')
+    }
+  }, [userId, users])
 
   function toggleModule(id: DashboardModuleId) {
     setModules(prev => prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id])
@@ -458,6 +488,25 @@ function EditAccessModal({
     const agents = agentsText.trim()
       ? agentsText.split(/[\s,]+/).map(s => s.trim()).filter(Boolean)
       : null
+
+    if (profile?.role !== 'super_admin') {
+      const role = SYSTEM_ROLES.includes(systemRole as SystemRole) ? systemRole : 'agent'
+      const erp = agentErpId.trim() || null
+      const { error: orgErr } = await supabase
+        .from('user_profiles')
+        .update({
+          role,
+          agent_erp_id: erp,
+          parent_id: parentId.trim() || null,
+        })
+        .eq('id', userId)
+      if (orgErr) {
+        setSaving(false)
+        setError(orgErr.message)
+        return
+      }
+    }
+
     const { error: err } = await supabase.from('dashboard_user_access').upsert({
       user_id: userId,
       modules,
@@ -488,6 +537,51 @@ function EditAccessModal({
         <div className="debt-modal-body">
           <div className="admin-form">
             {error && <p className="status-msg error" style={{ margin: 0 }}>{error}</p>}
+
+            {profile?.role !== 'super_admin' && (
+              <div>
+                <div className="admin-form-section-title">Org hierarchy (Phase 2.5)</div>
+                <p className="ov-sub" style={{ margin: '0 0 8px', fontSize: '.72rem' }}>
+                  ERP agent ID links this login to sales rows. Reports-to builds the manager subtree for future permission classes.
+                </p>
+                <label>
+                  System role
+                  <select
+                    className="block-input"
+                    value={systemRole}
+                    onChange={e => setSystemRole(e.target.value as SystemRole)}
+                  >
+                    {SYSTEM_ROLES.map(r => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  ERP agent ID
+                  <input
+                    className="sbar-search block-input"
+                    value={agentErpId}
+                    onChange={e => setAgentErpId(e.target.value)}
+                    placeholder="e.g. 24"
+                  />
+                </label>
+                <label>
+                  Reports to
+                  <select
+                    className="block-input"
+                    value={parentId}
+                    onChange={e => setParentId(e.target.value)}
+                  >
+                    <option value="">— none (top level) —</option>
+                    {parentOptions.map(u => (
+                      <option key={u.id} value={u.id}>
+                        {u.name} ({u.role})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            )}
 
             <div>
               <div className="admin-form-section-title">Modules</div>
