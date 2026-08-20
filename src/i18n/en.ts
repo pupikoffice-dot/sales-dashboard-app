@@ -213,6 +213,17 @@ export const messages = {
   'sales.periodOpenOrders': 'Open Orders',
   'sales.periodStock': 'Stock',
 
+  'sm.suite.title': 'Sales Manager',
+  'sm.window.allAgents': 'All agents',
+  'sm.window.agent': 'Agent {agent}',
+  'sm.cube.salesMtdGoal': 'Sales MTD + Goal — {month}',
+  'sm.cube.goal': 'Goal',
+  'sm.cube.openOrders': 'Open orders',
+  'sm.cube.returns': 'Returns',
+  'sm.cube.openDebt': 'Open debt',
+  'sm.cube.receipts': 'Receipts',
+  'sm.cube.receiptsEmpty': 'No receipts in scope.',
+
   'oversite.title': 'Oversight Dashboard',
   'oversite.today': 'Today',
   'oversite.fileUpdated': 'File updated',

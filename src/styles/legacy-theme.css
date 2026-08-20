@@ -3467,3 +3467,176 @@ html[dir='rtl'] .hdr-brand,
   align-items: center;
   flex-wrap: wrap;
 }
+
+/* ── Sales Manager suite (translucent 4+2 cubes) ─────────────────────────── */
+
+.sm-suite {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.sm-suite-windows {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.sm-window {
+  background: rgba(23, 31, 51, 0.4);
+  border: 1px solid var(--bdr);
+  border-radius: var(--r);
+  padding: 14px 16px 16px;
+  backdrop-filter: blur(10px);
+}
+
+.sm-window-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted2);
+  margin: 0 0 12px;
+}
+
+.sm-cube-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-areas:
+    'mtd open returns debt'
+    'orders orders orders receipts';
+  gap: 12px;
+  align-items: stretch;
+}
+
+.sm-cube {
+  background: rgba(19, 27, 46, 0.55);
+  border: 1px solid var(--bdr);
+  border-radius: 12px;
+  padding: 12px 14px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  min-width: 0;
+}
+
+.sm-cube--mtd {
+  grid-area: mtd;
+}
+.sm-cube--open {
+  grid-area: open;
+}
+.sm-cube--returns {
+  grid-area: returns;
+}
+.sm-cube--debt {
+  grid-area: debt;
+}
+.sm-cube--orders {
+  grid-area: orders;
+  min-height: 220px;
+}
+.sm-cube--receipts {
+  grid-area: receipts;
+  min-height: 220px;
+  overflow-x: auto;
+}
+
+.sm-cube-title {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 8px;
+}
+
+.sm-cube-val {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--txt);
+  line-height: 1.2;
+}
+
+.sm-cube-val.grn {
+  color: var(--grn);
+}
+
+.sm-cube-val.amber {
+  color: var(--amber);
+}
+
+.sm-cube-sub {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.sm-cube-sub-lbl {
+  font-size: 0.67rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sm-cube-sub-val {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--txt);
+}
+
+.sm-cube-meta {
+  margin-top: 6px;
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.sm-cube-delta {
+  margin-top: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.sm-cube-delta.up {
+  color: var(--grn);
+}
+
+.sm-cube-delta.down {
+  color: var(--amber);
+}
+
+.sm-cube-empty {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-style: italic;
+  margin-top: 4px;
+}
+
+.sm-cube--orders .ov-orders7 {
+  margin: 0;
+}
+
+.sm-cube--orders .ov-orders7-title {
+  margin-bottom: 8px;
+}
+
+.sm-cube--receipts .ov-receipts {
+  margin-top: 4px;
+}
+
+@media (max-width: 899px) {
+  .sm-cube-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      'mtd open'
+      'returns debt'
+      'orders orders'
+      'receipts receipts';
+  }
+
+  .sm-cube--orders,
+  .sm-cube--receipts {
+    min-height: 180px;
+  }
+}

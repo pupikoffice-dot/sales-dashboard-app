@@ -215,6 +215,17 @@ export const messages: Record<keyof typeof en, string> = {
   'sales.periodOpenOrders': 'הזמנות פתוחות',
   'sales.periodStock': 'מלאי',
 
+  'sm.suite.title': 'מנהל מכירות',
+  'sm.window.allAgents': 'כל הסוכנים',
+  'sm.window.agent': 'סוכן {agent}',
+  'sm.cube.salesMtdGoal': 'מכירות חודש + יעד — {month}',
+  'sm.cube.goal': 'יעד',
+  'sm.cube.openOrders': 'הזמנות פתוחות',
+  'sm.cube.returns': 'החזרות',
+  'sm.cube.openDebt': 'חוב פתוח',
+  'sm.cube.receipts': 'תקבולים',
+  'sm.cube.receiptsEmpty': 'אין תקבולים בטווח.',
+
   'oversite.title': 'לוח מבט על',
   'oversite.today': 'היום',
   'oversite.fileUpdated': 'עדכון קובץ',
