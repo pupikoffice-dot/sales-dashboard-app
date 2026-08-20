@@ -75,9 +75,17 @@ function sortIconChar(dir: 'asc' | 'desc' | null): string {
 export function DebtModal({ company, debtData, debtLastUpdate, titleOverride, onClose }: DebtModalProps) {
   const { t } = useLocale()
   const reportRows = debtReportRows(debtData)
-  const mLabels = reportRows.length
-    ? sortDebtMonthLabels(debtMonths(reportRows[0].months).map(m => m.label))
-    : []
+  // Union months across ALL clients — not just the first row (that row may only
+  // have recent buckets; classic Oversight matrix already unions labels).
+  const mLabels = useMemo(() => {
+    const seen = new Set<string>()
+    for (const r of reportRows) {
+      for (const m of debtMonths(r.months)) {
+        if (m.label) seen.add(m.label)
+      }
+    }
+    return sortDebtMonthLabels([...seen])
+  }, [reportRows])
   const { sortCol, sortAsc, onSort, sortIcon } = useColumnSort()
   const [showAgentFilter, setShowAgentFilter] = useState(false)
 
