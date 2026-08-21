@@ -227,6 +227,8 @@ export const messages: Record<keyof typeof en, string> = {
   'sm.cube.receipts': 'תקבולים',
   'sm.cube.receiptsEmpty': 'אין תקבולים בטווח.',
   'sm.cube.fullReport': 'דוח מלא',
+  'sm.openOrders.top10Hint': 'עשרת ההזמנות הפתוחות הגדולות לפי סכום. לחצו על שורה לפירוט שורות.',
+  'sm.openOrders.top10Total': 'סה״כ עשירייה',
   'sm.cube.goalProgress': 'התקדמות ליעד',
   'sm.cube.goalRemaining': 'נותרו {amount} ליעד',
   'sm.cube.goalOver': '{amount} מעל היעד',

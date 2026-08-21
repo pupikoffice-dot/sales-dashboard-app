@@ -3790,6 +3790,25 @@ html[dir='rtl'] .hdr-brand,
   overflow: auto;
 }
 
+.sm-report-hint {
+  margin: 0 0 12px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.sm-receipts-modal {
+  width: min(960px, 96vw);
+}
+
+.sm-receipts-table th,
+.sm-receipts-table td {
+  white-space: nowrap;
+}
+
+.sm-receipts-row--current td {
+  background: rgba(52, 211, 153, 0.08);
+}
+
 @media (max-width: 899px) {
   .sm-cube-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -25,6 +25,7 @@ export interface SmAgentWindowProps {
   onOpenDebtReport?: () => void
   onOpenOpenOrdersReport?: () => void
   onOpenReturnsReport?: () => void
+  onOpenReceiptsReport?: () => void
 }
 
 export function SmAgentWindow({
@@ -38,6 +39,7 @@ export function SmAgentWindow({
   onOpenDebtReport,
   onOpenOpenOrdersReport,
   onOpenReturnsReport,
+  onOpenReceiptsReport,
 }: SmAgentWindowProps) {
   return (
     <section className={`sm-window ${windowTintClass(agentId)}`}>
@@ -51,6 +53,7 @@ export function SmAgentWindow({
         onOpenDebtReport={onOpenDebtReport}
         onOpenOpenOrdersReport={onOpenOpenOrdersReport}
         onOpenReturnsReport={onOpenReturnsReport}
+        onOpenReceiptsReport={onOpenReceiptsReport}
       />
     </section>
   )

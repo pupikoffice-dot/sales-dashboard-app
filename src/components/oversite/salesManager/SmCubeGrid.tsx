@@ -26,6 +26,7 @@ export interface SmCubeGridProps {
   onOpenDebtReport?: () => void
   onOpenOpenOrdersReport?: () => void
   onOpenReturnsReport?: () => void
+  onOpenReceiptsReport?: () => void
 }
 
 export function SmCubeGrid({
@@ -37,6 +38,7 @@ export function SmCubeGrid({
   onOpenDebtReport,
   onOpenOpenOrdersReport,
   onOpenReturnsReport,
+  onOpenReceiptsReport,
 }: SmCubeGridProps) {
   const { t } = useLocale()
   const { salesMtd, openOrders, returnsMtd, openDebt, ordersLast7Days, receipts } = kpis
@@ -158,6 +160,11 @@ export function SmCubeGrid({
         ) : (
           <div className="sm-cube-empty">{t('sm.cube.receiptsEmpty')}</div>
         )}
+        {onOpenReceiptsReport && Object.keys(receipts.monthly).length > 0 ? (
+          <button type="button" className="ov-debt-btn sm-cube-report-btn" onClick={onOpenReceiptsReport}>
+            📋 {t('sm.cube.fullReport')}
+          </button>
+        ) : null}
       </div>
     </div>
   )

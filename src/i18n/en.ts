@@ -225,6 +225,8 @@ export const messages = {
   'sm.cube.receipts': 'Receipts',
   'sm.cube.receiptsEmpty': 'No receipts in scope.',
   'sm.cube.fullReport': 'Full report',
+  'sm.openOrders.top10Hint': 'Top 10 open orders by cash. Click a row to see line items.',
+  'sm.openOrders.top10Total': 'Top 10 total',
   'sm.cube.goalProgress': 'Progress toward goal',
   'sm.cube.goalRemaining': '{amount} left to goal',
   'sm.cube.goalOver': '{amount} over goal',

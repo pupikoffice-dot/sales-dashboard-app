@@ -10,6 +10,8 @@ import {
   getOversiteDateContext,
   resolveOpenOrdersTag,
   resolveOrdersTag,
+  topOpenOrdersByCash,
+  type OrderTodayGroup,
   type OrdersLast7DaysResult,
   type OversiteCompanyDef,
   type OversiteDateContext,
@@ -274,17 +276,17 @@ export function buildSmDebtRows(args: {
   return debtRowsForCompany(scoped, args.company)
 }
 
-/** Top 10 open-order SKUs for one company ∩ window agents. */
+/** Top 10 open **orders** (by cash) for one company ∩ window agents — not SKUs. */
 export function buildSmOpenOrdersTop10(args: {
   rows: SalesRow[]
   company: LogicalCompany
   agents?: string[] | null
-}): Top10Item[] {
+}): OrderTodayGroup[] {
   const scoped = narrowByAgents(args.rows, args.agents)
   const def = companyDef(args.company)
   if (!def) return []
   const tag = resolveOpenOrdersTag(scoped, def.openOrdersTag)
-  return computeTop10BySku(scoped.filter(r => r.company === tag))
+  return topOpenOrdersByCash(scoped, tag, 10)
 }
 
 /** Top 10 returns SKUs (MTD) for one company ∩ window agents. */

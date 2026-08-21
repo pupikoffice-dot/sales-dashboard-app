@@ -4,13 +4,15 @@ import { useLocale } from '../../../context/LocaleContext'
 import { useDashboardData } from '../../../hooks/useDashboardData'
 import { useSalesAgentTargets } from '../../../hooks/useSalesAgentTargets'
 import { formatGeneratedDisplay } from '../../../lib/format'
-import { getOversiteDateContext, resolveOrdersTag, type Top10Item } from '../../../lib/oversiteMetrics'
+import { getOversiteDateContext, resolveOrdersTag, type OrderTodayGroup, type Top10Item } from '../../../lib/oversiteMetrics'
 import { sortAgentIds, sumGoals } from '../../../lib/uiModules'
 import type { DebtRow, LogicalCompany, SalesRow } from '../../../types/dashboard'
 import { DebtModal } from '../DebtModal'
 import { OrdersTodayModal } from '../OrdersTodayModal'
 import { SmAgentWindow } from './SmAgentWindow'
 import { SmItemsReportModal } from './SmItemsReportModal'
+import { SmOpenOrdersReportModal } from './SmOpenOrdersReportModal'
+import { SmReceiptsReportModal } from './SmReceiptsReportModal'
 import {
   buildSmDebtRows,
   buildSmOpenOrdersTop10,
@@ -18,6 +20,7 @@ import {
   buildSmSuiteKpis,
   listSmOrdersReportCompanies,
   smCompanyLabel,
+  type SmReceiptsMetrics,
 } from './smMetrics'
 
 /**
@@ -52,6 +55,14 @@ export function SalesManagerSuite() {
     title: string
     items: Top10Item[]
     emptyLabel: string
+  } | null>(null)
+  const [openOrdersModal, setOpenOrdersModal] = useState<{
+    title: string
+    orders: OrderTodayGroup[]
+  } | null>(null)
+  const [receiptsModal, setReceiptsModal] = useState<{
+    title: string
+    receipts: SmReceiptsMetrics
   } | null>(null)
 
   /** Class agent grant; empty/null = all agents present under access companies. */
@@ -153,10 +164,9 @@ export function SalesManagerSuite() {
     agents: string[] | null,
     windowTitle: string,
   ) => {
-    setItemsModal({
+    setOpenOrdersModal({
       title: `${t('sm.cube.openOrders')} — ${windowTitle}`,
-      items: buildSmOpenOrdersTop10({ rows, company, agents }),
-      emptyLabel: t('oversite.noOrderItems'),
+      orders: buildSmOpenOrdersTop10({ rows, company, agents }),
     })
   }
 
@@ -169,6 +179,13 @@ export function SalesManagerSuite() {
       title: `${t('sm.cube.returns')} — ${windowTitle}`,
       items: buildSmReturnsTop10({ rows, company, agents, dateCtx }),
       emptyLabel: t('oversite.noReturns'),
+    })
+  }
+
+  const openReceiptsReport = (receipts: SmReceiptsMetrics, windowTitle: string) => {
+    setReceiptsModal({
+      title: `${t('sm.cube.receipts')} — ${windowTitle}`,
+      receipts,
     })
   }
 
@@ -234,6 +251,9 @@ export function SalesManagerSuite() {
                     onOpenReturnsReport={() =>
                       openReturnsItems(company, allAgentsScope, `${label} — ${allTitle}`)
                     }
+                    onOpenReceiptsReport={() =>
+                      openReceiptsReport(allKpis.receipts, `${label} — ${allTitle}`)
+                    }
                   />
                   {agentWindows.map(({ agentId, kpis, goalCash }) => {
                     const winTitle = t('sm.window.agent', { agent: agentId })
@@ -255,6 +275,9 @@ export function SalesManagerSuite() {
                         }
                         onOpenReturnsReport={() =>
                           openReturnsItems(company, [agentId], `${label} — ${winTitle}`)
+                        }
+                        onOpenReceiptsReport={() =>
+                          openReceiptsReport(kpis.receipts, `${label} — ${winTitle}`)
                         }
                       />
                     )
@@ -294,6 +317,22 @@ export function SalesManagerSuite() {
           items={itemsModal.items}
           emptyLabel={itemsModal.emptyLabel}
           onClose={() => setItemsModal(null)}
+        />
+      ) : null}
+
+      {openOrdersModal ? (
+        <SmOpenOrdersReportModal
+          title={openOrdersModal.title}
+          orders={openOrdersModal.orders}
+          onClose={() => setOpenOrdersModal(null)}
+        />
+      ) : null}
+
+      {receiptsModal ? (
+        <SmReceiptsReportModal
+          title={receiptsModal.title}
+          receipts={receiptsModal.receipts}
+          onClose={() => setReceiptsModal(null)}
         />
       ) : null}
     </div>
