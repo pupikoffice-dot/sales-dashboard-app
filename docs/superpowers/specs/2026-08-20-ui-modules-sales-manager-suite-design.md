@@ -31,15 +31,28 @@ They operate on the **same underlying data** and the **same class restrictions**
 
 This overrides today’s legacy coupling where some non–super-admins leave Oversight on Apply.
 
+## CORE RULE — Companies never combined
+
+If the user has companies in access, suite data is shown **per company, one after the other**. **Never** sum, merge, or blend KPIs, charts, receipts, or report lists across companies.
+
+Layout (**company-first**):
+
+1. For each company in `access.companies` (stable access order): company header → **All agents** (that company only) → per-agent windows (that company only).  
+2. Then the next company, same pattern.
+
+Goals remain **agent-level** (not per company): the same goal figure may appear under each company’s Sales MTD for that agent / All-window sum.
+
+Full reports opened from a company block are **that company only**.
+
 ## Decisions (locked)
 
 | Topic | Decision |
 |--------|----------|
 | Where suite appears | Replaces whole Oversight page content for granted users |
 | Without suite | Classic Oversight unchanged |
-| Company scope (suite KPIs) | Aggregate across **all companies** in the user’s access |
+| Company scope (suite KPIs) | **Per company, sequential** — never combine across `access.companies` |
 | Agent set | Class / access agent scope within that company access; empty agent list = all agents in scope |
-| Window order | “All agents” first, then per-agent windows numeric low→high (vertical stack; scroll) |
+| Window order | Per company: “All agents” first, then per-agent windows numeric low→high; companies stacked vertically |
 | Segment presentation | Soft translucent cubes |
 | Desktop layout | **4 + 2** — top: Sales MTD+Goal, Open orders, Returns, Open debt; bottom: wide Orders (7 workdays) + Receipts |
 | Responsive | &lt;900px: 2×2 KPIs → Orders full width → Receipts |
@@ -78,21 +91,21 @@ Do **not** reuse legacy `widget.*` keys used for classic Oversight section toggl
 
 ## Sales Manager suite — content
 
-### Windows
+### Windows (inside each company block)
 
-1. **All agents** — aggregate over scoped agents (and all allowed companies)  
-2. **Per agent** — one window each, agent code ascending  
+1. **All agents** — aggregate over scoped agents **for that company only**  
+2. **Per agent** — one window each, agent code ascending, **that company only**  
 
 ### Cubes (every window)
 
 | Cube | Content |
 |------|---------|
-| Sales MTD + Goal | MTD cash (Oversight Sales MTD meaning, all allowed companies); Goal = current calendar month from `sales_agent_targets`. All-window goal = **sum** of scoped agents’ targets (missing target → treat as 0 for the sum; show `—` on that agent’s cube if missing) |
-| Open orders | Oversight Open Orders meaning, scoped |
-| Returns | Oversight Returns MTD meaning, scoped |
-| Open debt | Oversight Open Debt meaning, scoped |
-| Orders (last 7 workdays) | Israel workweek chart (exclude Fri/Sat) + full order report entry; tallest cube |
-| Receipts | Team/agent receipts scoped to suite agents/companies on beta |
+| Sales MTD + Goal | MTD cash for **this company only**; Goal = current calendar month from `sales_agent_targets` (agent-level). All-window goal = **sum** of scoped agents’ targets (missing target → treat as 0 for the sum; show `—` on that agent’s cube if missing) |
+| Open orders | Oversight Open Orders meaning, **this company** |
+| Returns | Oversight Returns MTD meaning, **this company** |
+| Open debt | Oversight Open Debt meaning, **this company** |
+| Orders (last 7 workdays) | Israel workweek chart (exclude Fri/Sat) + full order report for **this company**; tallest cube |
+| Receipts | Receipts for suite agents ∩ **this company** on beta |
 
 ### Layout grid
 
@@ -130,7 +143,7 @@ Phone/Tablet (<900px)
 
 ### Other KPIs
 
-Existing Supabase pipelines; filter by `access.companies` (all of them) and agent scope. No sidebar filter state.
+Existing Supabase pipelines; one company at a time from `access.companies`, plus agent scope. No sidebar filter state. Never combine companies.
 
 ## Admin (beta)
 
@@ -150,7 +163,7 @@ Existing Supabase pipelines; filter by `access.companies` (all of them) and agen
 - Suite user on beta: Sales Manager Oversight only; Apply/filters never alter it.  
 - Non-suite user: classic Oversight.  
 - Production unchanged.  
-- Agent windows + All respect scope; companies aggregated per access.  
+- Agent windows + All respect scope; multi-company users see company blocks sequential, never combined.  
 - Goals match Excel after sync.  
 - 4+2 desktop / stacked mobile; Orders chart usable on phone.  
 - Receipts visible and scoped for suite users on beta.  

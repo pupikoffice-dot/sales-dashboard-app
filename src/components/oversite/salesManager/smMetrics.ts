@@ -18,6 +18,15 @@ import {
   type SalesMtdMetrics,
   type Top10Item,
 } from '../../../lib/oversiteMetrics'
+
+/**
+ * CORE RULE — Companies never combined.
+ * Callers pass exactly one company per KPI / report build. Multi-company users
+ * get sequential company blocks in the suite UI — never summed here.
+ *
+ * CORE RULE — Oversight ⊥ Sidebar: pass access company/agents only, never filters.
+ */
+
 /** Sum agent monthly maps into one YYYY-MM → gross map (same as OversiteReceipts). */
 function sumAgentMonthly(
   byAgent: Record<string, Record<string, number>> | undefined,
@@ -62,12 +71,17 @@ function companyDef(id: LogicalCompany): Pick<
   return EXTRA_COMPANY_DEFS[id] ?? null
 }
 
-/** Display labels for suite Orders report buttons (classic Oversight columns + extras). */
+/** Display labels for suite company headers / Orders report (classic + extras). */
 const COMPANY_REPORT_LABELS: Record<LogicalCompany, string> = {
   pupik: '🏢 Pupik',
   mt: '🐒 Monkeytime',
   grow: '🌱 Grow',
   gold: '🥇 Gold',
+}
+
+export function smCompanyLabel(id: LogicalCompany): string {
+  const classic = OVERSITE_COMPANIES.find(c => c.id === id)
+  return classic?.label ?? COMPANY_REPORT_LABELS[id] ?? id
 }
 
 export interface SmOrdersReportCompany {
@@ -86,10 +100,9 @@ export function listSmOrdersReportCompanies(companies: LogicalCompany[]): SmOrde
   for (const id of companies) {
     const def = companyDef(id)
     if (!def) continue
-    const classic = OVERSITE_COMPANIES.find(c => c.id === id)
     out.push({
       id,
-      label: classic?.label ?? COMPANY_REPORT_LABELS[id] ?? id,
+      label: smCompanyLabel(id),
       ordersTag: def.ordersTag,
     })
   }
@@ -106,9 +119,9 @@ function narrowByAgents<T extends { agent?: string | null }>(
 }
 
 export interface SmReceiptsMetrics {
-  /** Gross monthly sums (YYYY-MM → amount), aggregated across allowed companies. */
+  /** Gross monthly sums (YYYY-MM → amount) for **one** company. */
   monthly: Record<string, number>
-  /** Per-agent gross monthly maps (agent → YYYY-MM → amount), companies merged. */
+  /** Per-agent gross monthly maps for that company. */
   byAgent: Record<string, Record<string, number>>
   /** Agents included in this window (suite scope ∩ data present). */
   agents: string[]
@@ -132,10 +145,10 @@ export interface BuildSmSuiteKpisArgs {
   /** Debt rows already scoped by access (companies + agents). */
   debtRows: DebtRow[]
   /**
-   * All companies from `access.companies`.
-   * Suite KPIs always aggregate across this list — never a sidebar selected company.
+   * Exactly one company from `access.companies`.
+   * CORE RULE: never pass multiple companies to combine — UI stacks company blocks.
    */
-  companies: LogicalCompany[]
+  company: LogicalCompany
   /**
    * Window agent scope. `null` / `[]` = all agents in the provided rows (All window).
    * Non-empty = further narrow to these agents (per-agent window).
@@ -150,146 +163,93 @@ function emptyOrdersLast7(): OrdersLast7DaysResult {
   return { days: [], agents: [] }
 }
 
-function mergeOrdersLast7Days(parts: OrdersLast7DaysResult[]): OrdersLast7DaysResult {
-  if (parts.length === 0) return { days: [], agents: [] }
-  if (parts.length === 1) return parts[0]
+function emptySales(): SalesMtdMetrics {
+  return { cash: 0, qty: 0, lyCash: 0, lyQty: 0, lyChangeCashPct: null }
+}
 
-  const dayMap = new Map<string, { label: string; total: number; byAgent: Record<string, number>; isToday: boolean }>()
-  const agentTotals = new Map<string, number>()
+function emptyOpen(): OpenOrdersMetrics {
+  return { clients: 0, cash: 0, qty: 0 }
+}
 
-  for (const part of parts) {
-    for (const day of part.days) {
-      let entry = dayMap.get(day.date)
-      if (!entry) {
-        entry = { label: day.label, total: 0, byAgent: {}, isToday: day.isToday }
-        dayMap.set(day.date, entry)
-      }
-      entry.total += day.total
-      for (const [agent, cash] of Object.entries(day.byAgent)) {
-        entry.byAgent[agent] = (entry.byAgent[agent] || 0) + cash
-        agentTotals.set(agent, (agentTotals.get(agent) || 0) + cash)
-      }
-    }
-  }
-
-  const agents = [...agentTotals.entries()]
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    .map(([a]) => a)
-
-  const days = [...dayMap.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, e]) => ({
-      date,
-      label: e.label,
-      total: e.total,
-      byAgent: e.byAgent,
-      isToday: e.isToday,
-    }))
-
-  return { days, agents }
+function emptyReturns(): ReturnsMtdMetrics {
+  return { cash: 0, qty: 0 }
 }
 
 /**
- * Aggregate suite KPIs across **all** allowed companies for the window's agent set.
- * CORE RULE: callers must pass `access.companies` — never sidebar filter / Apply company.
+ * Suite KPIs for **one** company and the window's agent set.
+ * CORE RULE: one company only — never combine. Callers must not pass sidebar filter company.
  */
 export function buildSmSuiteKpis(args: BuildSmSuiteKpisArgs): SmSuiteKpis {
   const dateCtx = args.dateCtx ?? getOversiteDateContext()
   const scopedRows = narrowByAgents(args.rows, args.agents)
   const scopedDebt = narrowByAgents(args.debtRows, args.agents)
-  const companies = args.companies
+  const def = companyDef(args.company)
 
-  let salesCash = 0
-  let salesQty = 0
-  let lyCash = 0
-  let lyQty = 0
-  let openCash = 0
-  let openQty = 0
-  let openClients = 0
-  let returnsCash = 0
-  let returnsQty = 0
-  const ordersParts: OrdersLast7DaysResult[] = []
-
-  for (const coId of companies) {
-    const def = companyDef(coId)
-    if (!def) continue
-
-    const sales = computeSalesMtd(scopedRows, coId, dateCtx.curYear, dateCtx.curMonth)
-    salesCash += sales.cash
-    salesQty += sales.qty
-    lyCash += sales.lyCash
-    lyQty += sales.lyQty
-
-    const openTag = resolveOpenOrdersTag(scopedRows, def.openOrdersTag)
-    const open = computeOpenOrders(scopedRows, openTag)
-    openCash += open.cash
-    openQty += open.qty
-    openClients += open.clients
-
-    const returns = computeReturnsMtd(scopedRows, def.returnsTag, dateCtx.curYear, dateCtx.curMonth)
-    returnsCash += returns.cash
-    returnsQty += returns.qty
-
-    const ordersTag = resolveOrdersTag(scopedRows, def.ordersTag)
-    ordersParts.push(computeOrdersLast7DaysByAgent(scopedRows, ordersTag, dateCtx.todayStr))
+  if (!def) {
+    return {
+      salesMtd: emptySales(),
+      openOrders: emptyOpen(),
+      returnsMtd: emptyReturns(),
+      openDebt: computeDebtSummary(debtRowsForCompany(scopedDebt, args.company)),
+      ordersLast7Days: emptyOrdersLast7(),
+      receipts: buildSmReceipts({
+        receiptsMonthlyByAgent: args.receiptsMonthlyByAgent,
+        company: args.company,
+        agents: args.agents,
+      }),
+    }
   }
 
-  const debtData = companies.flatMap(co => debtRowsForCompany(scopedDebt, co))
+  const sales = computeSalesMtd(scopedRows, args.company, dateCtx.curYear, dateCtx.curMonth)
+  const openTag = resolveOpenOrdersTag(scopedRows, def.openOrdersTag)
+  const open = computeOpenOrders(scopedRows, openTag)
+  const returns = computeReturnsMtd(scopedRows, def.returnsTag, dateCtx.curYear, dateCtx.curMonth)
+  const ordersTag = resolveOrdersTag(scopedRows, def.ordersTag)
+  const ordersLast7Days = computeOrdersLast7DaysByAgent(scopedRows, ordersTag, dateCtx.todayStr)
+  const debtData = debtRowsForCompany(scopedDebt, args.company)
   const openDebt = computeDebtSummary(debtData)
 
   const receipts = buildSmReceipts({
     receiptsMonthlyByAgent: args.receiptsMonthlyByAgent,
-    companies,
+    company: args.company,
     agents: args.agents,
   })
 
   return {
-    salesMtd: {
-      cash: salesCash,
-      qty: salesQty,
-      lyCash,
-      lyQty,
-      lyChangeCashPct: lyCash > 0 ? ((salesCash - lyCash) / lyCash) * 100 : null,
-    },
-    openOrders: {
-      clients: openClients,
-      cash: openCash,
-      qty: openQty,
-    },
-    returnsMtd: { cash: returnsCash, qty: returnsQty },
+    salesMtd: sales,
+    openOrders: open,
+    returnsMtd: returns,
     openDebt,
-    ordersLast7Days: ordersParts.length ? mergeOrdersLast7Days(ordersParts) : emptyOrdersLast7(),
+    ordersLast7Days,
     receipts,
   }
 }
 
 export interface BuildSmReceiptsArgs {
   receiptsMonthlyByAgent?: Record<string, Record<string, Record<string, number>>>
-  companies: LogicalCompany[]
-  /** Suite / window agent set. null/[] = every agent present under allowed companies. */
+  /** Exactly one company — never merge companies. */
+  company: LogicalCompany
+  /** Suite / window agent set. null/[] = every agent present for that company. */
   agents?: string[] | null
 }
 
 /**
- * Receipts for the suite: suite agents ∩ allowed companies.
+ * Receipts for one company ∩ suite agents.
  * Does **not** use hardcoded RECEIPTS_TEAM_AGENTS.
  */
 export function buildSmReceipts(args: BuildSmReceiptsArgs): SmReceiptsMetrics {
   const byCompany = args.receiptsMonthlyByAgent ?? {}
-  const allowed = new Set(args.companies.map(String))
   const restrictAgents =
     Array.isArray(args.agents) && args.agents.length > 0 ? new Set(args.agents.map(String)) : null
 
   const byAgent: Record<string, Record<string, number>> = {}
+  const agentMaps = byCompany[args.company] ?? {}
 
-  for (const [company, agentMaps] of Object.entries(byCompany)) {
-    if (!allowed.has(company)) continue
-    for (const [agent, months] of Object.entries(agentMaps || {})) {
-      if (restrictAgents && !restrictAgents.has(agent)) continue
-      if (!byAgent[agent]) byAgent[agent] = {}
-      for (const [ym, v] of Object.entries(months || {})) {
-        byAgent[agent][ym] = (byAgent[agent][ym] || 0) + (Number(v) || 0)
-      }
+  for (const [agent, months] of Object.entries(agentMaps || {})) {
+    if (restrictAgents && !restrictAgents.has(agent)) continue
+    if (!byAgent[agent]) byAgent[agent] = {}
+    for (const [ym, v] of Object.entries(months || {})) {
+      byAgent[agent][ym] = (byAgent[agent][ym] || 0) + (Number(v) || 0)
     }
   }
 
@@ -304,54 +264,48 @@ export function buildSmReceipts(args: BuildSmReceiptsArgs): SmReceiptsMetrics {
   return { monthly, byAgent, agents }
 }
 
-/** Debt rows for a suite window: access companies ∩ optional agent scope. */
+/** Debt rows for one company ∩ optional agent scope. */
 export function buildSmDebtRows(args: {
   debtRows: DebtRow[]
-  companies: LogicalCompany[]
+  company: LogicalCompany
   agents?: string[] | null
 }): DebtRow[] {
   const scoped = narrowByAgents(args.debtRows, args.agents)
-  return args.companies.flatMap(co => debtRowsForCompany(scoped, co))
+  return debtRowsForCompany(scoped, args.company)
 }
 
-/** Top 10 open-order SKUs across allowed companies for the window agents. */
+/** Top 10 open-order SKUs for one company ∩ window agents. */
 export function buildSmOpenOrdersTop10(args: {
   rows: SalesRow[]
-  companies: LogicalCompany[]
+  company: LogicalCompany
   agents?: string[] | null
 }): Top10Item[] {
   const scoped = narrowByAgents(args.rows, args.agents)
-  const matched: SalesRow[] = []
-  for (const coId of args.companies) {
-    const def = companyDef(coId)
-    if (!def) continue
-    const tag = resolveOpenOrdersTag(scoped, def.openOrdersTag)
-    matched.push(...scoped.filter(r => r.company === tag))
-  }
-  return computeTop10BySku(matched)
+  const def = companyDef(args.company)
+  if (!def) return []
+  const tag = resolveOpenOrdersTag(scoped, def.openOrdersTag)
+  return computeTop10BySku(scoped.filter(r => r.company === tag))
 }
 
-/** Top 10 returns SKUs (MTD) across allowed companies for the window agents. */
+/** Top 10 returns SKUs (MTD) for one company ∩ window agents. */
 export function buildSmReturnsTop10(args: {
   rows: SalesRow[]
-  companies: LogicalCompany[]
+  company: LogicalCompany
   agents?: string[] | null
   dateCtx?: OversiteDateContext
 }): Top10Item[] {
   const dateCtx = args.dateCtx ?? getOversiteDateContext()
   const scoped = narrowByAgents(args.rows, args.agents)
-  const matched: SalesRow[] = []
-  for (const coId of args.companies) {
-    const def = companyDef(coId)
-    if (!def) continue
-    matched.push(
-      ...scoped.filter(
-        r =>
-          r.company === def.returnsTag &&
-          Number(r.year) === dateCtx.curYear &&
-          Number(r.month) === dateCtx.curMonth,
-      ),
-    )
-  }
-  return computeTop10BySku(matched, 10, 'low-first')
+  const def = companyDef(args.company)
+  if (!def) return []
+  return computeTop10BySku(
+    scoped.filter(
+      r =>
+        r.company === def.returnsTag &&
+        Number(r.year) === dateCtx.curYear &&
+        Number(r.month) === dateCtx.curMonth,
+    ),
+    10,
+    'low-first',
+  )
 }

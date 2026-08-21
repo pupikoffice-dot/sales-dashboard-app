@@ -17,12 +17,13 @@ import {
   buildSmReturnsTop10,
   buildSmSuiteKpis,
   listSmOrdersReportCompanies,
+  smCompanyLabel,
 } from './smMetrics'
 
 /**
- * Sales Manager Oversight suite — All window + per-agent windows.
- * CORE RULE: KPIs use access.companies + access agent scope only (never sidebar filters).
- * Mounted by OversitePage when suite grant is active (Task 8).
+ * Sales Manager Oversight suite — company blocks, each with All + per-agent windows.
+ * CORE RULE: Oversight ⊥ Sidebar — never use sidebar filters.
+ * CORE RULE: Companies never combined — one company block after another.
  */
 export function SalesManagerSuite() {
   const { t } = useLocale()
@@ -66,52 +67,51 @@ export function SalesManagerSuite() {
     return sortAgentIds([...found])
   }, [access?.agents, rows])
 
-  const ordersReportCompanies = useMemo(
-    () => listSmOrdersReportCompanies(companies),
-    [companies],
-  )
-
-  const allKpis = useMemo(
-    () =>
-      buildSmSuiteKpis({
-        rows,
-        debtRows,
-        companies,
-        agents: scopedAgents.length > 0 ? scopedAgents : null,
-        dateCtx,
-        receiptsMonthlyByAgent: data?.receiptsMonthlyByAgent,
-      }),
-    [rows, debtRows, companies, scopedAgents, dateCtx, data?.receiptsMonthlyByAgent],
-  )
-
   const allGoal = useMemo(
     () => (goalsReady ? sumGoals(scopedAgents, targets) : null),
     [goalsReady, scopedAgents, targets],
   )
 
-  const agentWindows = useMemo(
+  const companyBlocks = useMemo(
     () =>
-      scopedAgents.map(agentId => {
-        const kpis = buildSmSuiteKpis({
+      companies.map(company => {
+        const reportCos = listSmOrdersReportCompanies([company])
+        const allKpis = buildSmSuiteKpis({
           rows,
           debtRows,
-          companies,
-          agents: [agentId],
+          company,
+          agents: scopedAgents.length > 0 ? scopedAgents : null,
           dateCtx,
           receiptsMonthlyByAgent: data?.receiptsMonthlyByAgent,
         })
-        // Loading / error → null (—). Missing target after success → null (—). Present → number (incl. 0).
-        const goalCash =
-          goalsReady && Object.prototype.hasOwnProperty.call(targets, agentId)
-            ? targets[agentId]!
-            : null
-        return { agentId, kpis, goalCash }
+        const agentWindows = scopedAgents.map(agentId => {
+          const kpis = buildSmSuiteKpis({
+            rows,
+            debtRows,
+            company,
+            agents: [agentId],
+            dateCtx,
+            receiptsMonthlyByAgent: data?.receiptsMonthlyByAgent,
+          })
+          const goalCash =
+            goalsReady && Object.prototype.hasOwnProperty.call(targets, agentId)
+              ? targets[agentId]!
+              : null
+          return { agentId, kpis, goalCash }
+        })
+        return {
+          company,
+          label: smCompanyLabel(company),
+          reportCos,
+          allKpis,
+          agentWindows,
+        }
       }),
     [
-      scopedAgents,
+      companies,
       rows,
       debtRows,
-      companies,
+      scopedAgents,
       dateCtx,
       data?.receiptsMonthlyByAgent,
       targets,
@@ -120,7 +120,7 @@ export function SalesManagerSuite() {
   )
 
   const openOrdersReport = (companyId: LogicalCompany, agents: string[] | null) => {
-    const co = ordersReportCompanies.find(c => c.id === companyId)
+    const co = listSmOrdersReportCompanies([companyId])[0]
     if (!co) return
     const scopeRows =
       agents && agents.length > 0
@@ -135,27 +135,39 @@ export function SalesManagerSuite() {
     })
   }
 
-  const openDebtReport = (agents: string[] | null, windowTitle: string) => {
-    const scoped = buildSmDebtRows({ debtRows, companies, agents })
+  const openDebtReport = (
+    company: LogicalCompany,
+    agents: string[] | null,
+    windowTitle: string,
+  ) => {
+    const scoped = buildSmDebtRows({ debtRows, company, agents })
     setDebtModal({
       rows: scoped,
       title: `${t('sm.cube.openDebt')} — ${windowTitle}`,
-      company: companies[0] ?? 'pupik',
+      company,
     })
   }
 
-  const openOpenOrdersItems = (agents: string[] | null, windowTitle: string) => {
+  const openOpenOrdersItems = (
+    company: LogicalCompany,
+    agents: string[] | null,
+    windowTitle: string,
+  ) => {
     setItemsModal({
       title: `${t('sm.cube.openOrders')} — ${windowTitle}`,
-      items: buildSmOpenOrdersTop10({ rows, companies, agents }),
+      items: buildSmOpenOrdersTop10({ rows, company, agents }),
       emptyLabel: t('oversite.noOrderItems'),
     })
   }
 
-  const openReturnsItems = (agents: string[] | null, windowTitle: string) => {
+  const openReturnsItems = (
+    company: LogicalCompany,
+    agents: string[] | null,
+    windowTitle: string,
+  ) => {
     setItemsModal({
       title: `${t('sm.cube.returns')} — ${windowTitle}`,
-      items: buildSmReturnsTop10({ rows, companies, agents, dateCtx }),
+      items: buildSmReturnsTop10({ rows, company, agents, dateCtx }),
       emptyLabel: t('oversite.noReturns'),
     })
   }
@@ -200,35 +212,55 @@ export function SalesManagerSuite() {
       {companies.length === 0 ? (
         <p className="ov-empty">{t('oversite.noCompanies')}</p>
       ) : (
-        <div className="sm-suite-windows">
-          <SmAgentWindow
-            title={t('sm.window.allAgents')}
-            kpis={allKpis}
-            goalCash={allGoal}
-            monthLbl={dateCtx.monthLbl}
-            agentId={null}
-            ordersReportCompanies={ordersReportCompanies}
-            onOpenOrdersReport={companyId => openOrdersReport(companyId, allAgentsScope)}
-            onOpenDebtReport={() => openDebtReport(allAgentsScope, t('sm.window.allAgents'))}
-            onOpenOpenOrdersReport={() => openOpenOrdersItems(allAgentsScope, t('sm.window.allAgents'))}
-            onOpenReturnsReport={() => openReturnsItems(allAgentsScope, t('sm.window.allAgents'))}
-          />
-          {agentWindows.map(({ agentId, kpis, goalCash }) => {
-            const winTitle = t('sm.window.agent', { agent: agentId })
+        <div className="sm-suite-companies">
+          {companyBlocks.map(({ company, label, reportCos, allKpis, agentWindows }) => {
+            const allTitle = t('sm.window.allAgents')
             return (
-              <SmAgentWindow
-                key={agentId}
-                title={winTitle}
-                kpis={kpis}
-                goalCash={goalCash}
-                monthLbl={dateCtx.monthLbl}
-                agentId={agentId}
-                ordersReportCompanies={ordersReportCompanies}
-                onOpenOrdersReport={companyId => openOrdersReport(companyId, [agentId])}
-                onOpenDebtReport={() => openDebtReport([agentId], winTitle)}
-                onOpenOpenOrdersReport={() => openOpenOrdersItems([agentId], winTitle)}
-                onOpenReturnsReport={() => openReturnsItems([agentId], winTitle)}
-              />
+              <section key={company} className="sm-company-block">
+                <h3 className="sm-company-title">{label}</h3>
+                <div className="sm-suite-windows">
+                  <SmAgentWindow
+                    title={allTitle}
+                    kpis={allKpis}
+                    goalCash={allGoal}
+                    monthLbl={dateCtx.monthLbl}
+                    agentId={null}
+                    ordersReportCompanies={reportCos}
+                    onOpenOrdersReport={companyId => openOrdersReport(companyId, allAgentsScope)}
+                    onOpenDebtReport={() => openDebtReport(company, allAgentsScope, `${label} — ${allTitle}`)}
+                    onOpenOpenOrdersReport={() =>
+                      openOpenOrdersItems(company, allAgentsScope, `${label} — ${allTitle}`)
+                    }
+                    onOpenReturnsReport={() =>
+                      openReturnsItems(company, allAgentsScope, `${label} — ${allTitle}`)
+                    }
+                  />
+                  {agentWindows.map(({ agentId, kpis, goalCash }) => {
+                    const winTitle = t('sm.window.agent', { agent: agentId })
+                    return (
+                      <SmAgentWindow
+                        key={`${company}-${agentId}`}
+                        title={winTitle}
+                        kpis={kpis}
+                        goalCash={goalCash}
+                        monthLbl={dateCtx.monthLbl}
+                        agentId={agentId}
+                        ordersReportCompanies={reportCos}
+                        onOpenOrdersReport={companyId => openOrdersReport(companyId, [agentId])}
+                        onOpenDebtReport={() =>
+                          openDebtReport(company, [agentId], `${label} — ${winTitle}`)
+                        }
+                        onOpenOpenOrdersReport={() =>
+                          openOpenOrdersItems(company, [agentId], `${label} — ${winTitle}`)
+                        }
+                        onOpenReturnsReport={() =>
+                          openReturnsItems(company, [agentId], `${label} — ${winTitle}`)
+                        }
+                      />
+                    )
+                  })}
+                </div>
+              </section>
             )
           })}
         </div>
@@ -250,9 +282,7 @@ export function SalesManagerSuite() {
         <DebtModal
           company={debtModal.company}
           debtData={debtModal.rows}
-          debtLastUpdate={
-            companies.map(c => data?.debtFileDates?.[c]).find(Boolean) || debtLastUpdate
-          }
+          debtLastUpdate={data?.debtFileDates?.[debtModal.company] || debtLastUpdate}
           titleOverride={debtModal.title}
           onClose={() => setDebtModal(null)}
         />

@@ -1,17 +1,22 @@
 # HANDOFF — sales-dashboard-app
 
 ## Current State
-_Last updated: 2026-08-21 20:36:50 by Cursor_
+_Last updated: 2026-08-21 20:45:29 by Cursor_
 
 **Status:** Active
 **Phase:** UI modules + Sales Manager suite on beta (product line **2.0**)
 
-- Works now: Beta title badge shows **2.0 · beta**; production keeps live DB `active_version` (**1.0** until promote). Version ≠ channel (see Version vs channel below).
-- Works now: Sales Manager Oversight suite on beta; CORE RULE; goals ETL; receipts for suite users; Classes suite grants
+- Works now: Beta title badge **2.0 · beta**; production live DB `active_version` (**1.0** until promote)
+- Works now: Sales Manager suite — **company-first** (each access company block → All → agents); **never combine** companies; Oversight ⊥ Sidebar; goals agent-level; receipts; Classes suite grants
 - Works now: Classic Oversight on production `main`
 - In progress: Manual verify / iterate on beta 2.0
 - Blocked: Nothing blocked
-- Next up: Keep Phase 3 cutover and promote-to-main off until asked; when promoting 2.0, set DB `active_version` to 2.0 and bump beta product version to 2.1/3.0
+- Next up: Keep Phase 3 / promote-to-main off until asked
+
+### CORE RULES (suite)
+
+1. **Oversight ⊥ Sidebar** — filters/Apply never change Oversight; Oversight never changes sidebar.
+2. **Companies never combined** — multi-company users see company blocks one after another (company → All → agents → next company). Never sum KPIs/charts/receipts/reports across companies. Goals stay agent-level.
 
 ### Version vs channel (locked)
 
@@ -38,6 +43,20 @@ Phase 1 hides Cost, Total Cost, Price, and cost-based charts in the UI only. The
 ---
 
 ## Session Log
+
+### 2026-08-21 20:45:29 — Cursor
+**Done:**
+- Suite CORE RULE: companies never combined — company-first layout (company → All → agents → next company)
+- KPIs/reports scoped to one company per block; design spec + HANDOFF updated
+
+**Decisions:**
+- Layout B: company outer, then All + agents under each
+- Goals remain agent-level (not split by company)
+
+**Next:**
+- Verify multi-company Sales Manager on beta (e.g. kfir)
+
+---
 
 ### 2026-08-21 20:36:50 — Cursor
 **Done:**

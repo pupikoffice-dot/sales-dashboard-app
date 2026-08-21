@@ -25,7 +25,7 @@ function debtRow(partial: Partial<DebtRow> & Pick<DebtRow, 'company' | 'agent' |
 const dateCtx = getOversiteDateContext(new Date(2026, 7, 20)) // Aug 2026
 
 describe('buildSmSuiteKpis', () => {
-  it('aggregates sales MTD across all allowed companies for scoped agents', () => {
+  it('computes sales MTD for one company only (never combines)', () => {
     const rows: SalesRow[] = [
       salesRow({
         company: 'pupik',
@@ -45,7 +45,6 @@ describe('buildSmSuiteKpis', () => {
         qty: 2,
         clientID: '2',
       }),
-      // Out of agent scope — must be ignored when agents=['24']
       salesRow({
         company: 'pupik',
         year: 2026,
@@ -57,20 +56,29 @@ describe('buildSmSuiteKpis', () => {
       }),
     ]
 
-    const kpis = buildSmSuiteKpis({
+    const pupik = buildSmSuiteKpis({
       rows,
       debtRows: [],
-      companies: ['pupik', 'mt'],
+      company: 'pupik',
+      agents: ['24'],
+      dateCtx,
+    })
+    const mt = buildSmSuiteKpis({
+      rows,
+      debtRows: [],
+      company: 'mt',
       agents: ['24'],
       dateCtx,
     })
 
-    expect(kpis.salesMtd.cash).toBe(150)
-    expect(kpis.salesMtd.qty).toBe(3)
+    expect(pupik.salesMtd.cash).toBe(100)
+    expect(pupik.salesMtd.qty).toBe(1)
+    expect(mt.salesMtd.cash).toBe(50)
+    expect(mt.salesMtd.qty).toBe(2)
   })
 
-  it('does not read sidebar filter company when building suite KPIs', () => {
-    const sidebarSelectedCompany: LogicalCompany = 'pupik' // decoy — must never drive suite KPIs
+  it('does not use sidebar filter company — caller passes the access company block', () => {
+    const sidebarSelectedCompany: LogicalCompany = 'pupik' // decoy
     void sidebarSelectedCompany
 
     const rows: SalesRow[] = [
@@ -94,19 +102,19 @@ describe('buildSmSuiteKpis', () => {
       }),
     ]
 
-    // Suite always receives access.companies (all allowed), never sidebar selection.
+    // UI stacks companies; each call is one access company, never sidebar selection.
     const kpis = buildSmSuiteKpis({
       rows,
       debtRows: [],
-      companies: ['pupik', 'mt'],
+      company: 'mt',
       agents: null,
       dateCtx,
     })
 
-    expect(kpis.salesMtd.cash).toBe(50)
+    expect(kpis.salesMtd.cash).toBe(40)
   })
 
-  it('aggregates open orders, returns, and debt across allowed companies', () => {
+  it('scopes open orders, returns, and debt to one company', () => {
     const rows: SalesRow[] = [
       salesRow({ company: 'openorders', agent: '24', cash: 20, qty: 1, clientID: 'c1' }),
       salesRow({ company: 'openorders-mt', agent: '24', cash: 30, qty: 2, clientID: 'c2' }),
@@ -135,23 +143,23 @@ describe('buildSmSuiteKpis', () => {
       debtRow({ company: 'pupik', agent: '99', clientID: '30', oldDebt: 999 }),
     ]
 
-    const kpis = buildSmSuiteKpis({
+    const pupik = buildSmSuiteKpis({
       rows,
       debtRows,
-      companies: ['pupik', 'mt'],
+      company: 'pupik',
       agents: ['24'],
       dateCtx,
     })
 
-    expect(kpis.openOrders.cash).toBe(50)
-    expect(kpis.openOrders.qty).toBe(3)
-    expect(kpis.openOrders.clients).toBe(2)
-    expect(kpis.returnsMtd.cash).toBe(-20)
-    expect(kpis.returnsMtd.qty).toBe(-3)
-    expect(kpis.openDebt?.grandTotal).toBe(300)
+    expect(pupik.openOrders.cash).toBe(20)
+    expect(pupik.openOrders.qty).toBe(1)
+    expect(pupik.openOrders.clients).toBe(1)
+    expect(pupik.returnsMtd.cash).toBe(-5)
+    expect(pupik.returnsMtd.qty).toBe(-1)
+    expect(pupik.openDebt?.grandTotal).toBe(100)
   })
 
-  it('builds orders last-7-workdays across companies for scoped agents', () => {
+  it('builds orders last-7-workdays for one company only', () => {
     const rows: SalesRow[] = [
       salesRow({
         company: 'orders-pupik',
@@ -182,45 +190,44 @@ describe('buildSmSuiteKpis', () => {
     const kpis = buildSmSuiteKpis({
       rows,
       debtRows: [],
-      companies: ['pupik', 'mt'],
+      company: 'pupik',
       agents: ['24'],
       dateCtx,
     })
 
     const todayCol = kpis.ordersLast7Days.days.find(d => d.date === '2026-08-20')
-    expect(todayCol?.total).toBe(100)
-    expect(todayCol?.byAgent['24']).toBe(100)
+    expect(todayCol?.total).toBe(70)
+    expect(todayCol?.byAgent['24']).toBe(70)
     expect(todayCol?.byAgent['99']).toBeUndefined()
   })
 
-  it('scopes receipts to suite agents ∩ allowed companies, not RECEIPTS_TEAM_AGENTS', () => {
+  it('scopes receipts to one company ∩ suite agents', () => {
     const receiptsMonthlyByAgent = {
       pupik: {
-        '24': { '2026-08': 118 }, // gross incl VAT
+        '24': { '2026-08': 118 },
         '25': { '2026-08': 236 },
-        '27': { '2026-08': 999 }, // classic team agent — must NOT auto-include
+        '27': { '2026-08': 999 },
       },
       mt: {
         '24': { '2026-08': 118 },
-        '54': { '2026-08': 500 }, // classic mt team — out of suite agent set
+        '54': { '2026-08': 500 },
       },
     }
 
     const kpis = buildSmSuiteKpis({
       rows: [],
       debtRows: [],
-      companies: ['pupik', 'mt'],
+      company: 'pupik',
       agents: ['24', '25'],
       dateCtx,
       receiptsMonthlyByAgent,
     })
 
-    // Net of VAT is a UI concern; builders expose gross monthly sums.
-    expect(kpis.receipts.monthly['2026-08']).toBe(118 + 236 + 118)
+    expect(kpis.receipts.monthly['2026-08']).toBe(118 + 236)
     expect(kpis.receipts.agents.sort()).toEqual(['24', '25'])
     expect(kpis.receipts.byAgent['27']).toBeUndefined()
     expect(kpis.receipts.byAgent['54']).toBeUndefined()
-    expect(kpis.receipts.byAgent['24']['2026-08']).toBe(236) // pupik+mt for agent 24
+    expect(kpis.receipts.byAgent['24']['2026-08']).toBe(118)
   })
 
   it('empty agents means all agents already present in scoped rows', () => {
@@ -248,7 +255,7 @@ describe('buildSmSuiteKpis', () => {
     const kpis = buildSmSuiteKpis({
       rows,
       debtRows: [],
-      companies: ['pupik'],
+      company: 'pupik',
       agents: [],
       dateCtx,
     })
