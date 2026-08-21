@@ -20,7 +20,6 @@ import {
   computeDelivery720Mtd,
   computeDelivery720MtdTop10,
   computeOpenOrders,
-  computeOpenOrdersTop10,
   computeOrdersMtd,
   computeOrdersMtdTop10,
   computeOrdersLast7DaysByAgent,
@@ -34,6 +33,7 @@ import {
   getOversiteDateContext,
   resolveOpenOrdersTag,
   resolveOrdersTag,
+  topOpenOrdersByCash,
 } from '../lib/oversiteMetrics'
 import { OversiteAgentBreakdown } from '../components/oversite/OversiteAgentBreakdown'
 import { OversiteOrdersLast7Days } from '../components/oversite/OversiteOrdersLast7Days'
@@ -49,8 +49,11 @@ import type { OversiteModuleId } from '../lib/oversiteModules'
 import { OversiteSuppliersMatrix } from '../components/oversite/OversiteSuppliersMatrix'
 import { OversiteCollapsible } from '../components/oversite/OversiteCollapsible'
 import { OversiteKpiRow, OversiteSection, SalesLyBars } from '../components/oversite/OversiteKpiRow'
+import { OversiteOrdersByDocTable } from '../components/oversite/OversiteOrdersByDocTable'
 import { OversiteTop10Table } from '../components/oversite/OversiteTop10Table'
 import { OversiteLegend } from '../components/oversite/OversiteLegend'
+import { SmReceiptsReportModal } from '../components/oversite/salesManager/SmReceiptsReportModal'
+import { buildSmReceipts } from '../components/oversite/salesManager/smMetrics'
 
 export function OversitePage() {
   const { t } = useLocale()
@@ -80,6 +83,10 @@ function ClassicOversitePage({ isSuperAdmin }: { isSuperAdmin: boolean }) {
     company: LogicalCompany
     companyLabel: string
     ordersTag: string
+  } | null>(null)
+  const [receiptsModal, setReceiptsModal] = useState<{
+    companyLabel: string
+    company: LogicalCompany
   } | null>(null)
 
   if (isLoading) return <p className="status-msg">{t('common.loadingSalesData')}</p>
@@ -149,7 +156,7 @@ function ClassicOversitePage({ isSuperAdmin }: { isSuperAdmin: boolean }) {
             const ordersToday = computeOrdersToday(companyRows, ordersTag, ctx.todayStr)
             const ordersMtd = computeOrdersMtd(companyRows, ordersTag, ctx.monthStart, ctx.todayStr)
             const openOrders = computeOpenOrders(companyRows, openOrdersTag)
-            const openOrdersTop10 = computeOpenOrdersTop10(companyRows, openOrdersTag)
+            const openOrdersTop10 = topOpenOrdersByCash(companyRows, openOrdersTag, 10)
             const delivery720Mtd = computeDelivery720Mtd(
               companyRows,
               co.delivery720Tag,
@@ -253,10 +260,11 @@ function ClassicOversitePage({ isSuperAdmin }: { isSuperAdmin: boolean }) {
                       ]}
                     />
                     <OversiteCollapsible label={`📦 ${t('oversite.top10OpenOrders')} ▾`}>
-                      <OversiteTop10Table
-                        items={openOrdersTop10}
+                      <p className="sm-report-hint">{t('sm.openOrders.top10Hint')}</p>
+                      <OversiteOrdersByDocTable
+                        orders={openOrdersTop10}
                         emptyLabel={t('oversite.noOpenOrders')}
-                        showSku
+                        showFooterTotal
                       />
                     </OversiteCollapsible>
                   </OversiteSection>
@@ -371,6 +379,14 @@ function ClassicOversitePage({ isSuperAdmin }: { isSuperAdmin: boolean }) {
                           </>
                         )
                       })()}
+                      <button
+                        type="button"
+                        className="ov-debt-btn"
+                        style={{ marginTop: 10 }}
+                        onClick={() => setReceiptsModal({ company: co.id, companyLabel: co.label })}
+                      >
+                        📋 {t('sm.cube.fullReport')}
+                      </button>
                     </OversiteSection>
                   )}
 
@@ -407,6 +423,18 @@ function ClassicOversitePage({ isSuperAdmin }: { isSuperAdmin: boolean }) {
           todayStr={ctx.todayStr}
           todayDisp={ctx.todayDisp}
           onClose={() => setOrdersModal(null)}
+        />
+      )}
+
+      {receiptsModal && (
+        <SmReceiptsReportModal
+          title={`${t('oversite.receipts')} — ${receiptsModal.companyLabel}`}
+          receipts={buildSmReceipts({
+            receiptsMonthlyByAgent: dashboardData?.receiptsMonthlyByAgent,
+            company: receiptsModal.company,
+            agents: RECEIPTS_TEAM_AGENTS[receiptsModal.company] ?? null,
+          })}
+          onClose={() => setReceiptsModal(null)}
         />
       )}
     </>
