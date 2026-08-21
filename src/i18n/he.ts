@@ -104,6 +104,7 @@ export const messages: Record<keyof typeof en, string> = {
 
   'header.title': 'לוח מכירות',
   'header.versionLabel': 'גרסת אפליקציה {version}',
+  'header.channelBeta': 'בטה',
   'header.subtitle': 'Pupik · Monkeytime · Grow',
   'header.loadedRows': 'נטענו: {rows} שורות',
   'header.debtClients': '· {count} לקוחות בחוב',

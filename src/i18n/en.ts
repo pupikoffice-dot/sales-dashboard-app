@@ -102,6 +102,7 @@ export const messages = {
 
   'header.title': 'Sales Dashboard',
   'header.versionLabel': 'App version {version}',
+  'header.channelBeta': 'beta',
   'header.subtitle': 'Pupik · Monkeytime · Grow',
   'header.loadedRows': 'Loaded: {rows} rows',
   'header.debtClients': '· {count} debt clients',

@@ -1,16 +1,31 @@
 # HANDOFF — sales-dashboard-app
 
 ## Current State
-_Last updated: 2026-08-05 13:59:25 by Cursor_
+_Last updated: 2026-08-21 20:36:50 by Cursor_
 
 **Status:** Active
-**Phase:** Multi-company Oversite accents live on main
+**Phase:** UI modules + Sales Manager suite on beta (product line **2.0**)
 
-- Works now: When Oversite / Orders MTD show 2+ companies, each column uses a distinct accent (Pupik indigo, Monkeytime sky) on header and section edge
-- Works now: Prior — Orders last-7-workdays chart, date normalization, Open Debt full report, permissions Phase 1, delivery notes / Orders Today / stock alerts
-- In progress: Nothing in progress
+- Works now: Beta title badge shows **2.0 · beta**; production keeps live DB `active_version` (**1.0** until promote). Version ≠ channel (see Version vs channel below).
+- Works now: Sales Manager Oversight suite on beta; CORE RULE; goals ETL; receipts for suite users; Classes suite grants
+- Works now: Classic Oversight on production `main`
+- In progress: Manual verify / iterate on beta 2.0
 - Blocked: Nothing blocked
-- Next up: Optional — trigger 722-only Supabase sync after office export so Orders Today cannot lag hourly cron; optional Phase 2 server-filtered cost/price
+- Next up: Keep Phase 3 cutover and promote-to-main off until asked; when promoting 2.0, set DB `active_version` to 2.0 and bump beta product version to 2.1/3.0
+
+### Version vs channel (locked)
+
+| Concept | Meaning | Today |
+|--------|---------|--------|
+| **Version** | Product release line (`1.0`, `2.0`, `2.1`…) | Production live = **1.0** (DB). Beta work line = **2.0** |
+| **Channel** | Where you iterate: production (stable) vs **beta** (next work) | `main` / prod URL vs `beta` / `pupik-sales-dashboard-beta.vercel.app` |
+
+- **Beta** = working iteration of the next (or in-progress) version. Title: `{productVersion} · beta`.
+- **Production** = stable live. Title: DB `app_runtime_config.active_version` only.
+- Do **not** change DB `active_version` just to relabel beta — that row is the shared live cutover flag.
+- After promote of 2.0: set DB to `2.0`; set `BETA_PRODUCT_VERSION` / `VITE_PRODUCT_VERSION` to `2.1` or `3.0` for the next beta.
+
+Code: `src/lib/appChannel.ts`
 
 ---
 
@@ -23,6 +38,37 @@ Phase 1 hides Cost, Total Cost, Price, and cost-based charts in the UI only. The
 ---
 
 ## Session Log
+
+### 2026-08-21 20:36:50 — Cursor
+**Done:**
+- Header badge: beta shows product version + channel (`2.0 · beta`); production shows live DB `active_version` only
+- Documented version vs channel model in HANDOFF and `appChannel.ts`
+
+**Decisions:**
+- Version = release line; beta = iteration channel for the next/in-progress version
+- Do not flip DB `active_version` to relabel beta titles
+
+**Next:**
+- Continue beta 2.0 work; on promote set DB to 2.0 and bump beta product version
+
+---
+
+### 2026-08-20 20:27:13 — Cursor
+**Done:**
+- Shipped UI modules + Sales Manager suite on beta (merge `feature/ui-modules-sales-manager` → `beta` @ `1dab788`)
+- DB: `app_ui_module` + `sales_agent_targets`; seeded Sales Manager class suite grant; goals ETL from Excel into hourly sync
+- CORE RULE: Oversight route independent of sidebar Apply; suite KPIs use access companies/agents only
+- Classes admin can grant oversight suite/addon (≤1 suite; no per-user suite override)
+- Deployed and aliased https://pupik-sales-dashboard-beta.vercel.app
+
+**Decisions:**
+- kind is suite|addon (not widget); suite replaces classic Oversight; addons ignored while suite present
+- Stay on beta only — do not promote to main / Phase 3 until explicit ask
+
+**Next:**
+- Manual verify suite as Sales Manager on beta; production stays classic
+
+---
 
 ### 2026-08-05 13:59:25 — Cursor
 **Done:**
