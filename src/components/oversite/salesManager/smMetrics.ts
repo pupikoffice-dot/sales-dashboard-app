@@ -73,6 +73,11 @@ function companyDef(id: LogicalCompany): Pick<
   return EXTRA_COMPANY_DEFS[id] ?? null
 }
 
+/** Open-orders company tag for BI / suite (e.g. `openorders` for Pupik). */
+export function smOpenOrdersTag(company: LogicalCompany): string | null {
+  return companyDef(company)?.openOrdersTag ?? null
+}
+
 /** Display labels for suite company headers / Orders report (classic + extras). */
 const COMPANY_REPORT_LABELS: Record<LogicalCompany, string> = {
   pupik: '🏢 Pupik',

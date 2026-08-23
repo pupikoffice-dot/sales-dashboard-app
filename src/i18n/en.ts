@@ -245,7 +245,7 @@ export const messages = {
   'bi.missedItems.title': 'Missed items',
   'bi.missedItems.empty': 'No usual in-stock items in this window.',
   'bi.missedClients.title': 'Missed clients',
-  'bi.missedClients.empty': 'No usual clients in this window.',
+  'bi.missedClients.empty': 'No usual clients missing invoices and open orders this month.',
   'bi.itemsSoldByOthers.title': 'Items sold by others',
   'bi.itemsSoldByOthers.empty': 'No items sold by others MTD that this agent skipped.',
   'bi.insufficientHistory': 'Not enough month history for habit (need X of Y).',

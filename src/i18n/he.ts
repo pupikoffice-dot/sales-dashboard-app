@@ -247,7 +247,7 @@ export const messages: Record<keyof typeof en, string> = {
   'bi.missedItems.title': 'פריטים חסרים',
   'bi.missedItems.empty': 'אין פריטים רגילים במלאי בחלון זה.',
   'bi.missedClients.title': 'לקוחות חסרים',
-  'bi.missedClients.empty': 'אין לקוחות רגילים בחלון זה.',
+  'bi.missedClients.empty': 'אין לקוחות רגילים ללא חשבוניות והזמנות פתוחות בחודש הנוכחי.',
   'bi.itemsSoldByOthers.title': 'פריטים שנמכרו ע״י אחרים',
   'bi.itemsSoldByOthers.empty': 'אין פריטים שנמכרו ע״י אחרים החודש שסוכן זה דילג עליהם.',
   'bi.insufficientHistory': 'אין מספיק היסטוריית חודשים להרגל (נדרש X מתוך Y).',

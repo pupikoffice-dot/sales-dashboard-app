@@ -105,7 +105,14 @@ Cube order (when granted): after the existing KPI cubes → **Missed items** →
 
 #### 2. Missed clients
 
-Same habit + ranking rules on **clientID** (purchases from the agent parameter in that company). No stock gate. Top **10**. Show client id/name + habit months. Empty copy when none.
+1. Take the **previous Y** calendar months (**excluding** the current month). Habit default: at least **X of those Y** months with invoices (e.g. 3 of prior 4).  
+2. **Data contract / degrade:** same `Y_eff` rule as Missed items on that prior window. If `Y_eff < X`, empty “Not enough history”.  
+3. A client is **usual** if they had a qualifying invoice in at least **X** months in that prior window (agent-parameter × company × `clientID`; qualifying = `sum(qty) ≠ 0` or `sum(cash) ≠ 0`).  
+4. **Exclude** any usual client who, in the **current month** for the same agent-parameter × company, has:
+   - any invoice (sales rows for the logical company), **or**
+   - any **open order** row for that company’s open-orders tag  
+5. Rank remaining by **sum(cash) over the prior Y window**, descending; ties: qty desc, then client id asc. Top **10**.  
+6. Show client name + habit months hit (e.g. `3/4`) + prior-window cash. Empty copy when none.
 
 #### 3. Items sold by others
 

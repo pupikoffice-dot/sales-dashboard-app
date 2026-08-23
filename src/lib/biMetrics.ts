@@ -39,7 +39,7 @@ function ymKey(year: number, month: number): string {
   return `${year}-${String(month).padStart(2, '0')}`
 }
 
-/** Last Y calendar months including current, newest last. */
+/** Last Y calendar months including current, oldest → newest. */
 export function lastYMonthKeys(curYear: number, curMonth: number, y: number): string[] {
   const out: string[] = []
   let yy = curYear
@@ -53,6 +53,17 @@ export function lastYMonthKeys(curYear: number, curMonth: number, y: number): st
     }
   }
   return out.reverse()
+}
+
+/** Previous Y calendar months excluding current, oldest → newest. */
+export function previousYMonthKeys(curYear: number, curMonth: number, y: number): string[] {
+  let yy = curYear
+  let mm = curMonth - 1
+  if (mm < 1) {
+    mm = 12
+    yy -= 1
+  }
+  return lastYMonthKeys(yy, mm, y)
 }
 
 function narrowAgents(rows: SalesRow[], agents: string[] | null): SalesRow[] {
@@ -158,25 +169,49 @@ export interface BuildMissedClientsArgs {
   habit: HabitConfig
   curYear: number
   curMonth: number
+  /**
+   * Company open-orders row tag (e.g. `openorders` for Pupik).
+   * Any open-order row for the agent scope counts as "has open orders this month".
+   */
+  openOrdersTag: string | null
   limit?: number
 }
 
+/**
+ * Missed clients = usual buyers in the previous Y months (X-of-Y habit)
+ * who have neither invoices nor open orders in the current month.
+ */
 export function buildMissedClients(args: BuildMissedClientsArgs): BiHabitResult<BiMissedClient> {
   const limit = args.limit ?? 10
-  const windowKeys = lastYMonthKeys(args.curYear, args.curMonth, args.habit.habitY)
+  const windowKeys = previousYMonthKeys(args.curYear, args.curMonth, args.habit.habitY)
   const windowSet = new Set(windowKeys)
 
-  let scoped = narrowAgents(
-    args.rows.filter(r => isCompanySalesRow(r, args.company)),
-    args.agents,
-  )
-  scoped = scoped.filter(r => {
+  const agentScoped = narrowAgents(args.rows, args.agents)
+
+  /** Clients already active this month → cannot be "missed". */
+  const activeThisMonth = new Set<string>()
+  for (const r of agentScoped) {
+    const id = String(r.clientID ?? '').trim()
+    if (!id) continue
+    const cash = Number(r.cash) || 0
+    const qty = Number(r.qty) || 0
+    if (isCompanySalesRow(r, args.company) && Number(r.year) === args.curYear && Number(r.month) === args.curMonth) {
+      if (cash !== 0 || qty !== 0) activeThisMonth.add(id)
+      continue
+    }
+    if (args.openOrdersTag && r.company === args.openOrdersTag) {
+      activeThisMonth.add(id)
+    }
+  }
+
+  const habitRows = agentScoped.filter(r => {
+    if (!isCompanySalesRow(r, args.company)) return false
     const k = rowYm(r)
     return k != null && windowSet.has(k)
   })
 
   const monthsPresent = new Set<string>()
-  for (const r of scoped) {
+  for (const r of habitRows) {
     const k = rowYm(r)
     if (k) monthsPresent.add(k)
   }
@@ -186,9 +221,9 @@ export function buildMissedClients(args: BuildMissedClientsArgs): BiHabitResult<
 
   type Agg = { name: string; cash: number; qty: number; months: Set<string> }
   const byClient = new Map<string, Agg>()
-  for (const r of scoped) {
+  for (const r of habitRows) {
     const id = String(r.clientID ?? '').trim()
-    if (!id) continue
+    if (!id || activeThisMonth.has(id)) continue
     const k = rowYm(r)!
     let e = byClient.get(id)
     if (!e) {
