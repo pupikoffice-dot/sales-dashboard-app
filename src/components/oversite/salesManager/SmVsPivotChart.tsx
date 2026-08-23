@@ -34,6 +34,7 @@ export function SmVsPivotChart({
     return <p className="ov-empty">{emptyLabel}</p>
   }
 
+  const PLOT_H = 120
   const max = Math.max(...bars.map(b => Math.max(Math.abs(b.value), Math.abs(b.marker ?? 0))), 1)
 
   return (
@@ -52,7 +53,8 @@ export function SmVsPivotChart({
       <div className="sm-vs-pivot-chart">
         {bars.map(b => {
           const c = agentColorIdx(b.agentId)
-          const h = Math.max((Math.abs(b.value) / max) * 100, b.value !== 0 ? 4 : 0)
+          const pct = Math.abs(b.value) / max
+          const barPx = b.value === 0 ? 0 : Math.max(Math.round(pct * PLOT_H), 4)
           const markerPct =
             b.marker != null && b.marker > 0 ? Math.min(100, (b.marker / max) * 100) : null
           return (
@@ -61,7 +63,7 @@ export function SmVsPivotChart({
                 {fmt(b.value)}
               </div>
               {b.caption ? <div className="sm-vs-pivot-cap">{b.caption}</div> : null}
-              <div className="sm-vs-pivot-plot">
+              <div className="sm-vs-pivot-plot" style={{ height: PLOT_H }}>
                 {markerPct != null ? (
                   <span
                     className="sm-vs-pivot-goal"
@@ -71,7 +73,7 @@ export function SmVsPivotChart({
                 ) : null}
                 <div
                   className={`sm-vs-pivot-bar agent-c${c}${b.value < 0 ? ' sm-vs-pivot-bar--neg' : ''}`}
-                  style={{ height: `${h}%` }}
+                  style={{ height: barPx }}
                 />
               </div>
               <div className={`sm-vs-pivot-lbl agent-t${c}`}>{b.agentId}</div>
