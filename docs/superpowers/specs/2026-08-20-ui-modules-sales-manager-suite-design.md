@@ -37,12 +37,23 @@ If the user has companies in access, suite data is shown **per company, one afte
 
 Layout (**company-first**):
 
-1. For each company in `access.companies` (stable access order): company header → **All agents** (that company only) → per-agent windows (that company only).  
+1. For each company in `access.companies` (stable access order): company header → mode content (Alone or Vs) for that company only.  
 2. Then the next company, same pattern.
 
 Goals remain **agent-level** (not per company): the same goal figure may appear under each company’s Sales MTD for that agent / All-window sum.
 
 Full reports opened from a company block are **that company only**.
+
+## Alone / Vs (Sales Manager suite)
+
+Header toggle (**Alone** default | **Vs**). Session-only (`useState`); does not touch sidebar.
+
+| Mode | Layout (per company) |
+|------|----------------------|
+| **Alone** | All agents window → per-agent windows (existing 4+2 cubes) |
+| **Vs** | Replaces Alone windows with one comparison view: KPI-parameter cubes with agents compared |
+
+**Vs first-ship subset:** Sales MTD + Goal (per-agent bars), Open debt (per-agent bars), Receipts (stacked-by-agent monthly). Open orders / Returns / Orders last-7 deferred.
 
 ## Decisions (locked)
 
@@ -52,9 +63,10 @@ Full reports opened from a company block are **that company only**.
 | Without suite | Classic Oversight unchanged |
 | Company scope (suite KPIs) | **Per company, sequential** — never combine across `access.companies` |
 | Agent set | Class / access agent scope within that company access; empty agent list = all agents in scope |
-| Window order | Per company: “All agents” first, then per-agent windows numeric low→high; companies stacked vertically |
+| Alone / Vs | Default Alone; Vs replaces All + per-agent windows (no stacking both) |
+| Window order (Alone) | Per company: “All agents” first, then per-agent windows numeric low→high; companies stacked vertically |
 | Segment presentation | Soft translucent cubes |
-| Desktop layout | **4 + 2** — top: Sales MTD+Goal, Open orders, Returns, Open debt; bottom: wide Orders (7 workdays) + Receipts |
+| Desktop layout (Alone) | **4 + 2** — top: Sales MTD+Goal, Open orders, Returns, Open debt; bottom: wide Orders (7 workdays) + Receipts |
 | Responsive | &lt;900px: 2×2 KPIs → Orders full width → Receipts |
 | Suite vs addon | ≤1 oversight suite per class (admin + runtime); if suite present, addons ignored |
 | Beta grant wiring | **Read class UI-module grants on beta** even while Phase 3 shadow mode remains for production data path |
@@ -91,7 +103,12 @@ Do **not** reuse legacy `widget.*` keys used for classic Oversight section toggl
 
 ## Sales Manager suite — content
 
-### Windows (inside each company block)
+### Alone / Vs
+
+- **Alone (default):** windows below.  
+- **Vs:** no All / per-agent windows; comparison cubes (Sales MTD+Goal, Open debt, Receipts) with agents side-by-side for that company.
+
+### Windows (Alone — inside each company block)
 
 1. **All agents** — aggregate over scoped agents **for that company only**  
 2. **Per agent** — one window each, agent code ascending, **that company only**  
@@ -164,6 +181,7 @@ Existing Supabase pipelines; one company at a time from `access.companies`, plus
 - Non-suite user: classic Oversight.  
 - Production unchanged.  
 - Agent windows + All respect scope; multi-company users see company blocks sequential, never combined.  
+- Alone / Vs toggle: Alone default; Vs comparison subset (MTD+Goal, debt, receipts) per company.  
 - Goals match Excel after sync.  
 - 4+2 desktop / stacked mobile; Orders chart usable on phone.  
 - Receipts visible and scoped for suite users on beta.  

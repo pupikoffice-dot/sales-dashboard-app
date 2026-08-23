@@ -1,22 +1,23 @@
 # HANDOFF — sales-dashboard-app
 
 ## Current State
-_Last updated: 2026-08-21 20:45:29 by Cursor_
+_Last updated: 2026-08-23 17:24:09 by Cursor_
 
 **Status:** Active
 **Phase:** UI modules + Sales Manager suite on beta (product line **2.0**)
 
 - Works now: Beta title badge **2.0 · beta**; production live DB `active_version` (**1.0** until promote)
-- Works now: Sales Manager suite — **company-first** (each access company block → All → agents); **never combine** companies; Oversight ⊥ Sidebar; goals agent-level; receipts; Classes suite grants
+- Works now: Sales Manager suite — company-first; Alone (default) / Vs toggle; Alone = All + per-agent windows; Vs = comparison cubes (Sales MTD+Goal, Open debt, Receipts) per company; never combine companies
 - Works now: Classic Oversight on production `main`
-- In progress: Manual verify / iterate on beta 2.0
+- In progress: Manual verify Alone/Vs on beta
 - Blocked: Nothing blocked
-- Next up: Keep Phase 3 / promote-to-main off until asked
+- Next up: Keep Phase 3 / promote-to-main off until asked; Vs open-orders / returns / orders-7d deferred
 
 ### CORE RULES (suite)
 
 1. **Oversight ⊥ Sidebar** — filters/Apply never change Oversight; Oversight never changes sidebar.
-2. **Companies never combined** — multi-company users see company blocks one after another (company → All → agents → next company). Never sum KPIs/charts/receipts/reports across companies. Goals stay agent-level.
+2. **Companies never combined** — multi-company users see company blocks one after another. Never sum KPIs across companies. Goals stay agent-level.
+3. **Alone / Vs** — Alone default (per-agent windows). Vs replaces those with comparison view for the first-ship KPI subset.
 
 ### Version vs channel (locked)
 
@@ -43,6 +44,20 @@ Phase 1 hides Cost, Total Cost, Price, and cost-based charts in the UI only. The
 ---
 
 ## Session Log
+
+### 2026-08-23 17:24:09 — Cursor
+**Done:**
+- Sales Manager Alone / Vs toggle (default Alone); Vs replaces All + agent windows with comparison cubes
+- Vs first-ship: Sales MTD+Goal, Open debt, Receipts per company; design spec + HANDOFF updated
+
+**Decisions:**
+- Layout A: Vs replaces Alone windows (no stacking)
+- Vs open-orders / returns / orders-7d deferred
+
+**Next:**
+- Verify Alone/Vs on beta as Sales Manager; keep promote off
+
+---
 
 ### 2026-08-21 20:45:29 — Cursor
 **Done:**

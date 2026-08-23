@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { DebtRow, LogicalCompany, SalesRow } from '../../../types/dashboard'
 import { getOversiteDateContext } from '../../../lib/oversiteMetrics'
-import { buildSmSuiteKpis } from './smMetrics'
+import { buildSmSuiteKpis, buildSmVsAgentSeries } from './smMetrics'
 
 function salesRow(partial: Partial<SalesRow> & Pick<SalesRow, 'company'>): SalesRow {
   return {
@@ -261,5 +261,69 @@ describe('buildSmSuiteKpis', () => {
     })
 
     expect(kpis.salesMtd.cash).toBe(30)
+  })
+})
+
+describe('buildSmVsAgentSeries', () => {
+  it('builds per-agent sales and debt for one company only', () => {
+    const rows: SalesRow[] = [
+      salesRow({
+        company: 'pupik',
+        year: 2026,
+        month: 8,
+        agent: '24',
+        cash: 100,
+        qty: 1,
+        clientID: '1',
+      }),
+      salesRow({
+        company: 'pupik',
+        year: 2026,
+        month: 8,
+        agent: '25',
+        cash: 40,
+        qty: 1,
+        clientID: '2',
+      }),
+      salesRow({
+        company: 'mt',
+        year: 2026,
+        month: 8,
+        agent: '24',
+        cash: 999,
+        qty: 1,
+        clientID: '3',
+      }),
+    ]
+    const debtRows: DebtRow[] = [
+      debtRow({ company: 'pupik', agent: '24', clientID: '10', oldDebt: 50 }),
+      debtRow({ company: 'pupik', agent: '25', clientID: '11', oldDebt: 20 }),
+      debtRow({ company: 'mt', agent: '24', clientID: '12', oldDebt: 700 }),
+    ]
+
+    const series = buildSmVsAgentSeries({
+      rows,
+      debtRows,
+      company: 'pupik',
+      agents: ['24', '25'],
+      dateCtx,
+      targets: { '24': 200, '25': 100 },
+      goalsReady: true,
+    })
+
+    expect(series.company).toBe('pupik')
+    expect(series.agents).toHaveLength(2)
+    expect(series.agents[0]).toMatchObject({
+      agentId: '24',
+      salesMtdCash: 100,
+      goalCash: 200,
+      openDebtCash: 50,
+    })
+    expect(series.agents[1]).toMatchObject({
+      agentId: '25',
+      salesMtdCash: 40,
+      goalCash: 100,
+      openDebtCash: 20,
+    })
   })
 })

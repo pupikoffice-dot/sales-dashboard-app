@@ -311,3 +311,67 @@ export function buildSmReturnsTop10(args: {
     'low-first',
   )
 }
+
+export interface SmVsAgentPoint {
+  agentId: string
+  salesMtdCash: number
+  /** null = missing / not ready — UI shows em dash. */
+  goalCash: number | null
+  openDebtCash: number
+}
+
+export interface SmVsCompanySeries {
+  company: LogicalCompany
+  agents: SmVsAgentPoint[]
+  /** All-suite-agents receipts for this company (Vs receipts cube). */
+  receipts: SmReceiptsMetrics
+}
+
+export interface BuildSmVsAgentSeriesArgs {
+  rows: SalesRow[]
+  debtRows: DebtRow[]
+  company: LogicalCompany
+  agents: string[]
+  dateCtx?: OversiteDateContext
+  /** agent → target cash for current month; omit keys = missing goal. */
+  targets?: Record<string, number>
+  goalsReady?: boolean
+  receiptsMonthlyByAgent?: Record<string, Record<string, Record<string, number>>>
+}
+
+/**
+ * Vs mode: one series per agent for a single company — never combine companies.
+ * CORE RULE: callers pass access company + suite agents only.
+ */
+export function buildSmVsAgentSeries(args: BuildSmVsAgentSeriesArgs): SmVsCompanySeries {
+  const dateCtx = args.dateCtx ?? getOversiteDateContext()
+  const goalsReady = args.goalsReady === true
+  const targets = args.targets ?? {}
+
+  const agents: SmVsAgentPoint[] = args.agents.map(agentId => {
+    const kpis = buildSmSuiteKpis({
+      rows: args.rows,
+      debtRows: args.debtRows,
+      company: args.company,
+      agents: [agentId],
+      dateCtx,
+      receiptsMonthlyByAgent: args.receiptsMonthlyByAgent,
+    })
+    const goalCash =
+      goalsReady && Object.prototype.hasOwnProperty.call(targets, agentId) ? targets[agentId]! : null
+    return {
+      agentId,
+      salesMtdCash: kpis.salesMtd.cash,
+      goalCash,
+      openDebtCash: kpis.openDebt?.grandTotal ?? 0,
+    }
+  })
+
+  const receipts = buildSmReceipts({
+    receiptsMonthlyByAgent: args.receiptsMonthlyByAgent,
+    company: args.company,
+    agents: args.agents.length > 0 ? args.agents : null,
+  })
+
+  return { company: args.company, agents, receipts }
+}
