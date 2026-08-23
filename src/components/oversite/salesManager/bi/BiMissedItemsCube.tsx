@@ -44,19 +44,30 @@ export function BiMissedItemsCube({
       ) : result.items.length === 0 ? (
         <p className="bi-cube-empty">{t('bi.missedItems.empty')}</p>
       ) : (
-        <ul className="bi-cube-list">
-          {result.items.map(it => (
-            <li key={it.sku} className="bi-cube-row">
-              <span className="bi-cube-row-main" title={it.sku}>
-                {it.name}
-              </span>
-              <span className="bi-cube-row-meta">
-                {fmt(it.cash)} · {t('bi.habitHit', { x: it.monthsHit, y: it.monthsWindow })} ·{' '}
-                {t('bi.stock', { qty: it.stock })}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <div className="bi-table-wrap">
+          <table className="bi-table">
+            <thead>
+              <tr>
+                <th>{t('bi.col.sku')}</th>
+                <th>{t('bi.col.itemName')}</th>
+                <th className="bi-num">{t('bi.col.cash')}</th>
+                <th className="bi-num">{t('bi.col.habit')}</th>
+                <th className="bi-num">{t('bi.col.stock')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {result.items.map(it => (
+                <tr key={it.sku}>
+                  <td className="bi-mono">{it.sku}</td>
+                  <td>{it.name}</td>
+                  <td className="bi-num">{fmt(it.cash)}</td>
+                  <td className="bi-num">{t('bi.habitHit', { x: it.monthsHit, y: it.monthsWindow })}</td>
+                  <td className="bi-num">{it.stock}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </BiCubeShell>
   )

@@ -3962,14 +3962,18 @@ html[dir='rtl'] .hdr-brand,
 
 /* —— BI cubes (Sales Manager suite) —— */
 .bi-cube-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
-  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 16px;
 }
 
-.bi-cube {
-  min-height: 160px;
+.bi-cube.sm-cube {
+  min-height: 0;
+  width: 100%;
+  background: rgba(192, 197, 206, 0.18);
+  border: 1px solid rgba(203, 213, 225, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .bi-cube-title {
@@ -3977,6 +3981,7 @@ html[dir='rtl'] .hdr-brand,
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  margin-bottom: 10px;
 }
 
 .bi-badge {
@@ -3986,48 +3991,59 @@ html[dir='rtl'] .hdr-brand,
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #0f172a;
-  background: #94a3b8;
+  background: rgba(203, 213, 225, 0.95);
   border-radius: 4px;
   padding: 2px 6px;
   line-height: 1.2;
 }
 
-.bi-cube-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-height: 220px;
+.bi-table-wrap {
+  overflow-x: auto;
+  max-height: 280px;
   overflow-y: auto;
 }
 
-.bi-cube-row {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  padding-bottom: 4px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+.bi-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
 }
 
-.bi-cube-row:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
+.bi-table th,
+.bi-table td {
+  padding: 6px 8px;
+  text-align: start;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  vertical-align: top;
 }
 
-.bi-cube-row-main {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--txt, #e2e8f0);
-  overflow: hidden;
-  text-overflow: ellipsis;
+.bi-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted2, #94a3b8);
+  background: rgba(30, 36, 48, 0.92);
   white-space: nowrap;
 }
 
-.bi-cube-row-meta {
-  font-size: 0.7rem;
+.bi-table tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.bi-table .bi-num {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.bi-table .bi-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.74rem;
+  white-space: nowrap;
   color: var(--muted2, #94a3b8);
 }
 
