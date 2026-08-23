@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type { LogicalCompany } from '../../../types/dashboard'
 import { useLocale } from '../../../context/LocaleContext'
 import { fmt } from '../../../lib/format'
@@ -27,6 +28,8 @@ export interface SmCubeGridProps {
   onOpenOpenOrdersReport?: () => void
   onOpenReturnsReport?: () => void
   onOpenReceiptsReport?: () => void
+  /** Compact BI tables nest under the 7-day orders chart. */
+  biSlot?: ReactNode
 }
 
 export function SmCubeGrid({
@@ -39,6 +42,7 @@ export function SmCubeGrid({
   onOpenOpenOrdersReport,
   onOpenReturnsReport,
   onOpenReceiptsReport,
+  biSlot,
 }: SmCubeGridProps) {
   const { t } = useLocale()
   const { salesMtd, openOrders, returnsMtd, openDebt, ordersLast7Days, receipts } = kpis
@@ -135,18 +139,21 @@ export function SmCubeGrid({
         ) : null}
       </div>
 
-      <div className="sm-cube sm-cube--orders">
-        <OversiteOrdersLast7Days data={ordersLast7Days} />
-        {onOpenOrdersReport && ordersReportCompanies.length > 0 ? (
-          <div className="sm-orders-report">
-            {ordersReportCompanies.map(co => (
-              <div key={co.id} className="sm-orders-report-row">
-                {multiCoReport ? <span className="sm-orders-report-co">{co.label}</span> : null}
-                <OversiteOrdersReportButton onClick={() => onOpenOrdersReport(co.id)} />
-              </div>
-            ))}
-          </div>
-        ) : null}
+      <div className={`sm-cube sm-cube--orders${biSlot ? ' sm-cube--orders-with-bi' : ''}`}>
+        <div className="sm-orders-main">
+          <OversiteOrdersLast7Days data={ordersLast7Days} />
+          {onOpenOrdersReport && ordersReportCompanies.length > 0 ? (
+            <div className="sm-orders-report">
+              {ordersReportCompanies.map(co => (
+                <div key={co.id} className="sm-orders-report-row">
+                  {multiCoReport ? <span className="sm-orders-report-co">{co.label}</span> : null}
+                  <OversiteOrdersReportButton onClick={() => onOpenOrdersReport(co.id)} />
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+        {biSlot ? <div className="sm-orders-bi">{biSlot}</div> : null}
       </div>
 
       <div className="sm-cube sm-cube--receipts">

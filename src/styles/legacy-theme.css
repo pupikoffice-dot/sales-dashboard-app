@@ -3748,12 +3748,27 @@ html[dir='rtl'] .hdr-brand,
 }
 .sm-cube--orders {
   grid-area: orders;
-  min-height: 220px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sm-cube--orders-with-bi {
+  min-height: 0;
 }
 .sm-cube--receipts {
   grid-area: receipts;
   min-height: 220px;
   overflow-x: auto;
+}
+
+.sm-orders-main {
+  min-width: 0;
+}
+
+.sm-orders-bi {
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .sm-cube-title {
@@ -3962,15 +3977,16 @@ html[dir='rtl'] .hdr-brand,
 
 /* —— BI cubes (Sales Manager suite) —— */
 .bi-cube-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px;
+  margin-top: 0;
 }
 
 .bi-cube.sm-cube {
   min-height: 0;
   width: 100%;
+  padding: 8px 10px;
   background: rgba(192, 197, 206, 0.18);
   border: 1px solid rgba(203, 213, 225, 0.35);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
@@ -3980,40 +3996,42 @@ html[dir='rtl'] .hdr-brand,
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: 6px;
+  margin-bottom: 6px;
+  font-size: 0.6rem;
 }
 
 .bi-badge {
   flex-shrink: 0;
-  font-size: 0.62rem;
+  font-size: 0.55rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #0f172a;
   background: rgba(203, 213, 225, 0.95);
-  border-radius: 4px;
-  padding: 2px 6px;
+  border-radius: 3px;
+  padding: 1px 5px;
   line-height: 1.2;
 }
 
 .bi-table-wrap {
   overflow-x: auto;
-  max-height: 280px;
+  max-height: 132px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .bi-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.78rem;
+  font-size: 0.68rem;
 }
 
 .bi-table th,
 .bi-table td {
-  padding: 6px 8px;
+  padding: 3px 5px;
   text-align: start;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
   vertical-align: top;
 }
 
@@ -4021,12 +4039,12 @@ html[dir='rtl'] .hdr-brand,
   position: sticky;
   top: 0;
   z-index: 1;
-  font-size: 0.68rem;
+  font-size: 0.58rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--muted2, #94a3b8);
-  background: rgba(30, 36, 48, 0.92);
+  background: rgba(30, 36, 48, 0.95);
   white-space: nowrap;
 }
 
@@ -4042,15 +4060,22 @@ html[dir='rtl'] .hdr-brand,
 
 .bi-table .bi-mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.74rem;
+  font-size: 0.64rem;
   white-space: nowrap;
   color: var(--muted2, #94a3b8);
 }
 
 .bi-cube-empty {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: 0.68rem;
   color: var(--muted2, #94a3b8);
+}
+
+.sm-cube--vs-orders7.sm-cube--orders-with-bi {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
 }
 
 .admin-modules-section {
@@ -4069,6 +4094,31 @@ html[dir='rtl'] .hdr-brand,
 
   .sm-cube--orders,
   .sm-cube--receipts {
-    min-height: 180px;
+    min-height: 0;
+  }
+
+  .bi-cube-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bi-table-wrap {
+    max-height: 160px;
+  }
+}
+
+@media (max-width: 520px) {
+  .sm-cube-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'mtd'
+      'open'
+      'returns'
+      'debt'
+      'orders'
+      'receipts';
+  }
+
+  .bi-table {
+    font-size: 0.64rem;
   }
 }

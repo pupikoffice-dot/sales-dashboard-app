@@ -27,7 +27,7 @@ export interface SmAgentWindowProps {
   onOpenOpenOrdersReport?: () => void
   onOpenReturnsReport?: () => void
   onOpenReceiptsReport?: () => void
-  /** Optional BI cubes mounted after the KPI grid. */
+  /** Compact BI tables nest under the 7-day orders chart. */
   biBlock?: ReactNode
 }
 
@@ -58,8 +58,8 @@ export function SmAgentWindow({
         onOpenOpenOrdersReport={onOpenOpenOrdersReport}
         onOpenReturnsReport={onOpenReturnsReport}
         onOpenReceiptsReport={onOpenReceiptsReport}
+        biSlot={biBlock}
       />
-      {biBlock}
     </section>
   )
 }

@@ -133,23 +133,26 @@ export function SmVsCompanyView({
         ) : null}
       </div>
 
-      <div className="sm-cube sm-cube--vs-orders7">
-        <div className="sm-cube-title">{t('oversite.ordersLast7Days')}</div>
-        <SmVsPivotChart
-          bars={orders7Bars}
-          emptyLabel={t('oversite.ordersLast7DaysEmpty')}
-          ariaLabel={t('oversite.ordersLast7Days')}
-        />
-        <OversiteOrdersLast7Days data={series.ordersLast7Days} />
-        {onOpenOrdersReport && ordersReportCompanies.length > 0 ? (
-          <div className="sm-orders-report">
-            {ordersReportCompanies.map(co => (
-              <div key={co.id} className="sm-orders-report-row">
-                <OversiteOrdersReportButton onClick={() => onOpenOrdersReport(co.id)} />
-              </div>
-            ))}
-          </div>
-        ) : null}
+      <div className={`sm-cube sm-cube--vs-orders7${biBlock ? ' sm-cube--orders-with-bi' : ''}`}>
+        <div className="sm-orders-main">
+          <div className="sm-cube-title">{t('oversite.ordersLast7Days')}</div>
+          <SmVsPivotChart
+            bars={orders7Bars}
+            emptyLabel={t('oversite.ordersLast7DaysEmpty')}
+            ariaLabel={t('oversite.ordersLast7Days')}
+          />
+          <OversiteOrdersLast7Days data={series.ordersLast7Days} />
+          {onOpenOrdersReport && ordersReportCompanies.length > 0 ? (
+            <div className="sm-orders-report">
+              {ordersReportCompanies.map(co => (
+                <div key={co.id} className="sm-orders-report-row">
+                  <OversiteOrdersReportButton onClick={() => onOpenOrdersReport(co.id)} />
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+        {biBlock ? <div className="sm-orders-bi">{biBlock}</div> : null}
       </div>
 
       <div className="sm-cube sm-cube--vs-receipts">
@@ -170,7 +173,6 @@ export function SmVsCompanyView({
         ) : null}
       </div>
     </div>
-    {biBlock}
     </div>
   )
 }
