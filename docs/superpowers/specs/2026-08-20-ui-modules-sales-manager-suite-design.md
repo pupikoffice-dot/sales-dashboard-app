@@ -53,7 +53,7 @@ Header toggle (**Alone** default | **Vs**). Session-only (`useState`); does not 
 | **Alone** | All agents window → per-agent windows (existing 4+2 cubes) |
 | **Vs** | Replaces Alone windows with one comparison view: KPI-parameter cubes with agents compared |
 
-**Vs first-ship subset:** Sales MTD + Goal (per-agent bars), Open debt (per-agent bars), Receipts (stacked-by-agent monthly). Open orders / Returns / Orders last-7 deferred.
+**Vs:** agents as side-by-side columns in one chart per KPI so who is ahead is visible. Cubes: Sales MTD+Goal, Open orders, Returns, Open debt, Orders last-7 (totals pivot + daily stacked), Receipts.
 
 ## Decisions (locked)
 
@@ -106,7 +106,7 @@ Do **not** reuse legacy `widget.*` keys used for classic Oversight section toggl
 ### Alone / Vs
 
 - **Alone (default):** windows below.  
-- **Vs:** no All / per-agent windows; comparison cubes (Sales MTD+Goal, Open debt, Receipts) with agents side-by-side for that company.
+- **Vs:** no All / per-agent windows; comparison cubes with agents pivoted in one chart each (Sales MTD+Goal, Open orders, Returns, Open debt, Orders last-7, Receipts).
 
 ### Windows (Alone — inside each company block)
 
@@ -181,7 +181,7 @@ Existing Supabase pipelines; one company at a time from `access.companies`, plus
 - Non-suite user: classic Oversight.  
 - Production unchanged.  
 - Agent windows + All respect scope; multi-company users see company blocks sequential, never combined.  
-- Alone / Vs toggle: Alone default; Vs comparison subset (MTD+Goal, debt, receipts) per company.  
+- Alone / Vs toggle: Alone default; Vs comparison cubes with pivoted agent charts (full KPI set) per company.  
 - Goals match Excel after sync.  
 - 4+2 desktop / stacked mobile; Orders chart usable on phone.  
 - Receipts visible and scoped for suite users on beta.  

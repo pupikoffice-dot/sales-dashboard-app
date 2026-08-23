@@ -273,7 +273,15 @@ export function SalesManagerSuite() {
                   <SmVsCompanyView
                     series={vsSeries}
                     monthLbl={dateCtx.monthLbl}
+                    ordersReportCompanies={reportCos}
+                    onOpenOrdersReport={companyId => openOrdersReport(companyId, allAgentsScope)}
                     onOpenDebtReport={() => openDebtReport(company, allAgentsScope, `${label} — Vs`)}
+                    onOpenOpenOrdersReport={() =>
+                      openOpenOrdersItems(company, allAgentsScope, `${label} — Vs`)
+                    }
+                    onOpenReturnsReport={() =>
+                      openReturnsItems(company, allAgentsScope, `${label} — Vs`)
+                    }
                     onOpenReceiptsReport={() =>
                       openReceiptsReport(vsSeries.receipts, `${label} — Vs`)
                     }

@@ -317,7 +317,11 @@ export interface SmVsAgentPoint {
   salesMtdCash: number
   /** null = missing / not ready — UI shows em dash. */
   goalCash: number | null
+  openOrdersCash: number
+  returnsCash: number
   openDebtCash: number
+  /** Sum of orders cash over last 7 workdays for this agent ∩ company. */
+  orders7Cash: number
 }
 
 export interface SmVsCompanySeries {
@@ -325,6 +329,8 @@ export interface SmVsCompanySeries {
   agents: SmVsAgentPoint[]
   /** All-suite-agents receipts for this company (Vs receipts cube). */
   receipts: SmReceiptsMetrics
+  /** Orders last-7 for all suite agents ∩ this company (shared chart). */
+  ordersLast7Days: OrdersLast7DaysResult
 }
 
 export interface BuildSmVsAgentSeriesArgs {
@@ -359,19 +365,31 @@ export function buildSmVsAgentSeries(args: BuildSmVsAgentSeriesArgs): SmVsCompan
     })
     const goalCash =
       goalsReady && Object.prototype.hasOwnProperty.call(targets, agentId) ? targets[agentId]! : null
+    const orders7Cash = kpis.ordersLast7Days.days.reduce((s, d) => s + (d.byAgent[agentId] || 0), 0)
     return {
       agentId,
       salesMtdCash: kpis.salesMtd.cash,
       goalCash,
+      openOrdersCash: kpis.openOrders.cash,
+      returnsCash: kpis.returnsMtd.cash,
       openDebtCash: kpis.openDebt?.grandTotal ?? 0,
+      orders7Cash,
     }
   })
 
-  const receipts = buildSmReceipts({
-    receiptsMonthlyByAgent: args.receiptsMonthlyByAgent,
+  const allKpis = buildSmSuiteKpis({
+    rows: args.rows,
+    debtRows: args.debtRows,
     company: args.company,
     agents: args.agents.length > 0 ? args.agents : null,
+    dateCtx,
+    receiptsMonthlyByAgent: args.receiptsMonthlyByAgent,
   })
 
-  return { company: args.company, agents, receipts }
+  return {
+    company: args.company,
+    agents,
+    receipts: allKpis.receipts,
+    ordersLast7Days: allKpis.ordersLast7Days,
+  }
 }

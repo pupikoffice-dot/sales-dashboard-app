@@ -325,5 +325,6 @@ describe('buildSmVsAgentSeries', () => {
       goalCash: 100,
       openDebtCash: 20,
     })
+    expect(series.ordersLast7Days).toBeDefined()
   })
 })
