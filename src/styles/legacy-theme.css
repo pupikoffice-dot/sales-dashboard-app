@@ -3960,6 +3960,87 @@ html[dir='rtl'] .hdr-brand,
   background: rgba(52, 211, 153, 0.08);
 }
 
+/* —— BI cubes (Sales Manager suite) —— */
+.bi-cube-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.bi-cube {
+  min-height: 160px;
+}
+
+.bi-cube-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.bi-badge {
+  flex-shrink: 0;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #0f172a;
+  background: #94a3b8;
+  border-radius: 4px;
+  padding: 2px 6px;
+  line-height: 1.2;
+}
+
+.bi-cube-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.bi-cube-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.bi-cube-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.bi-cube-row-main {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--txt, #e2e8f0);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bi-cube-row-meta {
+  font-size: 0.7rem;
+  color: var(--muted2, #94a3b8);
+}
+
+.bi-cube-empty {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--muted2, #94a3b8);
+}
+
+.admin-modules-section {
+  margin-bottom: 8px;
+}
+
 @media (max-width: 899px) {
   .sm-cube-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

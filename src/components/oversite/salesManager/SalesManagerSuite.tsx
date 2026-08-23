@@ -1,14 +1,20 @@
 import { useMemo, useState } from 'react'
+import { useAuth } from '../../../context/AuthContext'
 import { useDashboardAccess } from '../../../context/DashboardAccessContext'
 import { useLocale } from '../../../context/LocaleContext'
+import { usePreview } from '../../../context/PreviewContext'
+import { useBiConfig, useBiModulesCatalog } from '../../../hooks/useBiModules'
+import { useBiUserGrants } from '../../../hooks/useBiUserGrants'
 import { useDashboardData } from '../../../hooks/useDashboardData'
 import { useSalesAgentTargets } from '../../../hooks/useSalesAgentTargets'
+import { resolveVisibleBiModuleIds } from '../../../lib/biModules'
 import { formatGeneratedDisplay } from '../../../lib/format'
 import { getOversiteDateContext, resolveOrdersTag, type OrderTodayGroup, type Top10Item } from '../../../lib/oversiteMetrics'
 import { sortAgentIds, sumGoals } from '../../../lib/uiModules'
 import type { DebtRow, LogicalCompany, SalesRow } from '../../../types/dashboard'
 import { DebtModal } from '../DebtModal'
 import { OrdersTodayModal } from '../OrdersTodayModal'
+import { BiCubesBlock } from './bi/BiCubesBlock'
 import { SmAgentWindow } from './SmAgentWindow'
 import { SmItemsReportModal } from './SmItemsReportModal'
 import { SmOpenOrdersReportModal } from './SmOpenOrdersReportModal'
@@ -34,10 +40,35 @@ export type SmSuiteViewMode = 'alone' | 'vs'
  */
 export function SalesManagerSuite() {
   const { t } = useLocale()
+  const { session, isSuperAdmin } = useAuth()
+  const { isPreviewing, previewUser } = usePreview()
   const { access } = useDashboardAccess()
-  const { rows, debtRows, isLoading, error, data, debtLastUpdate } = useDashboardData()
+  const { rows, debtRows, isLoading, error, data, debtLastUpdate, wmsStock } = useDashboardData()
   const dateCtx = useMemo(() => getOversiteDateContext(), [])
   const targetsQ = useSalesAgentTargets(dateCtx.curYear, dateCtx.curMonth)
+  const biCatalogQ = useBiModulesCatalog()
+  const biConfigQ = useBiConfig()
+  const grantUserId = isPreviewing && previewUser ? previewUser.id : session?.user.id
+  const biGrantsQ = useBiUserGrants(grantUserId)
+
+  const visibleBiIds = useMemo(
+    () =>
+      resolveVisibleBiModuleIds({
+        isSuperAdmin,
+        isPreviewing,
+        grants: biGrantsQ.data ?? [],
+        catalog: biCatalogQ.data ?? [],
+      }),
+    [isSuperAdmin, isPreviewing, biGrantsQ.data, biCatalogQ.data],
+  )
+
+  const habit = useMemo(
+    () => ({
+      habitX: biConfigQ.data?.habitX ?? 3,
+      habitY: biConfigQ.data?.habitY ?? 4,
+    }),
+    [biConfigQ.data],
+  )
 
   const companies = access?.companies ?? []
   const targets = targetsQ.data ?? {}
@@ -285,6 +316,19 @@ export function SalesManagerSuite() {
                     onOpenReceiptsReport={() =>
                       openReceiptsReport(vsSeries.receipts, `${label} — Vs`)
                     }
+                    biBlock={
+                      <BiCubesBlock
+                        visibleIds={visibleBiIds}
+                        mode="all"
+                        company={company}
+                        rows={rows}
+                        stockBySku={wmsStock[company] ?? {}}
+                        habit={habit}
+                        suiteAgents={scopedAgents}
+                        curYear={dateCtx.curYear}
+                        curMonth={dateCtx.curMonth}
+                      />
+                    }
                   />
                 ) : (
                   <div className="sm-suite-windows">
@@ -305,6 +349,19 @@ export function SalesManagerSuite() {
                       }
                       onOpenReceiptsReport={() =>
                         openReceiptsReport(allKpis.receipts, `${label} — ${allTitle}`)
+                      }
+                      biBlock={
+                        <BiCubesBlock
+                          visibleIds={visibleBiIds}
+                          mode="all"
+                          company={company}
+                          rows={rows}
+                          stockBySku={wmsStock[company] ?? {}}
+                          habit={habit}
+                          suiteAgents={scopedAgents}
+                          curYear={dateCtx.curYear}
+                          curMonth={dateCtx.curMonth}
+                        />
                       }
                     />
                     {agentWindows.map(({ agentId, kpis, goalCash }) => {
@@ -330,6 +387,20 @@ export function SalesManagerSuite() {
                           }
                           onOpenReceiptsReport={() =>
                             openReceiptsReport(kpis.receipts, `${label} — ${winTitle}`)
+                          }
+                          biBlock={
+                            <BiCubesBlock
+                              visibleIds={visibleBiIds}
+                              mode="agent"
+                              agentId={agentId}
+                              company={company}
+                              rows={rows}
+                              stockBySku={wmsStock[company] ?? {}}
+                              habit={habit}
+                              suiteAgents={scopedAgents}
+                              curYear={dateCtx.curYear}
+                              curMonth={dateCtx.curMonth}
+                            />
                           }
                         />
                       )

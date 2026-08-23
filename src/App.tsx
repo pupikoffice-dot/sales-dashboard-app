@@ -12,6 +12,7 @@ import { PlaceholderModulePage } from './pages/PlaceholderModulePage'
 import { SalesPage } from './pages/SalesPage'
 import { UsersPage } from './pages/admin/UsersPage'
 import { ClassesPage } from './pages/admin/ClassesPage'
+import { ModulesPage } from './pages/admin/ModulesPage'
 
 function HomeRedirect() {
   const { access, loading } = useDashboardAccess()
@@ -42,6 +43,7 @@ function ProtectedApp() {
         <Route path="export" element={<RequireModule moduleId="export"><PlaceholderModulePage title="Export" /></RequireModule>} />
         {isSuperAdmin && <Route path="admin/users" element={<UsersPage />} />}
         {isSuperAdmin && <Route path="admin/classes" element={<ClassesPage />} />}
+        {isSuperAdmin && <Route path="admin/modules" element={<ModulesPage />} />}
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

@@ -11,6 +11,8 @@ import { OVERSITE_MODULE_REGISTRY, type OversiteModuleId } from '../../lib/overs
 import type { AppLocale } from '../../i18n/types'
 import type { DashboardModuleId, LogicalCompany } from '../../types/dashboard'
 import { UserPermissionsEditor } from './UserPermissionsEditor'
+import { useBiModulesCatalog } from '../../hooks/useBiModules'
+import { fetchUserBiGrants, setUserBiGrants } from '../../lib/biModulesApi'
 
 interface UserRow {
   id: string
@@ -401,6 +403,7 @@ export function UsersPage() {
             setEditId(null)
             qc.invalidateQueries({ queryKey: ['admin-users'] })
             qc.invalidateQueries({ queryKey: ['admin-users-picker'] })
+            qc.invalidateQueries({ queryKey: ['bi-user-grants', savedUserId] })
             // If we're previewing the user whose access just changed, reload it
             // so the live preview reflects the new settings immediately (no
             // dashboard-data refetch needed — all narrowing is client-side).
@@ -438,9 +441,12 @@ function EditAccessModal({
   const [showClientProfit, setShowClientProfit] = useState(false)
   const [agentErpId, setAgentErpId] = useState('')
   const [parentId, setParentId] = useState('')
+  const [biModuleIds, setBiModuleIds] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { t } = useLocale()
+  const { data: biCatalog = [] } = useBiModulesCatalog()
+  const activeBiModules = biCatalog.filter(m => m.active)
 
   const profile = users.find(u => u.id === userId)
   const parentOptions = users.filter(u => u.id !== userId)
@@ -468,6 +474,9 @@ function EditAccessModal({
           setCompanies(['pupik'])
         }
       })
+    fetchUserBiGrants(userId)
+      .then(ids => setBiModuleIds(ids))
+      .catch(() => setBiModuleIds([]))
     const p = users.find(u => u.id === userId)
     if (p) {
       setAgentErpId(p.agent_erp_id ?? '')
@@ -485,6 +494,10 @@ function EditAccessModal({
 
   function toggleCompany(c: LogicalCompany) {
     setCompanies(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c])
+  }
+
+  function toggleBiModule(id: string) {
+    setBiModuleIds(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]))
   }
 
   async function save() {
@@ -523,9 +536,20 @@ function EditAccessModal({
       show_client_profit: showClientProfit,
       updated_at: new Date().toISOString(),
     })
+    if (err) {
+      setSaving(false)
+      setError(err.message)
+      return
+    }
+    try {
+      await setUserBiGrants(userId, biModuleIds)
+    } catch (e) {
+      setSaving(false)
+      setError(e instanceof Error ? e.message : String(e))
+      return
+    }
     setSaving(false)
-    if (err) setError(err.message)
-    else onSaved(userId)
+    onSaved(userId)
   }
 
   return (
@@ -606,6 +630,25 @@ function EditAccessModal({
                 </div>
               </div>
             )}
+
+            <div>
+              <div className="admin-form-section-title">{t('admin.biModules')}</div>
+              <p className="ov-sub" style={{ margin: '0 0 6px', fontSize: '.72rem' }}>
+                {t('admin.biModulesHint')}
+              </p>
+              <div className="admin-form-checklist">
+                {activeBiModules.map(m => (
+                  <label key={m.id} className="admin-form-check">
+                    <input
+                      type="checkbox"
+                      checked={biModuleIds.includes(m.id)}
+                      onChange={() => toggleBiModule(m.id)}
+                    />
+                    {m.label}
+                  </label>
+                ))}
+              </div>
+            </div>
 
             <div>
               <div className="admin-form-section-title">Companies</div>

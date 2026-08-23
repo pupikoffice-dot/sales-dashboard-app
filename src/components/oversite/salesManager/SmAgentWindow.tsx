@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type { LogicalCompany } from '../../../types/dashboard'
 import { SmCubeGrid, type SmOrdersReportTarget } from './SmCubeGrid'
 import type { SmSuiteKpis } from './smMetrics'
@@ -26,6 +27,8 @@ export interface SmAgentWindowProps {
   onOpenOpenOrdersReport?: () => void
   onOpenReturnsReport?: () => void
   onOpenReceiptsReport?: () => void
+  /** Optional BI cubes mounted after the KPI grid. */
+  biBlock?: ReactNode
 }
 
 export function SmAgentWindow({
@@ -40,6 +43,7 @@ export function SmAgentWindow({
   onOpenOpenOrdersReport,
   onOpenReturnsReport,
   onOpenReceiptsReport,
+  biBlock,
 }: SmAgentWindowProps) {
   return (
     <section className={`sm-window ${windowTintClass(agentId)}`}>
@@ -55,6 +59,7 @@ export function SmAgentWindow({
         onOpenReturnsReport={onOpenReturnsReport}
         onOpenReceiptsReport={onOpenReceiptsReport}
       />
+      {biBlock}
     </section>
   )
 }

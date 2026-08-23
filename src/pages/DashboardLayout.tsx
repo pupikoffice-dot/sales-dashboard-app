@@ -127,6 +127,13 @@ export function DashboardLayout() {
             >
               {t('nav.adminClasses')}
             </NavLink>
+            <NavLink
+              to="/admin/modules"
+              onClick={() => setSidebarOpen(false)}
+              className={({ isActive }) => `nav-btn${isActive ? ' active' : ''}`}
+            >
+              {t('nav.adminModules')}
+            </NavLink>
           </>
         )}
       </nav>

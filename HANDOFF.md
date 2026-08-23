@@ -1,17 +1,18 @@
 # HANDOFF — sales-dashboard-app
 
 ## Current State
-_Last updated: 2026-08-23 17:24:09 by Cursor_
+_Last updated: 2026-08-23 19:08:57 by Cursor_
 
 **Status:** Active
-**Phase:** UI modules + Sales Manager suite on beta (product line **2.0**)
+**Phase:** BI modules + Admin Modules on beta (product line **2.0**)
 
-- Works now: Beta title badge **2.0 · beta**; production live DB `active_version` (**1.0** until promote)
-- Works now: Sales Manager suite — company-first; Alone (default) / Vs toggle; Alone = All + per-agent windows; Vs = comparison cubes (Sales MTD+Goal, Open debt, Receipts) per company; never combine companies
-- Works now: Classic Oversight on production `main`
-- In progress: Manual verify Alone/Vs on beta
+- Works now: Admin → Modules (UI catalog read-only + BI catalog + habit X/Y default 3/4)
+- Works now: Per-user BI grants on Admin → Users; suite BI cubes (Missed items, Missed clients, Items sold by others) with BI badge
+- Works now: Alone All / Vs = missed items+clients; Alone agent = all three when granted; super-admin all BI; View-as uses target grants
+- Works now: Sales Manager suite Alone/Vs; beta badge **2.0 · beta**; Classic Oversight on `main`
+- In progress: Manual verify BI on beta (grants, OOS skip, habit empty state)
 - Blocked: Nothing blocked
-- Next up: Keep Phase 3 / promote-to-main off until asked; Vs open-orders / returns / orders-7d deferred
+- Next up: Verify on beta; keep promote-to-main off until asked
 
 ### CORE RULES (suite)
 
@@ -44,6 +45,20 @@ Phase 1 hides Cost, Total Cost, Price, and cost-based charts in the UI only. The
 ---
 
 ## Session Log
+
+### 2026-08-23 19:08:57 — Cursor
+**Done:**
+- Shipped BI modules on beta: catalog tables, habit 3/4, Admin Modules tab, per-user BI grants, suite cubes Alone/Vs with BI badge
+- Visibility: super-admin sees all active BI; View-as uses target grants
+
+**Decisions:**
+- BI only inside Sales Manager suite; class BI grants deferred
+- Habit shared X/Y (default 3 of 4); Missed items skips missing/≤0 WMS stock
+
+**Next:**
+- Manual verify on beta; alias deploy if needed
+
+---
 
 ### 2026-08-23 17:24:09 — Cursor
 **Done:**

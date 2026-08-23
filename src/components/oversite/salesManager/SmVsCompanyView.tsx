@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { useLocale } from '../../../context/LocaleContext'
 import { OversiteOrdersLast7Days } from '../OversiteOrdersLast7Days'
 import { OversiteOrdersReportButton } from '../OversiteOrdersReportButton'
@@ -17,6 +17,7 @@ export interface SmVsCompanyViewProps {
   onOpenOpenOrdersReport?: () => void
   onOpenReturnsReport?: () => void
   onOpenReceiptsReport?: () => void
+  biBlock?: ReactNode
 }
 
 /** Vs mode: comparison cubes — agents pivoted in one chart per KPI. */
@@ -29,6 +30,7 @@ export function SmVsCompanyView({
   onOpenOpenOrdersReport,
   onOpenReturnsReport,
   onOpenReceiptsReport,
+  biBlock,
 }: SmVsCompanyViewProps) {
   const { t } = useLocale()
   const agents = series.agents
@@ -78,6 +80,7 @@ export function SmVsCompanyView({
   }
 
   return (
+    <div className="sm-vs-company">
     <div className="sm-vs-grid">
       <div className="sm-cube sm-cube--vs-mtd">
         <div className="sm-cube-title">{t('sm.cube.salesMtdGoal', { month: monthLbl })}</div>
@@ -166,6 +169,8 @@ export function SmVsCompanyView({
           </button>
         ) : null}
       </div>
+    </div>
+    {biBlock}
     </div>
   )
 }
