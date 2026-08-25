@@ -12,7 +12,10 @@ import type { AppLocale } from '../../i18n/types'
 import type { DashboardModuleId, LogicalCompany } from '../../types/dashboard'
 import { UserPermissionsEditor } from './UserPermissionsEditor'
 import { useBiModulesCatalog } from '../../hooks/useBiModules'
+import { useUiModuleCatalog } from '../../hooks/useUiModules'
 import { fetchUserBiGrants, setUserBiGrants } from '../../lib/biModulesApi'
+import { fetchUserSuiteUiGrants, setUserSuiteUiGrants } from '../../lib/suiteUiModulesApi'
+import { SUITE_MOUNTABLE_UI_MODULE_IDS } from '../../lib/suiteUiModules'
 
 interface UserRow {
   id: string
@@ -404,6 +407,7 @@ export function UsersPage() {
             qc.invalidateQueries({ queryKey: ['admin-users'] })
             qc.invalidateQueries({ queryKey: ['admin-users-picker'] })
             qc.invalidateQueries({ queryKey: ['bi-user-grants', savedUserId] })
+            qc.invalidateQueries({ queryKey: ['suite-ui-user-grants', savedUserId] })
             // If we're previewing the user whose access just changed, reload it
             // so the live preview reflects the new settings immediately (no
             // dashboard-data refetch needed — all narrowing is client-side).
@@ -442,11 +446,16 @@ function EditAccessModal({
   const [agentErpId, setAgentErpId] = useState('')
   const [parentId, setParentId] = useState('')
   const [biModuleIds, setBiModuleIds] = useState<string[]>([])
+  const [suiteUiModuleIds, setSuiteUiModuleIds] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { t } = useLocale()
   const { data: biCatalog = [] } = useBiModulesCatalog()
   const activeBiModules = biCatalog.filter(m => m.active)
+  const { data: uiCatalog = [] } = useUiModuleCatalog()
+  const activeSuiteUiModules = uiCatalog.filter(
+    m => m.active && SUITE_MOUNTABLE_UI_MODULE_IDS.includes(m.id as (typeof SUITE_MOUNTABLE_UI_MODULE_IDS)[number]),
+  )
 
   const profile = users.find(u => u.id === userId)
   const parentOptions = users.filter(u => u.id !== userId)
@@ -477,6 +486,9 @@ function EditAccessModal({
     fetchUserBiGrants(userId)
       .then(ids => setBiModuleIds(ids))
       .catch(() => setBiModuleIds([]))
+    fetchUserSuiteUiGrants(userId)
+      .then(ids => setSuiteUiModuleIds(ids))
+      .catch(() => setSuiteUiModuleIds([]))
     const p = users.find(u => u.id === userId)
     if (p) {
       setAgentErpId(p.agent_erp_id ?? '')
@@ -498,6 +510,10 @@ function EditAccessModal({
 
   function toggleBiModule(id: string) {
     setBiModuleIds(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]))
+  }
+
+  function toggleSuiteUiModule(id: string) {
+    setSuiteUiModuleIds(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]))
   }
 
   async function save() {
@@ -543,6 +559,7 @@ function EditAccessModal({
     }
     try {
       await setUserBiGrants(userId, biModuleIds)
+      await setUserSuiteUiGrants(userId, suiteUiModuleIds)
     } catch (e) {
       setSaving(false)
       setError(e instanceof Error ? e.message : String(e))
@@ -643,6 +660,25 @@ function EditAccessModal({
                       type="checkbox"
                       checked={biModuleIds.includes(m.id)}
                       onChange={() => toggleBiModule(m.id)}
+                    />
+                    {m.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div className="admin-form-section-title">{t('admin.suiteUiModules')}</div>
+              <p className="ov-sub" style={{ margin: '0 0 6px', fontSize: '.72rem' }}>
+                {t('admin.suiteUiModulesHint')}
+              </p>
+              <div className="admin-form-checklist">
+                {activeSuiteUiModules.map(m => (
+                  <label key={m.id} className="admin-form-check">
+                    <input
+                      type="checkbox"
+                      checked={suiteUiModuleIds.includes(m.id)}
+                      onChange={() => toggleSuiteUiModule(m.id)}
                     />
                     {m.label}
                   </label>

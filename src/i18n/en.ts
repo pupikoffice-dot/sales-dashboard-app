@@ -261,6 +261,11 @@ export const messages = {
   'bi.col.stock': 'Stock',
   'bi.col.qty': 'Qty',
 
+  'suiteUi.bestSoldItems.title': 'Best sold items',
+  'suiteUi.bestSoldItems.empty': 'No MTD item sales in this window.',
+  'suiteUi.bestClients.title': 'Best clients',
+  'suiteUi.bestClients.empty': 'No MTD client sales in this window.',
+
   'oversite.title': 'Oversight Dashboard',
   'oversite.today': 'Today',
   'oversite.fileUpdated': 'File updated',
@@ -358,6 +363,9 @@ export const messages = {
   'admin.biModules': 'BI modules',
   'admin.biModulesHint':
     'Cubes shown inside Sales Manager suite for this user (super-admin always sees all when not View-as).',
+  'admin.suiteUiModules': 'Suite UI modules',
+  'admin.suiteUiModulesHint':
+    'Best sold / Best clients tables in Sales Manager suite (per-user; not class addons).',
   'admin.modulesPageTitle': 'Modules',
   'admin.modulesPageSub':
     'UI module catalog (read-only) and BI module catalog with shared habit parameters.',

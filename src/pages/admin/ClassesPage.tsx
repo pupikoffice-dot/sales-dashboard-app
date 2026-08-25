@@ -8,6 +8,7 @@ import { diffClassGrants, normalizeClassAgentScope, ALL_AGENTS_ITEM_KEY } from '
 import { countOversightSuiteItemKeys } from '../../lib/uiModules'
 import { PermissionSections } from '../../components/admin/PermissionSections'
 import { useUiModuleCatalog } from '../../hooks/useUiModules'
+import { isClassGrantableUiModule } from '../../lib/suiteUiModules'
 import type { AppClass } from '../../types/permissions'
 
 function itemKeyOf(kind: string, key: string, value: string | null) {
@@ -22,7 +23,7 @@ export function ClassesPage() {
   const { data: userCounts = {} } = useQuery({ queryKey: ['class-user-counts'], queryFn: fetchClassUserCounts })
   const { data: knownAgents = [] } = useQuery({ queryKey: ['known-agents'], queryFn: listKnownAgents })
   const { data: uiModuleCatalog = [] } = useUiModuleCatalog()
-  const activeUiModules = uiModuleCatalog.filter(m => m.active && m.surface === 'oversight')
+  const activeUiModules = uiModuleCatalog.filter(isClassGrantableUiModule)
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [draft, setDraft] = useState<{ id: string; label: string; description: string } | null>(null)

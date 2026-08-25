@@ -1,6 +1,7 @@
 import type { AppGrant, GrantKind, PermissionState } from '../../types/permissions'
 import type { AppUiModule } from '../../types/uiModules'
 import { resolveOverrideState } from '../../lib/classPermissions'
+import { isClassGrantableUiModule } from '../../lib/suiteUiModules'
 import { uiModuleGrantKey } from '../../lib/uiModules'
 
 // Exported so UserPermissionsEditor (Task 9) can build real per-section explain-access item
@@ -39,7 +40,7 @@ interface OverrideModeProps {
 }
 
 function activeOversightModules(modules: AppUiModule[] | undefined): AppUiModule[] {
-  return (modules ?? []).filter(m => m.active && m.surface === 'oversight')
+  return (modules ?? []).filter(isClassGrantableUiModule)
 }
 
 /**

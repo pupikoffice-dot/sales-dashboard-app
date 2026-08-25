@@ -109,6 +109,24 @@ describe('mapGrantKeysToUiModules', () => {
       ),
     ).toEqual([])
   })
+
+  it('skips suite-mountable per-user tiles from class addon mapping', () => {
+    const withBest: typeof catalog = [
+      ...catalog,
+      {
+        id: 'best_sold_items',
+        label: 'Best sold',
+        surface: 'oversight',
+        kind: 'addon',
+        active: true,
+        sortOrder: 20,
+        description: null,
+      },
+    ]
+    expect(
+      mapGrantKeysToUiModules(['ui.oversight.addon.best_sold_items', 'ui.oversight.addon.extra_addon'], withBest),
+    ).toEqual([{ id: 'extra_addon', surface: 'oversight', kind: 'addon' }])
+  })
 })
 
 describe('pickOversightMode', () => {

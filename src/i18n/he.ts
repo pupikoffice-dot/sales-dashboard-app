@@ -263,6 +263,11 @@ export const messages: Record<keyof typeof en, string> = {
   'bi.col.stock': 'מלאי',
   'bi.col.qty': 'כמות',
 
+  'suiteUi.bestSoldItems.title': 'הפריטים הנמכרים ביותר',
+  'suiteUi.bestSoldItems.empty': 'אין מכירות פריטים החודש בחלון זה.',
+  'suiteUi.bestClients.title': 'הלקוחות הטובים ביותר',
+  'suiteUi.bestClients.empty': 'אין מכירות ללקוחות החודש בחלון זה.',
+
   'oversite.title': 'לוח מבט על',
   'oversite.today': 'היום',
   'oversite.fileUpdated': 'עדכון קובץ',
@@ -360,6 +365,9 @@ export const messages: Record<keyof typeof en, string> = {
   'admin.biModules': 'מודולי BI',
   'admin.biModulesHint':
     'קוביות שמוצגות בתוך חבילת מנהל המכירות למשתמש זה (סופר־אדמין רואה הכל כשלא בתצוגה כמשתמש אחר).',
+  'admin.suiteUiModules': 'מודולי UI לחבילה',
+  'admin.suiteUiModulesHint':
+    'טבלאות פריטים/לקוחות מובילים בחבילת מנהל המכירות (לפי משתמש; לא מענקי תפקיד).',
   'admin.modulesPageTitle': 'מודולים',
   'admin.modulesPageSub': 'קטלוג מודולי UI (קריאה בלבד) וקטלוג מודולי BI עם פרמטרי הרגל משותפים.',
   'admin.modulesUiSection': 'מודולי UI',

@@ -6,6 +6,7 @@ import type {
   UiModuleRef,
   UiModuleSurface,
 } from '../types/uiModules'
+import { isSuiteMountableUiModuleId } from './suiteUiModules'
 
 /** Grant key prefix for Oversight UI modules (class `node` grants). */
 export const UI_OVERSIGHT_GRANT_PREFIX = 'ui.oversight.'
@@ -69,6 +70,8 @@ export function mapGrantKeysToUiModules(
   for (const key of keys) {
     const parsed = parseUiModuleGrantKey(key)
     if (!parsed) continue
+    // Suite-mountable tiles are per-user only — never classic addons via class grants.
+    if (isSuiteMountableUiModuleId(parsed.id)) continue
     const mod = byId.get(parsed.id)
     if (!mod || !mod.active) continue
     if (mod.surface !== parsed.surface || mod.kind !== parsed.kind) continue
