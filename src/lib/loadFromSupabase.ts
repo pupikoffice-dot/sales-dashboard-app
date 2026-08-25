@@ -19,14 +19,15 @@ import type {
  * equal id spans would give wildly uneven pages), then each [from,to] range is
  * fetched via get_dashboard_sales_range. Chunks are ~8 MB each — a single
  * all-rows response (~72 MB) crashes PostgREST and 521s the whole API, so DO
- * NOT consolidate this back into one query. Parallelism is kept low and each
- * chunk retries once, to ride out transient 5xx while the hourly ETL runs.
+ * NOT consolidate this back into one query. Parallelism is kept modest (3) and
+ * each chunk retries up to CHUNK_RETRIES times (3 attempts total) to ride out
+ * transient 5xx while the hourly ETL runs.
  *
  * All RPCs are SECURITY DEFINER and enforce dashboard_user_access
  * (companies, agents, show_item_cost, show_client_profit) server-side.
  */
 const PAGE_ROWS = 25000
-const MAX_PARALLEL = 2
+const MAX_PARALLEL = 3
 const CHUNK_RETRIES = 2
 
 interface AuxPayload {
