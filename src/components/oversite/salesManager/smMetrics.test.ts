@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import type { DebtRow, LogicalCompany, SalesRow } from '../../../types/dashboard'
 import { getOversiteDateContext } from '../../../lib/oversiteMetrics'
-import { buildSmSuiteKpis, buildSmVsAgentSeries } from './smMetrics'
+import {
+  buildSmSuiteKpis,
+  buildSmVsAgentSeries,
+  buildSmVsAgentSeriesFromKpis,
+  partitionSalesRowsByTag,
+} from './smMetrics'
 
 function salesRow(partial: Partial<SalesRow> & Pick<SalesRow, 'company'>): SalesRow {
   return {
@@ -326,5 +331,188 @@ describe('buildSmVsAgentSeries', () => {
       openDebtCash: 20,
     })
     expect(series.ordersLast7Days).toBeDefined()
+  })
+})
+
+describe('oversight speed — golden (same numbers)', () => {
+  it('partitioned buildSmSuiteKpis matches shared partition + FromKpis Vs', () => {
+    const rows: SalesRow[] = [
+      salesRow({
+        company: 'pupik',
+        year: 2026,
+        month: 8,
+        agent: '24',
+        cash: 100,
+        qty: 2,
+        clientID: '1',
+      }),
+      salesRow({
+        company: 'pupik',
+        year: 2025,
+        month: 8,
+        agent: '24',
+        cash: 80,
+        qty: 1,
+        clientID: '1',
+      }),
+      salesRow({
+        company: 'openorders',
+        agent: '24',
+        cash: 15,
+        qty: 1,
+        clientID: '9',
+      }),
+      salesRow({
+        company: 'returns-pupik',
+        year: 2026,
+        month: 8,
+        agent: '24',
+        cash: -5,
+        qty: -1,
+        clientID: '1',
+      }),
+      salesRow({
+        company: 'orders-pupik',
+        date: '2026-08-19',
+        agent: '24',
+        cash: 12,
+        qty: 1,
+        clientID: '1',
+      }),
+      salesRow({
+        company: 'pupik',
+        year: 2026,
+        month: 8,
+        agent: '25',
+        cash: 40,
+        qty: 1,
+        clientID: '2',
+      }),
+      salesRow({
+        company: 'mt',
+        year: 2026,
+        month: 8,
+        agent: '24',
+        cash: 999,
+        qty: 1,
+        clientID: '3',
+      }),
+    ]
+    const debtRows: DebtRow[] = [
+      debtRow({ company: 'pupik', agent: '24', clientID: '10', oldDebt: 50 }),
+      debtRow({ company: 'pupik', agent: '25', clientID: '11', oldDebt: 20 }),
+    ]
+
+    const partition = partitionSalesRowsByTag(rows)
+    const allKpis = buildSmSuiteKpis({
+      rows,
+      debtRows,
+      company: 'pupik',
+      agents: ['24', '25'],
+      dateCtx,
+      rowPartition: partition,
+    })
+    const allKpisNoPart = buildSmSuiteKpis({
+      rows,
+      debtRows,
+      company: 'pupik',
+      agents: ['24', '25'],
+      dateCtx,
+    })
+    expect(allKpis).toEqual(allKpisNoPart)
+
+    const agentWindows = ['24', '25'].map(agentId => ({
+      agentId,
+      kpis: buildSmSuiteKpis({
+        rows,
+        debtRows,
+        company: 'pupik',
+        agents: [agentId],
+        dateCtx,
+        rowPartition: partition,
+      }),
+      goalCash: agentId === '24' ? 200 : 100,
+    }))
+
+    const fromKpis = buildSmVsAgentSeriesFromKpis({
+      company: 'pupik',
+      agentWindows,
+      allKpis,
+    })
+    const fromScratch = buildSmVsAgentSeries({
+      rows,
+      debtRows,
+      company: 'pupik',
+      agents: ['24', '25'],
+      dateCtx,
+      targets: { '24': 200, '25': 100 },
+      goalsReady: true,
+    })
+    expect(fromKpis).toEqual(fromScratch)
+
+    expect(allKpis.salesMtd.cash).toBe(140)
+    expect(allKpis.salesMtd.lyCash).toBe(80)
+    expect(allKpis.openOrders.cash).toBe(15)
+    expect(allKpis.returnsMtd.cash).toBe(-5)
+  })
+
+  it('buildSmVsAgentSeriesFromKpis matches buildSmVsAgentSeries on synthetic rows', () => {
+    const rows: SalesRow[] = [
+      salesRow({
+        company: 'pupik',
+        year: 2026,
+        month: 8,
+        agent: '24',
+        cash: 100,
+        qty: 1,
+        clientID: '1',
+      }),
+      salesRow({
+        company: 'pupik',
+        year: 2026,
+        month: 8,
+        agent: '25',
+        cash: 40,
+        qty: 1,
+        clientID: '2',
+      }),
+    ]
+    const debtRows: DebtRow[] = [
+      debtRow({ company: 'pupik', agent: '24', clientID: '10', oldDebt: 50 }),
+      debtRow({ company: 'pupik', agent: '25', clientID: '11', oldDebt: 20 }),
+    ]
+    const partition = partitionSalesRowsByTag(rows)
+    const allKpis = buildSmSuiteKpis({
+      rows,
+      debtRows,
+      company: 'pupik',
+      agents: ['24', '25'],
+      dateCtx,
+      rowPartition: partition,
+    })
+    const agentWindows = ['24', '25'].map(agentId => ({
+      agentId,
+      kpis: buildSmSuiteKpis({
+        rows,
+        debtRows,
+        company: 'pupik',
+        agents: [agentId],
+        dateCtx,
+        rowPartition: partition,
+      }),
+      goalCash: null as number | null,
+    }))
+    expect(
+      buildSmVsAgentSeriesFromKpis({ company: 'pupik', agentWindows, allKpis }),
+    ).toEqual(
+      buildSmVsAgentSeries({
+        rows,
+        debtRows,
+        company: 'pupik',
+        agents: ['24', '25'],
+        dateCtx,
+        goalsReady: false,
+      }),
+    )
   })
 })

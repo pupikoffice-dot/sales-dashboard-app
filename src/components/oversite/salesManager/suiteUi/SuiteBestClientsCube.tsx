@@ -10,17 +10,19 @@ export function SuiteBestClientsCube({
   agents,
   curYear,
   curMonth,
+  mtdPrefiltered = false,
 }: {
   rows: SalesRow[]
   company: LogicalCompany
   agents: string[] | null
   curYear: number
   curMonth: number
+  mtdPrefiltered?: boolean
 }) {
   const { t } = useLocale()
   const items = useMemo(
-    () => buildBestClients({ rows, company, agents, curYear, curMonth }),
-    [rows, company, agents, curYear, curMonth],
+    () => buildBestClients({ rows, company, agents, curYear, curMonth, mtdPrefiltered }),
+    [rows, company, agents, curYear, curMonth, mtdPrefiltered],
   )
 
   return (

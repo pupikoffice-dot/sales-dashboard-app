@@ -2,14 +2,10 @@ import type { DebtRow, LogicalCompany, SalesRow } from '../../../types/dashboard
 import { computeDebtSummary, debtRowsForCompany, type DebtSummary } from '../../../lib/debtMetrics'
 import {
   OVERSITE_COMPANIES,
-  computeOpenOrders,
   computeOrdersLast7DaysByAgent,
-  computeReturnsMtd,
-  computeSalesMtd,
   computeTop10BySku,
   getOversiteDateContext,
   resolveOpenOrdersTag,
-  resolveOrdersTag,
   topOpenOrdersByCash,
   type OrderTodayGroup,
   type OrdersLast7DaysResult,
@@ -125,6 +121,111 @@ function narrowByAgents<T extends { agent?: string | null }>(
   return rows.filter(r => set.has(String(r.agent ?? '')))
 }
 
+const EMPTY_TAG_ROWS: SalesRow[] = []
+
+/** Group access-scoped sales rows by `company` tag once (suite KPI / cube indexing). */
+export function partitionSalesRowsByTag(rows: SalesRow[]): Map<string, SalesRow[]> {
+  const map = new Map<string, SalesRow[]>()
+  for (const r of rows) {
+    const tag = String(r.company ?? '')
+    let bucket = map.get(tag)
+    if (!bucket) {
+      bucket = []
+      map.set(tag, bucket)
+    }
+    bucket.push(r)
+  }
+  return map
+}
+
+function tagSlice(partition: Map<string, SalesRow[]>, tag: string): SalesRow[] {
+  return partition.get(tag) ?? EMPTY_TAG_ROWS
+}
+
+/** Resolve orders tag using partitioned counts (same rules as resolveOrdersTag). */
+function resolveOrdersTagFromPartition(
+  partition: Map<string, SalesRow[]>,
+  ordersTag: string,
+  agents?: string[] | null,
+): string {
+  const count = narrowByAgents(tagSlice(partition, ordersTag), agents).length
+  if (count > 0) return ordersTag
+  if (ordersTag === 'orders-pupik') {
+    const legacy = narrowByAgents(tagSlice(partition, 'openorders'), agents).length
+    if (legacy > 2000) return 'openorders'
+  }
+  if (ordersTag === 'orders-mt') {
+    const legacy = narrowByAgents(tagSlice(partition, 'openorders-mt'), agents).length
+    if (legacy > 2000) return 'openorders-mt'
+  }
+  return ordersTag
+}
+
+/**
+ * One pass over company sales rows for MTD + LY (same predicates as computeSalesMtd).
+ */
+function salesMtdFromSlice(
+  salesRows: SalesRow[],
+  company: string,
+  curYear: number,
+  curMonth: number,
+): SalesMtdMetrics {
+  let cash = 0
+  let qty = 0
+  let lyCash = 0
+  let lyQty = 0
+  const lyYear = curYear - 1
+  for (const r of salesRows) {
+    if (r.company !== company) continue
+    const y = Number(r.year)
+    const m = Number(r.month)
+    if (m !== curMonth) continue
+    const c = Number(r.cash) || 0
+    const q = Number(r.qty) || 0
+    if (y === curYear) {
+      cash += c
+      qty += q
+    } else if (y === lyYear) {
+      lyCash += c
+      lyQty += q
+    }
+  }
+  const lyChangeCashPct = lyCash > 0 ? ((cash - lyCash) / lyCash) * 100 : null
+  return { cash, qty, lyCash, lyQty, lyChangeCashPct }
+}
+
+/** Same predicates as computeOpenOrders on an open-orders tag slice. */
+function openOrdersFromSlice(openRows: SalesRow[], openOrdersTag: string): OpenOrdersMetrics {
+  let cash = 0
+  let qty = 0
+  const clients = new Set<string | number>()
+  for (const r of openRows) {
+    if (r.company !== openOrdersTag) continue
+    cash += Number(r.cash) || 0
+    qty += Number(r.qty) || 0
+    if (r.clientID) clients.add(r.clientID)
+  }
+  return { clients: clients.size, cash, qty }
+}
+
+/** Same predicates as computeReturnsMtd on a returns tag slice. */
+function returnsMtdFromSlice(
+  returnsRows: SalesRow[],
+  returnsTag: string,
+  curYear: number,
+  curMonth: number,
+): ReturnsMtdMetrics {
+  let cash = 0
+  let qty = 0
+  for (const r of returnsRows) {
+    if (r.company !== returnsTag) continue
+    if (Number(r.year) !== curYear || Number(r.month) !== curMonth) continue
+    cash += Number(r.cash) || 0
+    qty += Number(r.qty) || 0
+  }
+  return { cash, qty }
+}
+
 export interface SmReceiptsMetrics {
   /** Gross monthly sums (YYYY-MM → amount) for **one** company. */
   monthly: Record<string, number>
@@ -164,6 +265,11 @@ export interface BuildSmSuiteKpisArgs {
   dateCtx?: OversiteDateContext
   /** company → agent → YYYY-MM → gross. Suite scopes agents; no RECEIPTS_TEAM_AGENTS. */
   receiptsMonthlyByAgent?: Record<string, Record<string, Record<string, number>>>
+  /**
+   * Optional pre-built tag partition of `rows` (same row set).
+   * When omitted, built once from `rows` so each KPI reads a slice instead of re-scanning all.
+   */
+  rowPartition?: Map<string, SalesRow[]>
 }
 
 function emptyOrdersLast7(): OrdersLast7DaysResult {
@@ -185,10 +291,11 @@ function emptyReturns(): ReturnsMtdMetrics {
 /**
  * Suite KPIs for **one** company and the window's agent set.
  * CORE RULE: one company only — never combine. Callers must not pass sidebar filter company.
+ * Internals: tag partition + single-pass sales/open/returns (same numbers as classic helpers).
  */
 export function buildSmSuiteKpis(args: BuildSmSuiteKpisArgs): SmSuiteKpis {
   const dateCtx = args.dateCtx ?? getOversiteDateContext()
-  const scopedRows = narrowByAgents(args.rows, args.agents)
+  const partition = args.rowPartition ?? partitionSalesRowsByTag(args.rows)
   const scopedDebt = narrowByAgents(args.debtRows, args.agents)
   const def = companyDef(args.company)
 
@@ -207,12 +314,23 @@ export function buildSmSuiteKpis(args: BuildSmSuiteKpisArgs): SmSuiteKpis {
     }
   }
 
-  const sales = computeSalesMtd(scopedRows, args.company, dateCtx.curYear, dateCtx.curMonth)
-  const openTag = resolveOpenOrdersTag(scopedRows, def.openOrdersTag)
-  const open = computeOpenOrders(scopedRows, openTag)
-  const returns = computeReturnsMtd(scopedRows, def.returnsTag, dateCtx.curYear, dateCtx.curMonth)
-  const ordersTag = resolveOrdersTag(scopedRows, def.ordersTag)
-  const ordersLast7Days = computeOrdersLast7DaysByAgent(scopedRows, ordersTag, dateCtx.todayStr)
+  const salesSlice = narrowByAgents(tagSlice(partition, args.company), args.agents)
+  const openTag = def.openOrdersTag
+  const openSlice = narrowByAgents(tagSlice(partition, openTag), args.agents)
+  const returnsSlice = narrowByAgents(tagSlice(partition, def.returnsTag), args.agents)
+  const ordersTag = resolveOrdersTagFromPartition(partition, def.ordersTag, args.agents)
+  // Agent-narrow the resolved orders tag; if legacy fallback switched tags, re-slice.
+  const ordersSlice = narrowByAgents(tagSlice(partition, ordersTag), args.agents)
+
+  const sales = salesMtdFromSlice(salesSlice, args.company, dateCtx.curYear, dateCtx.curMonth)
+  const open = openOrdersFromSlice(openSlice, openTag)
+  const returns = returnsMtdFromSlice(
+    returnsSlice,
+    def.returnsTag,
+    dateCtx.curYear,
+    dateCtx.curMonth,
+  )
+  const ordersLast7Days = computeOrdersLast7DaysByAgent(ordersSlice, ordersTag, dateCtx.todayStr)
   const debtData = debtRowsForCompany(scopedDebt, args.company)
   const openDebt = computeDebtSummary(debtData)
 
@@ -358,6 +476,7 @@ export function buildSmVsAgentSeries(args: BuildSmVsAgentSeriesArgs): SmVsCompan
   const dateCtx = args.dateCtx ?? getOversiteDateContext()
   const goalsReady = args.goalsReady === true
   const targets = args.targets ?? {}
+  const partition = partitionSalesRowsByTag(args.rows)
 
   const agents: SmVsAgentPoint[] = args.agents.map(agentId => {
     const kpis = buildSmSuiteKpis({
@@ -367,6 +486,7 @@ export function buildSmVsAgentSeries(args: BuildSmVsAgentSeriesArgs): SmVsCompan
       agents: [agentId],
       dateCtx,
       receiptsMonthlyByAgent: args.receiptsMonthlyByAgent,
+      rowPartition: partition,
     })
     const goalCash =
       goalsReady && Object.prototype.hasOwnProperty.call(targets, agentId) ? targets[agentId]! : null
@@ -389,6 +509,7 @@ export function buildSmVsAgentSeries(args: BuildSmVsAgentSeriesArgs): SmVsCompan
     agents: args.agents.length > 0 ? args.agents : null,
     dateCtx,
     receiptsMonthlyByAgent: args.receiptsMonthlyByAgent,
+    rowPartition: partition,
   })
 
   return {
@@ -396,5 +517,34 @@ export function buildSmVsAgentSeries(args: BuildSmVsAgentSeriesArgs): SmVsCompan
     agents,
     receipts: allKpis.receipts,
     ordersLast7Days: allKpis.ordersLast7Days,
+  }
+}
+
+/**
+ * Build Vs series from already-computed All + per-agent suite KPIs (Alone path).
+ * Avoids a second full `buildSmSuiteKpis` pass per agent.
+ */
+export function buildSmVsAgentSeriesFromKpis(args: {
+  company: LogicalCompany
+  agentWindows: Array<{ agentId: string; kpis: SmSuiteKpis; goalCash: number | null }>
+  allKpis: SmSuiteKpis
+}): SmVsCompanySeries {
+  const agents: SmVsAgentPoint[] = args.agentWindows.map(({ agentId, kpis, goalCash }) => {
+    const orders7Cash = kpis.ordersLast7Days.days.reduce((s, d) => s + (d.byAgent[agentId] || 0), 0)
+    return {
+      agentId,
+      salesMtdCash: kpis.salesMtd.cash,
+      goalCash,
+      openOrdersCash: kpis.openOrders.cash,
+      returnsCash: kpis.returnsMtd.cash,
+      openDebtCash: kpis.openDebt?.grandTotal ?? 0,
+      orders7Cash,
+    }
+  })
+  return {
+    company: args.company,
+    agents,
+    receipts: args.allKpis.receipts,
+    ordersLast7Days: args.allKpis.ordersLast7Days,
   }
 }

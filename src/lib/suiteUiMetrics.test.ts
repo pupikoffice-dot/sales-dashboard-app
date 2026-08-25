@@ -94,3 +94,81 @@ describe('buildBestClients', () => {
     expect(clients[0].cash).toBe(80)
   })
 })
+
+describe('mtdPrefiltered golden', () => {
+  it('prefiltered MTD slice matches full-row filter results', () => {
+    const rows = [
+      row({
+        company: 'pupik',
+        year: 2026,
+        month: 8,
+        agent: '24',
+        itemSKU: 'A',
+        itemName: 'Alpha',
+        clientID: 'c1',
+        clientName: 'One',
+        cash: 100,
+        qty: 2,
+      }),
+      row({
+        company: 'pupik',
+        year: 2026,
+        month: 7,
+        agent: '24',
+        itemSKU: 'A',
+        cash: 999,
+        qty: 9,
+        clientID: 'c9',
+      }),
+      row({
+        company: 'mt',
+        year: 2026,
+        month: 8,
+        agent: '24',
+        itemSKU: 'Z',
+        cash: 50,
+        qty: 1,
+        clientID: 'cz',
+      }),
+    ]
+    const mtd = rows.filter(
+      r => r.company === 'pupik' && Number(r.year) === 2026 && Number(r.month) === 8,
+    )
+    expect(
+      buildBestSoldItems({
+        rows: mtd,
+        company: 'pupik',
+        agents: ['24'],
+        curYear: 2026,
+        curMonth: 8,
+        mtdPrefiltered: true,
+      }),
+    ).toEqual(
+      buildBestSoldItems({
+        rows,
+        company: 'pupik',
+        agents: ['24'],
+        curYear: 2026,
+        curMonth: 8,
+      }),
+    )
+    expect(
+      buildBestClients({
+        rows: mtd,
+        company: 'pupik',
+        agents: ['24'],
+        curYear: 2026,
+        curMonth: 8,
+        mtdPrefiltered: true,
+      }),
+    ).toEqual(
+      buildBestClients({
+        rows,
+        company: 'pupik',
+        agents: ['24'],
+        curYear: 2026,
+        curMonth: 8,
+      }),
+    )
+  })
+})

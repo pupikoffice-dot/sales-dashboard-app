@@ -25,7 +25,9 @@ function mtdCompanyRows(
   agents: string[] | null,
   curYear: number,
   curMonth: number,
+  mtdPrefiltered?: boolean,
 ): SalesRow[] {
+  if (mtdPrefiltered) return rows
   return narrowAgents(rows, agents).filter(
     r =>
       r.company === company &&
@@ -42,9 +44,18 @@ export function buildBestSoldItems(args: {
   curYear: number
   curMonth: number
   limit?: number
+  /** When true, `rows` are already company×agents×MTD. */
+  mtdPrefiltered?: boolean
 }): SuiteBestSoldItem[] {
   const limit = args.limit ?? 10
-  const scoped = mtdCompanyRows(args.rows, args.company, args.agents, args.curYear, args.curMonth)
+  const scoped = mtdCompanyRows(
+    args.rows,
+    args.company,
+    args.agents,
+    args.curYear,
+    args.curMonth,
+    args.mtdPrefiltered,
+  )
   const bySku = new Map<string, SuiteBestSoldItem>()
   for (const r of scoped) {
     const sku = String(r.itemSKU ?? '').trim()
@@ -71,9 +82,18 @@ export function buildBestClients(args: {
   curYear: number
   curMonth: number
   limit?: number
+  /** When true, `rows` are already company×agents×MTD. */
+  mtdPrefiltered?: boolean
 }): SuiteBestClient[] {
   const limit = args.limit ?? 10
-  const scoped = mtdCompanyRows(args.rows, args.company, args.agents, args.curYear, args.curMonth)
+  const scoped = mtdCompanyRows(
+    args.rows,
+    args.company,
+    args.agents,
+    args.curYear,
+    args.curMonth,
+    args.mtdPrefiltered,
+  )
   const byClient = new Map<string, SuiteBestClient>()
   for (const r of scoped) {
     const id = String(r.clientID ?? '').trim()

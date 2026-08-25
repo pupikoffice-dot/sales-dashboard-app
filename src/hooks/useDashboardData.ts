@@ -14,6 +14,9 @@ import { buildSalesFilterIndex, type SalesFilterIndex } from '../lib/salesFilter
 import { buildWmsMaps } from '../lib/wmsData'
 import type { DashboardData, DebtRow, SalesRow } from '../types/dashboard'
 
+const EMPTY_SALES_ROWS: SalesRow[] = []
+const EMPTY_DEBT_ROWS: DebtRow[] = []
+
 declare global {
   interface Window {
     __DASHBOARD_DATA__?: DashboardData
@@ -123,11 +126,22 @@ export function useDashboardData() {
     }
   }, [q.data, maskPreview, access])
 
-  const allRows: SalesRow[] = data?.rows ?? []
+  const allRows: SalesRow[] = data?.rows ?? EMPTY_SALES_ROWS
   const filterIndex = data?.filterIndex
-  const rows = access ? filterRows(access, allRows) : []
-  const allDebtRows: DebtRow[] = normalizeDebtRows(data?.debtRows)
-  const debtRows = access ? filterDebtRows(access, allDebtRows) : []
+  // Access-scoped slices MUST be memoised — suite/BI memos and classic metrics
+  // depend on stable identity. Rebuilding on every render invalidates them.
+  const rows = useMemo(
+    () => (access ? filterRows(access, allRows) : EMPTY_SALES_ROWS),
+    [access, allRows],
+  )
+  const allDebtRows = useMemo(
+    () => normalizeDebtRows(data?.debtRows),
+    [data?.debtRows],
+  )
+  const debtRows = useMemo(
+    () => (access ? filterDebtRows(access, allDebtRows) : EMPTY_DEBT_ROWS),
+    [access, allDebtRows],
+  )
   // These MUST be memoised. They are passed as props and used as effect
   // dependencies (e.g. the batched report builder in LargeClientsItemsReport);
   // rebuilding them on every render gave them a new identity each time, which
@@ -148,7 +162,11 @@ export function useDashboardData() {
       ),
     [data?.priceRows, maskPreview, access?.showClientProfit],
   )
-  const dataHealth = checkOrdersDataHealth(allRows, access?.companies ?? [])
+  const companiesKey = access?.companies?.join(',') ?? ''
+  const dataHealth = useMemo(
+    () => checkOrdersDataHealth(allRows, access?.companies ?? []),
+    [allRows, companiesKey],
+  )
 
   return {
     ...q,

@@ -262,18 +262,22 @@ export interface BuildItemsSoldByOthersArgs {
   curYear: number
   curMonth: number
   limit?: number
+  /** When true, `rows` are already company MTD sales. */
+  mtdPrefiltered?: boolean
 }
 
 export function buildItemsSoldByOthers(args: BuildItemsSoldByOthersArgs): BiItemSoldByOthers[] {
   const limit = args.limit ?? 10
   const suite = new Set(args.suiteAgents.map(String))
   const self = String(args.agentId)
-  const mtd = args.rows.filter(
-    r =>
-      isCompanySalesRow(r, args.company) &&
-      Number(r.year) === args.curYear &&
-      Number(r.month) === args.curMonth,
-  )
+  const mtd = args.mtdPrefiltered
+    ? args.rows
+    : args.rows.filter(
+        r =>
+          isCompanySalesRow(r, args.company) &&
+          Number(r.year) === args.curYear &&
+          Number(r.month) === args.curMonth,
+      )
 
   const selfSkus = new Set<string>()
   const others = new Map<string, { name: string; cash: number; qty: number }>()

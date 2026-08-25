@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import type { HabitConfig } from '../../../../lib/biMetrics'
 import type { LogicalCompany, SalesRow } from '../../../../types/dashboard'
 import { BiItemsSoldByOthersCube } from './BiItemsSoldByOthersCube'
@@ -12,11 +13,16 @@ export interface BiCubesBlockProps {
   /** Required when mode === 'agent' for items_sold_by_others. */
   agentId?: string | null
   company: LogicalCompany
+  /** Company sales (+ open orders) — habit cubes. */
   rows: SalesRow[]
+  /** Shared company MTD sales slice (all suite agents). */
+  mtdRows?: SalesRow[]
   /** Per-SKU stock for this company (missing key = OOS / skip). */
   stockBySku: Record<string, number>
   habit: HabitConfig
   suiteAgents: string[]
+  /** Stable window agent scope from parent (avoids `[agentId]` every render). */
+  windowAgents?: string[] | null
   curYear: number
   curMonth: number
 }
@@ -31,22 +37,27 @@ export function BiCubesBlock({
   agentId,
   company,
   rows,
+  mtdRows,
   stockBySku,
   habit,
   suiteAgents,
+  windowAgents: windowAgentsProp,
   curYear,
   curMonth,
 }: BiCubesBlockProps) {
-  const idSet = new Set(visibleIds)
+  const idSet = useMemo(() => new Set(visibleIds), [visibleIds])
   const showMissedItems = idSet.has('missed_items')
   const showMissedClients = idSet.has('missed_clients')
   const showSoldByOthers =
     mode === 'agent' && !!agentId && idSet.has('items_sold_by_others')
 
-  if (!showMissedItems && !showMissedClients && !showSoldByOthers) return null
+  const agentsForHabit = useMemo((): string[] | null => {
+    if (windowAgentsProp !== undefined) return windowAgentsProp
+    if (mode === 'agent' && agentId) return [agentId]
+    return suiteAgents.length > 0 ? suiteAgents : null
+  }, [windowAgentsProp, mode, agentId, suiteAgents])
 
-  const agentsForHabit: string[] | null =
-    mode === 'agent' && agentId ? [agentId] : suiteAgents.length > 0 ? suiteAgents : null
+  if (!showMissedItems && !showMissedClients && !showSoldByOthers) return null
 
   return (
     <div className="bi-cube-grid" aria-label="BI modules">
@@ -73,12 +84,13 @@ export function BiCubesBlock({
       ) : null}
       {showSoldByOthers && agentId ? (
         <BiItemsSoldByOthersCube
-          rows={rows}
+          rows={mtdRows ?? rows}
           company={company}
           agentId={agentId}
           suiteAgents={suiteAgents}
           curYear={curYear}
           curMonth={curMonth}
+          mtdPrefiltered={!!mtdRows}
         />
       ) : null}
     </div>

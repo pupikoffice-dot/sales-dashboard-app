@@ -12,6 +12,7 @@ export function BiItemsSoldByOthersCube({
   suiteAgents,
   curYear,
   curMonth,
+  mtdPrefiltered = false,
 }: {
   rows: SalesRow[]
   company: LogicalCompany
@@ -19,6 +20,7 @@ export function BiItemsSoldByOthersCube({
   suiteAgents: string[]
   curYear: number
   curMonth: number
+  mtdPrefiltered?: boolean
 }) {
   const { t } = useLocale()
   const items = useMemo(
@@ -30,8 +32,9 @@ export function BiItemsSoldByOthersCube({
         suiteAgents,
         curYear,
         curMonth,
+        mtdPrefiltered,
       }),
-    [rows, company, agentId, suiteAgents, curYear, curMonth],
+    [rows, company, agentId, suiteAgents, curYear, curMonth, mtdPrefiltered],
   )
 
   return (
