@@ -4001,6 +4001,57 @@ html[dir='rtl'] .hdr-brand,
   font-size: 0.6rem;
 }
 
+.bi-cube-title-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.bi-help {
+  margin-left: 0;
+  flex-shrink: 0;
+}
+
+.bi-help-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--bdr);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.bi-help-btn:hover,
+.bi-help-btn[aria-expanded='true'] {
+  color: var(--acc);
+  border-color: var(--acc);
+}
+
+.bi-help-body {
+  left: 0;
+  right: auto;
+  min-width: 220px;
+  max-width: min(320px, 70vw);
+  font-size: 0.72rem;
+  line-height: 1.45;
+  white-space: normal;
+}
+
+.bi-help-text {
+  margin: 0;
+  color: var(--txt);
+}
+
 .bi-badge {
   flex-shrink: 0;
   font-size: 0.55rem;

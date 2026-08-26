@@ -32,7 +32,6 @@ import {
   listSmOrdersReportCompanies,
   partitionSalesRowsByTag,
   smCompanyLabel,
-  type SmReceiptsMetrics,
   type SmSuiteKpis,
   type SmVsCompanySeries,
 } from './smMetrics'
@@ -120,7 +119,8 @@ export function SalesManagerSuite() {
   } | null>(null)
   const [receiptsModal, setReceiptsModal] = useState<{
     title: string
-    receipts: SmReceiptsMetrics
+    company: LogicalCompany
+    agents: string[] | null
   } | null>(null)
 
   /** Class agent grant; empty/null = all agents present under access companies. */
@@ -270,10 +270,15 @@ export function SalesManagerSuite() {
     })
   }
 
-  const openReceiptsReport = (receipts: SmReceiptsMetrics, windowTitle: string) => {
+  const openReceiptsReport = (
+    company: LogicalCompany,
+    agents: string[] | null,
+    windowTitle: string,
+  ) => {
     setReceiptsModal({
       title: `${t('sm.cube.receipts')} — ${windowTitle}`,
-      receipts,
+      company,
+      agents,
     })
   }
 
@@ -356,7 +361,7 @@ export function SalesManagerSuite() {
                         openReturnsItems(company, allAgentsScope, `${label} — Vs`)
                       }
                       onOpenReceiptsReport={() =>
-                        openReceiptsReport(vsSeries.receipts, `${label} — Vs`)
+                        openReceiptsReport(company, allAgentsScope, `${label} — Vs`)
                       }
                       biBlock={
                         <SuiteExtrasBlock
@@ -393,7 +398,7 @@ export function SalesManagerSuite() {
                           openReturnsItems(company, allAgentsScope, `${label} — ${allTitle}`)
                         }
                         onOpenReceiptsReport={() =>
-                          openReceiptsReport(allKpis.receipts, `${label} — ${allTitle}`)
+                          openReceiptsReport(company, allAgentsScope, `${label} — ${allTitle}`)
                         }
                         biBlock={
                           <SuiteExtrasBlock
@@ -432,7 +437,7 @@ export function SalesManagerSuite() {
                               openReturnsItems(company, [agentId], `${label} — ${winTitle}`)
                             }
                             onOpenReceiptsReport={() =>
-                              openReceiptsReport(kpis.receipts, `${label} — ${winTitle}`)
+                              openReceiptsReport(company, [agentId], `${label} — ${winTitle}`)
                             }
                             biBlock={
                               <SuiteExtrasBlock
@@ -503,7 +508,8 @@ export function SalesManagerSuite() {
       {receiptsModal ? (
         <SmReceiptsReportModal
           title={receiptsModal.title}
-          receipts={receiptsModal.receipts}
+          company={receiptsModal.company}
+          agents={receiptsModal.agents}
           onClose={() => setReceiptsModal(null)}
         />
       ) : null}

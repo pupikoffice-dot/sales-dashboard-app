@@ -52,7 +52,6 @@ import { OversiteOrdersByDocTable } from '../components/oversite/OversiteOrdersB
 import { OversiteTop10Table } from '../components/oversite/OversiteTop10Table'
 import { OversiteLegend } from '../components/oversite/OversiteLegend'
 import { SmReceiptsReportModal } from '../components/oversite/salesManager/SmReceiptsReportModal'
-import { buildSmReceipts } from '../components/oversite/salesManager/smMetrics'
 
 export function OversitePage() {
   const { t } = useLocale()
@@ -485,11 +484,8 @@ function ClassicOversitePage({ isSuperAdmin }: { isSuperAdmin: boolean }) {
       {receiptsModal && (
         <SmReceiptsReportModal
           title={`${t('oversite.receipts')} — ${receiptsModal.companyLabel}`}
-          receipts={buildSmReceipts({
-            receiptsMonthlyByAgent: dashboardData?.receiptsMonthlyByAgent,
-            company: receiptsModal.company,
-            agents: RECEIPTS_TEAM_AGENTS[receiptsModal.company] ?? null,
-          })}
+          company={receiptsModal.company}
+          agents={RECEIPTS_TEAM_AGENTS[receiptsModal.company] ?? null}
           onClose={() => setReceiptsModal(null)}
         />
       )}

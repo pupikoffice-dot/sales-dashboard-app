@@ -38,7 +38,7 @@ export function BiMissedClientsCube({
   )
 
   return (
-    <BiCubeShell title={t('bi.missedClients.title')}>
+    <BiCubeShell title={t('bi.missedClients.title')} helpText={t('bi.missedClients.help')}>
       {!result.ok ? (
         <p className="bi-cube-empty">{t('bi.insufficientHistory')}</p>
       ) : result.items.length === 0 ? (

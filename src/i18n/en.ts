@@ -244,10 +244,22 @@ export const messages = {
 
   'bi.missedItems.title': 'Missed items',
   'bi.missedItems.empty': 'No usual in-stock items in this window.',
+  'bi.missedItems.help':
+    'Shows items that were sold in previous months but are missing this month (not on invoices and not on open orders). Cash = cash sold for that item in the prior months examined. Habit = how many of those prior months the item was sold in (e.g. 3/4 means sold in 3 of the last 4 months).',
   'bi.missedClients.title': 'Missed clients',
   'bi.missedClients.empty': 'No usual clients missing invoices and open orders this month.',
+  'bi.missedClients.help':
+    'Shows clients that are missing this month (no invoice and no open orders). Cash and Habit work the same as Missed items: cash from prior months examined, and habit as months sold out of that window (e.g. 3/4).',
   'bi.itemsSoldByOthers.title': 'Items sold by others',
   'bi.itemsSoldByOthers.empty': 'No items sold by others MTD that this agent skipped.',
+  'bi.itemsSoldByOthers.help':
+    'Shows items sold this month by other agents in the agent group that this specific agent did not sell.',
+  'sm.receipts.mtdTitle': 'Receipts this month (by client)',
+  'sm.receipts.mtdEmpty': 'No receipts this month in scope.',
+  'sm.receipts.mtdLoading': 'Loading receipts…',
+  'sm.receipts.colClientId': 'Client ID',
+  'sm.receipts.colClient': 'Client',
+  'sm.receipts.colCash': 'Cash',
   'bi.insufficientHistory': 'Not enough month history for habit (need X of Y).',
   'bi.habitHit': '{x}/{y} mo',
   'bi.stock': 'Stock {qty}',

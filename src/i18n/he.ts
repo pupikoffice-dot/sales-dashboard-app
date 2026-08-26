@@ -246,10 +246,22 @@ export const messages: Record<keyof typeof en, string> = {
 
   'bi.missedItems.title': 'פריטים חסרים',
   'bi.missedItems.empty': 'אין פריטים רגילים במלאי בחלון זה.',
+  'bi.missedItems.help':
+    'מציג פריטים שנמכרו בחודשים הקודמים וחסרים החודש (לא בחשבוניות ולא בהזמנות פתוחות). מזומן = סכום מכירות הפריט בחודשים שנבדקו. הרגל = בכמה מחודשים אלה הפריט נמכר (למשל 3/4 = נמכר ב־3 מתוך 4 החודשים האחרונים).',
   'bi.missedClients.title': 'לקוחות חסרים',
   'bi.missedClients.empty': 'אין לקוחות רגילים ללא חשבוניות והזמנות פתוחות בחודש הנוכחי.',
+  'bi.missedClients.help':
+    'מציג לקוחות חסרים החודש (אין חשבונית ואין הזמנה פתוחה). מזומן והרגל כמו בפריטים חסרים: מזומן מהחודשים שנבדקו, והרגל כמספר חודשי מכירה מתוך החלון (למשל 3/4).',
   'bi.itemsSoldByOthers.title': 'פריטים שנמכרו ע״י אחרים',
   'bi.itemsSoldByOthers.empty': 'אין פריטים שנמכרו ע״י אחרים החודש שסוכן זה דילג עליהם.',
+  'bi.itemsSoldByOthers.help':
+    'מציג פריטים שנמכרו החודש ע״י סוכנים אחרים בקבוצת הסוכנים, ושסוכן זה לא מכר.',
+  'sm.receipts.mtdTitle': 'תקבולים החודש (לפי לקוח)',
+  'sm.receipts.mtdEmpty': 'אין תקבולים החודש בטווח.',
+  'sm.receipts.mtdLoading': 'טוען תקבולים…',
+  'sm.receipts.colClientId': 'מס׳ לקוח',
+  'sm.receipts.colClient': 'לקוח',
+  'sm.receipts.colCash': 'מזומן',
   'bi.insufficientHistory': 'אין מספיק היסטוריית חודשים להרגל (נדרש X מתוך Y).',
   'bi.habitHit': '{x}/{y} חוד׳',
   'bi.stock': 'מלאי {qty}',

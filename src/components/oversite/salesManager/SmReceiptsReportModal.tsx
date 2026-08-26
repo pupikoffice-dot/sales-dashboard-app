@@ -1,66 +1,54 @@
-import { useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useLocale } from '../../../context/LocaleContext'
 import { fmt } from '../../../lib/format'
-import type { SmReceiptsMetrics } from './smMetrics'
+import { supabase } from '../../../lib/supabase'
+import type { LogicalCompany } from '../../../types/dashboard'
 
 /** Receipts amounts arrive gross (008 report, incl. 18% VAT). */
 const VAT_RATE = 1.18
-const MONTHS_SHOWN = 12
-const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-function rollingMonths(): Array<{ ym: string; label: string; isCurrent: boolean }> {
-  const now = new Date()
-  const out = []
-  for (let i = MONTHS_SHOWN - 1; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-    out.push({
-      ym: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
-      label: `${MONTH_NAMES[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`,
-      isCurrent: i === 0,
-    })
-  }
-  return out
+export interface ReceiptMtdClientRow {
+  clientID: string
+  clientName: string
+  cash_gross: number
 }
 
 export interface SmReceiptsReportModalProps {
   title: string
-  receipts: SmReceiptsMetrics
+  company: LogicalCompany
+  /** null / empty = all agents in the user's access for that company */
+  agents: string[] | null
   onClose: () => void
 }
 
-/** Full receipts report: rolling 12 months × agents (net of VAT). */
-export function SmReceiptsReportModal({ title, receipts, onClose }: SmReceiptsReportModalProps) {
+async function fetchReceiptsMtdByClient(
+  company: LogicalCompany,
+  agents: string[] | null,
+): Promise<ReceiptMtdClientRow[]> {
+  const { data, error } = await supabase.rpc('get_receipts_mtd_by_client', {
+    p_company: company,
+    p_agents: agents && agents.length > 0 ? agents : null,
+  })
+  if (error) throw error
+  const rows = (data ?? []) as ReceiptMtdClientRow[]
+  return rows.map(r => ({
+    clientID: String(r.clientID ?? ''),
+    clientName: String(r.clientName ?? ''),
+    cash_gross: Number(r.cash_gross) || 0,
+  }))
+}
+
+/** Full receipts report: current month by client (net of VAT). */
+export function SmReceiptsReportModal({ title, company, agents, onClose }: SmReceiptsReportModalProps) {
   const { t } = useLocale()
-  const agents = receipts.agents
-  const months = useMemo(() => rollingMonths(), [])
+  const agentKey = agents && agents.length > 0 ? agents.slice().sort().join(',') : 'all'
+  const q = useQuery({
+    queryKey: ['receipts-mtd-by-client', company, agentKey],
+    queryFn: () => fetchReceiptsMtdByClient(company, agents),
+  })
 
-  const rows = useMemo(
-    () =>
-      months.map(m => {
-        const byAgent: Record<string, number> = {}
-        let total = 0
-        for (const a of agents) {
-          const net = ((receipts.byAgent[a] || {})[m.ym] || 0) / VAT_RATE
-          byAgent[a] = net
-          total += net
-        }
-        return { ...m, byAgent, total }
-      }),
-    [months, agents, receipts.byAgent],
-  )
-
-  const agentTotals = useMemo(
-    () =>
-      agents.map(a => {
-        const total = rows.reduce((s, r) => s + (r.byAgent[a] || 0), 0)
-        return { agent: a, total, avg: total / MONTHS_SHOWN }
-      }),
-    [agents, rows],
-  )
-
-  const grandTotal = rows.reduce((s, r) => s + r.total, 0)
-  const grandAvg = grandTotal / MONTHS_SHOWN
-  const hasData = Object.keys(receipts.monthly).length > 0
+  const rows = q.data ?? []
+  const grandNet = rows.reduce((s, r) => s + r.cash_gross / VAT_RATE, 0)
 
   return (
     <div className="debt-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -72,63 +60,41 @@ export function SmReceiptsReportModal({ title, receipts, onClose }: SmReceiptsRe
           </button>
         </div>
         <div className="debt-modal-body">
-          <p className="sm-report-hint">{t('oversite.receiptsNetNote')}</p>
-          {!hasData ? (
-            <p className="ov-empty">{t('sm.cube.receiptsEmpty')}</p>
+          <p className="sm-report-hint">
+            {t('sm.receipts.mtdTitle')} · {t('oversite.receiptsNetNote')}
+          </p>
+          {q.isLoading ? (
+            <p className="ov-empty">{t('sm.receipts.mtdLoading')}</p>
+          ) : q.isError ? (
+            <p className="status-msg error">{(q.error as Error).message}</p>
+          ) : rows.length === 0 ? (
+            <p className="ov-empty">{t('sm.receipts.mtdEmpty')}</p>
           ) : (
             <div className="tw">
               <table className="ov-orders-table sm-receipts-table">
                 <thead>
                   <tr>
-                    <th>{t('oversite.month')}</th>
-                    {agents.map(a => (
-                      <th key={a} className="cm">
-                        {t('oversite.debtAgent')} {a}
-                      </th>
-                    ))}
-                    <th className="cm">{t('oversite.orderTotal')}</th>
+                    <th>{t('sm.receipts.colClientId')}</th>
+                    <th>{t('sm.receipts.colClient')}</th>
+                    <th className="cm">{t('sm.receipts.colCash')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map(r => (
-                    <tr key={r.ym} className={r.isCurrent ? 'sm-receipts-row--current' : undefined}>
-                      <td>{r.label}</td>
-                      {agents.map(a => (
-                        <td key={a} className="cm">
-                          {r.byAgent[a] > 0 ? fmt(r.byAgent[a]) : '—'}
-                        </td>
-                      ))}
-                      <td className="cm">
-                        <b>{r.total > 0 ? fmt(r.total) : '—'}</b>
-                      </td>
+                    <tr key={r.clientID}>
+                      <td className="bi-mono">{r.clientID}</td>
+                      <td>{r.clientName || '—'}</td>
+                      <td className="cm">{fmt(r.cash_gross / VAT_RATE)}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
                   <tr>
-                    <td>
-                      <b>{t('oversite.receiptsTotal12')}</b>
+                    <td colSpan={2}>
+                      <b>{t('oversite.orderTotal')}</b>
                     </td>
-                    {agentTotals.map(at => (
-                      <td key={at.agent} className="cm">
-                        <b>{fmt(at.total)}</b>
-                      </td>
-                    ))}
                     <td className="cm">
-                      <b>{fmt(grandTotal)}</b>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <b>{t('oversite.receiptsAvg')}</b>
-                    </td>
-                    {agentTotals.map(at => (
-                      <td key={at.agent} className="cm">
-                        <b>{fmt(at.avg)}</b>
-                      </td>
-                    ))}
-                    <td className="cm">
-                      <b>{fmt(grandAvg)}</b>
+                      <b>{fmt(grandNet)}</b>
                     </td>
                   </tr>
                 </tfoot>

@@ -38,7 +38,7 @@ export function BiItemsSoldByOthersCube({
   )
 
   return (
-    <BiCubeShell title={t('bi.itemsSoldByOthers.title')}>
+    <BiCubeShell title={t('bi.itemsSoldByOthers.title')} helpText={t('bi.itemsSoldByOthers.help')}>
       {items.length === 0 ? (
         <p className="bi-cube-empty">{t('bi.itemsSoldByOthers.empty')}</p>
       ) : (
