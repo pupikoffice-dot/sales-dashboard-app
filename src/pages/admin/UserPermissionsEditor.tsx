@@ -14,6 +14,7 @@ import type { GrantKind } from '../../types/permissions'
 // company grant for that user at once (each returned row carries its own `value`), so this section
 // is exactly TWO explain items, not one per company/agent literal like the Fields/Pages sections
 // (where each field/node genuinely has its own distinct `key`).
+// UI modules are class-only (no per-user suite override) — omit from override explain/toggles.
 const COMPANY_AGENT_EXPLAIN: ExplainItem[] = [
   { kind: 'scope', key: 'company', label: 'Companies' },
   { kind: 'scope', key: 'agent', label: 'Agents' },
@@ -65,6 +66,8 @@ export function UserPermissionsEditor({ userId }: { userId: string }) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['user-class', userId] })
       qc.invalidateQueries({ queryKey: ['user-grants', userId] })
+      qc.invalidateQueries({ queryKey: ['admin-users'] })
+      qc.invalidateQueries({ queryKey: ['class-user-counts'] })
     },
   })
 

@@ -10,6 +10,12 @@ import { MODULE_REGISTRY } from '../../modules/registry'
 import { OVERSITE_MODULE_REGISTRY, type OversiteModuleId } from '../../lib/oversiteModules'
 import type { AppLocale } from '../../i18n/types'
 import type { DashboardModuleId, LogicalCompany } from '../../types/dashboard'
+import { UserPermissionsEditor } from './UserPermissionsEditor'
+import { useBiModulesCatalog } from '../../hooks/useBiModules'
+import { useUiModuleCatalog } from '../../hooks/useUiModules'
+import { fetchUserBiGrants, setUserBiGrants } from '../../lib/biModulesApi'
+import { fetchUserSuiteUiGrants, setUserSuiteUiGrants } from '../../lib/suiteUiModulesApi'
+import { SUITE_MOUNTABLE_UI_MODULE_IDS } from '../../lib/suiteUiModules'
 
 interface UserRow {
   id: string
@@ -19,6 +25,8 @@ interface UserRow {
   role: string
   active: boolean
   password_display: string | null
+  agent_erp_id: string | null
+  parent_id: string | null
 }
 
 interface AccessRow {
@@ -66,26 +74,36 @@ export function UsersPage() {
   const { data, isLoading, error: loadError } = useQuery({
     queryKey: ['admin-users'],
     queryFn: async () => {
-      const [profilesRes, accessRes] = await Promise.all([
+      const [profilesRes, accessRes, classRes] = await Promise.all([
         supabase
           .from('user_profiles')
-          .select('id,email,username,name,role,active,password_display')
+          .select('id,email,username,name,role,active,password_display,agent_erp_id,parent_id')
           .order('name'),
         supabase
           .from('dashboard_user_access')
           .select('user_id, companies, agents, locale'),
+        supabase
+          .from('app_user_class')
+          .select('user_id, class_id, app_class(label)'),
       ])
       if (profilesRes.error) throw profilesRes.error
       if (accessRes.error) throw accessRes.error
+      if (classRes.error) throw classRes.error
       const accessMap = new Map(
         (accessRes.data ?? []).map(row => [row.user_id as string, row as AccessRow]),
       )
-      return { users: (profilesRes.data ?? []) as UserRow[], accessMap }
+      const classLabelByUser = new Map<string, string>()
+      for (const row of classRes.data ?? []) {
+        const label = (row as { app_class?: { label?: string } | null }).app_class?.label
+        if (label) classLabelByUser.set(row.user_id as string, label)
+      }
+      return { users: (profilesRes.data ?? []) as UserRow[], accessMap, classLabelByUser }
     },
   })
 
   const users = data?.users
   const accessMap = data?.accessMap ?? new Map<string, AccessRow>()
+  const classLabelByUser = data?.classLabelByUser ?? new Map<string, string>()
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -149,7 +167,7 @@ export function UsersPage() {
       <div className="ov-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
         <div>
           <h2>Dashboard Users</h2>
-          <p className="ov-sub">Add users, set passwords, and assign modules, companies, and agents.</p>
+          <p className="ov-sub">Add users, set passwords, org hierarchy (ERP agent + manager), and access.</p>
         </div>
         <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
           <button
@@ -245,7 +263,9 @@ export function UsersPage() {
             <tr>
               <th>Name</th>
               <th>Login</th>
-              <th>Role</th>
+              <th>Class</th>
+              <th>ERP agent</th>
+              <th>Reports to</th>
               <th>Companies</th>
               <th>Agents</th>
               <th>Password</th>
@@ -271,7 +291,15 @@ export function UsersPage() {
                     <span style={{ display: 'block', fontSize: '.65rem', color: 'var(--muted)' }}>username login</span>
                   )}
                 </td>
-                <td>{u.role}</td>
+                <td>{u.role === 'super_admin' ? '—' : (classLabelByUser.get(u.id) ?? '—')}</td>
+                <td style={{ fontSize: '.78rem', fontFamily: 'monospace' }}>
+                  {u.agent_erp_id?.trim() || '—'}
+                </td>
+                <td style={{ fontSize: '.78rem' }}>
+                  {u.parent_id
+                    ? (users?.find(p => p.id === u.parent_id)?.name ?? u.parent_id.slice(0, 8))
+                    : '—'}
+                </td>
                 <td style={{ fontSize: '.78rem', textTransform: 'capitalize' }}>
                   {formatCompanies(access?.companies, u.role)}
                 </td>
@@ -361,7 +389,7 @@ export function UsersPage() {
             )})}
             {(users ?? []).length === 0 && (
               <tr>
-                <td colSpan={7} style={{ textAlign: 'center', color: 'var(--muted)' }}>No users yet.</td>
+                <td colSpan={9} style={{ textAlign: 'center', color: 'var(--muted)' }}>No users yet.</td>
               </tr>
             )}
           </tbody>
@@ -372,11 +400,14 @@ export function UsersPage() {
         <EditAccessModal
           userId={editId}
           userName={users?.find(u => u.id === editId)?.name ?? ''}
+          users={users ?? []}
           onClose={() => setEditId(null)}
           onSaved={savedUserId => {
             setEditId(null)
             qc.invalidateQueries({ queryKey: ['admin-users'] })
             qc.invalidateQueries({ queryKey: ['admin-users-picker'] })
+            qc.invalidateQueries({ queryKey: ['bi-user-grants', savedUserId] })
+            qc.invalidateQueries({ queryKey: ['suite-ui-user-grants', savedUserId] })
             // If we're previewing the user whose access just changed, reload it
             // so the live preview reflects the new settings immediately (no
             // dashboard-data refetch needed — all narrowing is client-side).
@@ -393,11 +424,13 @@ export function UsersPage() {
 function EditAccessModal({
   userId,
   userName,
+  users,
   onClose,
   onSaved,
 }: {
   userId: string
   userName: string
+  users: UserRow[]
   onClose: () => void
   /** Receives the saved user's id so callers can react (e.g. refresh a live preview). */
   onSaved: (savedUserId: string) => void
@@ -410,9 +443,22 @@ function EditAccessModal({
   const [locale, setLocale] = useState<AppLocale>('en')
   const [showItemCost, setShowItemCost] = useState(false)
   const [showClientProfit, setShowClientProfit] = useState(false)
+  const [agentErpId, setAgentErpId] = useState('')
+  const [parentId, setParentId] = useState('')
+  const [biModuleIds, setBiModuleIds] = useState<string[]>([])
+  const [suiteUiModuleIds, setSuiteUiModuleIds] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { t } = useLocale()
+  const { data: biCatalog = [] } = useBiModulesCatalog()
+  const activeBiModules = biCatalog.filter(m => m.active)
+  const { data: uiCatalog = [] } = useUiModuleCatalog()
+  const activeSuiteUiModules = uiCatalog.filter(
+    m => m.active && SUITE_MOUNTABLE_UI_MODULE_IDS.includes(m.id as (typeof SUITE_MOUNTABLE_UI_MODULE_IDS)[number]),
+  )
+
+  const profile = users.find(u => u.id === userId)
+  const parentOptions = users.filter(u => u.id !== userId)
 
   useEffect(() => {
     supabase.from('dashboard_user_access').select('*').eq('user_id', userId).maybeSingle()
@@ -437,7 +483,18 @@ function EditAccessModal({
           setCompanies(['pupik'])
         }
       })
-  }, [userId])
+    fetchUserBiGrants(userId)
+      .then(ids => setBiModuleIds(ids))
+      .catch(() => setBiModuleIds([]))
+    fetchUserSuiteUiGrants(userId)
+      .then(ids => setSuiteUiModuleIds(ids))
+      .catch(() => setSuiteUiModuleIds([]))
+    const p = users.find(u => u.id === userId)
+    if (p) {
+      setAgentErpId(p.agent_erp_id ?? '')
+      setParentId(p.parent_id ?? '')
+    }
+  }, [userId, users])
 
   function toggleModule(id: DashboardModuleId) {
     setModules(prev => prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id])
@@ -451,12 +508,37 @@ function EditAccessModal({
     setCompanies(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c])
   }
 
+  function toggleBiModule(id: string) {
+    setBiModuleIds(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]))
+  }
+
+  function toggleSuiteUiModule(id: string) {
+    setSuiteUiModuleIds(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]))
+  }
+
   async function save() {
     setSaving(true)
     setError(null)
     const agents = agentsText.trim()
       ? agentsText.split(/[\s,]+/).map(s => s.trim()).filter(Boolean)
       : null
+
+    if (profile?.role !== 'super_admin') {
+      const erp = agentErpId.trim() || null
+      const { error: orgErr } = await supabase
+        .from('user_profiles')
+        .update({
+          agent_erp_id: erp,
+          parent_id: parentId.trim() || null,
+        })
+        .eq('id', userId)
+      if (orgErr) {
+        setSaving(false)
+        setError(orgErr.message)
+        return
+      }
+    }
+
     const { error: err } = await supabase.from('dashboard_user_access').upsert({
       user_id: userId,
       modules,
@@ -470,9 +552,21 @@ function EditAccessModal({
       show_client_profit: showClientProfit,
       updated_at: new Date().toISOString(),
     })
+    if (err) {
+      setSaving(false)
+      setError(err.message)
+      return
+    }
+    try {
+      await setUserBiGrants(userId, biModuleIds)
+      await setUserSuiteUiGrants(userId, suiteUiModuleIds)
+    } catch (e) {
+      setSaving(false)
+      setError(e instanceof Error ? e.message : String(e))
+      return
+    }
     setSaving(false)
-    if (err) setError(err.message)
-    else onSaved(userId)
+    onSaved(userId)
   }
 
   return (
@@ -487,6 +581,39 @@ function EditAccessModal({
         <div className="debt-modal-body">
           <div className="admin-form">
             {error && <p className="status-msg error" style={{ margin: 0 }}>{error}</p>}
+
+            {profile?.role !== 'super_admin' && (
+              <div>
+                <div className="admin-form-section-title">Org hierarchy (Phase 2.5)</div>
+                <p className="ov-sub" style={{ margin: '0 0 8px', fontSize: '.72rem' }}>
+                  ERP agent ID links this login to sales rows. Reports-to builds the manager subtree. Permission Class is set below (not a separate Role field).
+                </p>
+                <label>
+                  ERP agent ID
+                  <input
+                    className="sbar-search block-input"
+                    value={agentErpId}
+                    onChange={e => setAgentErpId(e.target.value)}
+                    placeholder="e.g. 24"
+                  />
+                </label>
+                <label>
+                  Reports to
+                  <select
+                    className="block-input"
+                    value={parentId}
+                    onChange={e => setParentId(e.target.value)}
+                  >
+                    <option value="">— none (top level) —</option>
+                    {parentOptions.map(u => (
+                      <option key={u.id} value={u.id}>
+                        {u.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            )}
 
             <div>
               <div className="admin-form-section-title">Modules</div>
@@ -520,6 +647,44 @@ function EditAccessModal({
                 </div>
               </div>
             )}
+
+            <div>
+              <div className="admin-form-section-title">{t('admin.biModules')}</div>
+              <p className="ov-sub" style={{ margin: '0 0 6px', fontSize: '.72rem' }}>
+                {t('admin.biModulesHint')}
+              </p>
+              <div className="admin-form-checklist">
+                {activeBiModules.map(m => (
+                  <label key={m.id} className="admin-form-check">
+                    <input
+                      type="checkbox"
+                      checked={biModuleIds.includes(m.id)}
+                      onChange={() => toggleBiModule(m.id)}
+                    />
+                    {m.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div className="admin-form-section-title">{t('admin.suiteUiModules')}</div>
+              <p className="ov-sub" style={{ margin: '0 0 6px', fontSize: '.72rem' }}>
+                {t('admin.suiteUiModulesHint')}
+              </p>
+              <div className="admin-form-checklist">
+                {activeSuiteUiModules.map(m => (
+                  <label key={m.id} className="admin-form-check">
+                    <input
+                      type="checkbox"
+                      checked={suiteUiModuleIds.includes(m.id)}
+                      onChange={() => toggleSuiteUiModule(m.id)}
+                    />
+                    {m.label}
+                  </label>
+                ))}
+              </div>
+            </div>
 
             <div>
               <div className="admin-form-section-title">Companies</div>
@@ -566,6 +731,11 @@ function EditAccessModal({
                 placeholder="24, 25, 27"
               />
             </label>
+
+            <div>
+              <div className="admin-form-section-title">Class &amp; permission overrides</div>
+              <UserPermissionsEditor userId={userId} />
+            </div>
 
             <label>
               Default module

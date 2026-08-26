@@ -1,16 +1,38 @@
 # HANDOFF — sales-dashboard-app
 
 ## Current State
-_Last updated: 2026-08-05 13:59:25 by Cursor_
+_Last updated: 2026-08-23 19:08:57 by Cursor_
 
 **Status:** Active
-**Phase:** Multi-company Oversite accents live on main
+**Phase:** BI modules + Admin Modules on beta (product line **2.0**)
 
-- Works now: When Oversite / Orders MTD show 2+ companies, each column uses a distinct accent (Pupik indigo, Monkeytime sky) on header and section edge
-- Works now: Prior — Orders last-7-workdays chart, date normalization, Open Debt full report, permissions Phase 1, delivery notes / Orders Today / stock alerts
-- In progress: Nothing in progress
+- Works now: Admin → Modules (UI catalog read-only + BI catalog + habit X/Y default 3/4)
+- Works now: Per-user BI grants on Admin → Users; suite BI cubes (Missed items, Missed clients, Items sold by others) with BI badge
+- Works now: Alone All / Vs = missed items+clients; Alone agent = all three when granted; super-admin all BI; View-as uses target grants
+- Works now: Sales Manager suite Alone/Vs; beta badge **2.0 · beta**; Classic Oversight on `main`
+- In progress: Manual verify BI on beta (grants, OOS skip, habit empty state)
 - Blocked: Nothing blocked
-- Next up: Optional — trigger 722-only Supabase sync after office export so Orders Today cannot lag hourly cron; optional Phase 2 server-filtered cost/price
+- Next up: Verify on beta; keep promote-to-main off until asked
+
+### CORE RULES (suite)
+
+1. **Oversight ⊥ Sidebar** — filters/Apply never change Oversight; Oversight never changes sidebar.
+2. **Companies never combined** — multi-company users see company blocks one after another. Never sum KPIs across companies. Goals stay agent-level.
+3. **Alone / Vs** — Alone default (per-agent windows). Vs replaces those with comparison view for the first-ship KPI subset.
+
+### Version vs channel (locked)
+
+| Concept | Meaning | Today |
+|--------|---------|--------|
+| **Version** | Product release line (`1.0`, `2.0`, `2.1`…) | Production live = **1.0** (DB). Beta work line = **2.0** |
+| **Channel** | Where you iterate: production (stable) vs **beta** (next work) | `main` / prod URL vs `beta` / `pupik-sales-dashboard-beta.vercel.app` |
+
+- **Beta** = working iteration of the next (or in-progress) version. Title: `{productVersion} · beta`.
+- **Production** = stable live. Title: DB `app_runtime_config.active_version` only.
+- Do **not** change DB `active_version` just to relabel beta — that row is the shared live cutover flag.
+- After promote of 2.0: set DB to `2.0`; set `BETA_PRODUCT_VERSION` / `VITE_PRODUCT_VERSION` to `2.1` or `3.0` for the next beta.
+
+Code: `src/lib/appChannel.ts`
 
 ---
 
@@ -23,6 +45,79 @@ Phase 1 hides Cost, Total Cost, Price, and cost-based charts in the UI only. The
 ---
 
 ## Session Log
+
+### 2026-08-23 19:08:57 — Cursor
+**Done:**
+- Shipped BI modules on beta: catalog tables, habit 3/4, Admin Modules tab, per-user BI grants, suite cubes Alone/Vs with BI badge
+- Visibility: super-admin sees all active BI; View-as uses target grants
+
+**Decisions:**
+- BI only inside Sales Manager suite; class BI grants deferred
+- Habit shared X/Y (default 3 of 4); Missed items skips missing/≤0 WMS stock
+
+**Next:**
+- Manual verify on beta; alias deploy if needed
+
+---
+
+### 2026-08-23 17:24:09 — Cursor
+**Done:**
+- Sales Manager Alone / Vs toggle (default Alone); Vs replaces All + agent windows with comparison cubes
+- Vs first-ship: Sales MTD+Goal, Open debt, Receipts per company; design spec + HANDOFF updated
+
+**Decisions:**
+- Layout A: Vs replaces Alone windows (no stacking)
+- Vs open-orders / returns / orders-7d deferred
+
+**Next:**
+- Verify Alone/Vs on beta as Sales Manager; keep promote off
+
+---
+
+### 2026-08-21 20:45:29 — Cursor
+**Done:**
+- Suite CORE RULE: companies never combined — company-first layout (company → All → agents → next company)
+- KPIs/reports scoped to one company per block; design spec + HANDOFF updated
+
+**Decisions:**
+- Layout B: company outer, then All + agents under each
+- Goals remain agent-level (not split by company)
+
+**Next:**
+- Verify multi-company Sales Manager on beta (e.g. kfir)
+
+---
+
+### 2026-08-21 20:36:50 — Cursor
+**Done:**
+- Header badge: beta shows product version + channel (`2.0 · beta`); production shows live DB `active_version` only
+- Documented version vs channel model in HANDOFF and `appChannel.ts`
+
+**Decisions:**
+- Version = release line; beta = iteration channel for the next/in-progress version
+- Do not flip DB `active_version` to relabel beta titles
+
+**Next:**
+- Continue beta 2.0 work; on promote set DB to 2.0 and bump beta product version
+
+---
+
+### 2026-08-20 20:27:13 — Cursor
+**Done:**
+- Shipped UI modules + Sales Manager suite on beta (merge `feature/ui-modules-sales-manager` → `beta` @ `1dab788`)
+- DB: `app_ui_module` + `sales_agent_targets`; seeded Sales Manager class suite grant; goals ETL from Excel into hourly sync
+- CORE RULE: Oversight route independent of sidebar Apply; suite KPIs use access companies/agents only
+- Classes admin can grant oversight suite/addon (≤1 suite; no per-user suite override)
+- Deployed and aliased https://pupik-sales-dashboard-beta.vercel.app
+
+**Decisions:**
+- kind is suite|addon (not widget); suite replaces classic Oversight; addons ignored while suite present
+- Stay on beta only — do not promote to main / Phase 3 until explicit ask
+
+**Next:**
+- Manual verify suite as Sales Manager on beta; production stays classic
+
+---
 
 ### 2026-08-05 13:59:25 — Cursor
 **Done:**

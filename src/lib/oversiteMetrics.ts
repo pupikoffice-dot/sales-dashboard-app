@@ -154,12 +154,8 @@ function orderDocKey(row: SalesRow): string {
   return `${row.clientID || ''}|${row.clientName || ''}|no-doc`
 }
 
-export function groupOrdersTodayByDoc(
-  rows: SalesRow[],
-  ordersTag: string,
-  todayStr: string,
-): OrderTodayGroup[] {
-  const matched = getOrdersTodayRows(rows, ordersTag, todayStr)
+/** Group already-filtered sales rows into order documents (cascade-ready). */
+export function groupSalesRowsByDoc(matched: SalesRow[]): OrderTodayGroup[] {
   const byDoc = new Map<string, SalesRow[]>()
 
   for (const row of matched) {
@@ -190,6 +186,32 @@ export function groupOrdersTodayByDoc(
     if (docCmp !== 0) return docCmp
     return a.clientName.localeCompare(b.clientName)
   })
+}
+
+export function groupOrdersTodayByDoc(
+  rows: SalesRow[],
+  ordersTag: string,
+  todayStr: string,
+): OrderTodayGroup[] {
+  return groupSalesRowsByDoc(getOrdersTodayRows(rows, ordersTag, todayStr))
+}
+
+/** Open-order line rows for a tag (report 721). */
+export function getOpenOrdersRows(rows: SalesRow[], openOrdersTag: string): SalesRow[] {
+  return rows.filter(r => r.company === openOrdersTag)
+}
+
+/**
+ * Top N open orders by cash (document totals), each with expandable line items.
+ * Not SKU/item ranking — one row per order (doc #).
+ */
+export function topOpenOrdersByCash(
+  rows: SalesRow[],
+  openOrdersTag: string,
+  limit = 10,
+): OrderTodayGroup[] {
+  const groups = groupSalesRowsByDoc(getOpenOrdersRows(rows, openOrdersTag))
+  return [...groups].sort((a, b) => b.cash - a.cash || a.docNum.localeCompare(b.docNum)).slice(0, limit)
 }
 
 export interface AgentBreakdownRow {

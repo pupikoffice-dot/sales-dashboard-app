@@ -1,11 +1,10 @@
-import { useState, type CSSProperties } from 'react'
-import { SalesReportBody } from '../components/sales/SalesReportBody'
+import { useMemo, useState, type CSSProperties } from 'react'
 import { usePreview } from '../context/PreviewContext'
 import { useLocale } from '../context/LocaleContext'
 import { useDashboardAccess } from '../context/DashboardAccessContext'
-import { useDashboardFilters } from '../context/DashboardFiltersContext'
 import { useDashboardData } from '../hooks/useDashboardData'
-import { filterRows } from '../lib/permissions'
+import { useResolvedOversightMode } from '../hooks/useResolvedOversightMode'
+import { SalesManagerSuite } from '../components/oversite/salesManager/SalesManagerSuite'
 import { computeDebtAgentMatrix, computeDebtSummary, debtRowsForCompany } from '../lib/debtMetrics'
 import { fmt, formatGeneratedDisplay } from '../lib/format'
 import type { LogicalCompany } from '../types/dashboard'
@@ -20,7 +19,6 @@ import {
   computeDelivery720Mtd,
   computeDelivery720MtdTop10,
   computeOpenOrders,
-  computeOpenOrdersTop10,
   computeOrdersMtd,
   computeOrdersMtdTop10,
   computeOrdersLast7DaysByAgent,
@@ -34,6 +32,7 @@ import {
   getOversiteDateContext,
   resolveOpenOrdersTag,
   resolveOrdersTag,
+  topOpenOrdersByCash,
 } from '../lib/oversiteMetrics'
 import { OversiteAgentBreakdown } from '../components/oversite/OversiteAgentBreakdown'
 import { OversiteOrdersLast7Days } from '../components/oversite/OversiteOrdersLast7Days'
@@ -49,16 +48,35 @@ import type { OversiteModuleId } from '../lib/oversiteModules'
 import { OversiteSuppliersMatrix } from '../components/oversite/OversiteSuppliersMatrix'
 import { OversiteCollapsible } from '../components/oversite/OversiteCollapsible'
 import { OversiteKpiRow, OversiteSection, SalesLyBars } from '../components/oversite/OversiteKpiRow'
+import { OversiteOrdersByDocTable } from '../components/oversite/OversiteOrdersByDocTable'
 import { OversiteTop10Table } from '../components/oversite/OversiteTop10Table'
 import { OversiteLegend } from '../components/oversite/OversiteLegend'
+import { SmReceiptsReportModal } from '../components/oversite/salesManager/SmReceiptsReportModal'
+import { buildSmReceipts } from '../components/oversite/salesManager/smMetrics'
 
 export function OversitePage() {
   const { t } = useLocale()
   // Honours the super-admin "View as user" preview.
   const { effectiveIsSuperAdmin: isSuperAdmin } = usePreview()
+  const oversightMode = useResolvedOversightMode()
+
+  // Suite replaces classic Oversight entirely (addons ignored while suite active).
+  if (oversightMode.isLoading) {
+    return <p className="status-msg">{t('common.loadingSalesData')}</p>
+  }
+  if (oversightMode.mode === 'suite' && oversightMode.suiteId === 'sales_manager') {
+    return <SalesManagerSuite />
+  }
+
+  return <ClassicOversitePage isSuperAdmin={isSuperAdmin} />
+}
+
+/** Classic company-column Oversight layout (used when no suite grant). */
+function ClassicOversitePage({ isSuperAdmin }: { isSuperAdmin: boolean }) {
+  const { t } = useLocale()
   const { access } = useDashboardAccess()
-  const f = useDashboardFilters()
-  const { allRows, debtRows, debtLastUpdate, wmsStock, wmsNames, isLoading, error, data: dashboardData } =
+  // Use access-scoped `rows` from the hook (already memoised) — do not re-filter allRows.
+  const { rows: companyRows, debtRows, debtLastUpdate, wmsStock, wmsNames, isLoading, error, data: dashboardData } =
     useDashboardData()
   const [debtModalCo, setDebtModalCo] = useState<LogicalCompany | null>(null)
   const [ordersModal, setOrdersModal] = useState<{
@@ -66,18 +84,98 @@ export function OversitePage() {
     companyLabel: string
     ordersTag: string
   } | null>(null)
+  const [receiptsModal, setReceiptsModal] = useState<{
+    companyLabel: string
+    company: LogicalCompany
+  } | null>(null)
 
-  if (!isSuperAdmin && f.applied) {
-    return <SalesReportBody />
-  }
+  const ctx = useMemo(() => getOversiteDateContext(), [])
+  const companiesKey = access?.companies?.join(',') ?? ''
+  const visibleCompanies = useMemo(
+    () => OVERSITE_COMPANIES.filter(c => access?.companies.includes(c.id)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on companies identity
+    [companiesKey],
+  )
+
+  /** Per-company metrics — memoised so UI toggles (modals) do not re-scan all rows. */
+  const companyColumns = useMemo(() => {
+    return visibleCompanies.map(co => {
+      const ordersTag = resolveOrdersTag(companyRows, co.ordersTag)
+      const openOrdersTag = resolveOpenOrdersTag(companyRows, co.openOrdersTag)
+      const ordersToday = computeOrdersToday(companyRows, ordersTag, ctx.todayStr)
+      const ordersMtd = computeOrdersMtd(companyRows, ordersTag, ctx.monthStart, ctx.todayStr)
+      const openOrders = computeOpenOrders(companyRows, openOrdersTag)
+      const openOrdersTop10 = topOpenOrdersByCash(companyRows, openOrdersTag, 10)
+      const delivery720Mtd = computeDelivery720Mtd(
+        companyRows,
+        co.delivery720Tag,
+        ctx.monthStart,
+        ctx.todayStr,
+      )
+      const delivery720MtdTop10 = computeDelivery720MtdTop10(
+        companyRows,
+        co.delivery720Tag,
+        ctx.monthStart,
+        ctx.todayStr,
+      )
+      const salesMtd = computeSalesMtd(companyRows, co.id, ctx.curYear, ctx.curMonth)
+      const salesMtdCombinedCash = salesMtd.cash + delivery720Mtd.cash
+      const salesMtdCombinedLyPct =
+        salesMtd.lyCash > 0 ? ((salesMtdCombinedCash - salesMtd.lyCash) / salesMtd.lyCash) * 100 : null
+      const ordersTop10 = computeOrdersMtdTop10(companyRows, ordersTag, ctx.monthStart, ctx.todayStr)
+      const salesTop10 = computeSalesMtdTop10(companyRows, co.id, ctx.curYear, ctx.curMonth)
+      const returnsMtd = computeReturnsMtd(companyRows, co.returnsTag, ctx.curYear, ctx.curMonth)
+      const returnsTop10 = computeReturnsMtdTop10(companyRows, co.returnsTag, ctx.curYear, ctx.curMonth)
+      const companyDebt = debtRowsForCompany(debtRows, co.id)
+      const debtSummary = computeDebtSummary(companyDebt)
+      const debtAgentMatrix = computeDebtAgentMatrix(companyDebt)
+      const ordersTodayByAgent = computeAgentBreakdown(
+        getOrdersTodayRows(companyRows, ordersTag, ctx.todayStr),
+      )
+      const ordersMtdByAgent = computeAgentBreakdown(
+        getOrdersMtdRows(companyRows, ordersTag, ctx.monthStart, ctx.todayStr),
+      )
+      const debtUpdated = dashboardData?.debtFileDates?.[co.id] || debtLastUpdate
+      const salesMtdRows = companyRows.filter(
+        r =>
+          r.company === co.id &&
+          Number(r.year) === ctx.curYear &&
+          Number(r.month) === ctx.curMonth,
+      )
+      const forecast = computeSalesForecast(companyRows, co.id, ctx)
+      const supplierMatrix = computeSupplierMonthlyMatrix(companyRows, co.id, ctx)
+      const ordersLast7 = computeOrdersLast7DaysByAgent(companyRows, ordersTag, ctx.todayStr)
+      return {
+        co,
+        ordersTag,
+        ordersToday,
+        ordersMtd,
+        openOrders,
+        openOrdersTop10,
+        delivery720Mtd,
+        delivery720MtdTop10,
+        salesMtd,
+        salesMtdCombinedLyPct,
+        ordersTop10,
+        salesTop10,
+        returnsMtd,
+        returnsTop10,
+        debtSummary,
+        debtAgentMatrix,
+        ordersTodayByAgent,
+        ordersMtdByAgent,
+        debtUpdated,
+        salesMtdRows,
+        forecast,
+        supplierMatrix,
+        ordersLast7,
+      }
+    })
+  }, [visibleCompanies, companyRows, debtRows, ctx, dashboardData?.debtFileDates, debtLastUpdate])
 
   if (isLoading) return <p className="status-msg">{t('common.loadingSalesData')}</p>
   if (error) return <p className="status-msg error">{(error as Error).message}</p>
 
-  const ctx = getOversiteDateContext()
-  const visibleCompanies = OVERSITE_COMPANIES.filter(c => access?.companies.includes(c.id))
-  // Agent-scoped users must never see other agents' company totals on Oversight.
-  const companyRows = access ? filterRows(access, allRows) : []
   const fileUpdatedAt = formatGeneratedDisplay(dashboardData?.generated)
 
   // Per-segment source-file freshness (super-admin only): when that ERP file last synced.
@@ -132,54 +230,32 @@ export function OversitePage() {
         <p className="ov-empty">{t('oversite.noCompanies')}</p>
       ) : (
         <div className={`ov-grid${visibleCompanies.length === 1 ? ' ov-grid--single-co' : ''}`}>
-          {visibleCompanies.map(co => {
-            const ordersTag = resolveOrdersTag(companyRows, co.ordersTag)
-            const openOrdersTag = resolveOpenOrdersTag(companyRows, co.openOrdersTag)
-            const ordersToday = computeOrdersToday(companyRows, ordersTag, ctx.todayStr)
-            const ordersMtd = computeOrdersMtd(companyRows, ordersTag, ctx.monthStart, ctx.todayStr)
-            const openOrders = computeOpenOrders(companyRows, openOrdersTag)
-            const openOrdersTop10 = computeOpenOrdersTop10(companyRows, openOrdersTag)
-            const delivery720Mtd = computeDelivery720Mtd(
-              companyRows,
-              co.delivery720Tag,
-              ctx.monthStart,
-              ctx.todayStr,
-            )
-            const delivery720MtdTop10 = computeDelivery720MtdTop10(
-              companyRows,
-              co.delivery720Tag,
-              ctx.monthStart,
-              ctx.todayStr,
-            )
-            const salesMtd = computeSalesMtd(companyRows, co.id, ctx.curYear, ctx.curMonth)
-            const salesMtdCombinedCash = salesMtd.cash + delivery720Mtd.cash
-            const salesMtdCombinedLyPct =
-              salesMtd.lyCash > 0 ? ((salesMtdCombinedCash - salesMtd.lyCash) / salesMtd.lyCash) * 100 : null
-            const ordersTop10 = computeOrdersMtdTop10(companyRows, ordersTag, ctx.monthStart, ctx.todayStr)
-            const salesTop10 = computeSalesMtdTop10(companyRows, co.id, ctx.curYear, ctx.curMonth)
-            const returnsMtd = computeReturnsMtd(companyRows, co.returnsTag, ctx.curYear, ctx.curMonth)
-            const returnsTop10 = computeReturnsMtdTop10(companyRows, co.returnsTag, ctx.curYear, ctx.curMonth)
-            const companyDebt = debtRowsForCompany(debtRows, co.id)
-            const debtSummary = computeDebtSummary(companyDebt)
-            const debtAgentMatrix = computeDebtAgentMatrix(companyDebt)
-            const ordersTodayByAgent = computeAgentBreakdown(
-              getOrdersTodayRows(companyRows, ordersTag, ctx.todayStr),
-            )
-            const ordersMtdByAgent = computeAgentBreakdown(
-              getOrdersMtdRows(companyRows, ordersTag, ctx.monthStart, ctx.todayStr),
-            )
-            // Debt DATA date (Debt clients.xlsm tab B1) beats sync time.
-            const debtUpdated = dashboardData?.debtFileDates?.[co.id] || debtLastUpdate
-            // Sales rows for the current month — feeds the per-client drill-down
-            // when a Top 10 Items MTD row is clicked.
-            const salesMtdRows = companyRows.filter(
-              r =>
-                r.company === co.id &&
-                Number(r.year) === ctx.curYear &&
-                Number(r.month) === ctx.curMonth,
-            )
-            const forecast = computeSalesForecast(companyRows, co.id, ctx)
-            const supplierMatrix = computeSupplierMonthlyMatrix(companyRows, co.id, ctx)
+          {companyColumns.map(
+            ({
+              co,
+              ordersTag,
+              ordersToday,
+              ordersMtd,
+              openOrders,
+              openOrdersTop10,
+              delivery720Mtd,
+              delivery720MtdTop10,
+              salesMtd,
+              salesMtdCombinedLyPct,
+              ordersTop10,
+              salesTop10,
+              returnsMtd,
+              returnsTop10,
+              debtSummary,
+              debtAgentMatrix,
+              ordersTodayByAgent,
+              ordersMtdByAgent,
+              debtUpdated,
+              salesMtdRows,
+              forecast,
+              supplierMatrix,
+              ordersLast7,
+            }) => {
             const multiCo = visibleCompanies.length > 1
             return (
               <div
@@ -201,9 +277,7 @@ export function OversitePage() {
                       ]}
                     />
                     <OversiteAgentBreakdown rows={ordersTodayByAgent} />
-                    <OversiteOrdersLast7Days
-                      data={computeOrdersLast7DaysByAgent(companyRows, ordersTag, ctx.todayStr)}
-                    />
+                    <OversiteOrdersLast7Days data={ordersLast7} />
                     <OversiteOrdersReportButton
                       onClick={() =>
                         setOrdersModal({ company: co.id, companyLabel: co.label, ordersTag })
@@ -242,10 +316,11 @@ export function OversitePage() {
                       ]}
                     />
                     <OversiteCollapsible label={`📦 ${t('oversite.top10OpenOrders')} ▾`}>
-                      <OversiteTop10Table
-                        items={openOrdersTop10}
+                      <p className="sm-report-hint">{t('sm.openOrders.top10Hint')}</p>
+                      <OversiteOrdersByDocTable
+                        orders={openOrdersTop10}
                         emptyLabel={t('oversite.noOpenOrders')}
-                        showSku
+                        showFooterTotal
                       />
                     </OversiteCollapsible>
                   </OversiteSection>
@@ -360,6 +435,14 @@ export function OversitePage() {
                           </>
                         )
                       })()}
+                      <button
+                        type="button"
+                        className="ov-debt-btn"
+                        style={{ marginTop: 10 }}
+                        onClick={() => setReceiptsModal({ company: co.id, companyLabel: co.label })}
+                      >
+                        📋 {t('sm.cube.fullReport')}
+                      </button>
                     </OversiteSection>
                   )}
 
@@ -396,6 +479,18 @@ export function OversitePage() {
           todayStr={ctx.todayStr}
           todayDisp={ctx.todayDisp}
           onClose={() => setOrdersModal(null)}
+        />
+      )}
+
+      {receiptsModal && (
+        <SmReceiptsReportModal
+          title={`${t('oversite.receipts')} — ${receiptsModal.companyLabel}`}
+          receipts={buildSmReceipts({
+            receiptsMonthlyByAgent: dashboardData?.receiptsMonthlyByAgent,
+            company: receiptsModal.company,
+            agents: RECEIPTS_TEAM_AGENTS[receiptsModal.company] ?? null,
+          })}
+          onClose={() => setReceiptsModal(null)}
         />
       )}
     </>

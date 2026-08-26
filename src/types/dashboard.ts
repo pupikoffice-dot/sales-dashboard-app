@@ -32,7 +32,6 @@ export interface SalesRow {
   agent?: string
   clientID?: string
   clientName?: string
-  docType?: string
   docNum?: string
   itemSKU?: string
   itemName?: string
@@ -40,6 +39,7 @@ export interface SalesRow {
   groupCat?: string
   qty?: number
   cash?: number
+  supplier?: string
   [key: string]: unknown
 }
 

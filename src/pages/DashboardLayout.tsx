@@ -15,6 +15,7 @@ import { SidebarFilters } from '../components/sidebar/SidebarFilters'
 import { MODULE_REGISTRY } from '../modules/registry'
 import { useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { formatHeaderVersionBadge } from '../lib/appChannel'
 
 async function fetchActiveAppVersion(): Promise<string> {
   const { data, error } = await supabase
@@ -41,11 +42,12 @@ export function DashboardLayout() {
   const location = useLocation()
   const showFilters = !location.pathname.startsWith('/admin')
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const { data: appVersion = '1.0' } = useQuery({
+  const { data: liveActiveVersion = '1.0' } = useQuery({
     queryKey: ['app-active-version'],
     queryFn: fetchActiveAppVersion,
     staleTime: 5 * 60_000,
   })
+  const versionBadge = formatHeaderVersionBadge(liveActiveVersion)
 
   useEffect(() => {
     setSidebarOpen(false)
@@ -118,6 +120,20 @@ export function DashboardLayout() {
             >
               {t('nav.adminUsers')}
             </NavLink>
+            <NavLink
+              to="/admin/classes"
+              onClick={() => setSidebarOpen(false)}
+              className={({ isActive }) => `nav-btn${isActive ? ' active' : ''}`}
+            >
+              {t('nav.adminClasses')}
+            </NavLink>
+            <NavLink
+              to="/admin/modules"
+              onClick={() => setSidebarOpen(false)}
+              className={({ isActive }) => `nav-btn${isActive ? ' active' : ''}`}
+            >
+              {t('nav.adminModules')}
+            </NavLink>
           </>
         )}
       </nav>
@@ -160,8 +176,8 @@ export function DashboardLayout() {
         <div className="hdr-brand">
           <h1>
             {t('header.title')}
-            <span className="hdr-version" title={t('header.versionLabel', { version: appVersion })}>
-              {appVersion}
+            <span className="hdr-version" title={t('header.versionLabel', { version: versionBadge })}>
+              {versionBadge}
             </span>
           </h1>
         </div>

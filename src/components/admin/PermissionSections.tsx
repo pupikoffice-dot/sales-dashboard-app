@@ -1,5 +1,8 @@
 import type { AppGrant, GrantKind, PermissionState } from '../../types/permissions'
+import type { AppUiModule } from '../../types/uiModules'
 import { resolveOverrideState } from '../../lib/classPermissions'
+import { isClassGrantableUiModule } from '../../lib/suiteUiModules'
+import { uiModuleGrantKey } from '../../lib/uiModules'
 
 // Exported so UserPermissionsEditor (Task 9) can build real per-section explain-access item
 // lists without re-declaring these -- one source of truth for what each section contains.
@@ -23,6 +26,8 @@ interface DefineModeProps {
   desiredChecked: Set<string>
   onChange: (next: Set<string>) => void
   knownAgents: string[]
+  /** Active catalog rows to offer as Oversight suite/addon grants. */
+  uiModules?: AppUiModule[]
 }
 interface OverrideModeProps {
   mode: 'override'
@@ -30,6 +35,12 @@ interface OverrideModeProps {
   userGrants: AppGrant[]
   onToggle: (kind: GrantKind, key: string, value: string | null, nextChecked: boolean) => void
   knownAgents: string[]
+  /** Active catalog rows to offer as Oversight suite/addon grants. */
+  uiModules?: AppUiModule[]
+}
+
+function activeOversightModules(modules: AppUiModule[] | undefined): AppUiModule[] {
+  return (modules ?? []).filter(isClassGrantableUiModule)
 }
 
 /**
@@ -110,9 +121,46 @@ function DefineSections(props: DefineModeProps) {
     else next.delete(itemKeyStr)
     props.onChange(next)
   }
+
+  /** Specific ERP ids only — the all-agents wildcard (`scope:agent:`) is not listed as a row. */
   const assignedAgents = [...props.desiredChecked]
     .filter(k => k.startsWith('scope:agent:') && k !== 'scope:agent:')
     .map(k => k.split(':')[2])
+
+  function setAgentChecked(agent: string, checked: boolean) {
+    const next = new Set(props.desiredChecked)
+    const key = `scope:agent:${agent}`
+    if (checked) {
+      next.delete('scope:agent:')
+      next.add(key)
+    } else {
+      next.delete(key)
+      const stillHas = [...next].some(k => k.startsWith('scope:agent:') && k !== 'scope:agent:')
+      if (!stillHas) next.add('scope:agent:')
+    }
+    props.onChange(next)
+  }
+
+  const uiModules = activeOversightModules(props.uiModules)
+
+  /** Suite/addon node grants; checking a suite clears other oversight suites (≤1). */
+  function setUiModuleChecked(mod: AppUiModule, checked: boolean) {
+    const next = new Set(props.desiredChecked)
+    const grantKey = uiModuleGrantKey(mod.surface, mod.kind, mod.id)
+    const itemKeyStr = `node:${grantKey}:`
+    if (checked) {
+      if (mod.kind === 'suite') {
+        for (const other of uiModules) {
+          if (other.kind !== 'suite' || other.id === mod.id) continue
+          next.delete(`node:${uiModuleGrantKey(other.surface, other.kind, other.id)}:`)
+        }
+      }
+      next.add(itemKeyStr)
+    } else {
+      next.delete(itemKeyStr)
+    }
+    props.onChange(next)
+  }
 
   return (
     <div className="perm-sections">
@@ -131,7 +179,10 @@ function DefineSections(props: DefineModeProps) {
           ))}
         </div>
         <div className="perm-agent-picker">
-          <p className="perm-subhead">Agents</p>
+          <p className="perm-subhead">Agents <span className="perm-subhead-hint">(none selected = all)</span></p>
+          {assignedAgents.length === 0 && (
+            <p className="perm-agent-all-note">All agents</p>
+          )}
           {assignedAgents.map(a => (
             <Item
               key={a}
@@ -139,7 +190,7 @@ function DefineSections(props: DefineModeProps) {
               itemKey={a}
               mode="define"
               checked={isChecked('scope', 'agent', a)}
-              onSetChecked={(v) => setChecked('scope', 'agent', a, v)}
+              onSetChecked={(v) => setAgentChecked(a, v)}
             />
           ))}
           <select
@@ -147,7 +198,7 @@ function DefineSections(props: DefineModeProps) {
             onChange={e => {
               const agent = e.target.value
               if (!agent) return
-              setChecked('scope', 'agent', agent, true)
+              setAgentChecked(agent, true)
               e.target.value = ''
             }}
           >
@@ -206,6 +257,27 @@ function DefineSections(props: DefineModeProps) {
             )}
           </div>
         ))}
+        {uiModules.length > 0 && (
+          <div className="perm-nested">
+            <p className="perm-subhead">
+              UI modules{' '}
+              <span className="perm-subhead-hint">(If a suite is set, addons are ignored.)</span>
+            </p>
+            {uiModules.map(m => {
+              const grantKey = uiModuleGrantKey(m.surface, m.kind, m.id)
+              return (
+                <Item
+                  key={grantKey}
+                  label={`${m.label} (${m.kind})`}
+                  itemKey={grantKey}
+                  mode="define"
+                  checked={isChecked('node', grantKey, null)}
+                  onSetChecked={(checked) => setUiModuleChecked(m, checked)}
+                />
+              )
+            })}
+          </div>
+        )}
       </section>
     </div>
   )
@@ -222,6 +294,7 @@ function OverrideSections(props: OverrideModeProps) {
     props.classGrants.some(g => g.kind === 'scope' && g.key === 'agent' && g.value === a)
     || props.userGrants.some(g => g.kind === 'scope' && g.key === 'agent' && g.value === a),
   )
+  const uiModules = activeOversightModules(props.uiModules)
 
   return (
     <div className="perm-sections">
@@ -240,7 +313,7 @@ function OverrideSections(props: OverrideModeProps) {
           ))}
         </div>
         <div className="perm-agent-picker">
-          <p className="perm-subhead">Agents</p>
+          <p className="perm-subhead">Agents <span className="perm-subhead-hint">(none selected = all)</span></p>
           {relevantAgents.map(a => (
             <Item
               key={a}
@@ -315,6 +388,27 @@ function OverrideSections(props: OverrideModeProps) {
             )}
           </div>
         ))}
+        {uiModules.length > 0 && (
+          <div className="perm-nested">
+            <p className="perm-subhead">
+              UI modules{' '}
+              <span className="perm-subhead-hint">(If a suite is set, addons are ignored.)</span>
+            </p>
+            {uiModules.map(m => {
+              const grantKey = uiModuleGrantKey(m.surface, m.kind, m.id)
+              return (
+                <Item
+                  key={grantKey}
+                  label={`${m.label} (${m.kind})`}
+                  itemKey={grantKey}
+                  mode="override"
+                  state={overrideState('node', grantKey, null)}
+                  onToggle={(checked) => props.onToggle('node', grantKey, null, checked)}
+                />
+              )
+            })}
+          </div>
+        )}
       </section>
     </div>
   )
