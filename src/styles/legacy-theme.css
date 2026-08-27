@@ -4020,6 +4020,26 @@ html[dir='rtl'] .hdr-brand,
   font-weight: 700;
 }
 
+.bi-tsomet-table tbody tr.bi-tsomet-row--clickable {
+  cursor: pointer;
+}
+
+.bi-tsomet-table tbody tr.bi-tsomet-row--clickable:hover td,
+.bi-tsomet-table tbody tr.bi-tsomet-row--clickable:focus-visible td {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.bi-tsomet-card--clickable {
+  cursor: pointer;
+}
+
+.bi-tsomet-card--clickable:hover,
+.bi-tsomet-card--clickable:focus-visible {
+  background: rgba(192, 197, 206, 0.22);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.35);
+}
+
 /* Mobile: card stack instead of wide table */
 .bi-tsomet-cards {
   display: none;

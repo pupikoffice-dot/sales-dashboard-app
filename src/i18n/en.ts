@@ -266,6 +266,11 @@ export const messages = {
   'bi.tsometBudget.col.openBudget': 'Open budget',
   'bi.tsometBudget.col.salesCash': 'Sales cash',
   'bi.tsometBudget.col.salesCashDated': 'Sales cash ({date})',
+  'bi.tsometBudget.ordersModalTitle': 'Orders MTD — {store} · {name} ({month})',
+  'bi.tsometBudget.ordersModalHint':
+    'Orders this month for this store (matched by ERP). Click an order to expand line items.',
+  'bi.tsometBudget.openOrdersForStore': 'Show orders this month for {store}',
+  'bi.tsometBudget.noOrdersMtd': 'No orders this month for this store.',
   'sm.receipts.mtdTitle': 'Receipts this month (by client)',
   'sm.receipts.mtdEmpty': 'No receipts this month in scope.',
   'sm.receipts.mtdLoading': 'Loading receipts…',

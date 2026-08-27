@@ -268,6 +268,11 @@ export const messages: Record<keyof typeof en, string> = {
   'bi.tsometBudget.col.openBudget': 'תקציב פתוח',
   'bi.tsometBudget.col.salesCash': 'מכירות מזומן',
   'bi.tsometBudget.col.salesCashDated': 'מכירות מזומן ({date})',
+  'bi.tsometBudget.ordersModalTitle': 'הזמנות חודש — {store} · {name} ({month})',
+  'bi.tsometBudget.ordersModalHint':
+    'הזמנות החודש לחנות זו (לפי ERP). לחץ על הזמנה לפירוט שורות.',
+  'bi.tsometBudget.openOrdersForStore': 'הצג הזמנות החודש עבור {store}',
+  'bi.tsometBudget.noOrdersMtd': 'אין הזמנות החודש לחנות זו.',
   'sm.receipts.mtdTitle': 'תקבולים החודש (לפי לקוח)',
   'sm.receipts.mtdEmpty': 'אין תקבולים החודש בטווח.',
   'sm.receipts.mtdLoading': 'טוען תקבולים…',

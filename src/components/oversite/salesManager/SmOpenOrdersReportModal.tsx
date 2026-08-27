@@ -6,10 +6,19 @@ export interface SmOpenOrdersReportModalProps {
   title: string
   orders: OrderTodayGroup[]
   onClose: () => void
+  /** Override default open-orders hint text. */
+  hintText?: string
+  emptyLabel?: string
 }
 
 /** Top open orders by cash — click a row to cascade line items. */
-export function SmOpenOrdersReportModal({ title, orders, onClose }: SmOpenOrdersReportModalProps) {
+export function SmOpenOrdersReportModal({
+  title,
+  orders,
+  onClose,
+  hintText,
+  emptyLabel,
+}: SmOpenOrdersReportModalProps) {
   const { t } = useLocale()
 
   return (
@@ -22,10 +31,10 @@ export function SmOpenOrdersReportModal({ title, orders, onClose }: SmOpenOrders
           </button>
         </div>
         <div className="debt-modal-body">
-          <p className="sm-report-hint">{t('sm.openOrders.top10Hint')}</p>
+          <p className="sm-report-hint">{hintText ?? t('sm.openOrders.top10Hint')}</p>
           <OversiteOrdersByDocTable
             orders={orders}
-            emptyLabel={t('oversite.noOrderItems')}
+            emptyLabel={emptyLabel ?? t('oversite.noOrderItems')}
             showFooterTotal
           />
         </div>
