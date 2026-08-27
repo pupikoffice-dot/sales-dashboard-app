@@ -102,6 +102,25 @@ export function buildTsometBudgetRows(args: BuildTsometBudgetRowsArgs): {
   return { rows, reportDate }
 }
 
+export interface TsometBudgetTotals {
+  budgetCash: number
+  ordersMtdCash: number
+  openBudget: number
+  salesCash: number
+}
+
+export function sumTsometBudgetRows(rows: TsometBudgetRow[]): TsometBudgetTotals {
+  return rows.reduce(
+    (acc, r) => ({
+      budgetCash: acc.budgetCash + r.budgetCash,
+      ordersMtdCash: acc.ordersMtdCash + r.ordersMtdCash,
+      openBudget: acc.openBudget + r.openBudget,
+      salesCash: acc.salesCash + r.salesCash,
+    }),
+    { budgetCash: 0, ordersMtdCash: 0, openBudget: 0, salesCash: 0 },
+  )
+}
+
 /** Open budget under 20% of store budget → warn (red). */
 export function isOpenBudgetLow(row: Pick<TsometBudgetRow, 'budgetCash' | 'openBudget'>): boolean {
   if (!(row.budgetCash > 0)) return false

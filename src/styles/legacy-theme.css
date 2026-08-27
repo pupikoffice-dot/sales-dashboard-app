@@ -4020,6 +4020,54 @@ html[dir='rtl'] .hdr-brand,
   font-weight: 700;
 }
 
+.bi-tsomet-summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-bottom: 8px;
+  padding: 6px 8px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 8px;
+  background: rgba(192, 197, 206, 0.12);
+}
+
+.bi-tsomet-summary-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted2, #94a3b8);
+}
+
+.bi-tsomet-summary-value {
+  font-size: 1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.bi-tsomet-tfoot td {
+  border-top: 2px solid rgba(148, 163, 184, 0.45);
+  background: rgba(30, 36, 48, 0.55);
+}
+
+.bi-tsomet-cards-summary {
+  display: none;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  border-radius: 8px;
+  font-size: 0.78rem;
+}
+
+.bi-tsomet-cards-summary strong {
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .bi-tsomet-table tbody tr.bi-tsomet-row--clickable {
   cursor: pointer;
 }
@@ -4094,6 +4142,14 @@ html[dir='rtl'] .hdr-brand,
 @media (max-width: 699px) {
   .bi-tsomet-table-wrap {
     display: none;
+  }
+
+  .bi-tsomet-summary {
+    display: none;
+  }
+
+  .bi-tsomet-cards-summary {
+    display: flex;
   }
 
   .bi-tsomet-cards {

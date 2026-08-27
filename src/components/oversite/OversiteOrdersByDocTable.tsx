@@ -1,18 +1,21 @@
 import { Fragment, useMemo, useState } from 'react'
 import { useLocale } from '../../context/LocaleContext'
 import { fmt } from '../../lib/format'
-import type { OrderTodayGroup } from '../../lib/oversiteMetrics'
+import { formatOrderDateDisp, type OrderTodayGroup } from '../../lib/oversiteMetrics'
 
 /** Top open orders by document cash — click a row to cascade line items. */
 export function OversiteOrdersByDocTable({
   orders,
   emptyLabel,
   showFooterTotal = false,
+  showOrderDate = false,
 }: {
   orders: OrderTodayGroup[]
   emptyLabel: string
   /** When true, footer shows sum of listed orders (top-N total). */
   showFooterTotal?: boolean
+  /** Show order date column (MTD / dated order lists). */
+  showOrderDate?: boolean
 }) {
   const { t } = useLocale()
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
@@ -40,6 +43,8 @@ export function OversiteOrdersByDocTable({
     return <p className="ov-empty">{emptyLabel}</p>
   }
 
+  const colSpan = showOrderDate ? 8 : 7
+
   return (
     <div className="tw">
       <table className="ov-orders-table">
@@ -48,6 +53,7 @@ export function OversiteOrdersByDocTable({
             <th className="ov-order-expand-col" />
             <th>#</th>
             <th>{t('oversite.orderNumber')}</th>
+            {showOrderDate ? <th>{t('oversite.orderDate')}</th> : null}
             <th>{t('oversite.debtAgent')}</th>
             <th>{t('oversite.orderClientName')}</th>
             <th>{t('oversite.qty')}</th>
@@ -66,6 +72,9 @@ export function OversiteOrdersByDocTable({
                   <td className="ov-order-expand-col cm">{isOpen ? '▴' : '▾'}</td>
                   <td className="cm">{i + 1}</td>
                   <td className="cm">{order.docNum}</td>
+                  {showOrderDate ? (
+                    <td className="cm">{formatOrderDateDisp(order.orderDate)}</td>
+                  ) : null}
                   <td className="cm">{order.agent || '—'}</td>
                   <td>{order.clientName}</td>
                   <td className="cm">{fmt(order.qty)}</td>
@@ -73,7 +82,7 @@ export function OversiteOrdersByDocTable({
                 </tr>
                 {isOpen ? (
                   <tr className="ov-order-detail-row">
-                    <td colSpan={7}>
+                    <td colSpan={colSpan}>
                       <div className="ov-order-detail">
                         <table>
                           <thead>
@@ -106,7 +115,7 @@ export function OversiteOrdersByDocTable({
         {showFooterTotal ? (
           <tfoot>
             <tr>
-              <td colSpan={5}>
+              <td colSpan={showOrderDate ? 6 : 5}>
                 <b>{t('sm.openOrders.top10Total')}</b>
               </td>
               <td className="cm">

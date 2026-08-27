@@ -145,7 +145,25 @@ export interface OrderTodayGroup {
   agent: string
   cash: number
   qty: number
+  /** Normalized YYYY-MM-DD from line rows when available. */
+  orderDate?: string
   lines: SalesRow[]
+}
+
+function orderGroupDate(lines: SalesRow[]): string | undefined {
+  for (const line of lines) {
+    const d = normalizeSalesDate(line.date)
+    if (d) return d
+  }
+  return undefined
+}
+
+/** ISO YYYY-MM-DD → DD/MM/YYYY for display. */
+export function formatOrderDateDisp(iso: string | undefined): string {
+  if (!iso) return '—'
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso)
+  if (m) return `${m[3]}/${m[2]}/${m[1]}`
+  return iso
 }
 
 function orderDocKey(row: SalesRow): string {
@@ -177,6 +195,7 @@ export function groupSalesRowsByDoc(matched: SalesRow[]): OrderTodayGroup[] {
       agent: String(first.agent ?? '').trim(),
       cash,
       qty,
+      orderDate: orderGroupDate(lines),
       lines: [...lines].sort((a, b) => (a.itemSKU || '').localeCompare(b.itemSKU || '')),
     })
   }

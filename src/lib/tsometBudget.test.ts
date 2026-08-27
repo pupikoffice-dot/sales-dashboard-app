@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildTsometBudgetRows, isOpenBudgetLow } from './tsometBudget'
+import { buildTsometBudgetRows, isOpenBudgetLow, sumTsometBudgetRows } from './tsometBudget'
 import type { SalesRow } from '../types/dashboard'
 
 const budget = [
@@ -82,5 +82,19 @@ describe('isOpenBudgetLow', () => {
 
   it('does not flag when budget is zero', () => {
     expect(isOpenBudgetLow({ budgetCash: 0, openBudget: 0 })).toBe(false)
+  })
+})
+
+describe('sumTsometBudgetRows', () => {
+  it('sums numeric columns', () => {
+    const { rows } = buildTsometBudgetRows({
+      budget,
+      sales: [],
+      ordersMtdRows: [],
+      agents: null,
+    })
+    const totals = sumTsometBudgetRows(rows)
+    expect(totals.budgetCash).toBe(1500)
+    expect(totals.openBudget).toBe(1500)
   })
 })

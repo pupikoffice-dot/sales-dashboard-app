@@ -9,6 +9,8 @@ export interface SmOpenOrdersReportModalProps {
   /** Override default open-orders hint text. */
   hintText?: string
   emptyLabel?: string
+  /** Show order date per document (Tsomet MTD, etc.). */
+  showOrderDate?: boolean
 }
 
 /** Top open orders by cash — click a row to cascade line items. */
@@ -18,6 +20,7 @@ export function SmOpenOrdersReportModal({
   onClose,
   hintText,
   emptyLabel,
+  showOrderDate = false,
 }: SmOpenOrdersReportModalProps) {
   const { t } = useLocale()
 
@@ -36,6 +39,7 @@ export function SmOpenOrdersReportModal({
             orders={orders}
             emptyLabel={emptyLabel ?? t('oversite.noOrderItems')}
             showFooterTotal
+            showOrderDate={showOrderDate}
           />
         </div>
       </div>

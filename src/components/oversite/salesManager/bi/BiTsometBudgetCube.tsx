@@ -5,6 +5,7 @@ import { fmt } from '../../../../lib/format'
 import {
   buildTsometBudgetRows,
   isOpenBudgetLow,
+  sumTsometBudgetRows,
   type TsometBudgetRow,
 } from '../../../../lib/tsometBudget'
 import {
@@ -70,6 +71,12 @@ export function BiTsometBudgetCube({
     ? t('bi.tsometBudget.col.salesCashDated', { date: formatReportDate(reportDate) })
     : t('bi.tsometBudget.col.salesCash')
 
+  const totals = useMemo(() => sumTsometBudgetRows(tableRows), [tableRows])
+  const totalsOpenLow = isOpenBudgetLow({
+    budgetCash: totals.budgetCash,
+    openBudget: totals.openBudget,
+  })
+
   function openStoreOrders(row: TsometBudgetRow) {
     if (!normErp(row.erpNumber)) return
     setSelectedStore(row)
@@ -101,6 +108,14 @@ export function BiTsometBudgetCube({
           <p className="bi-cube-empty">{t('bi.tsometBudget.empty')}</p>
         ) : (
           <>
+            <div className="bi-tsomet-summary">
+              <span className="bi-tsomet-summary-label">{t('bi.tsometBudget.totalOpenBudget')}</span>
+              <span
+                className={`bi-tsomet-summary-value${totalsOpenLow ? ' bi-tsomet-open--low' : ''}`}
+              >
+                {fmt(totals.openBudget)}
+              </span>
+            </div>
             <div className="bi-table-wrap bi-tsomet-table-wrap">
               <table className="bi-table bi-tsomet-table">
                 <thead>
@@ -146,7 +161,32 @@ export function BiTsometBudgetCube({
                     )
                   })}
                 </tbody>
+                <tfoot>
+                  <tr className="bi-tsomet-tfoot">
+                    <td colSpan={3}>
+                      <b>{t('bi.tsometBudget.totalRow')}</b>
+                    </td>
+                    <td className="bi-num">
+                      <b>{fmt(totals.budgetCash)}</b>
+                    </td>
+                    <td className="bi-num">
+                      <b>{fmt(totals.ordersMtdCash)}</b>
+                    </td>
+                    <td className={`bi-num${totalsOpenLow ? ' bi-tsomet-open--low' : ''}`}>
+                      <b>{fmt(totals.openBudget)}</b>
+                    </td>
+                    <td className="bi-num">
+                      <b>{fmt(totals.salesCash)}</b>
+                    </td>
+                  </tr>
+                </tfoot>
               </table>
+            </div>
+            <div className="bi-tsomet-cards-summary">
+              <span>{t('bi.tsometBudget.totalOpenBudget')}</span>
+              <strong className={totalsOpenLow ? 'bi-tsomet-open--low' : undefined}>
+                {fmt(totals.openBudget)}
+              </strong>
             </div>
             <ul className="bi-tsomet-cards" aria-label={t('bi.tsometBudget.title')}>
               {tableRows.map(it => {
@@ -207,6 +247,7 @@ export function BiTsometBudgetCube({
           orders={storeOrders}
           hintText={t('bi.tsometBudget.ordersModalHint')}
           emptyLabel={t('bi.tsometBudget.noOrdersMtd')}
+          showOrderDate
           onClose={() => setSelectedStore(null)}
         />
       ) : null}
