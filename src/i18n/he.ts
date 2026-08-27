@@ -256,6 +256,18 @@ export const messages: Record<keyof typeof en, string> = {
   'bi.itemsSoldByOthers.empty': 'אין פריטים שנמכרו ע״י אחרים החודש שסוכן זה דילג עליהם.',
   'bi.itemsSoldByOthers.help':
     'מציג פריטים שנמכרו החודש ע״י סוכנים אחרים בקבוצת הסוכנים, ושסוכן זה לא מכר.',
+  'bi.tsometBudget.title': 'תקציב צומת',
+  'bi.tsometBudget.empty': 'אין חנויות צומת בחלון הסוכן הזה.',
+  'bi.tsometBudget.help':
+    'תקציב חנויות Monkeytime מול הזמנות חודש (לפי ERP) ומכירות סגמנט. מסונן לפי סוכן מיועד לחנות.',
+  'bi.tsometBudget.col.erp': 'מס׳ ERP',
+  'bi.tsometBudget.col.storeNum': 'מס׳ חנות',
+  'bi.tsometBudget.col.storeName': 'חנות',
+  'bi.tsometBudget.col.budget': 'תקציב',
+  'bi.tsometBudget.col.ordersMtd': 'הזמנות חודש',
+  'bi.tsometBudget.col.openBudget': 'תקציב פתוח',
+  'bi.tsometBudget.col.salesCash': 'מכירות מזומן',
+  'bi.tsometBudget.col.salesCashDated': 'מכירות מזומן ({date})',
   'sm.receipts.mtdTitle': 'תקבולים החודש (לפי לקוח)',
   'sm.receipts.mtdEmpty': 'אין תקבולים החודש בטווח.',
   'sm.receipts.mtdLoading': 'טוען תקבולים…',

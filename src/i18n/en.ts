@@ -254,6 +254,18 @@ export const messages = {
   'bi.itemsSoldByOthers.empty': 'No items sold by others MTD that this agent skipped.',
   'bi.itemsSoldByOthers.help':
     'Shows items sold this month by other agents in the agent group that this specific agent did not sell.',
+  'bi.tsometBudget.title': 'Tsomet Budget',
+  'bi.tsometBudget.empty': 'No Tsomet stores in this agent window.',
+  'bi.tsometBudget.help':
+    'Monkeytime store budget vs Orders MTD (by ERP) and segment sales cash. Scoped to designated store agents.',
+  'bi.tsometBudget.col.erp': 'ERP #',
+  'bi.tsometBudget.col.storeNum': 'Store #',
+  'bi.tsometBudget.col.storeName': 'Store',
+  'bi.tsometBudget.col.budget': 'Budget',
+  'bi.tsometBudget.col.ordersMtd': 'Orders MTD',
+  'bi.tsometBudget.col.openBudget': 'Open budget',
+  'bi.tsometBudget.col.salesCash': 'Sales cash',
+  'bi.tsometBudget.col.salesCashDated': 'Sales cash ({date})',
   'sm.receipts.mtdTitle': 'Receipts this month (by client)',
   'sm.receipts.mtdEmpty': 'No receipts this month in scope.',
   'sm.receipts.mtdLoading': 'Loading receipts…',

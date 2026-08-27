@@ -72,6 +72,7 @@ export function SuiteExtrasBlock({
         agentId={agentId}
         company={company}
         rows={biScopedRows}
+        allRows={rows}
         mtdRows={companyMtdRows}
         stockBySku={stockBySku}
         habit={habit}
