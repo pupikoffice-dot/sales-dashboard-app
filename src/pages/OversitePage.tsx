@@ -1,12 +1,18 @@
 import { useMemo, useState, type CSSProperties } from 'react'
+import { useAuth } from '../context/AuthContext'
 import { usePreview } from '../context/PreviewContext'
 import { useLocale } from '../context/LocaleContext'
 import { useDashboardAccess } from '../context/DashboardAccessContext'
 import { useDashboardData } from '../hooks/useDashboardData'
+import { useBiModulesCatalog } from '../hooks/useBiModules'
+import { useBiUserGrants } from '../hooks/useBiUserGrants'
 import { useOversightLayout } from '../hooks/useOversightLayout'
 import { OversightLayoutToggle } from '../components/oversite/OversightLayoutToggle'
 import { SalesManagerSuite } from '../components/oversite/salesManager/SalesManagerSuite'
+import { BiTsometBudgetCube } from '../components/oversite/salesManager/bi/BiTsometBudgetCube'
 import type { OversightLayoutPreference } from '../lib/oversightLayouts'
+import { resolveVisibleBiModuleIds } from '../lib/biModules'
+import { sortAgentIds } from '../lib/uiModules'
 import { computeDebtAgentMatrix, computeDebtSummary, debtRowsForCompany } from '../lib/debtMetrics'
 import { fmt, formatGeneratedDisplay } from '../lib/format'
 import type { LogicalCompany } from '../types/dashboard'
@@ -98,10 +104,32 @@ function ClassicOversitePage({
   layoutToggle?: { active: 'classic' | 'suite'; onSelect: (p: OversightLayoutPreference) => void }
 }) {
   const { t } = useLocale()
+  const { session } = useAuth()
+  const { isPreviewing, previewUser } = usePreview()
   const { access } = useDashboardAccess()
   // Use access-scoped `rows` from the hook (already memoised) — do not re-filter allRows.
   const { rows: companyRows, debtRows, debtLastUpdate, wmsStock, wmsNames, isLoading, error, data: dashboardData } =
     useDashboardData()
+  const grantUserId = isPreviewing && previewUser ? previewUser.id : session?.user.id
+  const biCatalogQ = useBiModulesCatalog()
+  const biGrantsQ = useBiUserGrants(grantUserId)
+  const visibleBiIds = useMemo(
+    () =>
+      resolveVisibleBiModuleIds({
+        isSuperAdmin,
+        isPreviewing,
+        grants: biGrantsQ.data ?? [],
+        catalog: biCatalogQ.data ?? [],
+      }),
+    [isSuperAdmin, isPreviewing, biGrantsQ.data, biCatalogQ.data],
+  )
+  const classicTsometAgents = useMemo((): string[] | null => {
+    if (Array.isArray(access?.agents) && access.agents.length > 0) {
+      return sortAgentIds(access.agents.map(String))
+    }
+    return null
+  }, [access?.agents])
+  const showClassicTsomet = visibleBiIds.includes('tsomet_budget')
   const [debtModalCo, setDebtModalCo] = useState<LogicalCompany | null>(null)
   const [ordersModal, setOrdersModal] = useState<{
     company: LogicalCompany
@@ -487,6 +515,12 @@ function ClassicOversitePage({
                     sourceFile={srcFile(co.id, 'stockAlerts')}
                   />
                 )}
+
+                {co.id === 'mt' && showClassicTsomet ? (
+                  <div className="bi-tsomet-wide">
+                    <BiTsometBudgetCube rows={companyRows} agents={classicTsometAgents} />
+                  </div>
+                ) : null}
               </div>
             )
           })}

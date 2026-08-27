@@ -18,6 +18,7 @@ import type { DebtRow, LogicalCompany, SalesRow } from '../../../types/dashboard
 import { DebtModal } from '../DebtModal'
 import { OrdersTodayModal } from '../OrdersTodayModal'
 import { SuiteExtrasBlock } from './suiteUi/SuiteExtrasBlock'
+import { BiTsometBudgetCube } from './bi/BiTsometBudgetCube'
 import { SmAgentWindow } from './SmAgentWindow'
 import { SmItemsReportModal } from './SmItemsReportModal'
 import { SmOpenOrdersReportModal } from './SmOpenOrdersReportModal'
@@ -477,6 +478,14 @@ export function SalesManagerSuite({ layoutToggle }: SalesManagerSuiteProps = {})
                       })}
                     </div>
                   )}
+                  {company === 'mt' && visibleBiIds.includes('tsomet_budget') ? (
+                    <div className="bi-tsomet-wide">
+                      <BiTsometBudgetCube
+                        rows={rows}
+                        agents={scopedAgents.length > 0 ? scopedAgents : null}
+                      />
+                    </div>
+                  ) : null}
                 </section>
               )
             },

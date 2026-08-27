@@ -4,7 +4,6 @@ import type { LogicalCompany, SalesRow } from '../../../../types/dashboard'
 import { BiItemsSoldByOthersCube } from './BiItemsSoldByOthersCube'
 import { BiMissedClientsCube } from './BiMissedClientsCube'
 import { BiMissedItemsCube } from './BiMissedItemsCube'
-import { BiTsometBudgetCube } from './BiTsometBudgetCube'
 
 export type BiCubesMode = 'all' | 'agent'
 
@@ -16,11 +15,6 @@ export interface BiCubesBlockProps {
   company: LogicalCompany
   /** Company sales (+ open orders) — habit cubes. */
   rows: SalesRow[]
-  /**
-   * Full access-scoped rows (includes orders-* tags) for Tsomet Orders MTD.
-   * Falls back to `rows` when omitted.
-   */
-  allRows?: SalesRow[]
   /** Shared company MTD sales slice (all suite agents). */
   mtdRows?: SalesRow[]
   /** Per-SKU stock for this company (missing key = OOS / skip). */
@@ -36,7 +30,7 @@ export interface BiCubesBlockProps {
 /**
  * BI cubes after KPI grid. Alone All / Vs = missed items + clients only.
  * Alone agent = all granted modules including items sold by others.
- * Tsomet Budget: Monkeytime company block only.
+ * Tsomet Budget is mounted separately (full-width) — see SuiteExtrasBlock.
  */
 export function BiCubesBlock({
   visibleIds,
@@ -44,7 +38,6 @@ export function BiCubesBlock({
   agentId,
   company,
   rows,
-  allRows,
   mtdRows,
   stockBySku,
   habit,
@@ -58,7 +51,6 @@ export function BiCubesBlock({
   const showMissedClients = idSet.has('missed_clients')
   const showSoldByOthers =
     mode === 'agent' && !!agentId && idSet.has('items_sold_by_others')
-  const showTsometBudget = company === 'mt' && idSet.has('tsomet_budget')
 
   const agentsForHabit = useMemo((): string[] | null => {
     if (windowAgentsProp !== undefined) return windowAgentsProp
@@ -66,7 +58,7 @@ export function BiCubesBlock({
     return suiteAgents.length > 0 ? suiteAgents : null
   }, [windowAgentsProp, mode, agentId, suiteAgents])
 
-  if (!showMissedItems && !showMissedClients && !showSoldByOthers && !showTsometBudget) {
+  if (!showMissedItems && !showMissedClients && !showSoldByOthers) {
     return null
   }
 
@@ -103,9 +95,6 @@ export function BiCubesBlock({
           curMonth={curMonth}
           mtdPrefiltered={!!mtdRows}
         />
-      ) : null}
-      {showTsometBudget ? (
-        <BiTsometBudgetCube rows={allRows ?? rows} agents={agentsForHabit} />
       ) : null}
     </div>
   )

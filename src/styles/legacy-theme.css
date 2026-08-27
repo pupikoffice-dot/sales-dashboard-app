@@ -3990,6 +3990,22 @@ html[dir='rtl'] .hdr-brand,
   margin-top: 0;
 }
 
+/* Full-width Tsomet Budget under Monkeytime company block (suite + classic). */
+.bi-tsomet-wide {
+  width: 100%;
+  margin-top: 14px;
+  min-width: 0;
+}
+
+.bi-tsomet-wide .bi-cube {
+  width: 100%;
+}
+
+.bi-tsomet-wide .bi-table-wrap {
+  max-height: min(480px, 55vh);
+  overflow: auto;
+}
+
 .bi-cube.sm-cube {
   min-height: 0;
   width: 100%;
