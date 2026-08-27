@@ -31,7 +31,7 @@ Add three **Business Intelligence (BI)** modules for Sales Manager suite users, 
 | Alone — per-agent window | All three BI cubes (if granted) |
 | Vs | One company-level BI block: Missed items + Missed clients (all agents); no Items sold by others |
 | Habit default | **3 out of 4** calendar months (admin-editable X / Y; `1 ≤ X ≤ Y ≤ 24`) |
-| Stock gate (Missed items) | First filter: only SKUs with WMS qty > 0 enter habit / “sold this month” / ranking; take top 10 by prior-window cash |
+| Stock gate (Missed items) | First filter: only SKUs with WMS qty > 0 enter habit / “sold this month” / ranking; take top 30 by prior-window cash |
 | Ranking (Missed items/clients) | Sum **cash** over the Y window, descending; ties: qty desc, then id asc |
 | Missing / short lists | Always render granted cube; show 0–10 rows with empty copy when none |
 | Cube order | After existing KPI cubes: Missed items → Missed clients → Items sold by others (when applicable) |
@@ -103,7 +103,7 @@ Cube order (when granted): after the existing KPI cubes → **Missed items** →
 5. **Exclude** any usual SKU that, for the same agent-parameter × company, is **sold this month**:
    - any invoice (sales rows for the logical company in the current month), **or**
    - any **open order** row for that company’s open-orders tag (721)
-6. Rank remaining by **sum(cash) over the prior Y window**, descending; ties: sum(qty) desc, then SKU asc. Top **10**.
+6. Rank remaining by **sum(cash) over the prior Y window**, descending; ties: sum(qty) desc, then SKU asc. Top **30**.
 7. Show SKU, name, habit months hit (e.g. `3/4`), prior-window cash, stock qty. No optional “reason line” in v1.
 
 #### 2. Missed clients
@@ -114,7 +114,7 @@ Cube order (when granted): after the existing KPI cubes → **Missed items** →
 4. **Exclude** any usual client who, in the **current month** for the same agent-parameter × company, has:
    - any invoice (sales rows for the logical company), **or**
    - any **open order** row for that company’s open-orders tag  
-5. Rank remaining by **sum(cash) over the prior Y window**, descending; ties: qty desc, then client id asc. Top **10**.  
+5. Rank remaining by **sum(cash) over the prior Y window**, descending; ties: qty desc, then client id asc. Top **30**.  
 6. Show client name + habit months hit (e.g. `3/4`) + prior-window cash. Empty copy when none.
 
 #### 3. Items sold by others
@@ -160,7 +160,7 @@ RLS: super-admin manage; users read own grants (or resolve via existing admin RP
 - Admin → Modules (super-admin only) lists UI + BI; habit X/Y editable, validated (`1 ≤ X ≤ Y ≤ 24`), persisted.  
 - Admin → Users can grant/revoke active BI modules per non–super-admin user.  
 - Suite Alone/Vs show BI cubes per rules above with BI badge and fixed cube order.  
-- Missed items / Missed clients: prior-Y habit (current month excluded); exclude anything with invoice or open orders this month; ranking by prior-window cash; Missed items stock-first (WMS qty > 0) then top 10.  
+- Missed items / Missed clients: prior-Y habit (current month excluded); exclude anything with invoice or open orders this month; ranking by prior-window cash; Missed items stock-first (WMS qty > 0) then top 30.  
 - Missed items skips OOS and still aims for 10; empty/short lists handled.  
 - Items sold by others never appears on All or Vs.  
 - Super-admin (not View-as) sees all active BI; View-as uses target grants.  

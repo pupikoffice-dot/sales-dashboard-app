@@ -106,7 +106,7 @@ export interface BuildMissedItemsArgs {
  * Stock is the first gate: OOS / missing WMS SKUs are never aggregated.
  */
 export function buildMissedItems(args: BuildMissedItemsArgs): BiHabitResult<BiMissedItem> {
-  const limit = args.limit ?? 10
+  const limit = args.limit ?? 30
   const windowKeys = previousYMonthKeys(args.curYear, args.curMonth, args.habit.habitY)
   const windowSet = new Set(windowKeys)
 
@@ -206,7 +206,7 @@ export interface BuildMissedClientsArgs {
  * who have neither invoices nor open orders in the current month.
  */
 export function buildMissedClients(args: BuildMissedClientsArgs): BiHabitResult<BiMissedClient> {
-  const limit = args.limit ?? 10
+  const limit = args.limit ?? 30
   const windowKeys = previousYMonthKeys(args.curYear, args.curMonth, args.habit.habitY)
   const windowSet = new Set(windowKeys)
 

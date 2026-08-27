@@ -1,18 +1,18 @@
 # HANDOFF — sales-dashboard-app
 
 ## Current State
-_Last updated: 2026-08-23 19:08:57 by Cursor_
+_Last updated: 2026-08-27 14:46:44 by Claude Code_
 
-**Status:** Active
-**Phase:** BI modules + Admin Modules on beta (product line **2.0**)
+**Status:** Active  
+**Phase:** Stable v2.0 on production; Missed items BI rule fix shipped
 
-- Works now: Admin → Modules (UI catalog read-only + BI catalog + habit X/Y default 3/4)
-- Works now: Per-user BI grants on Admin → Users; suite BI cubes (Missed items, Missed clients, Items sold by others) with BI badge
-- Works now: Alone All / Vs = missed items+clients; Alone agent = all three when granted; super-admin all BI; View-as uses target grants
-- Works now: Sales Manager suite Alone/Vs; beta badge **2.0 · beta**; Classic Oversight on `main`
-- In progress: Manual verify BI on beta (grants, OOS skip, habit empty state)
+- Works now: Production (`main`) at sales-dashboard-app-omega.vercel.app shows DB `active_version` **2.0**; beta channel is **2.1 · beta**; legacy backup on `legacy` branch
+- Works now: Missed items BI matches product rule — prior-Y habit (current month excluded), exclude SKUs with 891 invoice or 721 open orders this month, stock-first (WMS qty > 0), top 30 by prior-window cash; Missed clients also top 30
+- Works now: BI cube ? help popovers; Receipts Full report = MTD by client
+- Works now: DesktopDashboard **Sales Dash P2** no longer runs `serverdashboardexcel.xlsm` / `run_export` (refresh + export steps removed); v2 data path is Python ETL → Supabase
+- In progress: Nothing in code for this session
 - Blocked: Nothing blocked
-- Next up: Verify on beta; keep promote-to-main off until asked
+- Next up: Smoke Missed items for agent 24 (GRP-145328 must not appear); confirm lists show up to 30 rows
 
 ### CORE RULES (suite)
 
@@ -24,13 +24,13 @@ _Last updated: 2026-08-23 19:08:57 by Cursor_
 
 | Concept | Meaning | Today |
 |--------|---------|--------|
-| **Version** | Product release line (`1.0`, `2.0`, `2.1`…) | Production live = **1.0** (DB). Beta work line = **2.0** |
+| **Version** | Product release line (`1.0`, `2.0`, `2.1`…) | Production live = **2.0** (DB). Beta work line = **2.1** |
 | **Channel** | Where you iterate: production (stable) vs **beta** (next work) | `main` / prod URL vs `beta` / `pupik-sales-dashboard-beta.vercel.app` |
 
 - **Beta** = working iteration of the next (or in-progress) version. Title: `{productVersion} · beta`.
 - **Production** = stable live. Title: DB `app_runtime_config.active_version` only.
-- Do **not** change DB `active_version` just to relabel beta — that row is the shared live cutover flag.
-- After promote of 2.0: set DB to `2.0`; set `BETA_PRODUCT_VERSION` / `VITE_PRODUCT_VERSION` to `2.1` or `3.0` for the next beta.
+- Default new work lands on `beta` unless user explicitly asks for production / `main`.
+- After promote: bump `BETA_PRODUCT_VERSION` / `VITE_PRODUCT_VERSION` on beta for the next work line.
 
 Code: `src/lib/appChannel.ts`
 
@@ -45,6 +45,23 @@ Phase 1 hides Cost, Total Cost, Price, and cost-based charts in the UI only. The
 ---
 
 ## Session Log
+
+### 2026-08-27 14:46:44 — Claude Code
+**Done:**
+- Rewrote Missed items BI on `main`: prior-Y habit, exclude current-month 891/721, stock-first, top 10 by prior cash
+- Wired open-orders tag into Missed items cube; updated tests and design spec
+- Committed `a3558fd` and deployed production (sales-dashboard-app-omega.vercel.app READY)
+- Earlier in session: removed Excel workbook steps from DesktopDashboard Sales Dash P2 schedule
+
+**Decisions:**
+- Missed items aligned with Missed clients (exclude current month from habit; 891+721 = sold this month)
+- Stock is first gate (skip OOS before habit aggregation), not last
+- Landed on stable v2 `main` by explicit request (not beta)
+
+**Next:**
+- Smoke agent 24 Missed items on production; optional sync fix to beta
+
+---
 
 ### 2026-08-23 19:08:57 — Cursor
 **Done:**
