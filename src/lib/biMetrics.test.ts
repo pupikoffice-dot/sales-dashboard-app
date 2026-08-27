@@ -25,9 +25,9 @@ describe('previousYMonthKeys', () => {
 })
 
 describe('buildMissedItems', () => {
-  it('skips OOS and fills to top in-stock usual SKUs', () => {
+  it('lists usual prior-month in-stock SKUs not sold this month; skips OOS', () => {
     const rows: SalesRow[] = []
-    for (const month of [5, 6, 7, 8]) {
+    for (const month of [4, 5, 6, 7]) {
       rows.push(
         row({
           company: 'pupik',
@@ -59,11 +59,125 @@ describe('buildMissedItems', () => {
       curYear: 2026,
       curMonth: 8,
       stockBySku: { B: 5 }, // A missing → skip
+      openOrdersTag: 'openorders',
     })
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.items).toHaveLength(1)
     expect(result.items[0].sku).toBe('B')
+    expect(result.items[0].monthsHit).toBe(4)
+    expect(result.items[0].cash).toBe(200)
+  })
+
+  it('excludes SKUs invoiced this month (GRP-145328 case)', () => {
+    const rows: SalesRow[] = []
+    for (const month of [4, 5, 6, 7, 8]) {
+      rows.push(
+        row({
+          company: 'pupik',
+          year: 2026,
+          month,
+          agent: '24',
+          itemSKU: 'GRP-145328',
+          itemName: 'Neon G9',
+          cash: 100,
+          qty: month === 8 ? 45 : 10,
+        }),
+      )
+    }
+    const result = buildMissedItems({
+      rows,
+      company: 'pupik',
+      agents: ['24'],
+      habit: { habitX: 3, habitY: 4 },
+      curYear: 2026,
+      curMonth: 8,
+      stockBySku: { 'GRP-145328': 133 },
+      openOrdersTag: 'openorders',
+    })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.items.find(i => i.sku === 'GRP-145328')).toBeUndefined()
+  })
+
+  it('excludes SKUs with open orders even without invoice this month', () => {
+    const rows: SalesRow[] = [
+      ...[4, 5, 6, 7].map(month =>
+        row({
+          company: 'pupik',
+          year: 2026,
+          month,
+          agent: '24',
+          itemSKU: 'OO-1',
+          itemName: 'Has OO',
+          cash: 50,
+          qty: 1,
+        }),
+      ),
+      row({
+        company: 'openorders',
+        agent: '24',
+        itemSKU: 'OO-1',
+        itemName: 'Has OO',
+        cash: 10,
+        qty: 4,
+      }),
+    ]
+    const result = buildMissedItems({
+      rows,
+      company: 'pupik',
+      agents: ['24'],
+      habit: { habitX: 3, habitY: 4 },
+      curYear: 2026,
+      curMonth: 8,
+      stockBySku: { 'OO-1': 10 },
+      openOrdersTag: 'openorders',
+    })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.items.find(i => i.sku === 'OO-1')).toBeUndefined()
+  })
+
+  it('habit cash excludes current month sales', () => {
+    const rows: SalesRow[] = [
+      ...[4, 5, 6, 7].map(month =>
+        row({
+          company: 'pupik',
+          year: 2026,
+          month,
+          agent: '24',
+          itemSKU: 'C',
+          itemName: 'Prior Only',
+          cash: 25,
+          qty: 1,
+        }),
+      ),
+      // Different SKU sold this month — must not inflate C's cash if C is listed
+      row({
+        company: 'pupik',
+        year: 2026,
+        month: 8,
+        agent: '24',
+        itemSKU: 'OTHER',
+        cash: 9999,
+        qty: 1,
+      }),
+    ]
+    const result = buildMissedItems({
+      rows,
+      company: 'pupik',
+      agents: ['24'],
+      habit: { habitX: 3, habitY: 4 },
+      curYear: 2026,
+      curMonth: 8,
+      stockBySku: { C: 3, OTHER: 1 },
+      openOrdersTag: 'openorders',
+    })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.items[0].sku).toBe('C')
+    expect(result.items[0].cash).toBe(100)
+    expect(result.items[0].monthsHit).toBe(4)
   })
 
   it('returns insufficient_history when too few months', () => {
@@ -86,6 +200,7 @@ describe('buildMissedItems', () => {
       curYear: 2026,
       curMonth: 8,
       stockBySku: { A: 1 },
+      openOrdersTag: 'openorders',
     })
     expect(result.ok).toBe(false)
   })

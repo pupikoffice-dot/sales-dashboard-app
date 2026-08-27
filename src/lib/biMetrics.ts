@@ -90,40 +90,71 @@ export interface BuildMissedItemsArgs {
   habit: HabitConfig
   curYear: number
   curMonth: number
-  /** sku → qty; missing key = skip (treat as OOS). */
+  /** sku → qty; missing key or ≤0 = OOS — ignored for habit and ranking. */
   stockBySku: Record<string, number>
+  /**
+   * Company open-orders row tag (e.g. `openorders` for Pupik).
+   * Any open-order row for the agent scope counts as "sold this month".
+   */
+  openOrdersTag: string | null
   limit?: number
 }
 
+/**
+ * Missed items = usual in-stock SKUs in the previous Y months (X-of-Y habit)
+ * that have neither invoices (891) nor open orders (721) in the current month.
+ * Stock is the first gate: OOS / missing WMS SKUs are never aggregated.
+ */
 export function buildMissedItems(args: BuildMissedItemsArgs): BiHabitResult<BiMissedItem> {
   const limit = args.limit ?? 10
-  const windowKeys = lastYMonthKeys(args.curYear, args.curMonth, args.habit.habitY)
+  const windowKeys = previousYMonthKeys(args.curYear, args.curMonth, args.habit.habitY)
   const windowSet = new Set(windowKeys)
 
-  let scoped = narrowAgents(
-    args.rows.filter(r => isCompanySalesRow(r, args.company)),
-    args.agents,
-  )
-  scoped = scoped.filter(r => {
+  const inStock = new Set<string>()
+  for (const [sku, qty] of Object.entries(args.stockBySku)) {
+    if ((Number(qty) || 0) > 0) inStock.add(sku)
+  }
+
+  const agentScoped = narrowAgents(args.rows, args.agents)
+
+  /** In-stock SKUs already sold this month (invoice or open order) → not missed. */
+  const soldThisMonth = new Set<string>()
+  for (const r of agentScoped) {
+    const sku = String(r.itemSKU ?? '').trim()
+    if (!sku || !inStock.has(sku)) continue
+    const cash = Number(r.cash) || 0
+    const qty = Number(r.qty) || 0
+    if (isCompanySalesRow(r, args.company) && Number(r.year) === args.curYear && Number(r.month) === args.curMonth) {
+      if (cash !== 0 || qty !== 0) soldThisMonth.add(sku)
+      continue
+    }
+    if (args.openOrdersTag && r.company === args.openOrdersTag) {
+      if (cash !== 0 || qty !== 0) soldThisMonth.add(sku)
+    }
+  }
+
+  const habitRows = agentScoped.filter(r => {
+    if (!isCompanySalesRow(r, args.company)) return false
+    const sku = String(r.itemSKU ?? '').trim()
+    if (!sku || !inStock.has(sku)) return false
     const k = rowYm(r)
     return k != null && windowSet.has(k)
   })
 
   const monthsPresent = new Set<string>()
-  for (const r of scoped) {
+  for (const r of habitRows) {
     const k = rowYm(r)
     if (k) monthsPresent.add(k)
   }
-  const yEff = monthsPresent.size
-  if (yEff < args.habit.habitX) {
+  if (monthsPresent.size < args.habit.habitX) {
     return { ok: false, reason: 'insufficient_history', items: [] }
   }
 
   type Agg = { name: string; cash: number; qty: number; months: Set<string> }
   const bySku = new Map<string, Agg>()
-  for (const r of scoped) {
+  for (const r of habitRows) {
     const sku = String(r.itemSKU ?? '').trim()
-    if (!sku) continue
+    if (!sku || soldThisMonth.has(sku)) continue
     const k = rowYm(r)!
     let e = bySku.get(sku)
     if (!e) {
@@ -138,7 +169,7 @@ export function buildMissedItems(args: BuildMissedItemsArgs): BiHabitResult<BiMi
     if (r.itemName) e.name = String(r.itemName)
   }
 
-  const usual = [...bySku.entries()]
+  const items = [...bySku.entries()]
     .filter(([, e]) => e.months.size >= args.habit.habitX)
     .map(([sku, e]) => ({
       sku,
@@ -147,19 +178,12 @@ export function buildMissedItems(args: BuildMissedItemsArgs): BiHabitResult<BiMi
       monthsWindow: args.habit.habitY,
       cash: e.cash,
       qty: e.qty,
-      stock: 0,
+      stock: Number(args.stockBySku[sku]) || 0,
     }))
     .sort((a, b) => b.cash - a.cash || b.qty - a.qty || a.sku.localeCompare(b.sku))
+    .slice(0, limit)
 
-  const out: BiMissedItem[] = []
-  for (const it of usual) {
-    if (!(it.sku in args.stockBySku)) continue
-    const stock = Number(args.stockBySku[it.sku]) || 0
-    if (stock <= 0) continue
-    out.push({ ...it, stock })
-    if (out.length >= limit) break
-  }
-  return { ok: true, items: out }
+  return { ok: true, items }
 }
 
 export interface BuildMissedClientsArgs {

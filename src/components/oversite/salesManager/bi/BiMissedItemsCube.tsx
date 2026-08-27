@@ -3,6 +3,7 @@ import { useLocale } from '../../../../context/LocaleContext'
 import { fmt } from '../../../../lib/format'
 import { buildMissedItems, type HabitConfig } from '../../../../lib/biMetrics'
 import type { LogicalCompany, SalesRow } from '../../../../types/dashboard'
+import { smOpenOrdersTag } from '../smMetrics'
 import { BiCubeShell } from './BiCubeShell'
 
 export function BiMissedItemsCube({
@@ -23,6 +24,7 @@ export function BiMissedItemsCube({
   stockBySku: Record<string, number>
 }) {
   const { t } = useLocale()
+  const openOrdersTag = smOpenOrdersTag(company)
   const result = useMemo(
     () =>
       buildMissedItems({
@@ -33,8 +35,9 @@ export function BiMissedItemsCube({
         curYear,
         curMonth,
         stockBySku,
+        openOrdersTag,
       }),
-    [rows, company, agents, habit, curYear, curMonth, stockBySku],
+    [rows, company, agents, habit, curYear, curMonth, stockBySku, openOrdersTag],
   )
 
   return (
