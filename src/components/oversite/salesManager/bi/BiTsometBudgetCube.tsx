@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useLocale } from '../../../../context/LocaleContext'
 import { useTsometBudgetData } from '../../../../hooks/useTsometBudgetData'
 import { fmt } from '../../../../lib/format'
-import { buildTsometBudgetRows } from '../../../../lib/tsometBudget'
+import { buildTsometBudgetRows, isOpenBudgetLow } from '../../../../lib/tsometBudget'
 import {
   getOrdersMtdRows,
   getOversiteDateContext,
@@ -55,34 +55,74 @@ export function BiTsometBudgetCube({
       ) : tableRows.length === 0 ? (
         <p className="bi-cube-empty">{t('bi.tsometBudget.empty')}</p>
       ) : (
-        <div className="bi-table-wrap">
-          <table className="bi-table">
-            <thead>
-              <tr>
-                <th>{t('bi.tsometBudget.col.erp')}</th>
-                <th>{t('bi.tsometBudget.col.storeNum')}</th>
-                <th>{t('bi.tsometBudget.col.storeName')}</th>
-                <th className="bi-num">{t('bi.tsometBudget.col.budget')}</th>
-                <th className="bi-num">{t('bi.tsometBudget.col.ordersMtd')}</th>
-                <th className="bi-num">{t('bi.tsometBudget.col.openBudget')}</th>
-                <th className="bi-num">{salesHeader}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tableRows.map(it => (
-                <tr key={`${it.erpNumber}|${it.storeNumber}`}>
-                  <td className="bi-mono">{it.erpNumber}</td>
-                  <td className="bi-mono">{it.storeNumber}</td>
-                  <td>{it.storeName}</td>
-                  <td className="bi-num">{fmt(it.budgetCash)}</td>
-                  <td className="bi-num">{fmt(it.ordersMtdCash)}</td>
-                  <td className="bi-num">{fmt(it.openBudget)}</td>
-                  <td className="bi-num">{fmt(it.salesCash)}</td>
+        <>
+          <div className="bi-table-wrap bi-tsomet-table-wrap">
+            <table className="bi-table bi-tsomet-table">
+              <thead>
+                <tr>
+                  <th>{t('bi.tsometBudget.col.erp')}</th>
+                  <th>{t('bi.tsometBudget.col.storeNum')}</th>
+                  <th>{t('bi.tsometBudget.col.storeName')}</th>
+                  <th className="bi-num">{t('bi.tsometBudget.col.budget')}</th>
+                  <th className="bi-num">{t('bi.tsometBudget.col.ordersMtd')}</th>
+                  <th className="bi-num">{t('bi.tsometBudget.col.openBudget')}</th>
+                  <th className="bi-num">{salesHeader}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {tableRows.map(it => (
+                  <tr key={`${it.erpNumber}|${it.storeNumber}`}>
+                    <td className="bi-mono">{it.erpNumber}</td>
+                    <td className="bi-mono">{it.storeNumber}</td>
+                    <td>{it.storeName}</td>
+                    <td className="bi-num">{fmt(it.budgetCash)}</td>
+                    <td className="bi-num">{fmt(it.ordersMtdCash)}</td>
+                    <td
+                      className={`bi-num${isOpenBudgetLow(it) ? ' bi-tsomet-open--low' : ''}`}
+                    >
+                      {fmt(it.openBudget)}
+                    </td>
+                    <td className="bi-num">{fmt(it.salesCash)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <ul className="bi-tsomet-cards" aria-label={t('bi.tsometBudget.title')}>
+            {tableRows.map(it => (
+              <li key={`card-${it.erpNumber}|${it.storeNumber}`} className="bi-tsomet-card">
+                <div className="bi-tsomet-card-title">
+                  <span className="bi-mono">{it.storeNumber}</span>
+                  <span>{it.storeName}</span>
+                </div>
+                <dl className="bi-tsomet-card-grid">
+                  <div>
+                    <dt>{t('bi.tsometBudget.col.erp')}</dt>
+                    <dd className="bi-mono">{it.erpNumber}</dd>
+                  </div>
+                  <div>
+                    <dt>{t('bi.tsometBudget.col.budget')}</dt>
+                    <dd className="bi-num">{fmt(it.budgetCash)}</dd>
+                  </div>
+                  <div>
+                    <dt>{t('bi.tsometBudget.col.ordersMtd')}</dt>
+                    <dd className="bi-num">{fmt(it.ordersMtdCash)}</dd>
+                  </div>
+                  <div>
+                    <dt>{t('bi.tsometBudget.col.openBudget')}</dt>
+                    <dd className={`bi-num${isOpenBudgetLow(it) ? ' bi-tsomet-open--low' : ''}`}>
+                      {fmt(it.openBudget)}
+                    </dd>
+                  </div>
+                  <div className="bi-tsomet-card-sales">
+                    <dt>{salesHeader}</dt>
+                    <dd className="bi-num">{fmt(it.salesCash)}</dd>
+                  </div>
+                </dl>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </BiCubeShell>
   )

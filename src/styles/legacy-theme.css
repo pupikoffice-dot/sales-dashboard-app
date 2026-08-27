@@ -4006,6 +4006,86 @@ html[dir='rtl'] .hdr-brand,
   overflow: auto;
 }
 
+.bi-tsomet-table {
+  border: 1px solid rgba(148, 163, 184, 0.45);
+}
+
+.bi-tsomet-table th,
+.bi-tsomet-table td {
+  border: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+.bi-tsomet-open--low {
+  color: #ef4444;
+  font-weight: 700;
+}
+
+/* Mobile: card stack instead of wide table */
+.bi-tsomet-cards {
+  display: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 10px;
+}
+
+.bi-tsomet-card {
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: rgba(192, 197, 206, 0.12);
+}
+
+.bi-tsomet-card-title {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+  font-weight: 700;
+  margin-bottom: 8px;
+  font-size: 0.78rem;
+}
+
+.bi-tsomet-card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+  margin: 0;
+}
+
+.bi-tsomet-card-grid dt {
+  margin: 0;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--muted2, #94a3b8);
+}
+
+.bi-tsomet-card-grid dd {
+  margin: 2px 0 0;
+  font-size: 0.78rem;
+}
+
+.bi-tsomet-card-sales {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 699px) {
+  .bi-tsomet-table-wrap {
+    display: none;
+  }
+
+  .bi-tsomet-cards {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .bi-tsomet-wide .bi-table-wrap {
+    max-height: none;
+  }
+}
+
 .bi-cube.sm-cube {
   min-height: 0;
   width: 100%;

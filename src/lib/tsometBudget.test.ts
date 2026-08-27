@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildTsometBudgetRows } from './tsometBudget'
+import { buildTsometBudgetRows, isOpenBudgetLow } from './tsometBudget'
 import type { SalesRow } from '../types/dashboard'
 
 const budget = [
@@ -70,5 +70,17 @@ describe('buildTsometBudgetRows', () => {
       agents: null,
     })
     expect(rows).toHaveLength(2)
+  })
+})
+
+describe('isOpenBudgetLow', () => {
+  it('flags when open budget is under 20% of budget', () => {
+    expect(isOpenBudgetLow({ budgetCash: 1000, openBudget: 199 })).toBe(true)
+    expect(isOpenBudgetLow({ budgetCash: 1000, openBudget: 200 })).toBe(false)
+    expect(isOpenBudgetLow({ budgetCash: 1000, openBudget: 500 })).toBe(false)
+  })
+
+  it('does not flag when budget is zero', () => {
+    expect(isOpenBudgetLow({ budgetCash: 0, openBudget: 0 })).toBe(false)
   })
 })
