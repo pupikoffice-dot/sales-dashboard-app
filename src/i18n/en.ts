@@ -279,6 +279,9 @@ export const messages = {
   'suiteUi.bestClients.empty': 'No MTD client sales in this window.',
 
   'oversite.title': 'Oversight Dashboard',
+  'oversite.layout.label': 'Oversight layout',
+  'oversite.layout.classic': 'Classic',
+  'oversite.layout.salesManager': 'Sales Manager',
   'oversite.today': 'Today',
   'oversite.fileUpdated': 'File updated',
   'oversite.synced': 'Synced',
@@ -375,6 +378,9 @@ export const messages = {
   'admin.biModules': 'BI modules',
   'admin.biModulesHint':
     'Cubes shown inside Sales Manager suite for this user (super-admin always sees all when not View-as).',
+  'admin.oversightLayouts': 'Oversight layouts',
+  'admin.oversightLayoutsHint':
+    'Optional layouts this user can switch to on Oversight. Classic stays the default when both are available. (Class suite grant still forces suite-only.)',
   'admin.suiteUiModules': 'Suite UI modules',
   'admin.suiteUiModulesHint':
     'Best sold / Best clients tables in Sales Manager suite (per-user; not class addons).',

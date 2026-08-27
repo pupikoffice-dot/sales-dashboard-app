@@ -23,6 +23,8 @@ import { SmItemsReportModal } from './SmItemsReportModal'
 import { SmOpenOrdersReportModal } from './SmOpenOrdersReportModal'
 import { SmReceiptsReportModal } from './SmReceiptsReportModal'
 import { SmVsCompanyView } from './SmVsCompanyView'
+import type { OversightLayoutPreference } from '../../../lib/oversightLayouts'
+import { OversightLayoutToggle } from '../OversightLayoutToggle'
 import {
   buildSmDebtRows,
   buildSmOpenOrdersTop10,
@@ -38,6 +40,14 @@ import {
 
 export type SmSuiteViewMode = 'alone' | 'vs'
 
+export interface SalesManagerSuiteProps {
+  /** Shown when user may switch back to classic Oversight. */
+  layoutToggle?: {
+    active: 'classic' | 'suite'
+    onSelect: (preference: OversightLayoutPreference) => void
+  }
+}
+
 /** Stable empty stock map so cube useMemos do not bust when a company has no WMS rows. */
 const EMPTY_STOCK: Record<string, number> = {}
 
@@ -46,7 +56,7 @@ const EMPTY_STOCK: Record<string, number> = {}
  * CORE RULE: Oversight ⊥ Sidebar — never use sidebar filters.
  * CORE RULE: Companies never combined — one company block after another.
  */
-export function SalesManagerSuite() {
+export function SalesManagerSuite({ layoutToggle }: SalesManagerSuiteProps = {}) {
   const { t } = useLocale()
   const { session, isSuperAdmin } = useAuth()
   const { isPreviewing, previewUser } = usePreview()
@@ -300,23 +310,31 @@ export function SalesManagerSuite() {
       <div className="ov-header">
         <div className="ov-header-row">
           <h2>{t('sm.suite.title')}</h2>
-          <div className="sm-mode-toggle" role="group" aria-label={t('sm.mode.label')}>
-            <button
-              type="button"
-              className={viewMode === 'alone' ? 'active' : undefined}
-              aria-pressed={viewMode === 'alone'}
-              onClick={() => setViewMode('alone')}
-            >
-              {t('sm.mode.alone')}
-            </button>
-            <button
-              type="button"
-              className={viewMode === 'vs' ? 'active' : undefined}
-              aria-pressed={viewMode === 'vs'}
-              onClick={() => setViewMode('vs')}
-            >
-              {t('sm.mode.vs')}
-            </button>
+          <div className="ov-header-actions">
+            {layoutToggle ? (
+              <OversightLayoutToggle
+                active={layoutToggle.active}
+                onSelect={layoutToggle.onSelect}
+              />
+            ) : null}
+            <div className="sm-mode-toggle" role="group" aria-label={t('sm.mode.label')}>
+              <button
+                type="button"
+                className={viewMode === 'alone' ? 'active' : undefined}
+                aria-pressed={viewMode === 'alone'}
+                onClick={() => setViewMode('alone')}
+              >
+                {t('sm.mode.alone')}
+              </button>
+              <button
+                type="button"
+                className={viewMode === 'vs' ? 'active' : undefined}
+                aria-pressed={viewMode === 'vs'}
+                onClick={() => setViewMode('vs')}
+              >
+                {t('sm.mode.vs')}
+              </button>
+            </div>
           </div>
         </div>
         <div className="ov-sub">

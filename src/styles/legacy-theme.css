@@ -362,6 +362,13 @@ body {
   margin: 0;
 }
 
+.ov-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .ov-legend-swatches {
   display: flex;
   flex-wrap: wrap;

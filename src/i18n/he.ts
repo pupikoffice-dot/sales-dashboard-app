@@ -281,6 +281,9 @@ export const messages: Record<keyof typeof en, string> = {
   'suiteUi.bestClients.empty': 'אין מכירות ללקוחות החודש בחלון זה.',
 
   'oversite.title': 'לוח מבט על',
+  'oversite.layout.label': 'פריסת מבט־על',
+  'oversite.layout.classic': 'קלאסי',
+  'oversite.layout.salesManager': 'מנהל מכירות',
   'oversite.today': 'היום',
   'oversite.fileUpdated': 'עדכון קובץ',
   'oversite.synced': 'סונכרן',
@@ -377,6 +380,9 @@ export const messages: Record<keyof typeof en, string> = {
   'admin.biModules': 'מודולי BI',
   'admin.biModulesHint':
     'קוביות שמוצגות בתוך חבילת מנהל המכירות למשתמש זה (סופר־אדמין רואה הכל כשלא בתצוגה כמשתמש אחר).',
+  'admin.oversightLayouts': 'פריסות מבט־על',
+  'admin.oversightLayoutsHint':
+    'פריסות אופציונליות שהמשתמש יכול לעבור ביניהן במבט־על. קלאסי הוא ברירת המחדל כששתי האפשרויות זמינות. (הענקת suite במחלקה עדיין מחייבת suite בלבד.)',
   'admin.suiteUiModules': 'מודולי UI לחבילה',
   'admin.suiteUiModulesHint':
     'טבלאות פריטים/לקוחות מובילים בחבילת מנהל המכירות (לפי משתמש; לא מענקי תפקיד).',

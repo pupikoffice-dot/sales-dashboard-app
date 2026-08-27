@@ -15,7 +15,12 @@ import { useBiModulesCatalog } from '../../hooks/useBiModules'
 import { useUiModuleCatalog } from '../../hooks/useUiModules'
 import { fetchUserBiGrants, setUserBiGrants } from '../../lib/biModulesApi'
 import { fetchUserSuiteUiGrants, setUserSuiteUiGrants } from '../../lib/suiteUiModulesApi'
+import {
+  fetchUserOversightLayoutGrants,
+  setUserOversightLayoutGrants,
+} from '../../lib/oversightLayoutsApi'
 import { SUITE_MOUNTABLE_UI_MODULE_IDS } from '../../lib/suiteUiModules'
+import { OVERSIGHT_ALTERNATE_LAYOUT_IDS } from '../../lib/oversightLayouts'
 
 interface UserRow {
   id: string
@@ -447,6 +452,7 @@ function EditAccessModal({
   const [parentId, setParentId] = useState('')
   const [biModuleIds, setBiModuleIds] = useState<string[]>([])
   const [suiteUiModuleIds, setSuiteUiModuleIds] = useState<string[]>([])
+  const [oversightLayoutIds, setOversightLayoutIds] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { t } = useLocale()
@@ -455,6 +461,11 @@ function EditAccessModal({
   const { data: uiCatalog = [] } = useUiModuleCatalog()
   const activeSuiteUiModules = uiCatalog.filter(
     m => m.active && SUITE_MOUNTABLE_UI_MODULE_IDS.includes(m.id as (typeof SUITE_MOUNTABLE_UI_MODULE_IDS)[number]),
+  )
+  const activeOversightLayouts = uiCatalog.filter(
+    m =>
+      m.active &&
+      OVERSIGHT_ALTERNATE_LAYOUT_IDS.includes(m.id as (typeof OVERSIGHT_ALTERNATE_LAYOUT_IDS)[number]),
   )
 
   const profile = users.find(u => u.id === userId)
@@ -489,6 +500,9 @@ function EditAccessModal({
     fetchUserSuiteUiGrants(userId)
       .then(ids => setSuiteUiModuleIds(ids))
       .catch(() => setSuiteUiModuleIds([]))
+    fetchUserOversightLayoutGrants(userId)
+      .then(ids => setOversightLayoutIds(ids))
+      .catch(() => setOversightLayoutIds([]))
     const p = users.find(u => u.id === userId)
     if (p) {
       setAgentErpId(p.agent_erp_id ?? '')
@@ -514,6 +528,10 @@ function EditAccessModal({
 
   function toggleSuiteUiModule(id: string) {
     setSuiteUiModuleIds(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]))
+  }
+
+  function toggleOversightLayout(id: string) {
+    setOversightLayoutIds(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]))
   }
 
   async function save() {
@@ -560,6 +578,7 @@ function EditAccessModal({
     try {
       await setUserBiGrants(userId, biModuleIds)
       await setUserSuiteUiGrants(userId, suiteUiModuleIds)
+      await setUserOversightLayoutGrants(userId, oversightLayoutIds)
     } catch (e) {
       setSaving(false)
       setError(e instanceof Error ? e.message : String(e))
@@ -647,6 +666,25 @@ function EditAccessModal({
                 </div>
               </div>
             )}
+
+            <div>
+              <div className="admin-form-section-title">{t('admin.oversightLayouts')}</div>
+              <p className="ov-sub" style={{ margin: '0 0 6px', fontSize: '.72rem' }}>
+                {t('admin.oversightLayoutsHint')}
+              </p>
+              <div className="admin-form-checklist">
+                {activeOversightLayouts.map(m => (
+                  <label key={m.id} className="admin-form-check">
+                    <input
+                      type="checkbox"
+                      checked={oversightLayoutIds.includes(m.id)}
+                      onChange={() => toggleOversightLayout(m.id)}
+                    />
+                    {m.label}
+                  </label>
+                ))}
+              </div>
+            </div>
 
             <div>
               <div className="admin-form-section-title">{t('admin.biModules')}</div>
