@@ -5,8 +5,10 @@ import { OversiteOrdersReportButton } from '../OversiteOrdersReportButton'
 import { OversiteReceipts } from '../OversiteReceipts'
 import type { LogicalCompany } from '../../../types/dashboard'
 import type { SmOrdersReportTarget } from './SmCubeGrid'
+import type { SmTsometOpenBudgetKpiProps } from './SmCubeGrid'
 import type { SmVsCompanySeries } from './smMetrics'
 import { SmVsPivotChart } from './SmVsPivotChart'
+import { SmTsometOpenBudgetCube } from './SmTsometOpenBudgetCube'
 
 export interface SmVsCompanyViewProps {
   series: SmVsCompanySeries
@@ -17,6 +19,7 @@ export interface SmVsCompanyViewProps {
   onOpenOpenOrdersReport?: () => void
   onOpenReturnsReport?: () => void
   onOpenReceiptsReport?: () => void
+  tsometOpenBudget?: SmTsometOpenBudgetKpiProps | null
   biBlock?: ReactNode
 }
 
@@ -30,6 +33,7 @@ export function SmVsCompanyView({
   onOpenOpenOrdersReport,
   onOpenReturnsReport,
   onOpenReceiptsReport,
+  tsometOpenBudget,
   biBlock,
 }: SmVsCompanyViewProps) {
   const { t } = useLocale()
@@ -79,9 +83,11 @@ export function SmVsCompanyView({
     return <p className="ov-empty">{t('sm.vs.noAgents')}</p>
   }
 
+  const showTsomet = tsometOpenBudget != null
+
   return (
     <div className="sm-vs-company">
-    <div className="sm-vs-grid">
+    <div className={`sm-vs-grid${showTsomet ? ' sm-vs-grid--tsomet' : ''}`}>
       <div className="sm-cube sm-cube--vs-mtd">
         <div className="sm-cube-title">{t('sm.cube.salesMtdGoal', { month: monthLbl })}</div>
         <SmVsPivotChart
@@ -104,6 +110,15 @@ export function SmVsCompanyView({
           </button>
         ) : null}
       </div>
+
+      {showTsomet ? (
+        <SmTsometOpenBudgetCube
+          openBudget={tsometOpenBudget.openBudget}
+          budgetCash={tsometOpenBudget.budgetCash}
+          isLoading={tsometOpenBudget.isLoading}
+          variant="vs"
+        />
+      ) : null}
 
       <div className="sm-cube sm-cube--vs-returns">
         <div className="sm-cube-title">{t('sm.cube.returns')}</div>

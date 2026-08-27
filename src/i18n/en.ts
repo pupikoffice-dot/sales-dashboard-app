@@ -226,6 +226,7 @@ export const messages = {
   'sm.cube.salesMtdGoal': 'Sales MTD + Goal — {month}',
   'sm.cube.goal': 'Goal',
   'sm.cube.openOrders': 'Open orders',
+  'sm.cube.tsometOpenBudget': 'Open budget left',
   'sm.cube.returns': 'Returns',
   'sm.cube.openDebt': 'Open debt',
   'sm.cube.receipts': 'Receipts',

@@ -228,6 +228,7 @@ export const messages: Record<keyof typeof en, string> = {
   'sm.cube.salesMtdGoal': 'מכירות חודש + יעד — {month}',
   'sm.cube.goal': 'יעד',
   'sm.cube.openOrders': 'הזמנות פתוחות',
+  'sm.cube.tsometOpenBudget': 'תקציב פתוח',
   'sm.cube.returns': 'החזרות',
   'sm.cube.openDebt': 'חוב פתוח',
   'sm.cube.receipts': 'תקבולים',

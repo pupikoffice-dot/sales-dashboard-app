@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildTsometBudgetRows, isOpenBudgetLow, sumTsometBudgetRows } from './tsometBudget'
+import { buildTsometBudgetRows, computeTsometOpenBudgetTotals, isOpenBudgetLow, sumTsometBudgetRows } from './tsometBudget'
 import type { SalesRow } from '../types/dashboard'
 
 const budget = [
@@ -96,5 +96,19 @@ describe('sumTsometBudgetRows', () => {
     const totals = sumTsometBudgetRows(rows)
     expect(totals.budgetCash).toBe(1500)
     expect(totals.openBudget).toBe(1500)
+  })
+})
+
+describe('computeTsometOpenBudgetTotals', () => {
+  it('matches build + sum for agent scope', () => {
+    const totals = computeTsometOpenBudgetTotals({
+      budget,
+      sales,
+      ordersMtdRows: [order('5001', 100)],
+      agents: ['24'],
+    })
+    expect(totals.budgetCash).toBe(1000)
+    expect(totals.ordersMtdCash).toBe(100)
+    expect(totals.openBudget).toBe(900)
   })
 })

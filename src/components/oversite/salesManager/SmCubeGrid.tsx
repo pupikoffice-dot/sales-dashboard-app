@@ -6,6 +6,15 @@ import { OversiteOrdersLast7Days } from '../OversiteOrdersLast7Days'
 import { OversiteOrdersReportButton } from '../OversiteOrdersReportButton'
 import { OversiteReceipts } from '../OversiteReceipts'
 import type { SmSuiteKpis } from './smMetrics'
+import {
+  SmTsometOpenBudgetCube,
+  type SmTsometOpenBudgetCubeProps,
+} from './SmTsometOpenBudgetCube'
+
+export type SmTsometOpenBudgetKpiProps = Pick<
+  SmTsometOpenBudgetCubeProps,
+  'openBudget' | 'budgetCash' | 'isLoading'
+>
 
 export interface SmOrdersReportTarget {
   id: LogicalCompany
@@ -28,6 +37,8 @@ export interface SmCubeGridProps {
   onOpenOpenOrdersReport?: () => void
   onOpenReturnsReport?: () => void
   onOpenReceiptsReport?: () => void
+  /** Monkeytime Tsomet — total open budget for this agent window. */
+  tsometOpenBudget?: SmTsometOpenBudgetKpiProps | null
   /** Compact BI tables nest under the 7-day orders chart. */
   biSlot?: ReactNode
 }
@@ -42,6 +53,7 @@ export function SmCubeGrid({
   onOpenOpenOrdersReport,
   onOpenReturnsReport,
   onOpenReceiptsReport,
+  tsometOpenBudget,
   biSlot,
 }: SmCubeGridProps) {
   const { t } = useLocale()
@@ -57,8 +69,10 @@ export function SmCubeGrid({
     goalCash != null && goalCash > 0 ? Math.max(0, goalCash - salesMtd.cash) : null
   const overGoal = goalCash != null && goalCash > 0 && salesMtd.cash > goalCash
 
+  const showTsomet = tsometOpenBudget != null
+
   return (
-    <div className="sm-cube-grid">
+    <div className={`sm-cube-grid${showTsomet ? ' sm-cube-grid--tsomet' : ''}`}>
       <div className="sm-cube sm-cube--mtd">
         <div className="sm-cube-title">{t('sm.cube.salesMtdGoal', { month: monthLbl })}</div>
         <div className="sm-cube-val grn">{fmt(salesMtd.cash)}</div>
@@ -115,6 +129,14 @@ export function SmCubeGrid({
           </button>
         ) : null}
       </div>
+
+      {showTsomet ? (
+        <SmTsometOpenBudgetCube
+          openBudget={tsometOpenBudget.openBudget}
+          budgetCash={tsometOpenBudget.budgetCash}
+          isLoading={tsometOpenBudget.isLoading}
+        />
+      ) : null}
 
       <div className="sm-cube sm-cube--returns">
         <div className="sm-cube-title">{t('sm.cube.returns')}</div>

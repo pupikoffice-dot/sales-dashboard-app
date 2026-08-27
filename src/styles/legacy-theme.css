@@ -3523,8 +3523,16 @@ html[dir='rtl'] .hdr-brand,
     'debt orders7 orders7 receipts';
 }
 
+.sm-vs-grid--tsomet {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-areas:
+    'mtd mtd open tsomet returns'
+    'debt orders7 orders7 orders7 receipts';
+}
+
 .sm-cube--vs-mtd { grid-area: mtd; }
 .sm-cube--vs-open { grid-area: open; }
+.sm-cube--vs-tsomet { grid-area: tsomet; }
 .sm-cube--vs-returns { grid-area: returns; }
 .sm-cube--vs-debt { grid-area: debt; }
 .sm-cube--vs-orders7 { grid-area: orders7; }
@@ -3632,6 +3640,15 @@ html[dir='rtl'] .hdr-brand,
       'orders7 orders7'
       'receipts receipts';
   }
+
+  .sm-vs-grid--tsomet {
+    grid-template-areas:
+      'mtd mtd'
+      'open tsomet'
+      'returns debt'
+      'orders7 orders7'
+      'receipts receipts';
+  }
 }
 
 .sm-suite-companies {
@@ -3731,6 +3748,13 @@ html[dir='rtl'] .hdr-brand,
   align-items: stretch;
 }
 
+.sm-cube-grid--tsomet {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-areas:
+    'mtd open tsomet returns debt'
+    'orders orders orders orders receipts';
+}
+
 .sm-cube {
   background: rgba(19, 27, 46, 0.55);
   border: 1px solid var(--bdr);
@@ -3746,6 +3770,9 @@ html[dir='rtl'] .hdr-brand,
 }
 .sm-cube--open {
   grid-area: open;
+}
+.sm-cube--tsomet {
+  grid-area: tsomet;
 }
 .sm-cube--returns {
   grid-area: returns;
@@ -4322,6 +4349,15 @@ html[dir='rtl'] .hdr-brand,
       'receipts receipts';
   }
 
+  .sm-cube-grid--tsomet {
+    grid-template-areas:
+      'mtd open'
+      'tsomet returns'
+      'debt debt'
+      'orders orders'
+      'receipts receipts';
+  }
+
   .sm-cube--orders,
   .sm-cube--receipts {
     min-height: 0;
@@ -4342,6 +4378,17 @@ html[dir='rtl'] .hdr-brand,
     grid-template-areas:
       'mtd'
       'open'
+      'returns'
+      'debt'
+      'orders'
+      'receipts';
+  }
+
+  .sm-cube-grid--tsomet {
+    grid-template-areas:
+      'mtd'
+      'open'
+      'tsomet'
       'returns'
       'debt'
       'orders'

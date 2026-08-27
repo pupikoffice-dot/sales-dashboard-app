@@ -121,6 +121,11 @@ export function sumTsometBudgetRows(rows: TsometBudgetRow[]): TsometBudgetTotals
   )
 }
 
+/** Agent-scoped Tsomet open-budget aggregate for KPI cubes. */
+export function computeTsometOpenBudgetTotals(args: BuildTsometBudgetRowsArgs): TsometBudgetTotals {
+  return sumTsometBudgetRows(buildTsometBudgetRows(args).rows)
+}
+
 /** Open budget under 20% of store budget → warn (red). */
 export function isOpenBudgetLow(row: Pick<TsometBudgetRow, 'budgetCash' | 'openBudget'>): boolean {
   if (!(row.budgetCash > 0)) return false

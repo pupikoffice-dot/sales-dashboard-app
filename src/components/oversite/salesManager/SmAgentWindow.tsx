@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import type { LogicalCompany } from '../../../types/dashboard'
-import { SmCubeGrid, type SmOrdersReportTarget } from './SmCubeGrid'
+import { SmCubeGrid, type SmOrdersReportTarget, type SmTsometOpenBudgetKpiProps } from './SmCubeGrid'
 import type { SmSuiteKpis } from './smMetrics'
 
 /** Soft window tint slots — matches stacked-chart agent palette (c0–c5). */
@@ -27,6 +27,7 @@ export interface SmAgentWindowProps {
   onOpenOpenOrdersReport?: () => void
   onOpenReturnsReport?: () => void
   onOpenReceiptsReport?: () => void
+  tsometOpenBudget?: SmTsometOpenBudgetKpiProps | null
   /** Compact BI tables nest under the 7-day orders chart. */
   biBlock?: ReactNode
 }
@@ -43,6 +44,7 @@ export function SmAgentWindow({
   onOpenOpenOrdersReport,
   onOpenReturnsReport,
   onOpenReceiptsReport,
+  tsometOpenBudget,
   biBlock,
 }: SmAgentWindowProps) {
   return (
@@ -58,6 +60,7 @@ export function SmAgentWindow({
         onOpenOpenOrdersReport={onOpenOpenOrdersReport}
         onOpenReturnsReport={onOpenReturnsReport}
         onOpenReceiptsReport={onOpenReceiptsReport}
+        tsometOpenBudget={tsometOpenBudget}
         biSlot={biBlock}
       />
     </section>
