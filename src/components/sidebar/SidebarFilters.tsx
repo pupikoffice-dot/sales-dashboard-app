@@ -20,7 +20,7 @@ const COMPANY_BUTTONS: { id: LogicalCompany; label: string }[] = [
   { id: 'pupik', label: '🏢 Pupik' },
   { id: 'mt', label: '🐒 Monkeytime' },
   { id: 'grow', label: '🌱 Grow' },
-  { id: 'gold', label: '🥇 Gold' },
+  { id: 'gold', label: '🥇 Goldbug' },
 ]
 
 const DATE_TAB_KEYS: { id: DateMode; key: 'filters.fromTo' | 'filters.months' | 'filters.openOrders' | 'filters.stock' }[] = [

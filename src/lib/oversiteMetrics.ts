@@ -42,6 +42,15 @@ export const OVERSITE_COMPANIES: OversiteCompanyDef[] = [
     label: '🐒 Monkeytime',
     accentColor: COMPANY_ACCENT.mt,
   },
+  {
+    id: 'gold',
+    ordersTag: 'orders-gold',
+    openOrdersTag: 'openorders-gold',
+    delivery720Tag: 'delivery720-gold',
+    returnsTag: 'returns-gold',
+    label: '🥇 Goldbug',
+    accentColor: COMPANY_ACCENT.gold,
+  },
 ]
 
 export interface RowTotals {

@@ -16,6 +16,7 @@ export function effectiveCompany(
   if (dateMode !== 'openorders') return company
   if (company === 'mt') return 'openorders-mt'
   if (company === 'grow') return 'openorders-grow'
+  if (company === 'gold') return 'openorders-gold'
   return 'openorders'
 }
 

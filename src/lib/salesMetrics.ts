@@ -15,6 +15,7 @@ export function companyLabel(co: LogicalCompany): string {
   if (co === 'pupik') return 'Pupik'
   if (co === 'mt') return 'Monkeytime'
   if (co === 'grow') return 'Grow'
+  if (co === 'gold') return 'Goldbug'
   return co
 }
 

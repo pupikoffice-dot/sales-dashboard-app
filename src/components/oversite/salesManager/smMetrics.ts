@@ -79,7 +79,7 @@ const COMPANY_REPORT_LABELS: Record<LogicalCompany, string> = {
   pupik: '🏢 Pupik',
   mt: '🐒 Monkeytime',
   grow: '🌱 Grow',
-  gold: '🥇 Gold',
+  gold: '🥇 Goldbug',
 }
 
 export function smCompanyLabel(id: LogicalCompany): string {
