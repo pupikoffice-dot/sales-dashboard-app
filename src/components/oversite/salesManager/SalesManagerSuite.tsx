@@ -131,20 +131,21 @@ export function SalesManagerSuite({ variant = 'manager' }: SalesManagerSuiteProp
     agents: string[] | null
   } | null>(null)
 
-  /** Class agent grant; empty/null = all agents present under access companies. Agent suite caps at one. */
+  /** Class/user agent grant; empty/null = all agents (manager only). Agent suite uses user-level agents only. */
   const scopedAgents = useMemo(() => {
-    let ids: string[]
     if (Array.isArray(access?.agents) && access.agents.length > 0) {
-      ids = sortAgentIds(access.agents.map(String))
-    } else {
-      const found = new Set<string>()
-      for (const r of rows) {
-        const a = r.agent != null ? String(r.agent).trim() : ''
-        if (a) found.add(a)
-      }
-      ids = sortAgentIds([...found])
+      return sortAgentIds(access.agents.map(String))
     }
-    return isAgentSuite ? ids.slice(0, 1) : ids
+    if (isAgentSuite) {
+      // Sales Agent: never infer agents from row data — each user's agent is set on Admin → Users.
+      return []
+    }
+    const found = new Set<string>()
+    for (const r of rows) {
+      const a = r.agent != null ? String(r.agent).trim() : ''
+      if (a) found.add(a)
+    }
+    return sortAgentIds([...found])
   }, [access?.agents, rows, isAgentSuite])
 
   const allGoal = useMemo(
@@ -359,50 +360,53 @@ export function SalesManagerSuite({ variant = 'manager' }: SalesManagerSuiteProp
           {companyBlocks.map(
             ({ company, label, reportCos, allKpis, agentWindows, vsSeries, stockBySku }) => {
               const allTitle = t('sm.window.allAgents')
-              const singleAgent = isAgentSuite ? agentWindows[0] : null
               return (
                 <section key={company} className="sm-company-block">
                   <h3 className="sm-company-title">{label}</h3>
-                  {isAgentSuite && singleAgent ? (
+                  {isAgentSuite ? (
                     <div className="sm-suite-windows">
-                      <SmAgentWindow
-                        title={t('sm.window.agent', { agent: singleAgent.agentId })}
-                        kpis={singleAgent.kpis}
-                        goalCash={singleAgent.goalCash}
-                        monthLbl={dateCtx.monthLbl}
-                        agentId={singleAgent.agentId}
-                        ordersReportCompanies={reportCos}
-                        onOpenOrdersReport={companyId =>
-                          openOrdersReport(companyId, [singleAgent.agentId])
-                        }
-                        onOpenDebtReport={() =>
-                          openDebtReport(company, [singleAgent.agentId], `${label} — ${t('sm.window.agent', { agent: singleAgent.agentId })}`)
-                        }
-                        onOpenOpenOrdersReport={() =>
-                          openOpenOrdersItems(company, [singleAgent.agentId], `${label} — ${t('sm.window.agent', { agent: singleAgent.agentId })}`)
-                        }
-                        onOpenReturnsReport={() =>
-                          openReturnsItems(company, [singleAgent.agentId], `${label} — ${t('sm.window.agent', { agent: singleAgent.agentId })}`)
-                        }
-                        onOpenReceiptsReport={() =>
-                          openReceiptsReport(company, [singleAgent.agentId], `${label} — ${t('sm.window.agent', { agent: singleAgent.agentId })}`)
-                        }
-                        biBlock={
-                          <SuiteExtrasBlock
-                            biVisibleIds={visibleBiIds}
-                            suiteUiVisibleIds={visibleSuiteUiIds}
-                            mode="agent"
-                            agentId={singleAgent.agentId}
-                            company={company}
-                            rows={rows}
-                            stockBySku={stockBySku}
-                            habit={habit}
-                            suiteAgents={scopedAgents}
-                            curYear={dateCtx.curYear}
-                            curMonth={dateCtx.curMonth}
+                      {agentWindows.map(({ agentId, kpis, goalCash }) => {
+                        const winTitle = t('sm.window.agent', { agent: agentId })
+                        return (
+                          <SmAgentWindow
+                            key={`${company}-${agentId}`}
+                            title={winTitle}
+                            kpis={kpis}
+                            goalCash={goalCash}
+                            monthLbl={dateCtx.monthLbl}
+                            agentId={agentId}
+                            ordersReportCompanies={reportCos}
+                            onOpenOrdersReport={companyId => openOrdersReport(companyId, [agentId])}
+                            onOpenDebtReport={() =>
+                              openDebtReport(company, [agentId], `${label} — ${winTitle}`)
+                            }
+                            onOpenOpenOrdersReport={() =>
+                              openOpenOrdersItems(company, [agentId], `${label} — ${winTitle}`)
+                            }
+                            onOpenReturnsReport={() =>
+                              openReturnsItems(company, [agentId], `${label} — ${winTitle}`)
+                            }
+                            onOpenReceiptsReport={() =>
+                              openReceiptsReport(company, [agentId], `${label} — ${winTitle}`)
+                            }
+                            biBlock={
+                              <SuiteExtrasBlock
+                                biVisibleIds={visibleBiIds}
+                                suiteUiVisibleIds={visibleSuiteUiIds}
+                                mode="agent"
+                                agentId={agentId}
+                                company={company}
+                                rows={rows}
+                                stockBySku={stockBySku}
+                                habit={habit}
+                                suiteAgents={scopedAgents}
+                                curYear={dateCtx.curYear}
+                                curMonth={dateCtx.curMonth}
+                              />
+                            }
                           />
-                        }
-                      />
+                        )
+                      })}
                     </div>
                   ) : viewMode === 'vs' && vsSeries ? (
                     <SmVsCompanyView

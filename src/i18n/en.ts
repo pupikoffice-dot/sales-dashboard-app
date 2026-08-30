@@ -219,7 +219,7 @@ export const messages = {
 
   'sm.suite.title': 'Sales Manager',
   'sa.suite.title': 'Sales Agent',
-  'sa.noAgent': 'No agent assigned to your account.',
+  'sa.noAgent': 'No agent assigned to your account. Ask an admin to set your agent number under Admin → Users.',
   'sm.mode.alone': 'Alone',
   'sm.mode.vs': 'Vs',
   'sm.mode.label': 'View mode',

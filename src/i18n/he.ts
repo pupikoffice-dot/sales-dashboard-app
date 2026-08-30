@@ -221,7 +221,7 @@ export const messages: Record<keyof typeof en, string> = {
 
   'sm.suite.title': 'מנהל מכירות',
   'sa.suite.title': 'סוכן מכירות',
-  'sa.noAgent': 'לא הוקצה סוכן לחשבון שלך.',
+  'sa.noAgent': 'לא הוקצה סוכן לחשבון שלך. בקש מהמנהל להגדיר מספר סוכן תחת Admin → Users.',
   'sm.mode.alone': 'Alone',
   'sm.mode.vs': 'Vs',
   'sm.mode.label': 'מצב תצוגה',
