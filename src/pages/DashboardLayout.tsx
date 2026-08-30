@@ -16,6 +16,8 @@ import { MODULE_REGISTRY } from '../modules/registry'
 import { useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { formatHeaderVersionBadge } from '../lib/appChannel'
+import { useResolvedOversightMode } from '../hooks/useResolvedOversightMode'
+import { shouldHideNavForSalesAgentSuite } from '../lib/salesAgentNav'
 
 async function fetchActiveAppVersion(): Promise<string> {
   const { data, error } = await supabase
@@ -31,8 +33,8 @@ export function DashboardLayout() {
   // `isSuperAdmin` here is the REAL flag: it keeps the Admin section reachable
   // while previewing, so the admin can walk between the settings editor and the
   // preview without exiting. Everything else gates on the effective flag.
-  const { signOut, isSuperAdmin } = useAuth()
-  const { isPreviewing, effectiveIsSuperAdmin } = usePreview()
+  const { signOut, isSuperAdmin, session } = useAuth()
+  const { isPreviewing, previewUser, effectiveIsSuperAdmin } = usePreview()
   const { access, loading } = useDashboardAccess()
   const { isRendering, showOversiteDashboard } = useDashboardFilters()
   const { locale, setLocale, t, dir } = useLocale()
@@ -40,7 +42,28 @@ export function DashboardLayout() {
   const { allRows, debtRows, isLoading: dataLoading, dataHealth } = useDashboardData()
   const queryClient = useQueryClient()
   const location = useLocation()
-  const showFilters = !location.pathname.startsWith('/admin')
+  const oversightMode = useResolvedOversightMode()
+  const { data: selfRole } = useQuery({
+    queryKey: ['user-profile-role', session?.user.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('role')
+        .eq('id', session!.user.id)
+        .maybeSingle()
+      if (error) throw error
+      return (data?.role as string | undefined) ?? 'agent'
+    },
+    enabled: !!session?.user.id && !isPreviewing,
+    staleTime: 5 * 60_000,
+  })
+  const effectiveRole = isPreviewing && previewUser ? previewUser.role : selfRole
+  const hideNavigation = shouldHideNavForSalesAgentSuite({
+    isRealSuperAdmin: isSuperAdmin,
+    role: effectiveRole,
+    oversightMode,
+  })
+  const showFilters = !location.pathname.startsWith('/admin') && !hideNavigation
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { data: liveActiveVersion = '1.0' } = useQuery({
     queryKey: ['app-active-version'],
@@ -164,15 +187,17 @@ export function DashboardLayout() {
     <>
       <PreviewBanner />
       <header className={`dashboard-header${isRtl ? ' is-rtl' : ''}`}>
-        <button
-          type="button"
-          className="mobile-menu-btn"
-          aria-label={sidebarOpen ? t('common.closeMenu') : t('common.openMenu')}
-          aria-expanded={sidebarOpen}
-          onClick={() => setSidebarOpen(open => !open)}
-        >
-          {sidebarOpen ? '✕' : '☰'}
-        </button>
+        {!hideNavigation && (
+          <button
+            type="button"
+            className="mobile-menu-btn"
+            aria-label={sidebarOpen ? t('common.closeMenu') : t('common.openMenu')}
+            aria-expanded={sidebarOpen}
+            onClick={() => setSidebarOpen(open => !open)}
+          >
+            {sidebarOpen ? '✕' : '☰'}
+          </button>
+        )}
         <div className="hdr-brand">
           <h1>
             {t('header.title')}
@@ -227,8 +252,10 @@ export function DashboardLayout() {
         </div>
       </header>
 
-      <div className={`dashboard-shell${isRtl ? ' is-rtl' : ''}`}>
-        {sidebarOpen && (
+      <div
+        className={`dashboard-shell${isRtl ? ' is-rtl' : ''}${hideNavigation ? ' dashboard-shell--no-nav' : ''}`}
+      >
+        {!hideNavigation && sidebarOpen && (
           <button
             type="button"
             className="sidebar-backdrop"
@@ -239,11 +266,11 @@ export function DashboardLayout() {
         {isRtl ? (
           <>
             {main}
-            {sidebar}
+            {!hideNavigation && sidebar}
           </>
         ) : (
           <>
-            {sidebar}
+            {!hideNavigation && sidebar}
             {main}
           </>
         )}
