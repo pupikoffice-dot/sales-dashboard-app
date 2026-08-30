@@ -218,6 +218,8 @@ export const messages = {
   'sales.periodStock': 'Stock',
 
   'sm.suite.title': 'Sales Manager',
+  'sa.suite.title': 'Sales Agent',
+  'sa.noAgent': 'No agent assigned to your account.',
   'sm.mode.alone': 'Alone',
   'sm.mode.vs': 'Vs',
   'sm.mode.label': 'View mode',

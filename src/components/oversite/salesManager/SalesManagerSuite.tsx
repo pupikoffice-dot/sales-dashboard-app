@@ -37,16 +37,24 @@ import {
 } from './smMetrics'
 
 export type SmSuiteViewMode = 'alone' | 'vs'
+export type SmSuiteVariant = 'manager' | 'agent'
+
+export interface SalesManagerSuiteProps {
+  /** manager = full Sales Manager (Alone/Vs, all agents). agent = single-agent view. */
+  variant?: SmSuiteVariant
+}
 
 /** Stable empty stock map so cube useMemos do not bust when a company has no WMS rows. */
 const EMPTY_STOCK: Record<string, number> = {}
 
 /**
  * Sales Manager Oversight suite — company blocks; Alone or Vs mode.
+ * Sales Agent variant: one agent window only, no Alone/Vs toggle.
  * CORE RULE: Oversight ⊥ Sidebar — never use sidebar filters.
  * CORE RULE: Companies never combined — one company block after another.
  */
-export function SalesManagerSuite() {
+export function SalesManagerSuite({ variant = 'manager' }: SalesManagerSuiteProps) {
+  const isAgentSuite = variant === 'agent'
   const { t } = useLocale()
   const { session, isSuperAdmin } = useAuth()
   const { isPreviewing, previewUser } = usePreview()
@@ -123,18 +131,21 @@ export function SalesManagerSuite() {
     agents: string[] | null
   } | null>(null)
 
-  /** Class agent grant; empty/null = all agents present under access companies. */
+  /** Class agent grant; empty/null = all agents present under access companies. Agent suite caps at one. */
   const scopedAgents = useMemo(() => {
+    let ids: string[]
     if (Array.isArray(access?.agents) && access.agents.length > 0) {
-      return sortAgentIds(access.agents.map(String))
+      ids = sortAgentIds(access.agents.map(String))
+    } else {
+      const found = new Set<string>()
+      for (const r of rows) {
+        const a = r.agent != null ? String(r.agent).trim() : ''
+        if (a) found.add(a)
+      }
+      ids = sortAgentIds([...found])
     }
-    const found = new Set<string>()
-    for (const r of rows) {
-      const a = r.agent != null ? String(r.agent).trim() : ''
-      if (a) found.add(a)
-    }
-    return sortAgentIds([...found])
-  }, [access?.agents, rows])
+    return isAgentSuite ? ids.slice(0, 1) : ids
+  }, [access?.agents, rows, isAgentSuite])
 
   const allGoal = useMemo(
     () => (goalsReady ? sumGoals(scopedAgents, targets) : null),
@@ -299,25 +310,27 @@ export function SalesManagerSuite() {
     <div className="sm-suite">
       <div className="ov-header">
         <div className="ov-header-row">
-          <h2>{t('sm.suite.title')}</h2>
-          <div className="sm-mode-toggle" role="group" aria-label={t('sm.mode.label')}>
-            <button
-              type="button"
-              className={viewMode === 'alone' ? 'active' : undefined}
-              aria-pressed={viewMode === 'alone'}
-              onClick={() => setViewMode('alone')}
-            >
-              {t('sm.mode.alone')}
-            </button>
-            <button
-              type="button"
-              className={viewMode === 'vs' ? 'active' : undefined}
-              aria-pressed={viewMode === 'vs'}
-              onClick={() => setViewMode('vs')}
-            >
-              {t('sm.mode.vs')}
-            </button>
-          </div>
+          <h2>{t(isAgentSuite ? 'sa.suite.title' : 'sm.suite.title')}</h2>
+          {!isAgentSuite ? (
+            <div className="sm-mode-toggle" role="group" aria-label={t('sm.mode.label')}>
+              <button
+                type="button"
+                className={viewMode === 'alone' ? 'active' : undefined}
+                aria-pressed={viewMode === 'alone'}
+                onClick={() => setViewMode('alone')}
+              >
+                {t('sm.mode.alone')}
+              </button>
+              <button
+                type="button"
+                className={viewMode === 'vs' ? 'active' : undefined}
+                aria-pressed={viewMode === 'vs'}
+                onClick={() => setViewMode('vs')}
+              >
+                {t('sm.mode.vs')}
+              </button>
+            </div>
+          ) : null}
         </div>
         <div className="ov-sub">
           {t('oversite.today')}: <b>{dateCtx.todayDisp}</b>
@@ -339,15 +352,59 @@ export function SalesManagerSuite() {
 
       {companies.length === 0 ? (
         <p className="ov-empty">{t('oversite.noCompanies')}</p>
+      ) : isAgentSuite && scopedAgents.length === 0 ? (
+        <p className="ov-empty">{t('sa.noAgent')}</p>
       ) : (
         <div className="sm-suite-companies">
           {companyBlocks.map(
             ({ company, label, reportCos, allKpis, agentWindows, vsSeries, stockBySku }) => {
               const allTitle = t('sm.window.allAgents')
+              const singleAgent = isAgentSuite ? agentWindows[0] : null
               return (
                 <section key={company} className="sm-company-block">
                   <h3 className="sm-company-title">{label}</h3>
-                  {viewMode === 'vs' && vsSeries ? (
+                  {isAgentSuite && singleAgent ? (
+                    <div className="sm-suite-windows">
+                      <SmAgentWindow
+                        title={t('sm.window.agent', { agent: singleAgent.agentId })}
+                        kpis={singleAgent.kpis}
+                        goalCash={singleAgent.goalCash}
+                        monthLbl={dateCtx.monthLbl}
+                        agentId={singleAgent.agentId}
+                        ordersReportCompanies={reportCos}
+                        onOpenOrdersReport={companyId =>
+                          openOrdersReport(companyId, [singleAgent.agentId])
+                        }
+                        onOpenDebtReport={() =>
+                          openDebtReport(company, [singleAgent.agentId], `${label} — ${t('sm.window.agent', { agent: singleAgent.agentId })}`)
+                        }
+                        onOpenOpenOrdersReport={() =>
+                          openOpenOrdersItems(company, [singleAgent.agentId], `${label} — ${t('sm.window.agent', { agent: singleAgent.agentId })}`)
+                        }
+                        onOpenReturnsReport={() =>
+                          openReturnsItems(company, [singleAgent.agentId], `${label} — ${t('sm.window.agent', { agent: singleAgent.agentId })}`)
+                        }
+                        onOpenReceiptsReport={() =>
+                          openReceiptsReport(company, [singleAgent.agentId], `${label} — ${t('sm.window.agent', { agent: singleAgent.agentId })}`)
+                        }
+                        biBlock={
+                          <SuiteExtrasBlock
+                            biVisibleIds={visibleBiIds}
+                            suiteUiVisibleIds={visibleSuiteUiIds}
+                            mode="agent"
+                            agentId={singleAgent.agentId}
+                            company={company}
+                            rows={rows}
+                            stockBySku={stockBySku}
+                            habit={habit}
+                            suiteAgents={scopedAgents}
+                            curYear={dateCtx.curYear}
+                            curMonth={dateCtx.curMonth}
+                          />
+                        }
+                      />
+                    </div>
+                  ) : viewMode === 'vs' && vsSeries ? (
                     <SmVsCompanyView
                       series={vsSeries}
                       monthLbl={dateCtx.monthLbl}

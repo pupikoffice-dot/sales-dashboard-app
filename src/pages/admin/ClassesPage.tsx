@@ -16,6 +16,15 @@ function itemKeyOf(kind: string, key: string, value: string | null) {
 }
 
 const MULTI_SUITE_ERROR = 'A class can have at most one Oversight suite.'
+const SALES_AGENT_SUITE_KEY = 'node:ui.oversight.suite.sales_agent:'
+const SALES_AGENT_AGENT_ERROR =
+  'Sales Agent class must grant exactly one agent (not All agents).'
+
+function countSpecificAgentGrants(desired: Set<string>): number {
+  return [...desired].filter(
+    k => k.startsWith('scope:agent:') && k !== ALL_AGENTS_ITEM_KEY,
+  ).length
+}
 
 export function ClassesPage() {
   const qc = useQueryClient()
@@ -100,6 +109,13 @@ export function ClassesPage() {
     const desired = normalizeClassAgentScope(desiredChecked)
     if (countOversightSuiteItemKeys(desired) > 1) {
       setValidationError(MULTI_SUITE_ERROR)
+      return
+    }
+    if (
+      desired.has(SALES_AGENT_SUITE_KEY) &&
+      (desired.has(ALL_AGENTS_ITEM_KEY) || countSpecificAgentGrants(desired) !== 1)
+    ) {
+      setValidationError(SALES_AGENT_AGENT_ERROR)
       return
     }
     setValidationError(null)

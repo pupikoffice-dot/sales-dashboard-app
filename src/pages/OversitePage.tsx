@@ -4,6 +4,7 @@ import { useLocale } from '../context/LocaleContext'
 import { useDashboardAccess } from '../context/DashboardAccessContext'
 import { useDashboardData } from '../hooks/useDashboardData'
 import { useResolvedOversightMode } from '../hooks/useResolvedOversightMode'
+import { SalesAgentSuite } from '../components/oversite/salesManager/SalesAgentSuite'
 import { SalesManagerSuite } from '../components/oversite/salesManager/SalesManagerSuite'
 import { computeDebtAgentMatrix, computeDebtSummary, debtRowsForCompany } from '../lib/debtMetrics'
 import { fmt, formatGeneratedDisplay } from '../lib/format'
@@ -63,8 +64,9 @@ export function OversitePage() {
   if (oversightMode.isLoading) {
     return <p className="status-msg">{t('common.loadingSalesData')}</p>
   }
-  if (oversightMode.mode === 'suite' && oversightMode.suiteId === 'sales_manager') {
-    return <SalesManagerSuite />
+  if (oversightMode.mode === 'suite') {
+    if (oversightMode.suiteId === 'sales_manager') return <SalesManagerSuite />
+    if (oversightMode.suiteId === 'sales_agent') return <SalesAgentSuite />
   }
 
   return <ClassicOversitePage isSuperAdmin={isSuperAdmin} />

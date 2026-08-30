@@ -220,6 +220,8 @@ export const messages: Record<keyof typeof en, string> = {
   'sales.periodStock': 'מלאי',
 
   'sm.suite.title': 'מנהל מכירות',
+  'sa.suite.title': 'סוכן מכירות',
+  'sa.noAgent': 'לא הוקצה סוכן לחשבון שלך.',
   'sm.mode.alone': 'Alone',
   'sm.mode.vs': 'Vs',
   'sm.mode.label': 'מצב תצוגה',
