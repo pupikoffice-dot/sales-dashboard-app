@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { useDashboardAccess } from '../context/DashboardAccessContext'
 import { useDashboardFilters } from '../context/DashboardFiltersContext'
 import { useLocale } from '../context/LocaleContext'
+import { useTheme } from '../context/ThemeContext'
 import { usePreview } from '../context/PreviewContext'
 import { useDashboardData } from '../hooks/useDashboardData'
 import { canShowModule } from '../lib/permissions'
@@ -17,6 +18,7 @@ import { useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { formatHeaderVersionBadge } from '../lib/appChannel'
 import { useSalesAgentNavHide } from '../hooks/useSalesAgentNavHide'
+import { useUserProfile } from '../hooks/useUserProfile'
 
 async function fetchActiveAppVersion(): Promise<string> {
   const { data, error } = await supabase
@@ -37,11 +39,13 @@ export function DashboardLayout() {
   const { access, loading } = useDashboardAccess()
   const { isRendering, showOversiteDashboard } = useDashboardFilters()
   const { locale, setLocale, t, dir } = useLocale()
+  const { theme, setTheme } = useTheme()
   const isRtl = dir === 'rtl'
   const { allRows, debtRows, isLoading: dataLoading, dataHealth } = useDashboardData()
   const queryClient = useQueryClient()
   const location = useLocation()
   const hideNavigation = useSalesAgentNavHide()
+  const { name: userName } = useUserProfile()
   const showFilters = !location.pathname.startsWith('/admin') && !hideNavigation
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { data: liveActiveVersion = '1.0' } = useQuery({
@@ -191,7 +195,32 @@ export function DashboardLayout() {
           </h1>
         </div>
         <div className="hdr-right">
+          {userName ? (
+            <span className="hdr-user-name" title={t('header.signedInAs', { name: userName })}>
+              {userName}
+            </span>
+          ) : null}
           <ViewAsSwitcher />
+          <div className="theme-switch" role="group" aria-label={t('common.theme')}>
+            <button
+              type="button"
+              className={`theme-btn${theme === 'light' ? ' active' : ''}`}
+              aria-label={t('common.lightTheme')}
+              aria-pressed={theme === 'light'}
+              onClick={() => setTheme('light')}
+            >
+              ☀
+            </button>
+            <button
+              type="button"
+              className={`theme-btn${theme === 'dark' ? ' active' : ''}`}
+              aria-label={t('common.darkTheme')}
+              aria-pressed={theme === 'dark'}
+              onClick={() => setTheme('dark')}
+            >
+              ☾
+            </button>
+          </div>
           {/* Hidden while previewing: the preview shows the TARGET's language,
               so a language control here would be ambiguous (and preview is
               strictly read-only — setLocale refuses to write anyway). */}

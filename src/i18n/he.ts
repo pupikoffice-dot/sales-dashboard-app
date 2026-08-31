@@ -87,6 +87,9 @@ export const messages: Record<keyof typeof en, string> = {
   'common.clear': 'נקה',
   'common.remove': 'הסר',
   'common.language': 'שפה',
+  'common.theme': 'ערכת צבעים',
+  'common.lightTheme': 'מצב בהיר',
+  'common.darkTheme': 'מצב כהה',
   'common.english': 'אנגלית',
   'common.hebrew': 'עברית',
 
@@ -112,6 +115,7 @@ export const messages: Record<keyof typeof en, string> = {
   'header.loadedRows': 'נטענו: {rows} שורות',
   'header.debtClients': '· {count} לקוחות בחוב',
   'header.noDebtRows': '· 0 שורות חוב',
+  'header.signedInAs': 'מחובר כ{name}',
 
   'login.title': 'לוח מכירות',
   'login.subtitle': 'התחבר כדי לצפות בנתוני המכירות שלך',

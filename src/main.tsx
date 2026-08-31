@@ -5,10 +5,14 @@ import { AuthProvider } from './context/AuthContext'
 import { DashboardAccessProvider } from './context/DashboardAccessContext'
 import { DashboardFiltersProvider } from './context/DashboardFiltersContext'
 import { LocaleProvider } from './context/LocaleContext'
+import { ThemeProvider } from './context/ThemeContext'
 import { PreviewProvider } from './context/PreviewContext'
 import { queryClient } from './lib/queryClient'
+import { applyTheme, readStoredTheme } from './lib/theme'
 import App from './App'
 import './index.css'
+
+applyTheme(readStoredTheme())
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -18,13 +22,15 @@ createRoot(document.getElementById('root')!).render(
             isSuperAdmin) and above Locale/Access so both can follow the
             previewed user — see PreviewContext for why. */}
         <PreviewProvider>
-          <LocaleProvider>
+          <ThemeProvider>
+            <LocaleProvider>
             <DashboardAccessProvider>
               <DashboardFiltersProvider>
                 <App />
               </DashboardFiltersProvider>
             </DashboardAccessProvider>
-          </LocaleProvider>
+            </LocaleProvider>
+          </ThemeProvider>
         </PreviewProvider>
       </AuthProvider>
     </QueryClientProvider>

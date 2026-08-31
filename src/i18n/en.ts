@@ -85,6 +85,9 @@ export const messages = {
   'common.clear': 'Clear',
   'common.remove': 'Remove',
   'common.language': 'Language',
+  'common.theme': 'Theme',
+  'common.lightTheme': 'Light theme',
+  'common.darkTheme': 'Dark theme',
   'common.english': 'English',
   'common.hebrew': 'Hebrew',
 
@@ -110,6 +113,7 @@ export const messages = {
   'header.loadedRows': 'Loaded: {rows} rows',
   'header.debtClients': '· {count} debt clients',
   'header.noDebtRows': '· 0 debt rows',
+  'header.signedInAs': 'Signed in as {name}',
 
   'login.title': 'Sales Dashboard',
   'login.subtitle': 'Sign in to view your sales data',

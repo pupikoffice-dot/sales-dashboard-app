@@ -1,6 +1,7 @@
 /* Legacy Sales Dashboard design tokens + layout (from dashboardsalesgroup.html) */
 
 :root {
+  color-scheme: dark;
   --bg: #0b1326;
   --sur: #171f33;
   --sur2: #131b2e;
@@ -14,6 +15,17 @@
   --red: #fbbf24;
   --acc-bg: rgba(129, 140, 248, 0.12);
   --grn-bg: rgba(45, 212, 191, 0.12);
+  --glass-header: rgba(11, 19, 38, 0.85);
+  --glass-sidebar: rgba(11, 19, 38, 0.6);
+  --glass-panel: rgba(19, 27, 46, 0.7);
+  --glass-weak: rgba(19, 27, 46, 0.5);
+  --glass-badge: rgba(19, 27, 46, 0.85);
+  --glass-overlay: rgba(11, 19, 38, 0.72);
+  --login-card-bg: rgba(23, 31, 51, 0.72);
+  --login-card-border: rgba(255, 255, 255, 0.08);
+  --login-card-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  --input-inset: inset 0 2px 4px rgba(0, 0, 0, 0.25);
+  --input-border: rgba(255, 255, 255, 0.05);
   /* Per-company accents (multi-column Oversite / Orders MTD) */
   --co-pupik: #818cf8;
   --co-mt: #38bdf8;
@@ -27,6 +39,37 @@
   --r-full: 9999px;
   --sidebar: 290px;
   --header-h: 60px;
+}
+
+[data-theme='light'] {
+  color-scheme: light;
+  --bg: #eef1f8;
+  --sur: #ffffff;
+  --sur2: #f3f5fa;
+  --sur3: #e8ecf4;
+  --bdr: rgba(15, 23, 42, 0.12);
+  --bdr-s: #cbd5e1;
+  --acc: #4f46e5;
+  --acc2: #4338ca;
+  --grn: #0d9488;
+  --amber: #d97706;
+  --red: #d97706;
+  --acc-bg: rgba(79, 70, 229, 0.1);
+  --grn-bg: rgba(13, 148, 136, 0.12);
+  --txt: #0f172a;
+  --muted: #64748b;
+  --muted2: #475569;
+  --glass-header: rgba(255, 255, 255, 0.92);
+  --glass-sidebar: rgba(255, 255, 255, 0.82);
+  --glass-panel: rgba(255, 255, 255, 0.92);
+  --glass-weak: rgba(255, 255, 255, 0.75);
+  --glass-badge: rgba(255, 255, 255, 0.95);
+  --glass-overlay: rgba(255, 255, 255, 0.82);
+  --login-card-bg: rgba(255, 255, 255, 0.96);
+  --login-card-border: rgba(15, 23, 42, 0.1);
+  --login-card-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+  --input-inset: inset 0 1px 2px rgba(15, 23, 42, 0.06);
+  --input-border: rgba(15, 23, 42, 0.12);
 }
 
 html {
@@ -45,7 +88,7 @@ body {
 
 /* ── Header ── */
 .dashboard-header {
-  background: rgba(11, 19, 38, 0.85);
+  background: var(--glass-header);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--bdr);
@@ -93,6 +136,20 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.hdr-user-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--txt);
+  background: var(--glass-badge);
+  border: 1px solid var(--bdr);
+  border-radius: 20px;
+  padding: 4px 12px;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mobile-menu-btn {
@@ -198,7 +255,7 @@ body.sales-agent-no-nav .dashboard-main {
 
 .dashboard-sidebar {
   width: var(--sidebar);
-  background: rgba(11, 19, 38, 0.6);
+  background: var(--glass-sidebar);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-right: 1px solid var(--bdr);
@@ -225,7 +282,7 @@ body.sales-agent-no-nav .dashboard-main {
 .nav-btn {
   display: block;
   width: 100%;
-  background: rgba(19, 27, 46, 0.7);
+  background: var(--glass-panel);
   border: 1px solid var(--bdr);
   color: var(--muted2);
   border-radius: 10px;
@@ -276,12 +333,12 @@ body.sales-agent-no-nav .dashboard-main {
 .login-card {
   width: 100%;
   max-width: 400px;
-  background: rgba(23, 31, 51, 0.72);
+  background: var(--login-card-bg);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--login-card-border);
   border-radius: var(--r-lg);
   padding: 28px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--login-card-shadow);
 }
 
 .login-card h1 {
@@ -300,8 +357,8 @@ body.sales-agent-no-nav .dashboard-main {
 .login-input {
   width: 100%;
   background: var(--sur2);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: var(--input-inset);
+  border: 1px solid var(--input-border);
   color: var(--txt);
   border-radius: 9px;
   padding: 10px 12px;
@@ -532,7 +589,7 @@ body.sales-agent-no-nav .dashboard-main {
 .ov-kpi {
   flex: 1;
   min-width: 78px;
-  background: rgba(19, 27, 46, 0.7);
+  background: var(--glass-panel);
   border: 1px solid var(--bdr);
   border-radius: 10px;
   padding: 10px 12px;
@@ -1535,7 +1592,7 @@ body.preview-mode .dashboard-shell {
   overflow-x: auto;
   border-radius: var(--r);
   border: 1px solid var(--bdr);
-  background: rgba(19, 27, 46, 0.5);
+  background: var(--glass-weak);
 }
 
 .tw table {
@@ -2162,7 +2219,7 @@ body.preview-mode .dashboard-shell {
 }
 
 .btn {
-  background: rgba(19, 27, 46, 0.7);
+  background: var(--glass-panel);
   border: 1px solid var(--bdr);
   color: var(--muted2);
   border-radius: 10px;
@@ -3017,7 +3074,8 @@ label.ck .ck-label {
 }
 
 /* ── Language switcher ── */
-.lang-switch {
+.lang-switch,
+.theme-switch {
   display: flex;
   gap: 4px;
   background: var(--sur2);
@@ -3026,7 +3084,8 @@ label.ck .ck-label {
   padding: 2px;
 }
 
-.lang-btn {
+.lang-btn,
+.theme-btn {
   background: transparent;
   border: none;
   color: var(--muted2);
@@ -3038,7 +3097,14 @@ label.ck .ck-label {
   font-family: inherit;
 }
 
-.lang-btn.active {
+.theme-btn {
+  font-size: 0.85rem;
+  line-height: 1;
+  padding: 4px 9px;
+}
+
+.lang-btn.active,
+.theme-btn.active {
   background: var(--acc);
   color: #fff;
 }
@@ -3082,7 +3148,7 @@ label.ck .ck-label {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  background: rgba(11, 19, 38, 0.72);
+  background: var(--glass-overlay);
   backdrop-filter: blur(4px);
   border-radius: var(--r);
   color: var(--muted2);
@@ -3741,7 +3807,7 @@ html[dir='rtl'] .hdr-brand,
 }
 
 .sm-cube {
-  background: rgba(19, 27, 46, 0.55);
+  background: var(--glass-weak);
   border: 1px solid var(--bdr);
   border-radius: 12px;
   padding: 12px 14px;
