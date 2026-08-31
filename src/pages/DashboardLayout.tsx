@@ -16,8 +16,7 @@ import { MODULE_REGISTRY } from '../modules/registry'
 import { useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { formatHeaderVersionBadge } from '../lib/appChannel'
-import { useResolvedOversightMode } from '../hooks/useResolvedOversightMode'
-import { shouldHideNavForSalesAgentSuite } from '../lib/salesAgentNav'
+import { useSalesAgentNavHide } from '../hooks/useSalesAgentNavHide'
 
 async function fetchActiveAppVersion(): Promise<string> {
   const { data, error } = await supabase
@@ -33,8 +32,8 @@ export function DashboardLayout() {
   // `isSuperAdmin` here is the REAL flag: it keeps the Admin section reachable
   // while previewing, so the admin can walk between the settings editor and the
   // preview without exiting. Everything else gates on the effective flag.
-  const { signOut, isSuperAdmin, session } = useAuth()
-  const { isPreviewing, previewUser, effectiveIsSuperAdmin } = usePreview()
+  const { signOut, isSuperAdmin } = useAuth()
+  const { isPreviewing, effectiveIsSuperAdmin } = usePreview()
   const { access, loading } = useDashboardAccess()
   const { isRendering, showOversiteDashboard } = useDashboardFilters()
   const { locale, setLocale, t, dir } = useLocale()
@@ -42,27 +41,7 @@ export function DashboardLayout() {
   const { allRows, debtRows, isLoading: dataLoading, dataHealth } = useDashboardData()
   const queryClient = useQueryClient()
   const location = useLocation()
-  const oversightMode = useResolvedOversightMode()
-  const { data: selfRole } = useQuery({
-    queryKey: ['user-profile-role', session?.user.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('role')
-        .eq('id', session!.user.id)
-        .maybeSingle()
-      if (error) throw error
-      return (data?.role as string | undefined) ?? 'agent'
-    },
-    enabled: !!session?.user.id && !isPreviewing,
-    staleTime: 5 * 60_000,
-  })
-  const effectiveRole = isPreviewing && previewUser ? previewUser.role : selfRole
-  const hideNavigation = shouldHideNavForSalesAgentSuite({
-    isRealSuperAdmin: isSuperAdmin,
-    role: effectiveRole,
-    oversightMode,
-  })
+  const hideNavigation = useSalesAgentNavHide()
   const showFilters = !location.pathname.startsWith('/admin') && !hideNavigation
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { data: liveActiveVersion = '1.0' } = useQuery({
@@ -75,6 +54,11 @@ export function DashboardLayout() {
   useEffect(() => {
     setSidebarOpen(false)
   }, [location.pathname])
+
+  useEffect(() => {
+    document.body.classList.toggle('sales-agent-no-nav', hideNavigation)
+    return () => document.body.classList.remove('sales-agent-no-nav')
+  }, [hideNavigation])
 
   useEffect(() => {
     document.body.classList.toggle('mobile-sidebar-open', sidebarOpen)

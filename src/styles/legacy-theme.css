@@ -179,6 +179,17 @@ body {
   max-width: none;
 }
 
+body.sales-agent-no-nav .dashboard-sidebar,
+body.sales-agent-no-nav .sidebar-backdrop,
+body.sales-agent-no-nav .mobile-menu-btn {
+  display: none !important;
+}
+
+body.sales-agent-no-nav .dashboard-main {
+  width: 100%;
+  max-width: none;
+}
+
 .dashboard-sidebar nav {
   display: flex;
   flex-direction: column;

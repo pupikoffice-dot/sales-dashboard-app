@@ -16,7 +16,8 @@ export function shouldHideNavForSalesAgentSuite(opts: {
   const { oversightMode } = opts
   if (oversightMode.isLoading) return false
   if (oversightMode.mode !== 'suite' || oversightMode.suiteId !== 'sales_agent') return false
-  const role = opts.role ?? 'agent'
-  if (NAV_VISIBLE_ROLES.has(role)) return false
+  const role = opts.role
+  // Hide once suite is confirmed unless a privileged role is explicitly known.
+  if (role && NAV_VISIBLE_ROLES.has(role)) return false
   return true
 }
