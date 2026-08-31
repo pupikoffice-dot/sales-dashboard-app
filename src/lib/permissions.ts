@@ -1,18 +1,6 @@
 import { resolveLogicalCompany } from './companyTags'
 import type { DashboardAccess, DashboardModuleId, SalesRow } from '../types/dashboard'
 
-/** Visible in sidebar and routable only for super_admin. */
-export const SUPER_ADMIN_ONLY_MODULES: DashboardModuleId[] = [
-  'sales_performance',
-  'orders_mtd',
-  'open_orders',
-  'returns',
-  'debt',
-  'stock_alerts',
-  'stock',
-  'export',
-]
-
 export function canShowModule(
   access: DashboardAccess | null,
   moduleId: DashboardModuleId,
@@ -20,7 +8,6 @@ export function canShowModule(
 ): boolean {
   if (!access?.active) return false
   if (isSuperAdmin) return true
-  if (SUPER_ADMIN_ONLY_MODULES.includes(moduleId)) return false
   return access.modules.includes(moduleId)
 }
 

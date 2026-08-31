@@ -6,6 +6,7 @@ import { useDashboardFilters, type DateMode } from '../../context/DashboardFilte
 import { useLocale } from '../../context/LocaleContext'
 import { useDashboardData } from '../../hooks/useDashboardData'
 import { effectiveCompany } from '../../lib/salesFilterLists'
+import { canShowModule } from '../../lib/permissions'
 import {
   getIndexedCategoryOptions,
   getIndexedClientOptions,
@@ -114,15 +115,16 @@ export function SidebarFilters() {
     window.setTimeout(() => {
       f.apply()
 
-      if (!isSuperAdmin) {
-        if (!location.pathname.startsWith('/oversite')) navigate('/oversite')
-        return
-      }
-
       if (f.dateMode === 'openorders') {
-        if (!location.pathname.startsWith('/open-orders')) navigate('/open-orders')
-      } else if (!location.pathname.startsWith('/sales')) {
-        navigate('/sales')
+        if (canShowModule(access, 'open_orders', isSuperAdmin)) {
+          if (!location.pathname.startsWith('/open-orders')) navigate('/open-orders')
+        }
+      } else if (f.dateMode === 'stock') {
+        if (canShowModule(access, 'stock', isSuperAdmin)) {
+          if (!location.pathname.startsWith('/stock')) navigate('/stock')
+        }
+      } else if (canShowModule(access, 'sales_performance', isSuperAdmin)) {
+        if (!location.pathname.startsWith('/sales')) navigate('/sales')
       }
     }, 0)
   }
