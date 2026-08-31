@@ -2,6 +2,7 @@ import { useMemo, type ReactNode } from 'react'
 import type { HabitConfig } from '../../../../lib/biMetrics'
 import type { LogicalCompany, SalesRow } from '../../../../types/dashboard'
 import { BiCubesBlock, type BiCubesMode } from '../bi/BiCubesBlock'
+import { SALES_AGENT_BI_ROW_LIMIT } from '../SmCubeGrid'
 import { smOpenOrdersTag } from '../smMetrics'
 import { SuiteUiCubesBlock } from './SuiteUiCubesBlock'
 
@@ -79,6 +80,8 @@ export function SuiteExtrasBlock({
         windowAgents={windowAgents}
         curYear={curYear}
         curMonth={curMonth}
+        biRowLimit={mode === 'agent' ? SALES_AGENT_BI_ROW_LIMIT : undefined}
+        biTableExpanded={mode === 'agent'}
       />
       <SuiteUiCubesBlock
         visibleIds={suiteUiVisibleIds}

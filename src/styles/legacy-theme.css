@@ -4088,6 +4088,19 @@ html[dir='rtl'] .hdr-brand,
   -webkit-overflow-scrolling: touch;
 }
 
+.bi-table-wrap--expanded {
+  max-height: none;
+  overflow-y: visible;
+}
+
+.sm-cube--orders-no-chart .sm-orders-main--report-only {
+  margin-bottom: 0;
+}
+
+.sm-cube--orders-no-chart.sm-cube--orders-with-bi .sm-orders-bi {
+  flex: 1 1 auto;
+}
+
 .bi-table {
   width: 100%;
   border-collapse: collapse;
@@ -4170,6 +4183,11 @@ html[dir='rtl'] .hdr-brand,
 
   .bi-table-wrap {
     max-height: 160px;
+  }
+
+  .bi-table-wrap--expanded {
+    max-height: none;
+    overflow-y: visible;
   }
 }
 

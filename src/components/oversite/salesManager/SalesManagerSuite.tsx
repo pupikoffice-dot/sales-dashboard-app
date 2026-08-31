@@ -376,6 +376,8 @@ export function SalesManagerSuite({ variant = 'manager' }: SalesManagerSuiteProp
                             monthLbl={dateCtx.monthLbl}
                             agentId={agentId}
                             ordersReportCompanies={reportCos}
+                            hideOrders7Days
+                            receiptsCurrentMonthOnly
                             onOpenOrdersReport={companyId => openOrdersReport(companyId, [agentId])}
                             onOpenDebtReport={() =>
                               openDebtReport(company, [agentId], `${label} — ${winTitle}`)

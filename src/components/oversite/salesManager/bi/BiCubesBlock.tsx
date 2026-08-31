@@ -25,6 +25,10 @@ export interface BiCubesBlockProps {
   windowAgents?: string[] | null
   curYear: number
   curMonth: number
+  /** Override default top-N limit for missed item/client tables. */
+  biRowLimit?: number
+  /** Expand table — no scroll cap (Sales Agent suite). */
+  biTableExpanded?: boolean
 }
 
 /**
@@ -44,6 +48,8 @@ export function BiCubesBlock({
   windowAgents: windowAgentsProp,
   curYear,
   curMonth,
+  biRowLimit,
+  biTableExpanded = false,
 }: BiCubesBlockProps) {
   const idSet = useMemo(() => new Set(visibleIds), [visibleIds])
   const showMissedItems = idSet.has('missed_items')
@@ -70,6 +76,8 @@ export function BiCubesBlock({
           curYear={curYear}
           curMonth={curMonth}
           stockBySku={stockBySku}
+          limit={biRowLimit}
+          tableExpanded={biTableExpanded}
         />
       ) : null}
       {showMissedClients ? (
@@ -80,6 +88,8 @@ export function BiCubesBlock({
           habit={habit}
           curYear={curYear}
           curMonth={curMonth}
+          limit={biRowLimit}
+          tableExpanded={biTableExpanded}
         />
       ) : null}
       {showSoldByOthers && agentId ? (
