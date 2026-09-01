@@ -53,19 +53,27 @@ export function OversiteReceipts({
   const { t } = useLocale()
   if (!monthly || Object.keys(monthly).length === 0) return null
 
-  const monthCount = currentMonthOnly ? 1 : MONTHS_SHOWN
-  const months = rollingMonths(monthCount).map(m => ({ ...m, net: (monthly[m.ym] || 0) / VAT_RATE }))
-  const max = Math.max(...months.map(m => m.net), 1)
-  const total = months.reduce((s, m) => s + m.net, 0)
-  const avg = total / months.length
+  const netForYm = (ym: string) => (monthly[ym] || 0) / VAT_RATE
+  const avgMonths = rollingMonths(MONTHS_SHOWN)
+  const displayMonths = rollingMonths(currentMonthOnly ? 1 : MONTHS_SHOWN).map(m => ({
+    ...m,
+    net: netForYm(m.ym),
+  }))
+  const monthlyAvg =
+    avgMonths.reduce((s, m) => s + netForYm(m.ym), 0) / MONTHS_SHOWN
+  const displayTotal = displayMonths.reduce((s, m) => s + m.net, 0)
+  const max = Math.max(...displayMonths.map(m => m.net), monthlyAvg, 1)
 
-  const stacked = !!byAgent && !!agents && agents.length > 0
+  const stacked = !!byAgent && !!agents && agents.length > 0 && !currentMonthOnly
 
   // Per-agent 12-month totals + monthly averages for legend
   const agentTotals = stacked
     ? agents!.map(a => {
-        const total = months.reduce((s, m) => s + ((byAgent![a] || {})[m.ym] || 0) / VAT_RATE, 0)
-        return { agent: a, total, avg: total / months.length }
+        const total = avgMonths.reduce(
+          (s, m) => s + ((byAgent![a] || {})[m.ym] || 0) / VAT_RATE,
+          0,
+        )
+        return { agent: a, total, avg: total / MONTHS_SHOWN }
       })
     : []
 
@@ -85,7 +93,7 @@ export function OversiteReceipts({
         </div>
       )}
       <div className="ov-bar-chart">
-        {months.map(m => (
+        {displayMonths.map(m => (
           <div key={m.ym}>
             <div className={`ov-bar-row${m.isCurrent ? ' ov-bar-row--current' : ''}`}>
               <span className="ov-bar-lbl">{m.label}</span>
@@ -131,28 +139,27 @@ export function OversiteReceipts({
             )}
           </div>
         ))}
-        {!currentMonthOnly ? (
-          <div className="ov-bar-row ov-bar-row--receipt-avg">
-            <span className="ov-bar-lbl">{t('oversite.receiptsAvg')}</span>
-            <div className="ov-bar-track">
-              <div
-                className="ov-bar-fill receipt-avg"
-                style={{ width: `${((avg / max) * 100).toFixed(1)}%` }}
-              />
-            </div>
-            <span className="ov-bar-val">{fmt(avg)}</span>
+        <div className="ov-bar-row ov-bar-row--receipt-avg">
+          <span className="ov-bar-lbl">{t('oversite.receiptsAvg')}</span>
+          <div className="ov-bar-track">
+            <div
+              className="ov-bar-fill receipt-avg"
+              style={{ width: `${((monthlyAvg / max) * 100).toFixed(1)}%` }}
+            />
           </div>
-        ) : null}
+          <span className="ov-bar-val">{fmt(monthlyAvg)}</span>
+        </div>
       </div>
       <div className="ov-receipts-total">
         {currentMonthOnly ? (
           <>
-            {months[0]?.label}: <b>{fmt(total)}</b> · {t('oversite.receiptsNetNote')}
+            {displayMonths[0]?.label}: <b>{fmt(displayTotal)}</b> · {t('oversite.receiptsAvg')}:{' '}
+            <b>{fmt(monthlyAvg)}</b> · {t('oversite.receiptsNetNote')}
           </>
         ) : (
           <>
-            {t('oversite.receiptsTotal12')}: <b>{fmt(total)}</b> · {t('oversite.receiptsAvg')}:{' '}
-            <b>{fmt(avg)}</b> · {t('oversite.receiptsNetNote')}
+            {t('oversite.receiptsTotal12')}: <b>{fmt(displayTotal)}</b> · {t('oversite.receiptsAvg')}:{' '}
+            <b>{fmt(monthlyAvg)}</b> · {t('oversite.receiptsNetNote')}
           </>
         )}
       </div>
