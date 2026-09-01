@@ -217,10 +217,11 @@ export function getOpenOrdersRows(rows: SalesRow[], openOrdersTag: string): Sale
 export function topOpenOrdersByCash(
   rows: SalesRow[],
   openOrdersTag: string,
-  limit = 10,
+  limit?: number,
 ): OrderTodayGroup[] {
   const groups = groupSalesRowsByDoc(getOpenOrdersRows(rows, openOrdersTag))
-  return [...groups].sort((a, b) => b.cash - a.cash || a.docNum.localeCompare(b.docNum)).slice(0, limit)
+  const sorted = [...groups].sort((a, b) => b.cash - a.cash || a.docNum.localeCompare(b.docNum))
+  return limit == null ? sorted : sorted.slice(0, limit)
 }
 
 export interface AgentBreakdownRow {
@@ -408,7 +409,7 @@ export interface Top10Item {
 
 export function computeTop10BySku(
   rows: SalesRow[],
-  limit = 10,
+  limit?: number | null,
   cashSort: 'high-first' | 'low-first' = 'high-first',
 ): Top10Item[] {
   const itemMap: Record<string, Top10Item> = {}
@@ -423,7 +424,9 @@ export function computeTop10BySku(
     cashSort === 'low-first'
       ? (a: Top10Item, b: Top10Item) => a.cash - b.cash
       : (a: Top10Item, b: Top10Item) => b.cash - a.cash
-  return Object.values(itemMap).sort(cmp).slice(0, limit)
+  const sorted = Object.values(itemMap).sort(cmp)
+  const cap = limit === null ? null : (limit ?? 10)
+  return cap == null ? sorted : sorted.slice(0, cap)
 }
 
 export function computeOrdersMtdTop10(

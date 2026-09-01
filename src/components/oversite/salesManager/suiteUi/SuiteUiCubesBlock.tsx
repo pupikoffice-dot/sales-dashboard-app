@@ -18,6 +18,8 @@ export interface SuiteUiCubesBlockProps {
   curMonth: number
   /** When true, `rows` are already company×agents×MTD — skip re-filter in metrics. */
   mtdPrefiltered?: boolean
+  /** Sales Agent suite: list all rows, not top 10. */
+  unlimitedRows?: boolean
 }
 
 /** Suite-mountable UI tiles after BI cubes. Alone All / agent / Vs all show both when granted. */
@@ -32,10 +34,12 @@ export function SuiteUiCubesBlock({
   curYear,
   curMonth,
   mtdPrefiltered = false,
+  unlimitedRows = false,
 }: SuiteUiCubesBlockProps) {
   const idSet = useMemo(() => new Set(visibleIds), [visibleIds])
   const showSold = idSet.has('best_sold_items')
   const showClients = idSet.has('best_clients')
+  const rowLimit = unlimitedRows ? null : undefined
 
   const agents = useMemo((): string[] | null => {
     if (windowAgentsProp !== undefined) return windowAgentsProp
@@ -55,6 +59,7 @@ export function SuiteUiCubesBlock({
           curYear={curYear}
           curMonth={curMonth}
           mtdPrefiltered={mtdPrefiltered}
+          limit={rowLimit}
         />
       ) : null}
       {showClients ? (
@@ -65,6 +70,7 @@ export function SuiteUiCubesBlock({
           curYear={curYear}
           curMonth={curMonth}
           mtdPrefiltered={mtdPrefiltered}
+          limit={rowLimit}
         />
       ) : null}
     </div>

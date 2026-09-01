@@ -399,30 +399,44 @@ export function buildSmDebtRows(args: {
   return debtRowsForCompany(scoped, args.company)
 }
 
-/** Top 10 open **orders** (by cash) for one company ∩ window agents — not SKUs. */
-export function buildSmOpenOrdersTop10(args: {
+/** Open orders (by cash) for one company ∩ window agents — not SKUs. */
+export function buildSmOpenOrdersReport(args: {
   rows: SalesRow[]
   company: LogicalCompany
   agents?: string[] | null
+  /** Omit to return all open orders in scope; default 10 for legacy top-N views. */
+  limit?: number
 }): OrderTodayGroup[] {
   const scoped = narrowByAgents(args.rows, args.agents)
   const def = companyDef(args.company)
   if (!def) return []
   const tag = resolveOpenOrdersTag(scoped, def.openOrdersTag)
-  return topOpenOrdersByCash(scoped, tag, 10)
+  return topOpenOrdersByCash(scoped, tag, args.limit)
 }
 
-/** Top 10 returns SKUs (MTD) for one company ∩ window agents. */
-export function buildSmReturnsTop10(args: {
+/** @deprecated use buildSmOpenOrdersReport */
+export function buildSmOpenOrdersTop10(args: {
+  rows: SalesRow[]
+  company: LogicalCompany
+  agents?: string[] | null
+}): OrderTodayGroup[] {
+  return buildSmOpenOrdersReport({ ...args, limit: 10 })
+}
+
+/** Returns SKUs (MTD) for one company ∩ window agents. */
+export function buildSmReturnsReport(args: {
   rows: SalesRow[]
   company: LogicalCompany
   agents?: string[] | null
   dateCtx?: OversiteDateContext
+  /** Omit for top 10; pass `null` for all returns in scope. */
+  limit?: number | null
 }): Top10Item[] {
   const dateCtx = args.dateCtx ?? getOversiteDateContext()
   const scoped = narrowByAgents(args.rows, args.agents)
   const def = companyDef(args.company)
   if (!def) return []
+  const cap = args.limit === null ? null : (args.limit ?? 10)
   return computeTop10BySku(
     scoped.filter(
       r =>
@@ -430,9 +444,19 @@ export function buildSmReturnsTop10(args: {
         Number(r.year) === dateCtx.curYear &&
         Number(r.month) === dateCtx.curMonth,
     ),
-    10,
+    cap,
     'low-first',
   )
+}
+
+/** @deprecated use buildSmReturnsReport */
+export function buildSmReturnsTop10(args: {
+  rows: SalesRow[]
+  company: LogicalCompany
+  agents?: string[] | null
+  dateCtx?: OversiteDateContext
+}): Top10Item[] {
+  return buildSmReturnsReport(args)
 }
 
 export interface SmVsAgentPoint {

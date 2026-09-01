@@ -8,11 +8,13 @@ export function OversiteOrdersByDocTable({
   orders,
   emptyLabel,
   showFooterTotal = false,
+  footerTotalLabel,
 }: {
   orders: OrderTodayGroup[]
   emptyLabel: string
   /** When true, footer shows sum of listed orders (top-N total). */
   showFooterTotal?: boolean
+  footerTotalLabel?: string
 }) {
   const { t } = useLocale()
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
@@ -107,7 +109,7 @@ export function OversiteOrdersByDocTable({
           <tfoot>
             <tr>
               <td colSpan={5}>
-                <b>{t('sm.openOrders.top10Total')}</b>
+                <b>{footerTotalLabel ?? t('sm.openOrders.top10Total')}</b>
               </td>
               <td className="cm">
                 <b>{fmt(totals.qty)}</b>

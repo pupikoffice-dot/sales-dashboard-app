@@ -94,6 +94,7 @@ export function SuiteExtrasBlock({
         curYear={curYear}
         curMonth={curMonth}
         mtdPrefiltered
+        unlimitedRows={mode === 'agent'}
       />
     </>
   )

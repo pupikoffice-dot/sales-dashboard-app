@@ -25,8 +25,8 @@ import { SmReceiptsReportModal } from './SmReceiptsReportModal'
 import { SmVsCompanyView } from './SmVsCompanyView'
 import {
   buildSmDebtRows,
-  buildSmOpenOrdersTop10,
-  buildSmReturnsTop10,
+  buildSmOpenOrdersReport,
+  buildSmReturnsReport,
   buildSmSuiteKpis,
   buildSmVsAgentSeriesFromKpis,
   listSmOrdersReportCompanies,
@@ -120,10 +120,12 @@ export function SalesManagerSuite({ variant = 'manager' }: SalesManagerSuiteProp
     title: string
     items: Top10Item[]
     emptyLabel: string
+    variant?: 'agent' | 'manager'
   } | null>(null)
   const [openOrdersModal, setOpenOrdersModal] = useState<{
     title: string
     orders: OrderTodayGroup[]
+    variant?: 'agent' | 'manager'
   } | null>(null)
   const [receiptsModal, setReceiptsModal] = useState<{
     title: string
@@ -266,7 +268,13 @@ export function SalesManagerSuite({ variant = 'manager' }: SalesManagerSuiteProp
   ) => {
     setOpenOrdersModal({
       title: `${t('sm.cube.openOrders')} — ${windowTitle}`,
-      orders: buildSmOpenOrdersTop10({ rows, company, agents }),
+      orders: buildSmOpenOrdersReport({
+        rows,
+        company,
+        agents,
+        limit: isAgentSuite ? undefined : 10,
+      }),
+      variant: isAgentSuite ? 'agent' : 'manager',
     })
   }
 
@@ -277,8 +285,15 @@ export function SalesManagerSuite({ variant = 'manager' }: SalesManagerSuiteProp
   ) => {
     setItemsModal({
       title: `${t('sm.cube.returns')} — ${windowTitle}`,
-      items: buildSmReturnsTop10({ rows, company, agents, dateCtx }),
+      items: buildSmReturnsReport({
+        rows,
+        company,
+        agents,
+        dateCtx,
+        limit: isAgentSuite ? null : 10,
+      }),
       emptyLabel: t('oversite.noReturns'),
+      variant: isAgentSuite ? 'agent' : 'manager',
     })
   }
 
@@ -375,10 +390,8 @@ export function SalesManagerSuite({ variant = 'manager' }: SalesManagerSuiteProp
                             goalCash={goalCash}
                             monthLbl={dateCtx.monthLbl}
                             agentId={agentId}
-                            ordersReportCompanies={reportCos}
                             hideOrders7Days
                             receiptsCurrentMonthOnly
-                            onOpenOrdersReport={companyId => openOrdersReport(companyId, [agentId])}
                             onOpenDebtReport={() =>
                               openDebtReport(company, [agentId], `${label} — ${winTitle}`)
                             }
@@ -556,6 +569,7 @@ export function SalesManagerSuite({ variant = 'manager' }: SalesManagerSuiteProp
           title={itemsModal.title}
           items={itemsModal.items}
           emptyLabel={itemsModal.emptyLabel}
+          variant={itemsModal.variant}
           onClose={() => setItemsModal(null)}
         />
       ) : null}
@@ -564,6 +578,7 @@ export function SalesManagerSuite({ variant = 'manager' }: SalesManagerSuiteProp
         <SmOpenOrdersReportModal
           title={openOrdersModal.title}
           orders={openOrdersModal.orders}
+          variant={openOrdersModal.variant}
           onClose={() => setOpenOrdersModal(null)}
         />
       ) : null}
