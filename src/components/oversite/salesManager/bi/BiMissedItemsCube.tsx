@@ -14,6 +14,8 @@ export function BiMissedItemsCube({
   curYear,
   curMonth,
   stockBySku,
+  limit,
+  tableExpanded = false,
 }: {
   rows: SalesRow[]
   company: LogicalCompany
@@ -22,6 +24,8 @@ export function BiMissedItemsCube({
   curYear: number
   curMonth: number
   stockBySku: Record<string, number>
+  limit?: number
+  tableExpanded?: boolean
 }) {
   const { t } = useLocale()
   const openOrdersTag = smOpenOrdersTag(company)
@@ -36,8 +40,9 @@ export function BiMissedItemsCube({
         curMonth,
         stockBySku,
         openOrdersTag,
+        limit,
       }),
-    [rows, company, agents, habit, curYear, curMonth, stockBySku, openOrdersTag],
+    [rows, company, agents, habit, curYear, curMonth, stockBySku, openOrdersTag, limit],
   )
 
   return (
@@ -47,7 +52,7 @@ export function BiMissedItemsCube({
       ) : result.items.length === 0 ? (
         <p className="bi-cube-empty">{t('bi.missedItems.empty')}</p>
       ) : (
-        <div className="bi-table-wrap">
+        <div className={`bi-table-wrap${tableExpanded ? ' bi-table-wrap--expanded' : ''}`}>
           <table className="bi-table">
             <thead>
               <tr>

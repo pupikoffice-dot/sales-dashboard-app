@@ -11,6 +11,7 @@ export function SuiteBestSoldItemsCube({
   curYear,
   curMonth,
   mtdPrefiltered = false,
+  limit,
 }: {
   rows: SalesRow[]
   company: LogicalCompany
@@ -18,11 +19,12 @@ export function SuiteBestSoldItemsCube({
   curYear: number
   curMonth: number
   mtdPrefiltered?: boolean
+  limit?: number | null
 }) {
   const { t } = useLocale()
   const items = useMemo(
-    () => buildBestSoldItems({ rows, company, agents, curYear, curMonth, mtdPrefiltered }),
-    [rows, company, agents, curYear, curMonth, mtdPrefiltered],
+    () => buildBestSoldItems({ rows, company, agents, curYear, curMonth, mtdPrefiltered, limit }),
+    [rows, company, agents, curYear, curMonth, mtdPrefiltered, limit],
   )
 
   return (

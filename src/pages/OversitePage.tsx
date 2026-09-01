@@ -1,18 +1,11 @@
 import { useMemo, useState, type CSSProperties } from 'react'
-import { useAuth } from '../context/AuthContext'
 import { usePreview } from '../context/PreviewContext'
 import { useLocale } from '../context/LocaleContext'
 import { useDashboardAccess } from '../context/DashboardAccessContext'
 import { useDashboardData } from '../hooks/useDashboardData'
-import { useBiModulesCatalog } from '../hooks/useBiModules'
-import { useBiUserGrants } from '../hooks/useBiUserGrants'
-import { useOversightLayout } from '../hooks/useOversightLayout'
-import { OversightLayoutToggle } from '../components/oversite/OversightLayoutToggle'
+import { useResolvedOversightMode } from '../hooks/useResolvedOversightMode'
+import { SalesAgentSuite } from '../components/oversite/salesManager/SalesAgentSuite'
 import { SalesManagerSuite } from '../components/oversite/salesManager/SalesManagerSuite'
-import { BiTsometBudgetCube } from '../components/oversite/salesManager/bi/BiTsometBudgetCube'
-import type { OversightLayoutPreference } from '../lib/oversightLayouts'
-import { resolveVisibleBiModuleIds } from '../lib/biModules'
-import { sortAgentIds } from '../lib/uiModules'
 import { computeDebtAgentMatrix, computeDebtSummary, debtRowsForCompany } from '../lib/debtMetrics'
 import { fmt, formatGeneratedDisplay } from '../lib/format'
 import type { LogicalCompany } from '../types/dashboard'
@@ -65,71 +58,27 @@ export function OversitePage() {
   const { t } = useLocale()
   // Honours the super-admin "View as user" preview.
   const { effectiveIsSuperAdmin: isSuperAdmin } = usePreview()
-  const layout = useOversightLayout()
+  const oversightMode = useResolvedOversightMode()
 
   // Suite replaces classic Oversight entirely (addons ignored while suite active).
-  if (layout.isLoading) {
+  if (oversightMode.isLoading) {
     return <p className="status-msg">{t('common.loadingSalesData')}</p>
   }
-  if (layout.display.mode === 'suite' && layout.display.suiteId === 'sales_manager') {
-    return (
-      <SalesManagerSuite
-        layoutToggle={
-          layout.canToggle
-            ? { active: 'suite', onSelect: layout.setPreference }
-            : undefined
-        }
-      />
-    )
+  if (oversightMode.mode === 'suite') {
+    if (oversightMode.suiteId === 'sales_manager') return <SalesManagerSuite />
+    if (oversightMode.suiteId === 'sales_agent') return <SalesAgentSuite />
   }
 
-  return (
-    <ClassicOversitePage
-      isSuperAdmin={isSuperAdmin}
-      layoutToggle={
-        layout.canToggle
-          ? { active: 'classic', onSelect: layout.setPreference }
-          : undefined
-      }
-    />
-  )
+  return <ClassicOversitePage isSuperAdmin={isSuperAdmin} />
 }
 
 /** Classic company-column Oversight layout (used when no suite grant). */
-function ClassicOversitePage({
-  isSuperAdmin,
-  layoutToggle,
-}: {
-  isSuperAdmin: boolean
-  layoutToggle?: { active: 'classic' | 'suite'; onSelect: (p: OversightLayoutPreference) => void }
-}) {
+function ClassicOversitePage({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   const { t } = useLocale()
-  const { session } = useAuth()
-  const { isPreviewing, previewUser } = usePreview()
   const { access } = useDashboardAccess()
   // Use access-scoped `rows` from the hook (already memoised) — do not re-filter allRows.
   const { rows: companyRows, debtRows, debtLastUpdate, wmsStock, wmsNames, isLoading, error, data: dashboardData } =
     useDashboardData()
-  const grantUserId = isPreviewing && previewUser ? previewUser.id : session?.user.id
-  const biCatalogQ = useBiModulesCatalog()
-  const biGrantsQ = useBiUserGrants(grantUserId)
-  const visibleBiIds = useMemo(
-    () =>
-      resolveVisibleBiModuleIds({
-        isSuperAdmin,
-        isPreviewing,
-        grants: biGrantsQ.data ?? [],
-        catalog: biCatalogQ.data ?? [],
-      }),
-    [isSuperAdmin, isPreviewing, biGrantsQ.data, biCatalogQ.data],
-  )
-  const classicTsometAgents = useMemo((): string[] | null => {
-    if (Array.isArray(access?.agents) && access.agents.length > 0) {
-      return sortAgentIds(access.agents.map(String))
-    }
-    return null
-  }, [access?.agents])
-  const showClassicTsomet = visibleBiIds.includes('tsomet_budget')
   const [debtModalCo, setDebtModalCo] = useState<LogicalCompany | null>(null)
   const [ordersModal, setOrdersModal] = useState<{
     company: LogicalCompany
@@ -264,15 +213,7 @@ function ClassicOversitePage({
       <div className="ov-header">
         <div className="ov-header-row">
           <h2>🏠 {t('oversite.title')}</h2>
-          <div className="ov-header-actions">
-            {layoutToggle ? (
-              <OversightLayoutToggle
-                active={layoutToggle.active}
-                onSelect={layoutToggle.onSelect}
-              />
-            ) : null}
-            <OversiteLegend />
-          </div>
+          <OversiteLegend />
         </div>
         <div className="ov-sub">
           {t('oversite.today')}: <b>{ctx.todayDisp}</b>
@@ -515,12 +456,6 @@ function ClassicOversitePage({
                     sourceFile={srcFile(co.id, 'stockAlerts')}
                   />
                 )}
-
-                {co.id === 'mt' && showClassicTsomet ? (
-                  <div className="bi-tsomet-wide">
-                    <BiTsometBudgetCube rows={companyRows} agents={classicTsometAgents} />
-                  </div>
-                ) : null}
               </div>
             )
           })}

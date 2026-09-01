@@ -13,6 +13,8 @@ export function BiMissedClientsCube({
   habit,
   curYear,
   curMonth,
+  limit,
+  tableExpanded = false,
 }: {
   rows: SalesRow[]
   company: LogicalCompany
@@ -20,6 +22,8 @@ export function BiMissedClientsCube({
   habit: HabitConfig
   curYear: number
   curMonth: number
+  limit?: number
+  tableExpanded?: boolean
 }) {
   const { t } = useLocale()
   const openOrdersTag = smOpenOrdersTag(company)
@@ -33,8 +37,9 @@ export function BiMissedClientsCube({
         curYear,
         curMonth,
         openOrdersTag,
+        limit,
       }),
-    [rows, company, agents, habit, curYear, curMonth, openOrdersTag],
+    [rows, company, agents, habit, curYear, curMonth, openOrdersTag, limit],
   )
 
   return (
@@ -44,7 +49,7 @@ export function BiMissedClientsCube({
       ) : result.items.length === 0 ? (
         <p className="bi-cube-empty">{t('bi.missedClients.empty')}</p>
       ) : (
-        <div className="bi-table-wrap">
+        <div className={`bi-table-wrap${tableExpanded ? ' bi-table-wrap--expanded' : ''}`}>
           <table className="bi-table">
             <thead>
               <tr>

@@ -18,18 +18,15 @@ import type { DebtRow, LogicalCompany, SalesRow } from '../../../types/dashboard
 import { DebtModal } from '../DebtModal'
 import { OrdersTodayModal } from '../OrdersTodayModal'
 import { SuiteExtrasBlock } from './suiteUi/SuiteExtrasBlock'
-import { BiTsometBudgetCube } from './bi/BiTsometBudgetCube'
-import { SmAgentWindowWithTsomet, SmVsCompanyViewWithTsomet } from './SmAgentWindowWithTsomet'
+import { SmAgentWindow } from './SmAgentWindow'
 import { SmItemsReportModal } from './SmItemsReportModal'
 import { SmOpenOrdersReportModal } from './SmOpenOrdersReportModal'
 import { SmReceiptsReportModal } from './SmReceiptsReportModal'
 import { SmVsCompanyView } from './SmVsCompanyView'
-import type { OversightLayoutPreference } from '../../../lib/oversightLayouts'
-import { OversightLayoutToggle } from '../OversightLayoutToggle'
 import {
   buildSmDebtRows,
-  buildSmOpenOrdersTop10,
-  buildSmReturnsTop10,
+  buildSmOpenOrdersReport,
+  buildSmReturnsReport,
   buildSmSuiteKpis,
   buildSmVsAgentSeriesFromKpis,
   listSmOrdersReportCompanies,
@@ -40,13 +37,11 @@ import {
 } from './smMetrics'
 
 export type SmSuiteViewMode = 'alone' | 'vs'
+export type SmSuiteVariant = 'manager' | 'agent'
 
 export interface SalesManagerSuiteProps {
-  /** Shown when user may switch back to classic Oversight. */
-  layoutToggle?: {
-    active: 'classic' | 'suite'
-    onSelect: (preference: OversightLayoutPreference) => void
-  }
+  /** manager = full Sales Manager (Alone/Vs, all agents). agent = single-agent view. */
+  variant?: SmSuiteVariant
 }
 
 /** Stable empty stock map so cube useMemos do not bust when a company has no WMS rows. */
@@ -54,10 +49,12 @@ const EMPTY_STOCK: Record<string, number> = {}
 
 /**
  * Sales Manager Oversight suite — company blocks; Alone or Vs mode.
+ * Sales Agent variant: one agent window only, no Alone/Vs toggle.
  * CORE RULE: Oversight ⊥ Sidebar — never use sidebar filters.
  * CORE RULE: Companies never combined — one company block after another.
  */
-export function SalesManagerSuite({ layoutToggle }: SalesManagerSuiteProps = {}) {
+export function SalesManagerSuite({ variant = 'manager' }: SalesManagerSuiteProps) {
+  const isAgentSuite = variant === 'agent'
   const { t } = useLocale()
   const { session, isSuperAdmin } = useAuth()
   const { isPreviewing, previewUser } = usePreview()
@@ -123,10 +120,12 @@ export function SalesManagerSuite({ layoutToggle }: SalesManagerSuiteProps = {})
     title: string
     items: Top10Item[]
     emptyLabel: string
+    variant?: 'agent' | 'manager'
   } | null>(null)
   const [openOrdersModal, setOpenOrdersModal] = useState<{
     title: string
     orders: OrderTodayGroup[]
+    variant?: 'agent' | 'manager'
   } | null>(null)
   const [receiptsModal, setReceiptsModal] = useState<{
     title: string
@@ -134,10 +133,14 @@ export function SalesManagerSuite({ layoutToggle }: SalesManagerSuiteProps = {})
     agents: string[] | null
   } | null>(null)
 
-  /** Class agent grant; empty/null = all agents present under access companies. */
+  /** Class/user agent grant; empty/null = all agents (manager only). Agent suite uses user-level agents only. */
   const scopedAgents = useMemo(() => {
     if (Array.isArray(access?.agents) && access.agents.length > 0) {
       return sortAgentIds(access.agents.map(String))
+    }
+    if (isAgentSuite) {
+      // Sales Agent: never infer agents from row data — each user's agent is set on Admin → Users.
+      return []
     }
     const found = new Set<string>()
     for (const r of rows) {
@@ -145,16 +148,12 @@ export function SalesManagerSuite({ layoutToggle }: SalesManagerSuiteProps = {})
       if (a) found.add(a)
     }
     return sortAgentIds([...found])
-  }, [access?.agents, rows])
+  }, [access?.agents, rows, isAgentSuite])
 
   const allGoal = useMemo(
     () => (goalsReady ? sumGoals(scopedAgents, targets) : null),
     [goalsReady, scopedAgents, targets],
   )
-
-  /** One agent in scope → no All window, no Alone/Vs toggle. */
-  const singleAgent = scopedAgents.length === 1
-  const effectiveViewMode: SmSuiteViewMode = singleAgent ? 'alone' : viewMode
 
   /** Tag index once per access-scoped row set — suite KPIs read slices. */
   const rowPartition = useMemo(() => partitionSalesRowsByTag(rows), [rows])
@@ -223,7 +222,7 @@ export function SalesManagerSuite({ layoutToggle }: SalesManagerSuiteProps = {})
     return companyBlocksBase.map(block => ({
       ...block,
       vsSeries:
-        effectiveViewMode === 'vs'
+        viewMode === 'vs'
           ? buildSmVsAgentSeriesFromKpis({
               company: block.company,
               agentWindows: block.agentWindows,
@@ -231,7 +230,7 @@ export function SalesManagerSuite({ layoutToggle }: SalesManagerSuiteProps = {})
             })
           : (null as SmVsCompanySeries | null),
     }))
-  }, [companyBlocksBase, effectiveViewMode])
+  }, [companyBlocksBase, viewMode])
 
   const openOrdersReport = (companyId: LogicalCompany, agents: string[] | null) => {
     const co = listSmOrdersReportCompanies([companyId])[0]
@@ -269,7 +268,13 @@ export function SalesManagerSuite({ layoutToggle }: SalesManagerSuiteProps = {})
   ) => {
     setOpenOrdersModal({
       title: `${t('sm.cube.openOrders')} — ${windowTitle}`,
-      orders: buildSmOpenOrdersTop10({ rows, company, agents }),
+      orders: buildSmOpenOrdersReport({
+        rows,
+        company,
+        agents,
+        limit: isAgentSuite ? undefined : 10,
+      }),
+      variant: isAgentSuite ? 'agent' : 'manager',
     })
   }
 
@@ -280,8 +285,15 @@ export function SalesManagerSuite({ layoutToggle }: SalesManagerSuiteProps = {})
   ) => {
     setItemsModal({
       title: `${t('sm.cube.returns')} — ${windowTitle}`,
-      items: buildSmReturnsTop10({ rows, company, agents, dateCtx }),
+      items: buildSmReturnsReport({
+        rows,
+        company,
+        agents,
+        dateCtx,
+        limit: isAgentSuite ? null : 10,
+      }),
       emptyLabel: t('oversite.noReturns'),
+      variant: isAgentSuite ? 'agent' : 'manager',
     })
   }
 
@@ -314,35 +326,27 @@ export function SalesManagerSuite({ layoutToggle }: SalesManagerSuiteProps = {})
     <div className="sm-suite">
       <div className="ov-header">
         <div className="ov-header-row">
-          <h2>{t('sm.suite.title')}</h2>
-          <div className="ov-header-actions">
-            {layoutToggle ? (
-              <OversightLayoutToggle
-                active={layoutToggle.active}
-                onSelect={layoutToggle.onSelect}
-              />
-            ) : null}
-            {!singleAgent ? (
-              <div className="sm-mode-toggle" role="group" aria-label={t('sm.mode.label')}>
-                <button
-                  type="button"
-                  className={viewMode === 'alone' ? 'active' : undefined}
-                  aria-pressed={viewMode === 'alone'}
-                  onClick={() => setViewMode('alone')}
-                >
-                  {t('sm.mode.alone')}
-                </button>
-                <button
-                  type="button"
-                  className={viewMode === 'vs' ? 'active' : undefined}
-                  aria-pressed={viewMode === 'vs'}
-                  onClick={() => setViewMode('vs')}
-                >
-                  {t('sm.mode.vs')}
-                </button>
-              </div>
-            ) : null}
-          </div>
+          <h2>{t(isAgentSuite ? 'sa.suite.title' : 'sm.suite.title')}</h2>
+          {!isAgentSuite ? (
+            <div className="sm-mode-toggle" role="group" aria-label={t('sm.mode.label')}>
+              <button
+                type="button"
+                className={viewMode === 'alone' ? 'active' : undefined}
+                aria-pressed={viewMode === 'alone'}
+                onClick={() => setViewMode('alone')}
+              >
+                {t('sm.mode.alone')}
+              </button>
+              <button
+                type="button"
+                className={viewMode === 'vs' ? 'active' : undefined}
+                aria-pressed={viewMode === 'vs'}
+                onClick={() => setViewMode('vs')}
+              >
+                {t('sm.mode.vs')}
+              </button>
+            </div>
+          ) : null}
         </div>
         <div className="ov-sub">
           {t('oversite.today')}: <b>{dateCtx.todayDisp}</b>
@@ -364,22 +368,62 @@ export function SalesManagerSuite({ layoutToggle }: SalesManagerSuiteProps = {})
 
       {companies.length === 0 ? (
         <p className="ov-empty">{t('oversite.noCompanies')}</p>
+      ) : isAgentSuite && scopedAgents.length === 0 ? (
+        <p className="ov-empty">{t('sa.noAgent')}</p>
       ) : (
         <div className="sm-suite-companies">
           {companyBlocks.map(
             ({ company, label, reportCos, allKpis, agentWindows, vsSeries, stockBySku }) => {
               const allTitle = t('sm.window.allAgents')
-              const showTsomet = company === 'mt' && visibleBiIds.includes('tsomet_budget')
               return (
                 <section key={company} className="sm-company-block">
                   <h3 className="sm-company-title">{label}</h3>
-                  {effectiveViewMode === 'vs' && vsSeries ? (
-                    <SmVsCompanyViewWithTsomet
-                      showTsomet={showTsomet}
-                      tsometAgents={allAgentsScope}
-                      rows={rows}
-                    >
-                      {tsometOpenBudget => (
+                  {isAgentSuite ? (
+                    <div className="sm-suite-windows">
+                      {agentWindows.map(({ agentId, kpis, goalCash }) => {
+                        const winTitle = t('sm.window.agent', { agent: agentId })
+                        return (
+                          <SmAgentWindow
+                            key={`${company}-${agentId}`}
+                            title={winTitle}
+                            kpis={kpis}
+                            goalCash={goalCash}
+                            monthLbl={dateCtx.monthLbl}
+                            agentId={agentId}
+                            hideOrders7Days
+                            receiptsCurrentMonthOnly
+                            onOpenDebtReport={() =>
+                              openDebtReport(company, [agentId], `${label} — ${winTitle}`)
+                            }
+                            onOpenOpenOrdersReport={() =>
+                              openOpenOrdersItems(company, [agentId], `${label} — ${winTitle}`)
+                            }
+                            onOpenReturnsReport={() =>
+                              openReturnsItems(company, [agentId], `${label} — ${winTitle}`)
+                            }
+                            onOpenReceiptsReport={() =>
+                              openReceiptsReport(company, [agentId], `${label} — ${winTitle}`)
+                            }
+                            biBlock={
+                              <SuiteExtrasBlock
+                                biVisibleIds={visibleBiIds}
+                                suiteUiVisibleIds={visibleSuiteUiIds}
+                                mode="agent"
+                                agentId={agentId}
+                                company={company}
+                                rows={rows}
+                                stockBySku={stockBySku}
+                                habit={habit}
+                                suiteAgents={scopedAgents}
+                                curYear={dateCtx.curYear}
+                                curMonth={dateCtx.curMonth}
+                              />
+                            }
+                          />
+                        )
+                      })}
+                    </div>
+                  ) : viewMode === 'vs' && vsSeries ? (
                     <SmVsCompanyView
                       series={vsSeries}
                       monthLbl={dateCtx.monthLbl}
@@ -395,7 +439,6 @@ export function SalesManagerSuite({ layoutToggle }: SalesManagerSuiteProps = {})
                       onOpenReceiptsReport={() =>
                         openReceiptsReport(company, allAgentsScope, `${label} — Vs`)
                       }
-                      tsometOpenBudget={tsometOpenBudget}
                       biBlock={
                         <SuiteExtrasBlock
                           biVisibleIds={visibleBiIds}
@@ -411,58 +454,48 @@ export function SalesManagerSuite({ layoutToggle }: SalesManagerSuiteProps = {})
                         />
                       }
                     />
-                      )}
-                    </SmVsCompanyViewWithTsomet>
                   ) : (
                     <div className="sm-suite-windows">
-                      {!singleAgent ? (
-                        <SmAgentWindowWithTsomet
-                          showTsomet={showTsomet}
-                          tsometAgents={allAgentsScope}
-                          rows={rows}
-                          title={allTitle}
-                          kpis={allKpis}
-                          goalCash={allGoal}
-                          monthLbl={dateCtx.monthLbl}
-                          agentId={null}
-                          ordersReportCompanies={reportCos}
-                          onOpenOrdersReport={companyId => openOrdersReport(companyId, allAgentsScope)}
-                          onOpenDebtReport={() =>
-                            openDebtReport(company, allAgentsScope, `${label} — ${allTitle}`)
-                          }
-                          onOpenOpenOrdersReport={() =>
-                            openOpenOrdersItems(company, allAgentsScope, `${label} — ${allTitle}`)
-                          }
-                          onOpenReturnsReport={() =>
-                            openReturnsItems(company, allAgentsScope, `${label} — ${allTitle}`)
-                          }
-                          onOpenReceiptsReport={() =>
-                            openReceiptsReport(company, allAgentsScope, `${label} — ${allTitle}`)
-                          }
-                          biBlock={
-                            <SuiteExtrasBlock
-                              biVisibleIds={visibleBiIds}
-                              suiteUiVisibleIds={visibleSuiteUiIds}
-                              mode="all"
-                              company={company}
-                              rows={rows}
-                              stockBySku={stockBySku}
-                              habit={habit}
-                              suiteAgents={scopedAgents}
-                              curYear={dateCtx.curYear}
-                              curMonth={dateCtx.curMonth}
-                            />
-                          }
-                        />
-                      ) : null}
+                      <SmAgentWindow
+                        title={allTitle}
+                        kpis={allKpis}
+                        goalCash={allGoal}
+                        monthLbl={dateCtx.monthLbl}
+                        agentId={null}
+                        ordersReportCompanies={reportCos}
+                        onOpenOrdersReport={companyId => openOrdersReport(companyId, allAgentsScope)}
+                        onOpenDebtReport={() =>
+                          openDebtReport(company, allAgentsScope, `${label} — ${allTitle}`)
+                        }
+                        onOpenOpenOrdersReport={() =>
+                          openOpenOrdersItems(company, allAgentsScope, `${label} — ${allTitle}`)
+                        }
+                        onOpenReturnsReport={() =>
+                          openReturnsItems(company, allAgentsScope, `${label} — ${allTitle}`)
+                        }
+                        onOpenReceiptsReport={() =>
+                          openReceiptsReport(company, allAgentsScope, `${label} — ${allTitle}`)
+                        }
+                        biBlock={
+                          <SuiteExtrasBlock
+                            biVisibleIds={visibleBiIds}
+                            suiteUiVisibleIds={visibleSuiteUiIds}
+                            mode="all"
+                            company={company}
+                            rows={rows}
+                            stockBySku={stockBySku}
+                            habit={habit}
+                            suiteAgents={scopedAgents}
+                            curYear={dateCtx.curYear}
+                            curMonth={dateCtx.curMonth}
+                          />
+                        }
+                      />
                       {agentWindows.map(({ agentId, kpis, goalCash }) => {
                         const winTitle = t('sm.window.agent', { agent: agentId })
                         return (
-                          <SmAgentWindowWithTsomet
+                          <SmAgentWindow
                             key={`${company}-${agentId}`}
-                            showTsomet={showTsomet}
-                            tsometAgents={[agentId]}
-                            rows={rows}
                             title={winTitle}
                             kpis={kpis}
                             goalCash={goalCash}
@@ -502,14 +535,6 @@ export function SalesManagerSuite({ layoutToggle }: SalesManagerSuiteProps = {})
                       })}
                     </div>
                   )}
-                  {company === 'mt' && visibleBiIds.includes('tsomet_budget') ? (
-                    <div className="bi-tsomet-wide">
-                      <BiTsometBudgetCube
-                        rows={rows}
-                        agents={scopedAgents.length > 0 ? scopedAgents : null}
-                      />
-                    </div>
-                  ) : null}
                 </section>
               )
             },
@@ -544,6 +569,7 @@ export function SalesManagerSuite({ layoutToggle }: SalesManagerSuiteProps = {})
           title={itemsModal.title}
           items={itemsModal.items}
           emptyLabel={itemsModal.emptyLabel}
+          variant={itemsModal.variant}
           onClose={() => setItemsModal(null)}
         />
       ) : null}
@@ -552,6 +578,7 @@ export function SalesManagerSuite({ layoutToggle }: SalesManagerSuiteProps = {})
         <SmOpenOrdersReportModal
           title={openOrdersModal.title}
           orders={openOrdersModal.orders}
+          variant={openOrdersModal.variant}
           onClose={() => setOpenOrdersModal(null)}
         />
       ) : null}

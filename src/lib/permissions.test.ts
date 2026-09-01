@@ -149,12 +149,10 @@ describe('module visibility', () => {
     expect(canShowModule(access({ modules: [] }), 'oversite')).toBe(false)
   })
 
-  it('denies super-admin-only modules to non-super-admins even when granted', () => {
-    // SUPER_ADMIN_ONLY_MODULES currently overrides the per-user `modules` array,
-    // which is why that array is close to vestigial today. The node-grant model
-    // replaces this hardcoded list.
-    expect(canShowModule(access({ modules: ['debt'] }), 'debt')).toBe(false)
-    expect(canShowModule(access({ modules: ['stock'] }), 'stock')).toBe(false)
+  it('grants any module present in the user access list', () => {
+    expect(canShowModule(access({ modules: ['debt'] }), 'debt')).toBe(true)
+    expect(canShowModule(access({ modules: ['stock'] }), 'stock')).toBe(true)
+    expect(canShowModule(access({ modules: ['sales_performance'] }), 'sales_performance')).toBe(true)
   })
 
   it('grants everything to a super admin', () => {

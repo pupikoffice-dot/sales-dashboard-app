@@ -3,17 +3,19 @@ import { useLocale } from '../../context/LocaleContext'
 import { fmt } from '../../lib/format'
 import { formatOrderDateDisp, type OrderTodayGroup } from '../../lib/oversiteMetrics'
 
-/** Top open orders by document cash — click a row to cascade line items. */
+/** Open orders by document cash — click a row to cascade line items. */
 export function OversiteOrdersByDocTable({
   orders,
   emptyLabel,
   showFooterTotal = false,
+  footerTotalLabel,
   showOrderDate = false,
 }: {
   orders: OrderTodayGroup[]
   emptyLabel: string
   /** When true, footer shows sum of listed orders (top-N total). */
   showFooterTotal?: boolean
+  footerTotalLabel?: string
   /** Show order date column (MTD / dated order lists). */
   showOrderDate?: boolean
 }) {
@@ -116,7 +118,7 @@ export function OversiteOrdersByDocTable({
           <tfoot>
             <tr>
               <td colSpan={showOrderDate ? 6 : 5}>
-                <b>{t('sm.openOrders.top10Total')}</b>
+                <b>{footerTotalLabel ?? t('sm.openOrders.top10Total')}</b>
               </td>
               <td className="cm">
                 <b>{fmt(totals.qty)}</b>

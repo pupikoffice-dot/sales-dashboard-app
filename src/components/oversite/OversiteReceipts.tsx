@@ -16,10 +16,10 @@ export const RECEIPTS_TEAM_AGENTS: Record<string, string[]> = {
 /** Distinct color per agent position (CSS classes agent-c0..c5). */
 const AGENT_COLOR_COUNT = 6
 
-function rollingMonths(): Array<{ ym: string; label: string; isCurrent: boolean }> {
+function rollingMonths(count = MONTHS_SHOWN): Array<{ ym: string; label: string; isCurrent: boolean }> {
   const now = new Date()
   const out = []
-  for (let i = MONTHS_SHOWN - 1; i >= 0; i--) {
+  for (let i = count - 1; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
     out.push({
       ym: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
@@ -41,27 +41,39 @@ export function OversiteReceipts({
   monthly,
   byAgent,
   agents,
+  currentMonthOnly = false,
 }: {
   monthly: Record<string, number> | undefined
   /** Per-agent monthly gross maps — enables the stacked per-agent view. */
   byAgent?: Record<string, Record<string, number>>
   agents?: string[]
+  /** Sales Agent suite: one bar for the current month only. */
+  currentMonthOnly?: boolean
 }) {
   const { t } = useLocale()
   if (!monthly || Object.keys(monthly).length === 0) return null
 
-  const months = rollingMonths().map(m => ({ ...m, net: (monthly[m.ym] || 0) / VAT_RATE }))
-  const max = Math.max(...months.map(m => m.net), 1)
-  const total = months.reduce((s, m) => s + m.net, 0)
-  const avg = total / months.length
+  const netForYm = (ym: string) => (monthly[ym] || 0) / VAT_RATE
+  const avgMonths = rollingMonths(MONTHS_SHOWN)
+  const displayMonths = rollingMonths(currentMonthOnly ? 1 : MONTHS_SHOWN).map(m => ({
+    ...m,
+    net: netForYm(m.ym),
+  }))
+  const monthlyAvg =
+    avgMonths.reduce((s, m) => s + netForYm(m.ym), 0) / MONTHS_SHOWN
+  const displayTotal = displayMonths.reduce((s, m) => s + m.net, 0)
+  const max = Math.max(...displayMonths.map(m => m.net), monthlyAvg, 1)
 
-  const stacked = !!byAgent && !!agents && agents.length > 0
+  const stacked = !!byAgent && !!agents && agents.length > 0 && !currentMonthOnly
 
   // Per-agent 12-month totals + monthly averages for legend
   const agentTotals = stacked
     ? agents!.map(a => {
-        const total = months.reduce((s, m) => s + ((byAgent![a] || {})[m.ym] || 0) / VAT_RATE, 0)
-        return { agent: a, total, avg: total / months.length }
+        const total = avgMonths.reduce(
+          (s, m) => s + ((byAgent![a] || {})[m.ym] || 0) / VAT_RATE,
+          0,
+        )
+        return { agent: a, total, avg: total / MONTHS_SHOWN }
       })
     : []
 
@@ -81,7 +93,7 @@ export function OversiteReceipts({
         </div>
       )}
       <div className="ov-bar-chart">
-        {months.map(m => (
+        {displayMonths.map(m => (
           <div key={m.ym}>
             <div className={`ov-bar-row${m.isCurrent ? ' ov-bar-row--current' : ''}`}>
               <span className="ov-bar-lbl">{m.label}</span>
@@ -132,15 +144,24 @@ export function OversiteReceipts({
           <div className="ov-bar-track">
             <div
               className="ov-bar-fill receipt-avg"
-              style={{ width: `${((avg / max) * 100).toFixed(1)}%` }}
+              style={{ width: `${((monthlyAvg / max) * 100).toFixed(1)}%` }}
             />
           </div>
-          <span className="ov-bar-val">{fmt(avg)}</span>
+          <span className="ov-bar-val">{fmt(monthlyAvg)}</span>
         </div>
       </div>
       <div className="ov-receipts-total">
-        {t('oversite.receiptsTotal12')}: <b>{fmt(total)}</b> · {t('oversite.receiptsAvg')}:{' '}
-        <b>{fmt(avg)}</b> · {t('oversite.receiptsNetNote')}
+        {currentMonthOnly ? (
+          <>
+            {displayMonths[0]?.label}: <b>{fmt(displayTotal)}</b> · {t('oversite.receiptsAvg')}:{' '}
+            <b>{fmt(monthlyAvg)}</b> · {t('oversite.receiptsNetNote')}
+          </>
+        ) : (
+          <>
+            {t('oversite.receiptsTotal12')}: <b>{fmt(displayTotal)}</b> · {t('oversite.receiptsAvg')}:{' '}
+            <b>{fmt(monthlyAvg)}</b> · {t('oversite.receiptsNetNote')}
+          </>
+        )}
       </div>
     </div>
   )

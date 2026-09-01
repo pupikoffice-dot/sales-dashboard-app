@@ -43,11 +43,11 @@ export function buildBestSoldItems(args: {
   agents: string[] | null
   curYear: number
   curMonth: number
-  limit?: number
+  limit?: number | null
   /** When true, `rows` are already company×agents×MTD. */
   mtdPrefiltered?: boolean
 }): SuiteBestSoldItem[] {
-  const limit = args.limit ?? 10
+  const cap = args.limit === null ? null : (args.limit ?? 10)
   const scoped = mtdCompanyRows(
     args.rows,
     args.company,
@@ -71,7 +71,7 @@ export function buildBestSoldItems(args: {
   }
   return [...bySku.values()]
     .sort((a, b) => b.cash - a.cash || b.qty - a.qty || a.sku.localeCompare(b.sku))
-    .slice(0, limit)
+    .slice(0, cap ?? undefined)
 }
 
 /** Top 10 clients by MTD cash for company × agents. */
@@ -81,11 +81,11 @@ export function buildBestClients(args: {
   agents: string[] | null
   curYear: number
   curMonth: number
-  limit?: number
+  limit?: number | null
   /** When true, `rows` are already company×agents×MTD. */
   mtdPrefiltered?: boolean
 }): SuiteBestClient[] {
-  const limit = args.limit ?? 10
+  const cap = args.limit === null ? null : (args.limit ?? 10)
   const scoped = mtdCompanyRows(
     args.rows,
     args.company,
@@ -108,5 +108,5 @@ export function buildBestClients(args: {
   }
   return [...byClient.values()]
     .sort((a, b) => b.cash - a.cash || a.clientId.localeCompare(b.clientId))
-    .slice(0, limit)
+    .slice(0, cap ?? undefined)
 }

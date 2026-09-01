@@ -64,4 +64,16 @@ describe('topOpenOrdersByCash', () => {
     expect(top[1].cash).toBe(50)
     expect(top[1].lines).toHaveLength(2)
   })
+
+  it('returns all orders when limit is omitted', () => {
+    const rows: SalesRow[] = [
+      row({ company: 'openorders', docNum: '100', cash: 10, qty: 1 }),
+      row({ company: 'openorders', docNum: '200', cash: 30, qty: 1 }),
+      row({ company: 'openorders', docNum: '300', cash: 200, qty: 1 }),
+    ]
+
+    const all = topOpenOrdersByCash(rows, 'openorders')
+    expect(all).toHaveLength(3)
+    expect(all.map(o => o.docNum)).toEqual(['300', '200', '100'])
+  })
 })

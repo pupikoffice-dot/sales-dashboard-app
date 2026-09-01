@@ -21,6 +21,9 @@ export interface SmOrdersReportTarget {
   label: string
 }
 
+/** Sales Agent suite: show this many missed item/client rows without scrolling. */
+export const SALES_AGENT_BI_ROW_LIMIT = 30
+
 export interface SmCubeGridProps {
   kpis: SmSuiteKpis
   /**
@@ -41,6 +44,10 @@ export interface SmCubeGridProps {
   tsometOpenBudget?: SmTsometOpenBudgetKpiProps | null
   /** Compact BI tables nest under the 7-day orders chart. */
   biSlot?: ReactNode
+  /** Sales Agent suite: hide the 7-day orders chart. */
+  hideOrders7Days?: boolean
+  /** Sales Agent suite: receipts cube shows current month only. */
+  receiptsCurrentMonthOnly?: boolean
 }
 
 export function SmCubeGrid({
@@ -55,6 +62,8 @@ export function SmCubeGrid({
   onOpenReceiptsReport,
   tsometOpenBudget,
   biSlot,
+  hideOrders7Days = false,
+  receiptsCurrentMonthOnly = false,
 }: SmCubeGridProps) {
   const { t } = useLocale()
   const { salesMtd, openOrders, returnsMtd, openDebt, ordersLast7Days, receipts } = kpis
@@ -161,20 +170,24 @@ export function SmCubeGrid({
         ) : null}
       </div>
 
-      <div className={`sm-cube sm-cube--orders${biSlot ? ' sm-cube--orders-with-bi' : ''}`}>
-        <div className="sm-orders-main">
-          <OversiteOrdersLast7Days data={ordersLast7Days} />
-          {onOpenOrdersReport && ordersReportCompanies.length > 0 ? (
-            <div className="sm-orders-report">
-              {ordersReportCompanies.map(co => (
-                <div key={co.id} className="sm-orders-report-row">
-                  {multiCoReport ? <span className="sm-orders-report-co">{co.label}</span> : null}
-                  <OversiteOrdersReportButton onClick={() => onOpenOrdersReport(co.id)} />
-                </div>
-              ))}
-            </div>
-          ) : null}
-        </div>
+      <div
+        className={`sm-cube sm-cube--orders${biSlot ? ' sm-cube--orders-with-bi' : ''}${hideOrders7Days ? ' sm-cube--orders-no-chart' : ''}`}
+      >
+        {!hideOrders7Days || (onOpenOrdersReport && ordersReportCompanies.length > 0) ? (
+          <div className={`sm-orders-main${hideOrders7Days ? ' sm-orders-main--report-only' : ''}`}>
+            {!hideOrders7Days ? <OversiteOrdersLast7Days data={ordersLast7Days} /> : null}
+            {onOpenOrdersReport && ordersReportCompanies.length > 0 ? (
+              <div className="sm-orders-report">
+                {ordersReportCompanies.map(co => (
+                  <div key={co.id} className="sm-orders-report-row">
+                    {multiCoReport ? <span className="sm-orders-report-co">{co.label}</span> : null}
+                    <OversiteOrdersReportButton onClick={() => onOpenOrdersReport(co.id)} />
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         {biSlot ? <div className="sm-orders-bi">{biSlot}</div> : null}
       </div>
 
@@ -185,6 +198,7 @@ export function SmCubeGrid({
             monthly={receipts.monthly}
             byAgent={receipts.byAgent}
             agents={receipts.agents}
+            currentMonthOnly={receiptsCurrentMonthOnly}
           />
         ) : (
           <div className="sm-cube-empty">{t('sm.cube.receiptsEmpty')}</div>

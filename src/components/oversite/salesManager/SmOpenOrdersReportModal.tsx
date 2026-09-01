@@ -2,9 +2,12 @@ import { useLocale } from '../../../context/LocaleContext'
 import type { OrderTodayGroup } from '../../../lib/oversiteMetrics'
 import { OversiteOrdersByDocTable } from '../OversiteOrdersByDocTable'
 
+export type SmOpenOrdersReportVariant = 'agent' | 'manager'
+
 export interface SmOpenOrdersReportModalProps {
   title: string
   orders: OrderTodayGroup[]
+  variant?: SmOpenOrdersReportVariant
   onClose: () => void
   /** Override default open-orders hint text. */
   hintText?: string
@@ -13,16 +16,18 @@ export interface SmOpenOrdersReportModalProps {
   showOrderDate?: boolean
 }
 
-/** Top open orders by cash — click a row to cascade line items. */
+/** Open orders by cash — click a row to cascade line items. */
 export function SmOpenOrdersReportModal({
   title,
   orders,
+  variant = 'manager',
   onClose,
   hintText,
   emptyLabel,
   showOrderDate = false,
 }: SmOpenOrdersReportModalProps) {
   const { t } = useLocale()
+  const isAgent = variant === 'agent'
 
   return (
     <div className="debt-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -34,11 +39,15 @@ export function SmOpenOrdersReportModal({
           </button>
         </div>
         <div className="debt-modal-body">
-          <p className="sm-report-hint">{hintText ?? t('sm.openOrders.top10Hint')}</p>
+          <p className="sm-report-hint">
+            {hintText ??
+              t(isAgent ? 'sm.openOrders.agentHint' : 'sm.openOrders.top10Hint')}
+          </p>
           <OversiteOrdersByDocTable
             orders={orders}
             emptyLabel={emptyLabel ?? t('oversite.noOrderItems')}
-            showFooterTotal
+            showFooterTotal={!showOrderDate}
+            footerTotalLabel={t(isAgent ? 'sm.openOrders.agentTotal' : 'sm.openOrders.top10Total')}
             showOrderDate={showOrderDate}
           />
         </div>

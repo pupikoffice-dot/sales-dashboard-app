@@ -30,6 +30,8 @@ export interface SmAgentWindowProps {
   tsometOpenBudget?: SmTsometOpenBudgetKpiProps | null
   /** Compact BI tables nest under the 7-day orders chart. */
   biBlock?: ReactNode
+  hideOrders7Days?: boolean
+  receiptsCurrentMonthOnly?: boolean
 }
 
 export function SmAgentWindow({
@@ -46,6 +48,8 @@ export function SmAgentWindow({
   onOpenReceiptsReport,
   tsometOpenBudget,
   biBlock,
+  hideOrders7Days,
+  receiptsCurrentMonthOnly,
 }: SmAgentWindowProps) {
   return (
     <section className={`sm-window ${windowTintClass(agentId)}`}>
@@ -62,6 +66,8 @@ export function SmAgentWindow({
         onOpenReceiptsReport={onOpenReceiptsReport}
         tsometOpenBudget={tsometOpenBudget}
         biSlot={biBlock}
+        hideOrders7Days={hideOrders7Days}
+        receiptsCurrentMonthOnly={receiptsCurrentMonthOnly}
       />
     </section>
   )
