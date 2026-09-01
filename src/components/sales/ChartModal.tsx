@@ -13,7 +13,8 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 're
 import { createPortal } from 'react-dom'
 import { csvCell, downloadCSV } from '../../lib/csvExport'
 import { fmt, fmt0 } from '../../lib/format'
-import { PIE_COLORS } from '../../lib/pieColors'
+import { useTheme } from '../../context/ThemeContext'
+import { getPieColors } from '../../lib/pieColors'
 import type { PieEntry } from '../../lib/pieData'
 
 ChartJS.register(
@@ -53,6 +54,11 @@ function sliceEntries(entries: PieEntry[]) {
 }
 
 export function ChartModal({ config, onClose }: ChartModalProps) {
+  const { theme } = useTheme()
+  const pieColors = getPieColors(theme)
+  const chartGrid = theme === 'light' ? 'rgba(100, 100, 110, 0.18)' : 'rgba(46, 51, 80, 0.4)'
+  const chartTick = theme === 'light' ? '#636366' : '#7b82a8'
+  const chartBorder = theme === 'light' ? '#d8d8de' : '#1a1d27'
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const chartRef = useRef<ChartJS | null>(null)
   const [barMode, setBarMode] = useState<'cash' | 'qty'>('cash')
@@ -98,8 +104,8 @@ export function ChartModal({ config, onClose }: ChartModalProps) {
           datasets: [{
             label: barMode === 'cash' ? 'Cash' : 'Qty',
             data: vals,
-            backgroundColor: config.months.map((_, i) => PIE_COLORS[i % PIE_COLORS.length]),
-            borderColor: '#1a1d27',
+            backgroundColor: config.months.map((_, i) => pieColors[i % pieColors.length]),
+            borderColor: chartBorder,
             borderWidth: 1,
             borderRadius: 5,
           }],
@@ -112,10 +118,10 @@ export function ChartModal({ config, onClose }: ChartModalProps) {
             tooltip: { callbacks: { label: c => `  ${fmt(c.raw as number)}` } },
           },
           scales: {
-            x: { ticks: { color: '#7b82a8', font: { size: 11 } }, grid: { color: 'rgba(46,51,80,.4)' } },
+            x: { ticks: { color: chartTick, font: { size: 11 } }, grid: { color: chartGrid } },
             y: {
-              ticks: { color: '#7b82a8', font: { size: 11 }, callback: v => fmt(v as number) },
-              grid: { color: 'rgba(46,51,80,.4)' },
+              ticks: { color: chartTick, font: { size: 11 }, callback: v => fmt(v as number) },
+              grid: { color: chartGrid },
             },
           },
         },
@@ -130,8 +136,8 @@ export function ChartModal({ config, onClose }: ChartModalProps) {
         labels: sliced.map(e => e.label),
         datasets: [{
           data: sliced.map(e => e.value),
-          backgroundColor: PIE_COLORS.slice(0, sliced.length),
-          borderColor: '#1a1d27',
+          backgroundColor: pieColors.slice(0, sliced.length),
+          borderColor: chartBorder,
           borderWidth: 2,
           hoverOffset: 10,
         }],
@@ -159,7 +165,7 @@ export function ChartModal({ config, onClose }: ChartModalProps) {
       chartRef.current?.destroy()
       chartRef.current = null
     }
-  }, [config, barMode])
+  }, [config, barMode, theme, pieColors, chartGrid, chartTick, chartBorder])
 
   if (!config) return null
 
@@ -230,7 +236,7 @@ export function ChartModal({ config, onClose }: ChartModalProps) {
         <tr key={m}>
           <td style={{ textAlign: 'center', color: 'var(--muted)' }}>{i + 1}</td>
           <td>
-            <span className="pie-dot-sm" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
+            <span className="pie-dot-sm" style={{ background: pieColors[i % pieColors.length] }} />
             {m}
           </td>
           <td style={{ textAlign: 'right' }}>{fmt(config.cashVals[i])}</td>
@@ -272,7 +278,7 @@ export function ChartModal({ config, onClose }: ChartModalProps) {
           <td>{i + 1}</td>
           <td style={{ color: 'var(--muted)', fontSize: '0.72rem', whiteSpace: 'nowrap' }}>{e.sku || '—'}</td>
           <td>
-            <span className="pie-dot-sm" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
+            <span className="pie-dot-sm" style={{ background: pieColors[i % pieColors.length] }} />
             {e.label}
           </td>
           <td style={{ textAlign: 'right' }}>{fmt(e.value)}</td>
@@ -327,7 +333,7 @@ export function ChartModal({ config, onClose }: ChartModalProps) {
             </td>
           )}
           <td>
-            <span className="pie-dot-sm" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
+            <span className="pie-dot-sm" style={{ background: pieColors[i % pieColors.length] }} />
             {e.label}
           </td>
           <td style={{ textAlign: 'right' }}>{fmt(e.value)}</td>
