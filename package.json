@@ -10,7 +10,9 @@
     "build": "npm run typecheck && vite build",
     "vercel-build": "npm run typecheck && vite build",
     "preview": "vite preview",
-    "deploy:prod": "vercel deploy --prod --scope pupikoffice-dots-projects"
+    "deploy:prod": "vercel deploy --prod --scope pupikoffice-dots-projects",
+    "promote:sync-version": "node scripts/sync-production-version.mjs",
+    "promote:bump-beta": "node scripts/bump-beta-product-version.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.4",
