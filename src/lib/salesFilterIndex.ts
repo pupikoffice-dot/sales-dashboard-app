@@ -1,6 +1,7 @@
 import type { CatType } from '../context/DashboardFiltersContext'
 import type { SalesRow } from '../types/dashboard'
 import type { ListOption } from './salesFilterLists'
+import { preferItemName } from './itemNames'
 import { isHiddenSupplier } from './supplierMetrics'
 
 interface TagBuckets {
@@ -65,7 +66,7 @@ function addItem(
 ) {
   if (!map.has(cat)) map.set(cat, new Map())
   const items = map.get(cat)!
-  if (!items.has(sku)) items.set(sku, name)
+  items.set(sku, preferItemName(items.get(sku) ?? '', name))
 }
 
 /** One pass over all rows — used once when dashboard data loads. */

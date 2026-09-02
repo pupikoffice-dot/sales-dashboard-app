@@ -1,4 +1,5 @@
 import type { LogicalCompany, SalesRow } from '../types/dashboard'
+import { preferItemName } from './itemNames'
 
 export interface HabitConfig {
   habitX: number
@@ -166,7 +167,7 @@ export function buildMissedItems(args: BuildMissedItemsArgs): BiHabitResult<BiMi
     e.cash += cash
     e.qty += qty
     if (cash !== 0 || qty !== 0) e.months.add(k)
-    if (r.itemName) e.name = String(r.itemName)
+    e.name = preferItemName(e.name, r.itemName)
   }
 
   const items = [...bySku.entries()]
@@ -321,7 +322,7 @@ export function buildItemsSoldByOthers(args: BuildItemsSoldByOthersArgs): BiItem
     }
     e.cash += Number(r.cash) || 0
     e.qty += Number(r.qty) || 0
-    if (r.itemName) e.name = String(r.itemName)
+    e.name = preferItemName(e.name, r.itemName)
   }
 
   return [...others.entries()]

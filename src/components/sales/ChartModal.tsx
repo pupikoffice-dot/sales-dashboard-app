@@ -12,6 +12,7 @@ import {
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { csvCell, downloadCSV } from '../../lib/csvExport'
+import { downloadWorkbook } from '../../lib/spreadsheetExport'
 import { fmt, fmt0 } from '../../lib/format'
 import { useTheme } from '../../context/ThemeContext'
 import { getPieColors } from '../../lib/pieColors'
@@ -170,15 +171,30 @@ export function ChartModal({ config, onClose }: ChartModalProps) {
   if (!config) return null
 
   function handleExportCsv() {
-    const lines: string[] = []
+    const base = config!.title.replace(/\s+/g, '_')
     if (config!.kind === 'bar') {
-      lines.push([csvCell('#'), csvCell('Month'), csvCell('Cash'), csvCell('Qty'), csvCell('Share')].join(','))
-      const total = config!.cashVals.reduce((s, v) => s + v, 0)
+      const totalCash = config!.cashVals.reduce((s, v) => s + v, 0)
+      const totalQty = config!.qtyVals.reduce((s, v) => s + v, 0)
+      const cashRows: string[][] = [['#', 'Month', 'Cash', 'Share']]
+      const qtyRows: string[][] = [['#', 'Month', 'Qty', 'Share']]
       config!.months.forEach((m, i) => {
-        const pct = total > 0 ? ((config!.cashVals[i] / total) * 100).toFixed(1) : '0'
-        lines.push([csvCell(String(i + 1)), csvCell(m), csvCell(fmt(config!.cashVals[i])), csvCell(fmt(config!.qtyVals[i])), csvCell(`${pct}%`)].join(','))
+        const cashPct = totalCash > 0 ? ((config!.cashVals[i] / totalCash) * 100).toFixed(1) : '0'
+        const qtyPct = totalQty > 0 ? ((config!.qtyVals[i] / totalQty) * 100).toFixed(1) : '0'
+        cashRows.push([String(i + 1), m, fmt(config!.cashVals[i]), `${cashPct}%`])
+        qtyRows.push([String(i + 1), m, fmt(config!.qtyVals[i]), `${qtyPct}%`])
       })
-    } else if (config!.kind === 'stock') {
+      downloadWorkbook(
+        [
+          { name: 'Cash', rows: cashRows },
+          { name: 'Qty', rows: qtyRows },
+        ],
+        `${base}.xlsx`,
+      )
+      return
+    }
+
+    if (config!.kind === 'stock') {
+      const lines: string[] = []
       const { sliced } = sliceEntries(config!.entries)
       const total = sliced.reduce((s, e) => s + e.value, 0)
       lines.push([csvCell('#'), csvCell('SKU'), csvCell('Name'), csvCell('Total Cost'), csvCell('WMS Stock'), csvCell('Open Orders'), csvCell('Share')].join(','))
@@ -186,25 +202,38 @@ export function ChartModal({ config, onClose }: ChartModalProps) {
         const pct = total > 0 ? ((e.value / total) * 100).toFixed(1) : '0'
         lines.push([csvCell(String(i + 1)), csvCell(e.sku || ''), csvCell(e.label), csvCell(fmt(e.value)), csvCell(fmt0(e.qty || 0)), csvCell(fmt0(e.ooQty || 0)), csvCell(`${pct}%`)].join(','))
       })
-    } else {
-      const { sliced } = sliceEntries(config!.entries)
-      const total = sliced.reduce((s, e) => s + e.value, 0)
-      const hasSku = sliced.some(e => e.sku?.trim())
-      if (hasSku) {
-        lines.push([csvCell('#'), csvCell('SKU'), csvCell('Name'), csvCell('Cash'), csvCell('Qty'), csvCell('Share')].join(','))
-        sliced.forEach((e, i) => {
-          const pct = total > 0 ? ((e.value / total) * 100).toFixed(1) : '0'
-          lines.push([csvCell(String(i + 1)), csvCell(e.sku || ''), csvCell(e.label), csvCell(fmt(e.value)), csvCell(fmt(e.qty || 0)), csvCell(`${pct}%`)].join(','))
-        })
-      } else {
-        lines.push([csvCell('#'), csvCell('Name'), csvCell('Cash'), csvCell('Qty'), csvCell('Share')].join(','))
-        sliced.forEach((e, i) => {
-          const pct = total > 0 ? ((e.value / total) * 100).toFixed(1) : '0'
-          lines.push([csvCell(String(i + 1)), csvCell(e.label), csvCell(fmt(e.value)), csvCell(fmt(e.qty || 0)), csvCell(`${pct}%`)].join(','))
-        })
-      }
+      downloadCSV(lines.join('\r\n'), `${base}.csv`)
+      return
     }
-    downloadCSV(lines.join('\r\n'), `${config!.title.replace(/\s+/g, '_')}.csv`)
+
+    const { sliced } = sliceEntries(config!.entries)
+    const totalCash = sliced.reduce((s, e) => s + e.value, 0)
+    const totalQty = sliced.reduce((s, e) => s + (e.qty || 0), 0)
+    const hasSku = sliced.some(e => e.sku?.trim())
+    const cashRows: string[][] = [
+      hasSku ? ['#', 'SKU', 'Name', 'Cash', 'Share'] : ['#', 'Name', 'Cash', 'Share'],
+    ]
+    const qtyRows: string[][] = [
+      hasSku ? ['#', 'SKU', 'Name', 'Qty', 'Share'] : ['#', 'Name', 'Qty', 'Share'],
+    ]
+    sliced.forEach((e, i) => {
+      const cashPct = totalCash > 0 ? ((e.value / totalCash) * 100).toFixed(1) : '0'
+      const qtyPct = totalQty > 0 ? (((e.qty || 0) / totalQty) * 100).toFixed(1) : '0'
+      if (hasSku) {
+        cashRows.push([String(i + 1), e.sku || '', e.label, fmt(e.value), `${cashPct}%`])
+        qtyRows.push([String(i + 1), e.sku || '', e.label, fmt(e.qty || 0), `${qtyPct}%`])
+      } else {
+        cashRows.push([String(i + 1), e.label, fmt(e.value), `${cashPct}%`])
+        qtyRows.push([String(i + 1), e.label, fmt(e.qty || 0), `${qtyPct}%`])
+      }
+    })
+    downloadWorkbook(
+      [
+        { name: 'Cash', rows: cashRows },
+        { name: 'Qty', rows: qtyRows },
+      ],
+      `${base}.xlsx`,
+    )
   }
 
   let title = config.title

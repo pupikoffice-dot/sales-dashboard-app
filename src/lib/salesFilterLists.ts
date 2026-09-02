@@ -2,6 +2,7 @@ import type { CatType, DateMode } from '../context/DashboardFiltersContext'
 import { filterRows } from './permissions'
 import type { DashboardAccess } from '../types/dashboard'
 import type { LogicalCompany, SalesRow } from '../types/dashboard'
+import { preferItemName } from './itemNames'
 
 export interface ListOption {
   id: string
@@ -62,7 +63,7 @@ export function buildItemOptions(
     const cat = (catType === 'tablet' ? r.tabletCat : r.groupCat) || '(No Category)'
     if (!selectedCategories.has(String(cat))) return
     const sku = r.itemSKU || '(No SKU)'
-    if (!items[sku]) items[sku] = r.itemName || sku
+    items[sku] = preferItemName(items[sku] ?? '', r.itemName || sku)
   })
   return Object.entries(items)
     .sort((a, b) => a[1].localeCompare(b[1]))

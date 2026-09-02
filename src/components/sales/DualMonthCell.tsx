@@ -12,7 +12,13 @@ export function DualMonthCell({ curCash, curQty, prevCash, prevQty }: DualMonthC
   const prevStyle = prevCash < curCash ? 'month-worse' : undefined
 
   return (
-    <td data-sv={curCash}>
+    <td
+      data-sv={curCash}
+      data-cash-cur={curCash}
+      data-qty-cur={curQty}
+      data-cash-prev={prevCash}
+      data-qty-prev={prevQty}
+    >
       <div className={curStyle}>
         {fmt0(curCash)}
         <br />

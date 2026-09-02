@@ -24,6 +24,8 @@ import { SmItemsReportModal } from './SmItemsReportModal'
 import { SmOpenOrdersReportModal } from './SmOpenOrdersReportModal'
 import { SmReceiptsReportModal } from './SmReceiptsReportModal'
 import { SmVsCompanyView } from './SmVsCompanyView'
+import type { OversightLayoutPreference } from '../../../lib/oversightLayouts'
+import { OversightLayoutToggle } from '../OversightLayoutToggle'
 import {
   buildSmDebtRows,
   buildSmOpenOrdersReport,
@@ -43,6 +45,11 @@ export type SmSuiteVariant = 'manager' | 'agent'
 export interface SalesManagerSuiteProps {
   /** manager = full Sales Manager (Alone/Vs, all agents). agent = single-agent view. */
   variant?: SmSuiteVariant
+  /** Shown when user may switch back to classic Oversight. */
+  layoutToggle?: {
+    active: 'classic' | 'suite'
+    onSelect: (preference: OversightLayoutPreference) => void
+  }
 }
 
 /** Stable empty stock map so cube useMemos do not bust when a company has no WMS rows. */
@@ -54,7 +61,7 @@ const EMPTY_STOCK: Record<string, number> = {}
  * CORE RULE: Oversight ⊥ Sidebar — never use sidebar filters.
  * CORE RULE: Companies never combined — one company block after another.
  */
-export function SalesManagerSuite({ variant = 'manager' }: SalesManagerSuiteProps) {
+export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesManagerSuiteProps) {
   const isAgentSuite = variant === 'agent'
   const { t } = useLocale()
   const { session, isSuperAdmin } = useAuth()
@@ -332,26 +339,34 @@ export function SalesManagerSuite({ variant = 'manager' }: SalesManagerSuiteProp
       <div className="ov-header">
         <div className="ov-header-row">
           <h2>{t(isAgentSuite ? 'sa.suite.title' : 'sm.suite.title')}</h2>
-          {!isAgentSuite && !singleAgent ? (
-            <div className="sm-mode-toggle" role="group" aria-label={t('sm.mode.label')}>
-              <button
-                type="button"
-                className={viewMode === 'alone' ? 'active' : undefined}
-                aria-pressed={viewMode === 'alone'}
-                onClick={() => setViewMode('alone')}
-              >
-                {t('sm.mode.alone')}
-              </button>
-              <button
-                type="button"
-                className={viewMode === 'vs' ? 'active' : undefined}
-                aria-pressed={viewMode === 'vs'}
-                onClick={() => setViewMode('vs')}
-              >
-                {t('sm.mode.vs')}
-              </button>
-            </div>
-          ) : null}
+          <div className="ov-header-actions">
+            {layoutToggle ? (
+              <OversightLayoutToggle
+                active={layoutToggle.active}
+                onSelect={layoutToggle.onSelect}
+              />
+            ) : null}
+            {!isAgentSuite && !singleAgent ? (
+              <div className="sm-mode-toggle" role="group" aria-label={t('sm.mode.label')}>
+                <button
+                  type="button"
+                  className={viewMode === 'alone' ? 'active' : undefined}
+                  aria-pressed={viewMode === 'alone'}
+                  onClick={() => setViewMode('alone')}
+                >
+                  {t('sm.mode.alone')}
+                </button>
+                <button
+                  type="button"
+                  className={viewMode === 'vs' ? 'active' : undefined}
+                  aria-pressed={viewMode === 'vs'}
+                  onClick={() => setViewMode('vs')}
+                >
+                  {t('sm.mode.vs')}
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
         <div className="ov-sub">
           {t('oversite.today')}: <b>{dateCtx.todayDisp}</b>

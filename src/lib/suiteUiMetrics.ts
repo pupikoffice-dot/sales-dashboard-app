@@ -1,4 +1,5 @@
 import type { LogicalCompany, SalesRow } from '../types/dashboard'
+import { preferItemName } from './itemNames'
 
 export interface SuiteBestSoldItem {
   sku: string
@@ -67,7 +68,7 @@ export function buildBestSoldItems(args: {
     }
     e.cash += Number(r.cash) || 0
     e.qty += Number(r.qty) || 0
-    if (r.itemName) e.name = String(r.itemName)
+    e.name = preferItemName(e.name, r.itemName)
   }
   return [...bySku.values()]
     .sort((a, b) => b.cash - a.cash || b.qty - a.qty || a.sku.localeCompare(b.sku))

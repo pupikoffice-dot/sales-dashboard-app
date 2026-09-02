@@ -1,5 +1,6 @@
 import type { LogicalCompany, SalesRow } from '../types/dashboard'
 import { MONTH_NAMES } from './format'
+import { preferItemName } from './itemNames'
 import { isWeekendFriSat, normalizeSalesDate, weekdayShortEn } from './salesDate'
 
 export interface OversiteCompanyDef {
@@ -436,6 +437,7 @@ export function computeTop10BySku(
     if (!r.itemSKU) return
     const sku = String(r.itemSKU)
     if (!itemMap[sku]) itemMap[sku] = { sku, name: String(r.itemName || sku), cash: 0, qty: 0 }
+    itemMap[sku].name = preferItemName(itemMap[sku].name, r.itemName)
     itemMap[sku].cash += Number(r.cash) || 0
     itemMap[sku].qty += Number(r.qty) || 0
   })

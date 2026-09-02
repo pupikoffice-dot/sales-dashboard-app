@@ -215,6 +215,7 @@ export const messages: Record<keyof typeof en, string> = {
   'sales.qty': 'כמות',
   'sales.search': 'חיפוש…',
   'sales.exportCsv': 'ייצוא CSV',
+  'sales.exportExcel': 'ייצוא Excel',
   'sales.collapseAll': 'כווץ הכל',
   'sales.expandAll': 'הרחב הכל',
   'sales.chart': 'גרף',

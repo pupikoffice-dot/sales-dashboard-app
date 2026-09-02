@@ -213,6 +213,7 @@ export const messages = {
   'sales.qty': 'Qty',
   'sales.search': 'Search…',
   'sales.exportCsv': 'Export CSV',
+  'sales.exportExcel': 'Export Excel',
   'sales.collapseAll': 'Collapse All',
   'sales.expandAll': 'Expand All',
   'sales.chart': 'Chart',
