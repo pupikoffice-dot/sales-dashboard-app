@@ -9,7 +9,7 @@ import { canShowClientProfit } from '../../lib/permissions'
 import { matchesSearch } from '../../lib/salesSearch'
 import { getWmsQty, sumRows } from '../../lib/salesMetrics'
 import { buildMonthTotalsIndex } from '../../lib/salesMonthAggregate'
-import { groupSalesRowsBySku } from '../../lib/itemNames'
+import { groupSalesRowsBySku, groupSalesRowsBySkuWithNames } from '../../lib/itemNames'
 import type { LogicalCompany, SalesRow, SkuValueMap } from '../../types/dashboard'
 import type { WmsStockMap } from '../../lib/wmsData'
 import { DualMonthGroupedTable } from './DualMonthGroupedTable'
@@ -52,7 +52,10 @@ export function SkuSummaryTable({
   const showClientProfit = canShowClientProfit(access, isSuperAdmin)
   const priceData = itemPrice?.[company] ?? {}
 
-  const items = useMemo(() => groupSalesRowsBySku(rows), [rows])
+  const items = useMemo(
+    () => groupSalesRowsBySkuWithNames(rows, historyRows),
+    [rows, historyRows],
+  )
   const historyBySku = useMemo(() => groupSalesRowsBySku(historyRows), [historyRows])
   const filteredEntries = useMemo(
     () =>

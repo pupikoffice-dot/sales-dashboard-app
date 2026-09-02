@@ -9,7 +9,7 @@ import { fmt, fmt0 } from '../../lib/format'
 import { matchesSearch } from '../../lib/salesSearch'
 import { getWmsQty, sumRows } from '../../lib/salesMetrics'
 import { buildMonthTotalsIndex } from '../../lib/salesMonthAggregate'
-import { groupSalesRowsBySku } from '../../lib/itemNames'
+import { groupSalesRowsBySkuWithNames } from '../../lib/itemNames'
 import type { LogicalCompany, SalesRow, SkuValueMap } from '../../types/dashboard'
 import type { WmsStockMap } from '../../lib/wmsData'
 import { DualMonthGroupedTable } from './DualMonthGroupedTable'
@@ -205,7 +205,7 @@ function SalesItemsContent({ rows, filters, companyRows, wmsStock, itemPrice }: 
     )
   }
 
-  const items = groupSalesRowsBySku(rows)
+  const items = groupSalesRowsBySkuWithNames(rows, companyRows)
   return (
     <div id="sales-report">
       <SalesReportStickySetup />
