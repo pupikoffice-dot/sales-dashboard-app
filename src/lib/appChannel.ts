@@ -7,8 +7,8 @@
  *     - beta = next-version iteration
  *     - legacy = frozen prior stable (backup / rollback reference)
  *
- * Production shows live DB `app_runtime_config.active_version` (2.1 after promote).
- * Beta shows `BETA_PRODUCT_VERSION` + "beta" (2.2 · beta).
+ * Production shows live DB `app_runtime_config.active_version` (2.2 after promote).
+ * Beta shows `BETA_PRODUCT_VERSION` + "beta" (2.3 · beta).
  * Legacy shows `LEGACY_PRODUCT_VERSION` + "legacy" (1.0 · legacy), not DB.
  *
  * Do NOT flip `app_runtime_config.active_version` just to relabel beta — that row is
@@ -19,7 +19,7 @@ export type AppChannel = 'production' | 'beta' | 'legacy'
 
 /** Product line currently under construction on the beta channel. */
 export const BETA_PRODUCT_VERSION =
-  (import.meta.env.VITE_PRODUCT_VERSION as string | undefined)?.trim() || '2.2'
+  (import.meta.env.VITE_PRODUCT_VERSION as string | undefined)?.trim() || '2.3'
 
 /** Frozen product line on the legacy backup channel. */
 export const LEGACY_PRODUCT_VERSION = '1.0'
