@@ -8,18 +8,12 @@ import {
   getMonthTotal,
   type MonthTotalsIndex,
 } from './salesMonthAggregate'
+import { groupSalesRowsBySku } from './itemNames'
 import type { LogicalCompany, SalesRow, SkuValueMap } from '../types/dashboard'
 import type { WmsStockMap } from './wmsData'
 
 function groupBySku(rows: SalesRow[]) {
-  const items: Record<string, { name: string; rows: SalesRow[] }> = {}
-  for (const r of rows) {
-    if (!r.itemSKU) continue
-    const sku = r.itemSKU
-    if (!items[sku]) items[sku] = { name: r.itemName || sku, rows: [] }
-    items[sku].rows.push(r)
-  }
-  return items
+  return groupSalesRowsBySku(rows)
 }
 
 function dualMonthCellHtml(

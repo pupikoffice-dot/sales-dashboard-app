@@ -7,5 +7,6 @@ export function useOversightLayoutGrants(userId: string | undefined | null) {
     queryFn: () => fetchUserOversightLayoutGrants(userId!),
     enabled: !!userId,
     staleTime: 60_000,
+    refetchOnMount: 'always',
   })
 }

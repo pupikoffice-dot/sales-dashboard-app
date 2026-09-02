@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { preferItemName } from './itemNames'
+import { groupSalesRowsBySku, preferItemName } from './itemNames'
 
 describe('preferItemName', () => {
   it('keeps the longer label', () => {
@@ -15,5 +15,15 @@ describe('preferItemName', () => {
   it('ignores empty candidates', () => {
     expect(preferItemName('Existing', '')).toBe('Existing')
     expect(preferItemName('Existing', null)).toBe('Existing')
+  })
+})
+
+describe('groupSalesRowsBySku', () => {
+  it('keeps the longest item name per SKU', () => {
+    const grouped = groupSalesRowsBySku([
+      { itemSKU: 'GRP-1', itemName: 'ed edition סקוט', cash: 1, qty: 1 } as never,
+      { itemSKU: 'GRP-1', itemName: 'Limited edition סקוט', cash: 2, qty: 1 } as never,
+    ])
+    expect(grouped['GRP-1'].name).toBe('Limited edition סקוט')
   })
 })

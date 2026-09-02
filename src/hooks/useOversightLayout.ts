@@ -59,7 +59,9 @@ export function useOversightLayout() {
   )
 
   return {
-    isLoading: classMode.isLoading || (!!userId && grantsQ.isLoading),
+    isLoading:
+      classMode.isLoading ||
+      (!!userId && grantsQ.isPending),
     display: resolved.display,
     canToggle: resolved.canToggle,
     options: resolved.options,

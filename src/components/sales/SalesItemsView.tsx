@@ -9,6 +9,7 @@ import { fmt, fmt0 } from '../../lib/format'
 import { matchesSearch } from '../../lib/salesSearch'
 import { getWmsQty, sumRows } from '../../lib/salesMetrics'
 import { buildMonthTotalsIndex } from '../../lib/salesMonthAggregate'
+import { groupSalesRowsBySku } from '../../lib/itemNames'
 import type { LogicalCompany, SalesRow, SkuValueMap } from '../../types/dashboard'
 import type { WmsStockMap } from '../../lib/wmsData'
 import { DualMonthGroupedTable } from './DualMonthGroupedTable'
@@ -24,16 +25,6 @@ interface SalesItemsViewProps {
   companyRows: SalesRow[]
   wmsStock: WmsStockMap
   itemPrice?: SkuValueMap
-}
-
-function groupBySku(rows: SalesRow[]) {
-  const items: Record<string, { name: string; rows: SalesRow[] }> = {}
-  rows.forEach(r => {
-    const sku = r.itemSKU || '(No SKU)'
-    if (!items[sku]) items[sku] = { name: r.itemName || sku, rows: [] }
-    items[sku].rows.push(r)
-  })
-  return items
 }
 
 function itemSectionVisible(
@@ -214,7 +205,7 @@ function SalesItemsContent({ rows, filters, companyRows, wmsStock, itemPrice }: 
     )
   }
 
-  const items = groupBySku(rows)
+  const items = groupSalesRowsBySku(rows)
   return (
     <div id="sales-report">
       <SalesReportStickySetup />

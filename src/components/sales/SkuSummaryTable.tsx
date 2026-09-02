@@ -9,6 +9,7 @@ import { canShowClientProfit } from '../../lib/permissions'
 import { matchesSearch } from '../../lib/salesSearch'
 import { getWmsQty, sumRows } from '../../lib/salesMetrics'
 import { buildMonthTotalsIndex } from '../../lib/salesMonthAggregate'
+import { groupSalesRowsBySku } from '../../lib/itemNames'
 import type { LogicalCompany, SalesRow, SkuValueMap } from '../../types/dashboard'
 import type { WmsStockMap } from '../../lib/wmsData'
 import { DualMonthGroupedTable } from './DualMonthGroupedTable'
@@ -26,17 +27,6 @@ interface SkuSummaryTableProps {
   showAllRows?: boolean
   exportId?: string
   exportName?: string
-}
-
-function groupBySku(rows: SalesRow[]) {
-  const items: Record<string, { name: string; rows: SalesRow[] }> = {}
-  rows.forEach(r => {
-    if (!r.itemSKU) return
-    const sku = r.itemSKU
-    if (!items[sku]) items[sku] = { name: r.itemName || sku, rows: [] }
-    items[sku].rows.push(r)
-  })
-  return items
 }
 
 function skuPrice(itemPrice: SkuValueMap | undefined, company: LogicalCompany, sku: string) {
@@ -62,8 +52,8 @@ export function SkuSummaryTable({
   const showClientProfit = canShowClientProfit(access, isSuperAdmin)
   const priceData = itemPrice?.[company] ?? {}
 
-  const items = useMemo(() => groupBySku(rows), [rows])
-  const historyBySku = useMemo(() => groupBySku(historyRows), [historyRows])
+  const items = useMemo(() => groupSalesRowsBySku(rows), [rows])
+  const historyBySku = useMemo(() => groupSalesRowsBySku(historyRows), [historyRows])
   const filteredEntries = useMemo(
     () =>
       Object.entries(items)
