@@ -4,12 +4,15 @@ import type { DashboardFiltersState } from '../../context/DashboardFiltersContex
 import { usePreview } from '../../context/PreviewContext'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { useSalesReportUi } from '../../context/SalesReportUiContext'
+import { useDashboardData } from '../../hooks/useDashboardData'
 import { fmt, fmt0, fmt2 } from '../../lib/format'
 import { canShowClientProfit } from '../../lib/permissions'
 import { matchesSearch } from '../../lib/salesSearch'
 import { getWmsQty, sumRows } from '../../lib/salesMetrics'
 import { buildMonthTotalsIndex } from '../../lib/salesMonthAggregate'
-import { groupSalesRowsBySku, groupSalesRowsBySkuWithNames } from '../../lib/itemNames'
+import { groupSalesRowsBySku, groupSalesRowsBySkuWithNames, resolveSkuDisplayName } from '../../lib/itemNames'
+import { buildSkuNameLookupFromFilterIndex } from '../../lib/salesFilterIndex'
+import { effectiveCompany } from '../../lib/salesFilterLists'
 import type { LogicalCompany, SalesRow, SkuValueMap } from '../../types/dashboard'
 import type { WmsStockMap } from '../../lib/wmsData'
 import { DualMonthGroupedTable } from './DualMonthGroupedTable'
@@ -47,22 +50,35 @@ export function SkuSummaryTable({
 }: SkuSummaryTableProps) {
   const { searchQuery } = useSalesReportUi()
   const { access } = useDashboardAccess()
+  const { filterIndex } = useDashboardData()
   // Honours the super-admin "View as user" preview.
   const { effectiveIsSuperAdmin: isSuperAdmin } = usePreview()
   const showClientProfit = canShowClientProfit(access, isSuperAdmin)
   const priceData = itemPrice?.[company] ?? {}
 
+  const companyTag = effectiveCompany(company, filters.dateMode)
+  const skuNameLookup = useMemo(
+    () => buildSkuNameLookupFromFilterIndex(filterIndex, companyTag),
+    [filterIndex, companyTag],
+  )
+
   const items = useMemo(
     () => groupSalesRowsBySkuWithNames(rows, historyRows),
     [rows, historyRows],
   )
+  const displayName = (sku: string, fallback: string) =>
+    resolveSkuDisplayName(sku, fallback, skuNameLookup)
   const historyBySku = useMemo(() => groupSalesRowsBySku(historyRows), [historyRows])
   const filteredEntries = useMemo(
     () =>
       Object.entries(items)
-        .filter(([sku, it]) => showAllRows || matchesSearch(searchQuery, sku, it.name))
-        .sort((a, b) => a[1].name.localeCompare(b[1].name)),
-    [items, searchQuery, showAllRows],
+        .filter(([sku, it]) =>
+          showAllRows || matchesSearch(searchQuery, sku, displayName(sku, it.name)),
+        )
+        .sort((a, b) =>
+          displayName(a[0], a[1].name).localeCompare(displayName(b[0], b[1].name)),
+        ),
+    [items, searchQuery, showAllRows, skuNameLookup],
   )
 
   const isSimple = filters.dateMode === 'range' || filters.dateMode === 'openorders'
@@ -71,16 +87,17 @@ export function SkuSummaryTable({
     () =>
       filteredEntries.map(([sku, it]) => {
         const compareRows = historyBySku[sku]?.rows ?? []
+        const name = displayName(sku, it.name)
         return {
           key: sku,
           col1: sku,
-          col2: it.name,
-          col2Title: it.name,
+          col2: name,
+          col2Title: name,
           currentMonthIndex: buildMonthTotalsIndex(it.rows),
           compareMonthIndex: buildMonthTotalsIndex(compareRows),
         }
       }),
-    [filteredEntries, historyBySku],
+    [filteredEntries, historyBySku, skuNameLookup],
   )
 
   if (!filteredEntries.length) return null
@@ -90,6 +107,7 @@ export function SkuSummaryTable({
     let tc = 0
     const body = filteredEntries.map(([sku, it]) => {
       const { cash, qty } = sumRows(it.rows)
+      const name = displayName(sku, it.name)
       tq += qty
       tc += cash
       const sq = getWmsQty(sku, company, wmsStock)
@@ -97,7 +115,7 @@ export function SkuSummaryTable({
       return (
         <tr key={sku}>
           <td>{sku}</td>
-          <td title={it.name}>{it.name}</td>
+          <td title={name}>{name}</td>
           <td data-sv={qty}>{fmt(qty)}</td>
           <td data-sv={cash}>{fmt(cash)}</td>
           <td data-sv={sq ?? -1} className="accent2">

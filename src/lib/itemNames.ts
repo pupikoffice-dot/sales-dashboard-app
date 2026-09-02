@@ -54,3 +54,16 @@ export function groupSalesRowsBySkuWithNames(
   }
   return items
 }
+
+/** Apply optional name lookups (e.g. filter index) on top of grouped SKU labels. */
+export function resolveSkuDisplayName(
+  sku: string,
+  fallback: string,
+  ...lookups: Array<Record<string, string> | undefined>
+): string {
+  let name = fallback
+  for (const map of lookups) {
+    if (map?.[sku]) name = preferItemName(name, map[sku])
+  }
+  return name
+}

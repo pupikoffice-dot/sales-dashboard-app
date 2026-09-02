@@ -154,8 +154,28 @@ export function getIndexedItemOptions(
   const merged = new Map<string, string>()
   for (const cat of selectedCategories) {
     for (const item of source[cat] ?? []) {
-      if (!merged.has(item.id)) merged.set(item.id, item.label)
+      merged.set(item.id, preferItemName(merged.get(item.id) ?? '', item.label))
     }
   }
   return toSortedOptions(merged)
+}
+
+/** Longest item label per SKU for a company tag — same source as sidebar item pickers. */
+export function buildSkuNameLookupFromFilterIndex(
+  index: SalesFilterIndex | undefined,
+  companyTag: string | null,
+): Record<string, string> {
+  if (!companyTag || !index) return {}
+  const co = index.byCompanyTag[companyTag]
+  if (!co) return {}
+
+  const names: Record<string, string> = {}
+  const absorb = (items: ListOption[]) => {
+    for (const { id, label } of items) {
+      names[id] = preferItemName(names[id] ?? '', label)
+    }
+  }
+  for (const items of Object.values(co.itemsByTabletCat)) absorb(items)
+  for (const items of Object.values(co.itemsByGroupCat)) absorb(items)
+  return names
 }
