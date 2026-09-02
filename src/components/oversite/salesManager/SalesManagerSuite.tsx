@@ -18,7 +18,8 @@ import type { DebtRow, LogicalCompany, SalesRow } from '../../../types/dashboard
 import { DebtModal } from '../DebtModal'
 import { OrdersTodayModal } from '../OrdersTodayModal'
 import { SuiteExtrasBlock } from './suiteUi/SuiteExtrasBlock'
-import { SmAgentWindow } from './SmAgentWindow'
+import { BiTsometBudgetCube } from './bi/BiTsometBudgetCube'
+import { SmAgentWindowWithTsomet, SmVsCompanyViewWithTsomet } from './SmAgentWindowWithTsomet'
 import { SmItemsReportModal } from './SmItemsReportModal'
 import { SmOpenOrdersReportModal } from './SmOpenOrdersReportModal'
 import { SmReceiptsReportModal } from './SmReceiptsReportModal'
@@ -325,6 +326,9 @@ export function SalesManagerSuite({ variant = 'manager' }: SalesManagerSuiteProp
   return (
     <div className="sm-suite">
       <div className="ov-header">
+        <p className="sm-suite-disclaimer" role="note">
+          {t('sm.suite.numbersDisclaimer')}
+        </p>
         <div className="ov-header-row">
           <h2>{t(isAgentSuite ? 'sa.suite.title' : 'sm.suite.title')}</h2>
           {!isAgentSuite ? (
@@ -375,6 +379,7 @@ export function SalesManagerSuite({ variant = 'manager' }: SalesManagerSuiteProp
           {companyBlocks.map(
             ({ company, label, reportCos, allKpis, agentWindows, vsSeries, stockBySku }) => {
               const allTitle = t('sm.window.allAgents')
+              const showTsomet = company === 'mt' && visibleBiIds.includes('tsomet_budget')
               return (
                 <section key={company} className="sm-company-block">
                   <h3 className="sm-company-title">{label}</h3>
@@ -383,8 +388,11 @@ export function SalesManagerSuite({ variant = 'manager' }: SalesManagerSuiteProp
                       {agentWindows.map(({ agentId, kpis, goalCash }) => {
                         const winTitle = t('sm.window.agent', { agent: agentId })
                         return (
-                          <SmAgentWindow
+                          <SmAgentWindowWithTsomet
                             key={`${company}-${agentId}`}
+                            showTsomet={showTsomet}
+                            tsometAgents={[agentId]}
+                            rows={rows}
                             title={winTitle}
                             kpis={kpis}
                             goalCash={goalCash}
@@ -424,6 +432,12 @@ export function SalesManagerSuite({ variant = 'manager' }: SalesManagerSuiteProp
                       })}
                     </div>
                   ) : viewMode === 'vs' && vsSeries ? (
+                    <SmVsCompanyViewWithTsomet
+                      showTsomet={showTsomet}
+                      tsometAgents={allAgentsScope}
+                      rows={rows}
+                    >
+                      {tsometOpenBudget => (
                     <SmVsCompanyView
                       series={vsSeries}
                       monthLbl={dateCtx.monthLbl}
@@ -439,6 +453,7 @@ export function SalesManagerSuite({ variant = 'manager' }: SalesManagerSuiteProp
                       onOpenReceiptsReport={() =>
                         openReceiptsReport(company, allAgentsScope, `${label} — Vs`)
                       }
+                      tsometOpenBudget={tsometOpenBudget}
                       biBlock={
                         <SuiteExtrasBlock
                           biVisibleIds={visibleBiIds}
@@ -454,9 +469,14 @@ export function SalesManagerSuite({ variant = 'manager' }: SalesManagerSuiteProp
                         />
                       }
                     />
+                      )}
+                    </SmVsCompanyViewWithTsomet>
                   ) : (
                     <div className="sm-suite-windows">
-                      <SmAgentWindow
+                      <SmAgentWindowWithTsomet
+                        showTsomet={showTsomet}
+                        tsometAgents={allAgentsScope}
+                        rows={rows}
                         title={allTitle}
                         kpis={allKpis}
                         goalCash={allGoal}
@@ -494,8 +514,11 @@ export function SalesManagerSuite({ variant = 'manager' }: SalesManagerSuiteProp
                       {agentWindows.map(({ agentId, kpis, goalCash }) => {
                         const winTitle = t('sm.window.agent', { agent: agentId })
                         return (
-                          <SmAgentWindow
+                          <SmAgentWindowWithTsomet
                             key={`${company}-${agentId}`}
+                            showTsomet={showTsomet}
+                            tsometAgents={[agentId]}
+                            rows={rows}
                             title={winTitle}
                             kpis={kpis}
                             goalCash={goalCash}
@@ -535,6 +558,14 @@ export function SalesManagerSuite({ variant = 'manager' }: SalesManagerSuiteProp
                       })}
                     </div>
                   )}
+                  {showTsomet ? (
+                    <div className="bi-tsomet-wide">
+                      <BiTsometBudgetCube
+                        rows={rows}
+                        agents={scopedAgents.length > 0 ? scopedAgents : null}
+                      />
+                    </div>
+                  ) : null}
                 </section>
               )
             },
