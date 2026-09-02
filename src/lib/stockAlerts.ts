@@ -1,4 +1,5 @@
 import type { LogicalCompany, SalesRow } from '../types/dashboard'
+import { preferItemName } from './itemNames'
 import type { WmsNamesMap, WmsStockMap } from './wmsData'
 
 const MIN_STOCK = 10
@@ -152,6 +153,10 @@ export function computeStockAlerts(
         netByDate: {},
       }
     }
+    pm[pkey].skuName = preferItemName(
+      pm[pkey].skuName,
+      wmsNames[co]?.[sku] || r.itemName,
+    )
     pm[pkey].netByDate[r.date] = (pm[pkey].netByDate[r.date] || 0) + netQty
     if (isSale && rawQty > 0 && !pm[pkey].agent && r.agent) pm[pkey].agent = String(r.agent)
   })

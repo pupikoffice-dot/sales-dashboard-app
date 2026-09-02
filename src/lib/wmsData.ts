@@ -1,4 +1,5 @@
 import type { LogicalCompany } from '../types/dashboard'
+import { preferItemName } from '@dashboard/shared/itemNames'
 
 export interface WmsRow {
   company: string
@@ -24,7 +25,7 @@ export function buildWmsMaps(wmsRows: WmsRow[] | undefined): { wmsStock: WmsStoc
     wmsStock[co][r.itemSKU] = (wmsStock[co][r.itemSKU] || 0) + (Number(r.qtyInStock) || 0)
     if (r.itemName) {
       if (!wmsNames[co]) wmsNames[co] = {}
-      if (!wmsNames[co][r.itemSKU]) wmsNames[co][r.itemSKU] = r.itemName
+      wmsNames[co][r.itemSKU] = preferItemName(wmsNames[co][r.itemSKU] ?? '', r.itemName)
     }
   })
   return { wmsStock, wmsNames }

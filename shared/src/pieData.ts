@@ -1,5 +1,6 @@
 import { MONTH_NAMES } from './format'
 import { getSortedMonths } from './salesDateFilter'
+import { preferItemName } from './itemNames'
 import type { SalesRow } from './types'
 
 export interface PieEntry {
@@ -15,6 +16,7 @@ export function buildItemPie(rows: SalesRow[]): PieEntry[] {
   rows.forEach(r => {
     if (!r.itemSKU) return
     if (!map[r.itemSKU]) map[r.itemSKU] = { name: r.itemName || r.itemSKU, cash: 0, qty: 0 }
+    map[r.itemSKU].name = preferItemName(map[r.itemSKU].name, r.itemName)
     map[r.itemSKU].cash += r.cash || 0
     map[r.itemSKU].qty += r.qty || 0
   })

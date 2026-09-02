@@ -19,6 +19,7 @@ import { supabase } from '../lib/supabase'
 import { formatHeaderVersionBadge } from '../lib/appChannel'
 import { useSalesAgentNavHide } from '../hooks/useSalesAgentNavHide'
 import { useUserProfile } from '../hooks/useUserProfile'
+import { useOversightLayout } from '../hooks/useOversightLayout'
 
 async function fetchActiveAppVersion(): Promise<string> {
   const { data, error } = await supabase
@@ -46,6 +47,13 @@ export function DashboardLayout() {
   const location = useLocation()
   const hideNavigation = useSalesAgentNavHide()
   const { name: userName } = useUserProfile()
+  const oversightLayout = useOversightLayout()
+  const showSuiteDisclaimer =
+    location.pathname.startsWith('/oversite') &&
+    !oversightLayout.isLoading &&
+    oversightLayout.display.mode === 'suite' &&
+    (oversightLayout.display.suiteId === 'sales_manager' ||
+      oversightLayout.display.suiteId === 'sales_agent')
   const showFilters = !location.pathname.startsWith('/admin') && !hideNavigation
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { data: liveActiveVersion = '1.0' } = useQuery({
@@ -264,6 +272,12 @@ export function DashboardLayout() {
           </button>
         </div>
       </header>
+
+      {showSuiteDisclaimer ? (
+        <div className="dashboard-suite-disclaimer" role="note">
+          {t('sm.suite.numbersDisclaimer')}
+        </div>
+      ) : null}
 
       <div
         className={`dashboard-shell${isRtl ? ' is-rtl' : ''}${hideNavigation ? ' dashboard-shell--no-nav' : ''}`}

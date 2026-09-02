@@ -213,6 +213,7 @@ export const messages = {
   'sales.qty': 'Qty',
   'sales.search': 'Search…',
   'sales.exportCsv': 'Export CSV',
+  'sales.exportExcel': 'Export Excel',
   'sales.collapseAll': 'Collapse All',
   'sales.expandAll': 'Expand All',
   'sales.chart': 'Chart',
@@ -222,6 +223,8 @@ export const messages = {
   'sales.periodStock': 'Stock',
 
   'sm.suite.title': 'Sales Manager',
+  'sm.suite.numbersDisclaimer':
+    'Numbers shown are NOT FINAL NOR NET and cannot be used as final statement, as they change',
   'sa.suite.title': 'Sales Agent',
   'sa.noAgent': 'No agent assigned to your account. Ask an admin to set your agent number under Admin → Users.',
   'sm.mode.alone': 'Alone',

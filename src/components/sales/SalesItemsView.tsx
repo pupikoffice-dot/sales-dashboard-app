@@ -5,10 +5,14 @@ import { useLocale } from '../../context/LocaleContext'
 import { SortableTh } from './SortableTh'
 import { SalesReportUiProvider, useSalesReportUi } from '../../context/SalesReportUiContext'
 import { useReportChart } from '../../hooks/useReportChart'
+import { useDashboardData } from '../../hooks/useDashboardData'
 import { fmt, fmt0 } from '../../lib/format'
 import { matchesSearch } from '../../lib/salesSearch'
 import { getWmsQty, sumRows } from '../../lib/salesMetrics'
 import { buildMonthTotalsIndex } from '../../lib/salesMonthAggregate'
+import { groupSalesRowsBySkuWithNames, resolveSkuDisplayName } from '../../lib/itemNames'
+import { buildSkuNameLookupFromFilterIndex } from '../../lib/salesFilterIndex'
+import { effectiveCompany } from '../../lib/salesFilterLists'
 import type { LogicalCompany, SalesRow, SkuValueMap } from '../../types/dashboard'
 import type { WmsStockMap } from '../../lib/wmsData'
 import { DualMonthGroupedTable } from './DualMonthGroupedTable'
@@ -24,16 +28,6 @@ interface SalesItemsViewProps {
   companyRows: SalesRow[]
   wmsStock: WmsStockMap
   itemPrice?: SkuValueMap
-}
-
-function groupBySku(rows: SalesRow[]) {
-  const items: Record<string, { name: string; rows: SalesRow[] }> = {}
-  rows.forEach(r => {
-    const sku = r.itemSKU || '(No SKU)'
-    if (!items[sku]) items[sku] = { name: r.itemName || sku, rows: [] }
-    items[sku].rows.push(r)
-  })
-  return items
 }
 
 function itemSectionVisible(
@@ -185,8 +179,16 @@ function ClientsUnderItemTable({
 function SalesItemsContent({ rows, filters, companyRows, wmsStock, itemPrice }: SalesItemsViewProps) {
   const { t } = useLocale()
   const { searchQuery } = useSalesReportUi()
+  const { filterIndex } = useDashboardData()
   useReportChart(filters, rows, { kind: 'item', pieTitle: 'Cash by Item' })
   const company = filters.company! as LogicalCompany
+  const companyTag = effectiveCompany(company, filters.dateMode)
+  const skuNameLookup = useMemo(
+    () => buildSkuNameLookupFromFilterIndex(filterIndex, companyTag),
+    [filterIndex, companyTag],
+  )
+  const displayName = (sku: string, fallback: string) =>
+    resolveSkuDisplayName(sku, fallback, skuNameLookup)
   const catLabel =
     filters.catType === 'tablet' ? t('filters.tabletCategory') : t('filters.groupCategory')
   const modeLabel =
@@ -214,7 +216,7 @@ function SalesItemsContent({ rows, filters, companyRows, wmsStock, itemPrice }: 
     )
   }
 
-  const items = groupBySku(rows)
+  const items = groupSalesRowsBySkuWithNames(rows, companyRows)
   return (
     <div id="sales-report">
       <SalesReportStickySetup />
@@ -225,21 +227,24 @@ function SalesItemsContent({ rows, filters, companyRows, wmsStock, itemPrice }: 
         count={Object.keys(items).length}
       />
       {Object.entries(items)
-        .sort((a, b) => a[1].name.localeCompare(b[1].name))
+        .sort((a, b) =>
+          displayName(a[0], a[1].name).localeCompare(displayName(b[0], b[1].name)),
+        )
         .map(([sku, it]) => {
-          if (!itemSectionVisible(searchQuery, it.name, sku, it.rows)) return null
-          const nameMatch = matchesSearch(searchQuery, it.name, sku)
+          const name = displayName(sku, it.name)
+          if (!itemSectionVisible(searchQuery, name, sku, it.rows)) return null
+          const nameMatch = matchesSearch(searchQuery, name, sku)
           const { cash, qty } = sumRows(it.rows)
           const sq = wmsStock[company]?.[sku] ?? null
           return (
             <SalesSection
               key={sku}
-              exportName={it.name}
+              exportName={name}
               exportId={sku}
               icon="📦"
               title={
                 <>
-                  {it.name} <span className="section-meta">{sku}</span>
+                  {name} <span className="section-meta">{sku}</span>
                 </>
               }
               cash={cash}
@@ -254,7 +259,7 @@ function SalesItemsContent({ rows, filters, companyRows, wmsStock, itemPrice }: 
                   wmsStock={wmsStock}
                   showAllRows={nameMatch}
                   exportId={sku}
-                  exportName={it.name}
+                  exportName={name}
                 />
               )}
             />

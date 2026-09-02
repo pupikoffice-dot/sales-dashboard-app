@@ -215,6 +215,7 @@ export const messages: Record<keyof typeof en, string> = {
   'sales.qty': 'כמות',
   'sales.search': 'חיפוש…',
   'sales.exportCsv': 'ייצוא CSV',
+  'sales.exportExcel': 'ייצוא Excel',
   'sales.collapseAll': 'כווץ הכל',
   'sales.expandAll': 'הרחב הכל',
   'sales.chart': 'גרף',
@@ -224,6 +225,8 @@ export const messages: Record<keyof typeof en, string> = {
   'sales.periodStock': 'מלאי',
 
   'sm.suite.title': 'מנהל מכירות',
+  'sm.suite.numbersDisclaimer':
+    'המספרים המוצגים אינם סופיים ואינם נטו ואינם יכולים לשמש כדוח סופי, שכן הם משתנים',
   'sa.suite.title': 'סוכן מכירות',
   'sa.noAgent': 'לא הוקצה סוכן לחשבון שלך. בקש מהמנהל להגדיר מספר סוכן תחת Admin → Users.',
   'sm.mode.alone': 'Alone',

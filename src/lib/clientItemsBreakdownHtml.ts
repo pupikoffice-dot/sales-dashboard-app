@@ -8,18 +8,12 @@ import {
   getMonthTotal,
   type MonthTotalsIndex,
 } from './salesMonthAggregate'
+import { groupSalesRowsBySkuWithNames } from './itemNames'
 import type { LogicalCompany, SalesRow, SkuValueMap } from '../types/dashboard'
 import type { WmsStockMap } from './wmsData'
 
-function groupBySku(rows: SalesRow[]) {
-  const items: Record<string, { name: string; rows: SalesRow[] }> = {}
-  for (const r of rows) {
-    if (!r.itemSKU) continue
-    const sku = r.itemSKU
-    if (!items[sku]) items[sku] = { name: r.itemName || sku, rows: [] }
-    items[sku].rows.push(r)
-  }
-  return items
+function groupBySku(rows: SalesRow[], nameSourceRows: SalesRow[] = []) {
+  return groupSalesRowsBySkuWithNames(rows, nameSourceRows)
 }
 
 function dualMonthCellHtml(
@@ -49,8 +43,9 @@ export function buildItemsUnderClientHtml(
   showClientProfit = false,
   /** Translated "cash (units)" micro-label for the month headers. */
   monthMicroLabel = '',
+  nameSourceRows: SalesRow[] = [],
 ): string {
-  const items = groupBySku(rows)
+  const items = groupBySku(rows, nameSourceRows)
   const entries = Object.entries(items).sort((a, b) => a[1].name.localeCompare(b[1].name))
   if (!entries.length) return ''
 
@@ -183,6 +178,7 @@ export function buildClientSectionHtml(
   itemPrice?: SkuValueMap,
   showClientProfit = false,
   monthMicroLabel = '',
+  nameSourceRows: SalesRow[] = [],
 ): string {
   const body = buildItemsUnderClientHtml(
     rows,
@@ -194,6 +190,7 @@ export function buildClientSectionHtml(
     itemPrice,
     showClientProfit,
     monthMicroLabel,
+    nameSourceRows,
   )
   const collapsedClass = collapsed ? ' collapsed' : ''
   return (
@@ -298,6 +295,7 @@ export function buildAllClientSectionsHtml(
     }
     const historyMonthIndexBySku =
       historyIndexes.monthIndexBySkuByClient.get(cid) ?? new Map<string, MonthTotalsIndex>()
+    const nameSourceRows = historyIndexes.rowsByClient.get(cid) ?? []
     parts[i] = buildClientSectionHtml(
       cid,
       cl.name,
@@ -313,6 +311,7 @@ export function buildAllClientSectionsHtml(
       itemPrice,
       showClientProfit,
       monthMicroLabel,
+      nameSourceRows,
     )
   }
   return parts.join('')

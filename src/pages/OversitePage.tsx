@@ -3,9 +3,11 @@ import { usePreview } from '../context/PreviewContext'
 import { useLocale } from '../context/LocaleContext'
 import { useDashboardAccess } from '../context/DashboardAccessContext'
 import { useDashboardData } from '../hooks/useDashboardData'
-import { useResolvedOversightMode } from '../hooks/useResolvedOversightMode'
+import { useOversightLayout } from '../hooks/useOversightLayout'
+import { OversightLayoutToggle } from '../components/oversite/OversightLayoutToggle'
 import { SalesAgentSuite } from '../components/oversite/salesManager/SalesAgentSuite'
 import { SalesManagerSuite } from '../components/oversite/salesManager/SalesManagerSuite'
+import type { OversightLayoutPreference } from '../lib/oversightLayouts'
 import { computeDebtAgentMatrix, computeDebtSummary, debtRowsForCompany } from '../lib/debtMetrics'
 import { fmt, formatGeneratedDisplay } from '../lib/format'
 import type { LogicalCompany } from '../types/dashboard'
@@ -58,22 +60,46 @@ export function OversitePage() {
   const { t } = useLocale()
   // Honours the super-admin "View as user" preview.
   const { effectiveIsSuperAdmin: isSuperAdmin } = usePreview()
-  const oversightMode = useResolvedOversightMode()
+  const layout = useOversightLayout()
 
-  // Suite replaces classic Oversight entirely (addons ignored while suite active).
-  if (oversightMode.isLoading) {
+  if (layout.isLoading) {
     return <p className="status-msg">{t('common.loadingSalesData')}</p>
   }
-  if (oversightMode.mode === 'suite') {
-    if (oversightMode.suiteId === 'sales_manager') return <SalesManagerSuite />
-    if (oversightMode.suiteId === 'sales_agent') return <SalesAgentSuite />
+  if (layout.display.mode === 'suite') {
+    if (layout.display.suiteId === 'sales_manager') {
+      return (
+        <SalesManagerSuite
+          layoutToggle={
+            layout.canToggle
+              ? { active: 'suite', onSelect: layout.setPreference }
+              : undefined
+          }
+        />
+      )
+    }
+    if (layout.display.suiteId === 'sales_agent') return <SalesAgentSuite />
   }
 
-  return <ClassicOversitePage isSuperAdmin={isSuperAdmin} />
+  return (
+    <ClassicOversitePage
+      isSuperAdmin={isSuperAdmin}
+      layoutToggle={
+        layout.canToggle
+          ? { active: 'classic', onSelect: layout.setPreference }
+          : undefined
+      }
+    />
+  )
 }
 
 /** Classic company-column Oversight layout (used when no suite grant). */
-function ClassicOversitePage({ isSuperAdmin }: { isSuperAdmin: boolean }) {
+function ClassicOversitePage({
+  isSuperAdmin,
+  layoutToggle,
+}: {
+  isSuperAdmin: boolean
+  layoutToggle?: { active: 'classic' | 'suite'; onSelect: (p: OversightLayoutPreference) => void }
+}) {
   const { t } = useLocale()
   const { access } = useDashboardAccess()
   // Use access-scoped `rows` from the hook (already memoised) — do not re-filter allRows.
@@ -213,7 +239,15 @@ function ClassicOversitePage({ isSuperAdmin }: { isSuperAdmin: boolean }) {
       <div className="ov-header">
         <div className="ov-header-row">
           <h2>🏠 {t('oversite.title')}</h2>
-          <OversiteLegend />
+          <div className="ov-header-actions">
+            {layoutToggle ? (
+              <OversightLayoutToggle
+                active={layoutToggle.active}
+                onSelect={layoutToggle.onSelect}
+              />
+            ) : null}
+            <OversiteLegend />
+          </div>
         </div>
         <div className="ov-sub">
           {t('oversite.today')}: <b>{ctx.todayDisp}</b>

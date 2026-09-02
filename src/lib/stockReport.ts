@@ -1,4 +1,5 @@
 import { MONTH_NAMES } from './format'
+import { preferItemName } from './itemNames'
 import { isWmsTotalRow } from './wmsData'
 import type { LogicalCompany, SalesRow, SkuValueMap } from '../types/dashboard'
 import type { WmsNamesMap, WmsStockMap } from './wmsData'
@@ -73,6 +74,7 @@ export function buildStockReport(
       if (!skus[r.itemSKU]) {
         skus[r.itemSKU] = { name: r.itemName || r.itemSKU, lastMoQty: 0, ooQty: 0 }
       }
+      skus[r.itemSKU].name = preferItemName(skus[r.itemSKU].name, r.itemName)
       if (Number(r.year) === lastY && Number(r.month) === lastM) {
         skus[r.itemSKU].lastMoQty += r.qty || 0
       }
@@ -83,13 +85,14 @@ export function buildStockReport(
       if (!skus[r.itemSKU]) {
         skus[r.itemSKU] = { name: r.itemName || r.itemSKU, lastMoQty: 0, ooQty: 0 }
       }
+      skus[r.itemSKU].name = preferItemName(skus[r.itemSKU].name, r.itemName)
       skus[r.itemSKU].ooQty += r.qty || 0
     }
   }
 
   for (const sku of Object.keys(wmsData)) {
     if (!skus[sku]) {
-      skus[sku] = { name: names[sku] || sku, lastMoQty: 0, ooQty: 0 }
+      skus[sku] = { name: preferItemName(names[sku] || sku, names[sku]), lastMoQty: 0, ooQty: 0 }
     }
   }
 
@@ -119,7 +122,7 @@ export function buildStockReport(
 
     rows.push({
       sku,
-      name: it.name,
+      name: preferItemName(it.name, names[sku]),
       lastMoQty: it.lastMoQty,
       ooQty: it.ooQty,
       wmsQty: wq,
