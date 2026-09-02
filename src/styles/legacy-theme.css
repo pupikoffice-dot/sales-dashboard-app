@@ -189,6 +189,27 @@ body {
   z-index: 100;
 }
 
+.dashboard-suite-disclaimer {
+  margin: 0;
+  padding: 8px 16px;
+  border-bottom: 1px solid rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--txt);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+  position: sticky;
+  top: var(--header-h);
+  z-index: 99;
+}
+
+html[data-theme='light'] .dashboard-suite-disclaimer {
+  border-bottom-color: rgba(180, 83, 9, 0.28);
+  background: rgba(254, 243, 199, 0.85);
+  color: #92400e;
+}
+
 .dashboard-header h1 {
   font-size: 1.15rem;
   font-weight: 700;

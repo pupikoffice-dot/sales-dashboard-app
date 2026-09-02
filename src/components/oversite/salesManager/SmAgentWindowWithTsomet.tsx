@@ -8,11 +8,14 @@ function toTsometCubeProp(
   showTsomet: boolean,
   kpi: ReturnType<typeof useTsometOpenBudgetKpi>,
 ): SmTsometOpenBudgetKpiProps | null {
-  if (!showTsomet || (!kpi.isLoading && !kpi.visible)) return null
+  if (!showTsomet) return null
+  if (kpi.isLoading) {
+    return { openBudget: 0, budgetCash: 0, isLoading: true }
+  }
   return {
     openBudget: kpi.totals.openBudget,
     budgetCash: kpi.totals.budgetCash,
-    isLoading: kpi.isLoading,
+    isLoading: false,
   }
 }
 

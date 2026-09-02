@@ -156,6 +156,10 @@ export function SalesManagerSuite({ variant = 'manager' }: SalesManagerSuiteProp
     [goalsReady, scopedAgents, targets],
   )
 
+  /** Sales Manager: one agent in scope → single window, no All row, no Alone/Vs toggle. */
+  const singleAgent = !isAgentSuite && scopedAgents.length === 1
+  const effectiveViewMode: SmSuiteViewMode = singleAgent ? 'alone' : viewMode
+
   /** Tag index once per access-scoped row set — suite KPIs read slices. */
   const rowPartition = useMemo(() => partitionSalesRowsByTag(rows), [rows])
 
@@ -223,7 +227,7 @@ export function SalesManagerSuite({ variant = 'manager' }: SalesManagerSuiteProp
     return companyBlocksBase.map(block => ({
       ...block,
       vsSeries:
-        viewMode === 'vs'
+        effectiveViewMode === 'vs'
           ? buildSmVsAgentSeriesFromKpis({
               company: block.company,
               agentWindows: block.agentWindows,
@@ -231,7 +235,7 @@ export function SalesManagerSuite({ variant = 'manager' }: SalesManagerSuiteProp
             })
           : (null as SmVsCompanySeries | null),
     }))
-  }, [companyBlocksBase, viewMode])
+  }, [companyBlocksBase, effectiveViewMode])
 
   const openOrdersReport = (companyId: LogicalCompany, agents: string[] | null) => {
     const co = listSmOrdersReportCompanies([companyId])[0]
@@ -326,12 +330,9 @@ export function SalesManagerSuite({ variant = 'manager' }: SalesManagerSuiteProp
   return (
     <div className="sm-suite">
       <div className="ov-header">
-        <p className="sm-suite-disclaimer" role="note">
-          {t('sm.suite.numbersDisclaimer')}
-        </p>
         <div className="ov-header-row">
           <h2>{t(isAgentSuite ? 'sa.suite.title' : 'sm.suite.title')}</h2>
-          {!isAgentSuite ? (
+          {!isAgentSuite && !singleAgent ? (
             <div className="sm-mode-toggle" role="group" aria-label={t('sm.mode.label')}>
               <button
                 type="button"
@@ -431,7 +432,7 @@ export function SalesManagerSuite({ variant = 'manager' }: SalesManagerSuiteProp
                         )
                       })}
                     </div>
-                  ) : viewMode === 'vs' && vsSeries ? (
+                  ) : effectiveViewMode === 'vs' && vsSeries ? (
                     <SmVsCompanyViewWithTsomet
                       showTsomet={showTsomet}
                       tsometAgents={allAgentsScope}
@@ -473,6 +474,7 @@ export function SalesManagerSuite({ variant = 'manager' }: SalesManagerSuiteProp
                     </SmVsCompanyViewWithTsomet>
                   ) : (
                     <div className="sm-suite-windows">
+                      {!singleAgent ? (
                       <SmAgentWindowWithTsomet
                         showTsomet={showTsomet}
                         tsometAgents={allAgentsScope}
@@ -511,6 +513,7 @@ export function SalesManagerSuite({ variant = 'manager' }: SalesManagerSuiteProp
                           />
                         }
                       />
+                      ) : null}
                       {agentWindows.map(({ agentId, kpis, goalCash }) => {
                         const winTitle = t('sm.window.agent', { agent: agentId })
                         return (
