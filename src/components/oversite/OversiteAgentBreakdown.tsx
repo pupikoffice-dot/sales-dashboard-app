@@ -3,7 +3,14 @@ import { fmt } from '../../lib/format'
 import type { AgentBreakdownRow } from '../../lib/oversiteMetrics'
 
 /** Compact per-agent totals table shown under the Orders Today / Orders MTD KPI tiles. */
-export function OversiteAgentBreakdown({ rows }: { rows: AgentBreakdownRow[] }) {
+export function OversiteAgentBreakdown({
+  rows,
+  onAgentClick,
+}: {
+  rows: AgentBreakdownRow[]
+  /** When given, rows become clickable and drill into that agent's orders. */
+  onAgentClick?: (agent: string) => void
+}) {
   const { t } = useLocale()
   if (!rows.length) return null
   return (
@@ -19,7 +26,12 @@ export function OversiteAgentBreakdown({ rows }: { rows: AgentBreakdownRow[] }) 
         </thead>
         <tbody>
           {rows.map(r => (
-            <tr key={r.agent || '__none'}>
+            <tr
+              key={r.agent || '__none'}
+              className={onAgentClick ? 'ov-agent-row' : undefined}
+              title={onAgentClick ? t('oversite.viewAgentOrders') : undefined}
+              onClick={onAgentClick ? () => onAgentClick(r.agent) : undefined}
+            >
               <td>{r.agent || '—'}</td>
               <td className="cr">{fmt(r.clients)}</td>
               <td className="cr">{fmt(r.qty)}</td>

@@ -50,9 +50,9 @@ export const messages: Record<keyof typeof en, string> = {
   'oversiteLegend.doc720Term': 'תעודות משלוח (720)',
   'oversiteLegend.doc720Desc':
     'סחורה שנשלחה ועדיין לא חויבה (דוח 720). מתווספת למכירות בבר של מכירות MTD.',
-  'oversiteLegend.salesBarTerm': 'בר מכירות MTD (ירוק / טורקיז / אפור)',
+  'oversiteLegend.salesBarTerm': 'בר מכירות MTD (ירוק / טורקיז / כתום / אפור)',
   'oversiteLegend.salesBarDesc':
-    'ירוק = מכירות שחויבו החודש. טורקיז = תעודות משלוח (720). אפור = אותו חודש בשנה שעברה להשוואה.',
+    'ירוק = מכירות שחויבו החודש. טורקיז = תעודות משלוח (720). כתום = הזמנות פתוחות (721) שטרם סופקו. המספר לצד הבר הוא חשבוניות + תעודות משלוח; השורה הכתומה מתחת מוסיפה גם את ההזמנות הפתוחות. אפור = אותו חודש בשנה שעברה להשוואה.',
   'oversiteLegend.projectedTerm': 'תחזית (מנוקד)',
   'oversiteLegend.projectedDesc':
     'תחזית לסוף החודש לפי קצב המכירות הטיפוסי בחודשים אחרונים — לא הבטחה.',
@@ -70,6 +70,7 @@ export const messages: Record<keyof typeof en, string> = {
     'תרשימים בשכבות (הזמנות 7 ימי עבודה, גביות) משתמשים בצבע קבוע לכל סוכן כדי שיתאים בין הסעיפים.',
   'oversiteLegend.swatchSales': 'מכירות',
   'oversiteLegend.swatchDelivery': 'תעודות משלוח',
+  'oversiteLegend.swatchOpenOrders': 'הזמנות פתוחות',
   'oversiteLegend.swatchProjected': 'תחזית',
   'oversiteLegend.swatchAgents': 'סוכנים',
   'preview.viewAs': 'צפה בתור…',
@@ -330,6 +331,7 @@ export const messages: Record<keyof typeof en, string> = {
   'oversite.top10DeliveryNotes': '10 פריטי תעודות משלוח מובילים',
   'oversite.noDeliveryNotes': 'אין תעודות משלוח בייצוא',
   'oversite.salesMtd': 'מכירות חודש — {month}',
+  'oversite.salesMtdWithOpenOrders': 'כולל הזמנות פתוחות (721)',
   'oversite.top10Items': '10 הפריטים המובילים — חודש',
   'oversite.returnsMtd': 'החזרות חודש',
   'oversite.openDebt': 'חוב פתוח',
@@ -363,6 +365,8 @@ export const messages: Record<keyof typeof en, string> = {
   'oversite.noReturns': 'אין החזרות החודש',
   'oversite.fullOrdersReport': 'דוח הזמנות מלא',
   'oversite.ordersTodayReportTitle': 'הזמנות היום — {company} · {date}',
+  'oversite.ordersTodayAgentReportTitle': 'הזמנות היום — {company} · סוכן {agent} · {date}',
+  'oversite.viewAgentOrders': 'הצג את ההזמנות של הסוכן',
   'oversite.noOrdersToday': 'אין הזמנות היום.',
   'oversite.orderClientId': 'מזהה לקוח',
   'oversite.orderClientName': 'שם לקוח',

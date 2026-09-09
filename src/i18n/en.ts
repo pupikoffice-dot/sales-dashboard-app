@@ -48,9 +48,9 @@ export const messages = {
   'oversiteLegend.doc720Term': 'Delivery Notes (720)',
   'oversiteLegend.doc720Desc':
     'Goods shipped but not yet invoiced (report 720). Stacked with invoiced sales in the Sales MTD bar.',
-  'oversiteLegend.salesBarTerm': 'Sales MTD bar (green / teal / muted)',
+  'oversiteLegend.salesBarTerm': 'Sales MTD bar (green / teal / amber / muted)',
   'oversiteLegend.salesBarDesc':
-    'Green = invoiced sales this month. Teal = delivery notes (720). Grey muted = same month last year for comparison.',
+    'Green = invoiced sales this month. Teal = delivery notes (720). Amber = open orders (721) still to be delivered. The number beside the bar is invoices + delivery notes; the amber line below adds open orders. Grey muted = same month last year for comparison.',
   'oversiteLegend.projectedTerm': 'Projected (dotted)',
   'oversiteLegend.projectedDesc':
     'Month-end forecast from how sales usually pace through the month in recent history — not a promise.',
@@ -68,6 +68,7 @@ export const messages = {
     'Stacked charts (orders last 7 workdays, receipts) use a fixed colour per agent so the same agent matches across sections.',
   'oversiteLegend.swatchSales': 'Sales',
   'oversiteLegend.swatchDelivery': 'Delivery notes',
+  'oversiteLegend.swatchOpenOrders': 'Open orders',
   'oversiteLegend.swatchProjected': 'Projected',
   'oversiteLegend.swatchAgents': 'Agents',
   'preview.viewAs': 'View as…',
@@ -328,6 +329,7 @@ export const messages = {
   'oversite.top10DeliveryNotes': 'Top 10 Delivery Note Items',
   'oversite.noDeliveryNotes': 'No delivery notes in export',
   'oversite.salesMtd': 'Sales MTD — {month}',
+  'oversite.salesMtdWithOpenOrders': 'Incl. open orders (721)',
   'oversite.top10Items': 'Top 10 Items MTD',
   'oversite.returnsMtd': 'Returns MTD',
   'oversite.openDebt': 'Open Debt',
@@ -361,6 +363,8 @@ export const messages = {
   'oversite.noReturns': 'No returns this month',
   'oversite.fullOrdersReport': 'Full Orders Report',
   'oversite.ordersTodayReportTitle': 'Orders Today — {company} · {date}',
+  'oversite.ordersTodayAgentReportTitle': 'Orders Today — {company} · Agent {agent} · {date}',
+  'oversite.viewAgentOrders': "Show this agent's orders",
   'oversite.noOrdersToday': 'No orders today.',
   'oversite.orderClientId': 'Client ID',
   'oversite.orderClientName': 'Client Name',

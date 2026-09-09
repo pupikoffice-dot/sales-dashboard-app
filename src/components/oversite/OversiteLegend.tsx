@@ -95,6 +95,9 @@ export function OversiteLegend() {
               <i className="ov-bar-fill delivery" /> {t('oversiteLegend.swatchDelivery')}
             </span>
             <span className="ov-legend-swatch">
+              <i className="ov-bar-fill openorders" /> {t('oversiteLegend.swatchOpenOrders')}
+            </span>
+            <span className="ov-legend-swatch">
               <i className="ov-bar-fill forecast" /> {t('oversiteLegend.swatchProjected')}
             </span>
             <span className="ov-legend-swatch">
