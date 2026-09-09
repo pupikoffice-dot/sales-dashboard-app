@@ -50,27 +50,36 @@ export function SalesLyBars({
   lyMonthLbl,
   cash,
   deliveryCash = 0,
+  openOrdersCash = 0,
   lyCash,
   lyChangeCashPct,
   forecastCash = null,
   forecastLbl,
   forecastTitle,
+  withOpenOrdersLbl,
 }: {
   monthLbl: string
   lyMonthLbl: string
   cash: number
   deliveryCash?: number
+  /** Report 721 — undelivered open orders, stacked as pipeline on top of billed + shipped. */
+  openOrdersCash?: number
   lyCash: number
   lyChangeCashPct: number | null
   /** Projected month-end total from the historical intra-month pattern. */
   forecastCash?: number | null
   forecastLbl?: string
   forecastTitle?: string
+  withOpenOrdersLbl?: string
 }) {
+  // Headline total stays invoices + delivery notes so the last-year delta keeps
+  // comparing like with like; open orders are pipeline, shown as a second sum.
   const totalCash = cash + deliveryCash
-  const barMax = Math.max(totalCash, lyCash, forecastCash ?? 0, 1)
+  const totalWithOpenCash = totalCash + openOrdersCash
+  const barMax = Math.max(totalWithOpenCash, lyCash, forecastCash ?? 0, 1)
   const salesPct = (cash / barMax) * 100
   const deliveryPct = (deliveryCash / barMax) * 100
+  const openOrdersPct = (openOrdersCash / barMax) * 100
   const lyPct = (lyCash / barMax) * 100
   const delta =
     lyChangeCashPct != null ? (
@@ -84,17 +93,31 @@ export function SalesLyBars({
     <div className="ov-bar-chart">
       <div className="ov-bar-row">
         <span className="ov-bar-lbl">{monthLbl}</span>
-        <div className={`ov-bar-track${deliveryCash > 0 ? ' ov-bar-track--stacked' : ''}`}>
+        <div
+          className={`ov-bar-track${deliveryCash > 0 || openOrdersCash > 0 ? ' ov-bar-track--stacked' : ''}`}
+        >
           {salesPct > 0 && (
             <div className="ov-bar-fill grn" style={{ width: `${salesPct.toFixed(1)}%` }} />
           )}
           {deliveryPct > 0 && (
             <div className="ov-bar-fill delivery" style={{ width: `${deliveryPct.toFixed(1)}%` }} />
           )}
+          {openOrdersPct > 0 && (
+            <div
+              className="ov-bar-fill openorders"
+              style={{ width: `${openOrdersPct.toFixed(1)}%` }}
+            />
+          )}
         </div>
         <span className="ov-bar-val">{fmt(totalCash)}</span>
         {delta}
       </div>
+      {openOrdersCash > 0 && (
+        <div className="ov-bar-total">
+          <span className="ov-bar-total-lbl">{withOpenOrdersLbl}</span>
+          <span className="ov-bar-total-val">{fmt(totalWithOpenCash)}</span>
+        </div>
+      )}
       {forecastCash != null && forecastCash > 0 && (
         <div className="ov-bar-row ov-bar-row--forecast" title={forecastTitle}>
           <span className="ov-bar-lbl">{forecastLbl || 'Projected'}</span>

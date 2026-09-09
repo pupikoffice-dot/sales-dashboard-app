@@ -5,7 +5,7 @@ import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { useLocale } from '../../context/LocaleContext'
 import { fmt } from '../../lib/format'
 import { canShowModule } from '../../lib/permissions'
-import { groupOrdersTodayByDoc } from '../../lib/oversiteMetrics'
+import { getOrdersTodayRows, groupSalesRowsByDoc } from '../../lib/oversiteMetrics'
 import { pathForModule } from '../../modules/registry'
 import type { LogicalCompany, SalesRow } from '../../types/dashboard'
 
@@ -16,6 +16,8 @@ interface OrdersTodayModalProps {
   companyRows: SalesRow[]
   todayStr: string
   todayDisp: string
+  /** When set, only this agent's orders are listed. Null/undefined lists the whole company. */
+  agent?: string | null
   onClose: () => void
 }
 
@@ -25,6 +27,7 @@ export function OrdersTodayModal({
   companyRows,
   todayStr,
   todayDisp,
+  agent = null,
   onClose,
 }: OrdersTodayModalProps) {
   const { t } = useLocale()
@@ -35,10 +38,14 @@ export function OrdersTodayModal({
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [totalSort, setTotalSort] = useState<'desc' | 'asc' | null>(null)
 
-  const orders = useMemo(
-    () => groupOrdersTodayByDoc(companyRows, ordersTag, todayStr),
-    [companyRows, ordersTag, todayStr],
-  )
+  // Scope at row level (not group level) so the totals here match the figures in
+  // the per-agent breakdown, which also keys on the row's agent.
+  const orders = useMemo(() => {
+    const todayRows = getOrdersTodayRows(companyRows, ordersTag, todayStr)
+    const scoped =
+      agent == null ? todayRows : todayRows.filter(r => String(r.agent ?? '').trim() === agent)
+    return groupSalesRowsByDoc(scoped)
+  }, [companyRows, ordersTag, todayStr, agent])
 
   const sortedOrders = useMemo(() => {
     if (!totalSort) return orders
@@ -82,7 +89,14 @@ export function OrdersTodayModal({
       <div className="debt-modal">
         <div className="debt-modal-hdr">
           <span>
-            📋 {t('oversite.ordersTodayReportTitle', { company: companyLabel, date: todayDisp })}
+            📋{' '}
+            {agent == null
+              ? t('oversite.ordersTodayReportTitle', { company: companyLabel, date: todayDisp })
+              : t('oversite.ordersTodayAgentReportTitle', {
+                  company: companyLabel,
+                  agent: agent || '—',
+                  date: todayDisp,
+                })}
           </span>
           <button type="button" className="debt-modal-close" onClick={onClose}>
             ✕

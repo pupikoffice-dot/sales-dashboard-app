@@ -14,7 +14,6 @@ import type { LogicalCompany } from '../types/dashboard'
 import { DebtModal } from '../components/oversite/DebtModal'
 import { OversiteDebtSummary } from '../components/oversite/OversiteDebtSummary'
 import { OrdersTodayModal } from '../components/oversite/OrdersTodayModal'
-import { OversiteOrdersReportButton } from '../components/oversite/OversiteOrdersReportButton'
 import { StockAlertsPanel } from '../components/oversite/StockAlertsPanel'
 import {
   OVERSITE_COMPANIES,
@@ -110,6 +109,8 @@ function ClassicOversitePage({
     company: LogicalCompany
     companyLabel: string
     ordersTag: string
+    /** Drill-down scope: which agent's orders to list. */
+    agent: string
   } | null>(null)
   const [receiptsModal, setReceiptsModal] = useState<{
     companyLabel: string
@@ -311,13 +312,13 @@ function ClassicOversitePage({
                         { label: t('oversite.cash'), value: fmt(ordersToday.cash), tone: 'grn' },
                       ]}
                     />
-                    <OversiteAgentBreakdown rows={ordersTodayByAgent} />
-                    <OversiteOrdersLast7Days data={ordersLast7} />
-                    <OversiteOrdersReportButton
-                      onClick={() =>
-                        setOrdersModal({ company: co.id, companyLabel: co.label, ordersTag })
+                    <OversiteAgentBreakdown
+                      rows={ordersTodayByAgent}
+                      onAgentClick={agent =>
+                        setOrdersModal({ company: co.id, companyLabel: co.label, ordersTag, agent })
                       }
                     />
+                    <OversiteOrdersLast7Days data={ordersLast7} />
                   </OversiteSection>
                 )}
 
@@ -374,8 +375,10 @@ function ClassicOversitePage({
                       lyMonthLbl={ctx.lyMonthLbl}
                       cash={salesMtd.cash}
                       deliveryCash={delivery720Mtd.cash}
+                      openOrdersCash={openOrders.cash}
                       lyCash={salesMtd.lyCash}
                       lyChangeCashPct={salesMtdCombinedLyPct}
+                      withOpenOrdersLbl={t('oversite.salesMtdWithOpenOrders')}
                       forecastCash={forecast?.projected}
                       forecastLbl={`🔮 ${t('oversite.projected')}`}
                       forecastTitle={
@@ -513,6 +516,7 @@ function ClassicOversitePage({
           companyRows={companyRows}
           todayStr={ctx.todayStr}
           todayDisp={ctx.todayDisp}
+          agent={ordersModal.agent}
           onClose={() => setOrdersModal(null)}
         />
       )}

@@ -885,8 +885,33 @@ body.sales-agent-no-nav .dashboard-main {
   background: var(--acc2);
 }
 
+.ov-bar-fill.openorders {
+  background: var(--amber);
+}
+
 .ov-bar-fill.muted {
   background: var(--muted);
+}
+
+/* Second Sales MTD sum: billed + shipped + open-order pipeline. */
+.ov-bar-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.72rem;
+  border-top: 1px dashed var(--bdr);
+  margin-top: 2px;
+  padding-top: 5px;
+}
+
+.ov-bar-total-lbl {
+  color: var(--muted);
+}
+
+.ov-bar-total-val {
+  font-weight: 600;
+  color: var(--amber);
 }
 
 /* Month-end projection bar: violet stripes — clearly distinct from the
@@ -1194,6 +1219,16 @@ body.sales-agent-no-nav .dashboard-main {
   font-weight: 600;
   font-size: 0.68rem;
   text-transform: uppercase;
+}
+/* Drill-down into a single agent's orders. */
+.ov-agent-breakdown tr.ov-agent-row {
+  cursor: pointer;
+}
+.ov-agent-breakdown tr.ov-agent-row:hover td {
+  background: var(--sur2);
+}
+.ov-agent-breakdown tr.ov-agent-row td:first-child {
+  color: var(--acc);
 }
 
 /* Debt agent-by-month matrix in the Open Debt summary */
@@ -3190,6 +3225,7 @@ label.ck .ck-label {
 
 /* ── Language switcher ── */
 .lang-switch,
+.ic-switch,
 .theme-switch {
   display: flex;
   gap: 4px;
@@ -3200,6 +3236,7 @@ label.ck .ck-label {
 }
 
 .lang-btn,
+.ic-btn,
 .theme-btn {
   background: transparent;
   border: none;
@@ -3219,9 +3256,30 @@ label.ck .ck-label {
 }
 
 .lang-btn.active,
+.ic-btn.active,
 .theme-btn.active {
   background: var(--acc);
   color: var(--on-acc);
+}
+
+/* Intercompany identity switch: labels are words, not glyphs, so allow room. */
+.ic-btn {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ic-btn:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+@media (max-width: 700px) {
+  .ic-btn {
+    max-width: 92px;
+    padding: 4px 7px;
+  }
 }
 
 .login-lang-row {

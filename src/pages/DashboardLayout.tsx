@@ -12,6 +12,7 @@ import { canShowModule } from '../lib/permissions'
 import { navLabel } from '../i18n'
 import { PreviewBanner } from '../components/admin/PreviewBanner'
 import { ViewAsSwitcher } from '../components/admin/ViewAsSwitcher'
+import { IntercompanySwitcher } from '../components/IntercompanySwitcher'
 import { SidebarFilters } from '../components/sidebar/SidebarFilters'
 import { MODULE_REGISTRY } from '../modules/registry'
 import { useLocation } from 'react-router-dom'
@@ -208,6 +209,7 @@ export function DashboardLayout() {
               {userName}
             </span>
           ) : null}
+          <IntercompanySwitcher />
           <ViewAsSwitcher />
           <div className="theme-switch" role="group" aria-label={t('common.theme')}>
             <button

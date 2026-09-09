@@ -163,9 +163,11 @@ export function useDashboardData() {
     [data?.priceRows, maskPreview, access?.showClientProfit],
   )
   const companiesKey = access?.companies?.join(',') ?? ''
+  const agentsKey = access?.agents?.join(',') ?? ''
   const dataHealth = useMemo(
-    () => checkOrdersDataHealth(allRows, access?.companies ?? []),
-    [allRows, companiesKey],
+    () => checkOrdersDataHealth(allRows, access?.companies ?? [], access?.agents ?? null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on companies/agents identity
+    [allRows, companiesKey, agentsKey],
   )
 
   return {
