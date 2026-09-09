@@ -73,6 +73,8 @@ export const messages: Record<keyof typeof en, string> = {
   'oversiteLegend.swatchOpenOrders': 'הזמנות פתוחות',
   'oversiteLegend.swatchProjected': 'תחזית',
   'oversiteLegend.swatchAgents': 'סוכנים',
+  'intercompany.switchLabel': 'זהות חברה',
+  'intercompany.switchTo': 'עבור ל{identity}',
   'preview.viewAs': 'צפה בתור…',
   'preview.viewingAs': 'צופה בתור',
   'preview.exit': 'יציאה מתצוגה',

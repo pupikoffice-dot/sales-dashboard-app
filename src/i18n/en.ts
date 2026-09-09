@@ -71,6 +71,8 @@ export const messages = {
   'oversiteLegend.swatchOpenOrders': 'Open orders',
   'oversiteLegend.swatchProjected': 'Projected',
   'oversiteLegend.swatchAgents': 'Agents',
+  'intercompany.switchLabel': 'Company identity',
+  'intercompany.switchTo': 'Switch to {identity}',
   'preview.viewAs': 'View as…',
   'preview.viewingAs': 'Viewing as',
   'preview.exit': 'Exit preview',

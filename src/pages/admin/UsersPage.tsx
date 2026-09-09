@@ -14,6 +14,7 @@ import { UserPermissionsEditor } from './UserPermissionsEditor'
 import { useBiModulesCatalog } from '../../hooks/useBiModules'
 import { useUiModuleCatalog } from '../../hooks/useUiModules'
 import { fetchUserBiGrants, setUserBiGrants } from '../../lib/biModulesApi'
+import { fetchUserLinks, setUserLinks } from '../../lib/intercompanyApi'
 import { fetchUserSuiteUiGrants, setUserSuiteUiGrants } from '../../lib/suiteUiModulesApi'
 import {
   fetchUserOversightLayoutGrants,
@@ -413,6 +414,7 @@ export function UsersPage() {
             qc.invalidateQueries({ queryKey: ['admin-users-picker'] })
             qc.invalidateQueries({ queryKey: ['bi-user-grants', savedUserId] })
             qc.invalidateQueries({ queryKey: ['suite-ui-user-grants', savedUserId] })
+            qc.invalidateQueries({ queryKey: ['intercompany-identities'] })
             // If we're previewing the user whose access just changed, reload it
             // so the live preview reflects the new settings immediately (no
             // dashboard-data refetch needed — all narrowing is client-side).
@@ -450,6 +452,7 @@ function EditAccessModal({
   const [showClientProfit, setShowClientProfit] = useState(false)
   const [agentErpId, setAgentErpId] = useState('')
   const [parentId, setParentId] = useState('')
+  const [linkedUserId, setLinkedUserId] = useState('')
   const [biModuleIds, setBiModuleIds] = useState<string[]>([])
   const [suiteUiModuleIds, setSuiteUiModuleIds] = useState<string[]>([])
   const [oversightLayoutIds, setOversightLayoutIds] = useState<string[]>([])
@@ -503,6 +506,9 @@ function EditAccessModal({
     fetchUserOversightLayoutGrants(userId)
       .then(ids => setOversightLayoutIds(ids))
       .catch(() => setOversightLayoutIds([]))
+    fetchUserLinks(userId)
+      .then(ids => setLinkedUserId(ids[0] ?? ''))
+      .catch(() => setLinkedUserId(''))
     const p = users.find(u => u.id === userId)
     if (p) {
       setAgentErpId(p.agent_erp_id ?? '')
@@ -579,6 +585,7 @@ function EditAccessModal({
       await setUserBiGrants(userId, biModuleIds)
       await setUserSuiteUiGrants(userId, suiteUiModuleIds)
       await setUserOversightLayoutGrants(userId, oversightLayoutIds)
+      await setUserLinks(userId, linkedUserId ? [linkedUserId] : [])
     } catch (e) {
       setSaving(false)
       setError(e instanceof Error ? e.message : String(e))
@@ -633,6 +640,32 @@ function EditAccessModal({
                 </label>
               </div>
             )}
+
+            <div>
+              <div className="admin-form-section-title">Intercompany link</div>
+              <p className="ov-sub" style={{ margin: '0 0 8px', fontSize: '.72rem' }}>
+                For one person who holds two agent identities in two companies (e.g. agent 25 in
+                Pupik and agent 57 in Monkeytime). Both logins get a switch in the top bar. The two
+                access configs stay separate and only one is ever active, so neither company sees
+                the other's data.
+              </p>
+              <label>
+                Linked account
+                <select
+                  className="block-input"
+                  value={linkedUserId}
+                  onChange={e => setLinkedUserId(e.target.value)}
+                >
+                  <option value="">— none —</option>
+                  {parentOptions.map(u => (
+                    <option key={u.id} value={u.id}>
+                      {u.name}
+                      {u.agent_erp_id ? ` · agent ${u.agent_erp_id}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
 
             <div>
               <div className="admin-form-section-title">Modules</div>

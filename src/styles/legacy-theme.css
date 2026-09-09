@@ -3225,6 +3225,7 @@ label.ck .ck-label {
 
 /* ── Language switcher ── */
 .lang-switch,
+.ic-switch,
 .theme-switch {
   display: flex;
   gap: 4px;
@@ -3235,6 +3236,7 @@ label.ck .ck-label {
 }
 
 .lang-btn,
+.ic-btn,
 .theme-btn {
   background: transparent;
   border: none;
@@ -3254,9 +3256,30 @@ label.ck .ck-label {
 }
 
 .lang-btn.active,
+.ic-btn.active,
 .theme-btn.active {
   background: var(--acc);
   color: var(--on-acc);
+}
+
+/* Intercompany identity switch: labels are words, not glyphs, so allow room. */
+.ic-btn {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ic-btn:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+@media (max-width: 700px) {
+  .ic-btn {
+    max-width: 92px;
+    padding: 4px 7px;
+  }
 }
 
 .login-lang-row {
