@@ -127,6 +127,24 @@ describe('mapGrantKeysToUiModules', () => {
       mapGrantKeysToUiModules(['ui.oversight.addon.best_sold_items', 'ui.oversight.addon.extra_addon'], withBest),
     ).toEqual([{ id: 'extra_addon', surface: 'oversight', kind: 'addon' }])
   })
+
+  it('maps year_net_sales class feature so the suite can read the grant', () => {
+    const withYear: typeof catalog = [
+      ...catalog,
+      {
+        id: 'year_net_sales',
+        label: 'Sales year graph (891)',
+        surface: 'oversight',
+        kind: 'addon',
+        active: true,
+        sortOrder: 40,
+        description: null,
+      },
+    ]
+    expect(
+      mapGrantKeysToUiModules(['ui.oversight.addon.year_net_sales'], withYear),
+    ).toEqual([{ id: 'year_net_sales', surface: 'oversight', kind: 'addon' }])
+  })
 })
 
 describe('pickOversightMode', () => {
@@ -145,6 +163,14 @@ describe('pickOversightMode', () => {
     expect(pickOversightMode([{ id: 'x', surface: 'oversight', kind: 'addon' }])).toEqual({
       mode: 'classic', addonIds: ['x'],
     })
+  })
+  it('keeps year_net_sales out of classic addonIds', () => {
+    expect(
+      pickOversightMode([
+        { id: 'year_net_sales', surface: 'oversight', kind: 'addon' },
+        { id: 'extra_addon', surface: 'oversight', kind: 'addon' },
+      ]),
+    ).toEqual({ mode: 'classic', addonIds: ['extra_addon'] })
   })
 })
 

@@ -1,18 +1,23 @@
 # HANDOFF — sales-dashboard-app
 
 ## Current State
-_Last updated: 2026-08-27 14:46:44 by Claude Code_
+_Last updated: 2026-09-23 10:00:37 by Cursor_
 
 **Status:** Active  
-**Phase:** Stable v2.0 on production; Missed items BI rule fix shipped
+**Phase:** v2.3 live on production; beta on v2.4 work line
 
-- Works now: Production (`main`) at sales-dashboard-app-omega.vercel.app shows DB `active_version` **2.0**; beta channel is **2.1 · beta**; legacy backup on `legacy` branch
-- Works now: Missed items BI matches product rule — prior-Y habit (current month excluded), exclude SKUs with 891 invoice or 721 open orders this month, stock-first (WMS qty > 0), top 30 by prior-window cash; Missed clients also top 30
-- Works now: BI cube ? help popovers; Receipts Full report = MTD by client
-- Works now: DesktopDashboard **Sales Dash P2** no longer runs `serverdashboardexcel.xlsm` / `run_export` (refresh + export steps removed); v2 data path is Python ETL → Supabase
-- In progress: Nothing in code for this session
-- Blocked: Nothing blocked
-- Next up: Smoke Missed items for agent 24 (GRP-145328 must not appear); confirm lists show up to 30 rows
+- Works now: Production (`main`) at sales-dashboard-app-omega.vercel.app — DB `active_version` **2.3**
+- Works now: Beta year-sales graph (report 891 only) on Sales Agent and Sales Manager; class checkbox to turn it on or off
+- Works now: Sales Agent and Sales Manager classes have the graph checked on by default
+- Works now: Sales MTD bar stacks invoices + delivery notes + open orders; headline sum stays invoices+deliveries; second sum includes open orders
+- Works now: Orders Today agent rows open that agent’s orders; order row expands line details; full-report button hidden on classic Oversight
+- Works now: Intercompany link in user config; linked logins get a top-bar company switch
+- Works now: Agent-scoped users no longer get false “721mt missing from export” health alarm
+- Works now: Beta at pupik-sales-dashboard-beta.vercel.app — **2.4 · beta**
+- Works now: Legacy backup unchanged on `legacy` branch
+- In progress: Pushing year-sales class feature to beta
+- Blocked: GitHub promote workflow still needs Supabase repo secrets
+- Next up: Confirm beta deploy; uncheck the class feature if a class should not see the graph
 
 ### CORE RULES (suite)
 
@@ -24,7 +29,7 @@ _Last updated: 2026-08-27 14:46:44 by Claude Code_
 
 | Concept | Meaning | Today |
 |--------|---------|--------|
-| **Version** | Product release line (`1.0`, `2.0`, `2.1`…) | Production live = **2.0** (DB). Beta work line = **2.1** |
+| **Version** | Product release line (`1.0`, `2.0`, `2.1`…) | Production live = **2.3** (DB). Beta work line = **2.4** |
 | **Channel** | Where you iterate: production (stable) vs **beta** (next work) | `main` / prod URL vs `beta` / `pupik-sales-dashboard-beta.vercel.app` |
 
 - **Beta** = working iteration of the next (or in-progress) version. Title: `{productVersion} · beta`.
@@ -45,6 +50,57 @@ Phase 1 hides Cost, Total Cost, Price, and cost-based charts in the UI only. The
 ---
 
 ## Session Log
+
+### 2026-09-23 10:00:37 — Cursor
+**Done:**
+- Added a calendar-year sales graph from report 891 on Sales Agent and Sales Manager
+- Made the graph a class feature that can be checked in or out
+- Turned it on by default for Sales Agent and Sales Manager classes
+- Preparing the beta upload
+
+**Decisions:**
+- Sum report 891 only — that export is already net when totaled, so 855 is not subtracted
+- Class grant, not a per-user tile; it stays inside the suite and is not treated as a classic addon
+
+**Next:**
+- Confirm the beta deploy; uncheck the class feature if a class should not see the graph
+
+---
+
+### 2026-09-10 12:27:15 — Cursor
+**Done:**
+- Added open-orders segment and combined sum to Sales MTD bar on beta
+- Reworked Orders Today: hide full report; agent click opens agent orders; order click shows details
+- Built intercompany user link (admin config + top-bar switch) with server-side identity switch so data RPCs stay correct
+- Fixed false Monkeytime open-orders missing alarm for agent-scoped users after switch
+- Promoted beta v2.3 to production (omega); set DB active_version to 2.3; bumped beta work line to 2.4
+
+**Decisions:**
+- Intercompany is a switch between separate access rows, not a merge (avoids company×agent cross-product leak)
+- Sales MTD headline stays invoices+deliveries; open orders are amber pipeline plus a second total
+- Open-orders export health checks only run for company-wide access
+
+**Next:**
+- Add GitHub secrets for automated promote; optional follow-up on thin Monkeytime 721 source
+
+---
+
+### 2026-09-02 20:22:54 — Cursor
+**Done:**
+- Fixed truncated item names in items summary by resolving display names from filter index (sidebar source)
+- Re-aliased beta custom domain to latest deploy when table still showed old bundle
+- Promoted beta v2.2 to production (`main` @ `99529f6`); omega deploy READY
+- Set Supabase `active_version` to 2.2 manually (promote GitHub Action failed — missing repo secrets)
+- Bumped beta product line to 2.3 (`cc987b3`)
+
+**Decisions:**
+- Report table names use filter index as authoritative lookup over filtered report rows
+- Promote workflow secrets deferred; manual DB sync used for v2.2 badge
+
+**Next:**
+- Add GitHub secrets for automated promote; smoke omega v2.2 production
+
+---
 
 ### 2026-08-27 14:46:44 — Claude Code
 **Done:**

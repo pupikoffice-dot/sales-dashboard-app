@@ -1,7 +1,7 @@
 import type { AppGrant, GrantKind, PermissionState } from '../../types/permissions'
 import type { AppUiModule } from '../../types/uiModules'
 import { resolveOverrideState } from '../../lib/classPermissions'
-import { isClassGrantableUiModule } from '../../lib/suiteUiModules'
+import { isClassGrantableUiModule, isSuiteClassFeatureId } from '../../lib/suiteUiModules'
 import { uiModuleGrantKey } from '../../lib/uiModules'
 
 // Exported so UserPermissionsEditor (Task 9) can build real per-section explain-access item
@@ -41,6 +41,17 @@ interface OverrideModeProps {
 
 function activeOversightModules(modules: AppUiModule[] | undefined): AppUiModule[] {
   return (modules ?? []).filter(isClassGrantableUiModule)
+}
+
+function partitionClassUiModules(modules: AppUiModule[] | undefined): {
+  layoutModules: AppUiModule[]
+  suiteFeatures: AppUiModule[]
+} {
+  const all = activeOversightModules(modules)
+  return {
+    layoutModules: all.filter(m => !isSuiteClassFeatureId(m.id)),
+    suiteFeatures: all.filter(m => isSuiteClassFeatureId(m.id)),
+  }
 }
 
 /**
@@ -141,7 +152,7 @@ function DefineSections(props: DefineModeProps) {
     props.onChange(next)
   }
 
-  const uiModules = activeOversightModules(props.uiModules)
+  const { layoutModules, suiteFeatures } = partitionClassUiModules(props.uiModules)
 
   /** Suite/addon node grants; checking a suite clears other oversight suites (≤1). */
   function setUiModuleChecked(mod: AppUiModule, checked: boolean) {
@@ -150,7 +161,7 @@ function DefineSections(props: DefineModeProps) {
     const itemKeyStr = `node:${grantKey}:`
     if (checked) {
       if (mod.kind === 'suite') {
-        for (const other of uiModules) {
+        for (const other of layoutModules) {
           if (other.kind !== 'suite' || other.id === mod.id) continue
           next.delete(`node:${uiModuleGrantKey(other.surface, other.kind, other.id)}:`)
         }
@@ -257,18 +268,39 @@ function DefineSections(props: DefineModeProps) {
             )}
           </div>
         ))}
-        {uiModules.length > 0 && (
+        {layoutModules.length > 0 && (
           <div className="perm-nested">
             <p className="perm-subhead">
               UI modules{' '}
-              <span className="perm-subhead-hint">(If a suite is set, addons are ignored.)</span>
+              <span className="perm-subhead-hint">(If a suite is set, classic addons are ignored.)</span>
             </p>
-            {uiModules.map(m => {
+            {layoutModules.map(m => {
               const grantKey = uiModuleGrantKey(m.surface, m.kind, m.id)
               return (
                 <Item
                   key={grantKey}
                   label={`${m.label} (${m.kind})`}
+                  itemKey={grantKey}
+                  mode="define"
+                  checked={isChecked('node', grantKey, null)}
+                  onSetChecked={(checked) => setUiModuleChecked(m, checked)}
+                />
+              )
+            })}
+          </div>
+        )}
+        {suiteFeatures.length > 0 && (
+          <div className="perm-nested">
+            <p className="perm-subhead">
+              Suite features{' '}
+              <span className="perm-subhead-hint">(Shown inside Sales Agent / Sales Manager.)</span>
+            </p>
+            {suiteFeatures.map(m => {
+              const grantKey = uiModuleGrantKey(m.surface, m.kind, m.id)
+              return (
+                <Item
+                  key={grantKey}
+                  label={m.label}
                   itemKey={grantKey}
                   mode="define"
                   checked={isChecked('node', grantKey, null)}
@@ -294,7 +326,7 @@ function OverrideSections(props: OverrideModeProps) {
     props.classGrants.some(g => g.kind === 'scope' && g.key === 'agent' && g.value === a)
     || props.userGrants.some(g => g.kind === 'scope' && g.key === 'agent' && g.value === a),
   )
-  const uiModules = activeOversightModules(props.uiModules)
+  const { layoutModules, suiteFeatures } = partitionClassUiModules(props.uiModules)
 
   return (
     <div className="perm-sections">
@@ -388,18 +420,39 @@ function OverrideSections(props: OverrideModeProps) {
             )}
           </div>
         ))}
-        {uiModules.length > 0 && (
+        {layoutModules.length > 0 && (
           <div className="perm-nested">
             <p className="perm-subhead">
               UI modules{' '}
-              <span className="perm-subhead-hint">(If a suite is set, addons are ignored.)</span>
+              <span className="perm-subhead-hint">(If a suite is set, classic addons are ignored.)</span>
             </p>
-            {uiModules.map(m => {
+            {layoutModules.map(m => {
               const grantKey = uiModuleGrantKey(m.surface, m.kind, m.id)
               return (
                 <Item
                   key={grantKey}
                   label={`${m.label} (${m.kind})`}
+                  itemKey={grantKey}
+                  mode="override"
+                  state={overrideState('node', grantKey, null)}
+                  onToggle={(checked) => props.onToggle('node', grantKey, null, checked)}
+                />
+              )
+            })}
+          </div>
+        )}
+        {suiteFeatures.length > 0 && (
+          <div className="perm-nested">
+            <p className="perm-subhead">
+              Suite features{' '}
+              <span className="perm-subhead-hint">(Shown inside Sales Agent / Sales Manager.)</span>
+            </p>
+            {suiteFeatures.map(m => {
+              const grantKey = uiModuleGrantKey(m.surface, m.kind, m.id)
+              return (
+                <Item
+                  key={grantKey}
+                  label={m.label}
                   itemKey={grantKey}
                   mode="override"
                   state={overrideState('node', grantKey, null)}

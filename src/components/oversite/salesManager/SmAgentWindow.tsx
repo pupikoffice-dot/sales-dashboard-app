@@ -32,6 +32,7 @@ export interface SmAgentWindowProps {
   biBlock?: ReactNode
   hideOrders7Days?: boolean
   receiptsCurrentMonthOnly?: boolean
+  showYearNetSales?: boolean
 }
 
 export function SmAgentWindow({
@@ -50,6 +51,7 @@ export function SmAgentWindow({
   biBlock,
   hideOrders7Days,
   receiptsCurrentMonthOnly,
+  showYearNetSales,
 }: SmAgentWindowProps) {
   return (
     <section className={`sm-window ${windowTintClass(agentId)}`}>
@@ -68,6 +70,7 @@ export function SmAgentWindow({
         biSlot={biBlock}
         hideOrders7Days={hideOrders7Days}
         receiptsCurrentMonthOnly={receiptsCurrentMonthOnly}
+        showYearNetSales={showYearNetSales}
       />
     </section>
   )

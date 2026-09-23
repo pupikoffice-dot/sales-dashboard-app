@@ -6,6 +6,7 @@ import { OversiteOrdersLast7Days } from '../OversiteOrdersLast7Days'
 import { OversiteOrdersReportButton } from '../OversiteOrdersReportButton'
 import { OversiteReceipts } from '../OversiteReceipts'
 import type { SmSuiteKpis } from './smMetrics'
+import { SmYearNetSalesChart } from './SmYearNetSalesChart'
 import {
   SmTsometOpenBudgetCube,
   type SmTsometOpenBudgetCubeProps,
@@ -48,6 +49,8 @@ export interface SmCubeGridProps {
   hideOrders7Days?: boolean
   /** Sales Agent suite: receipts cube shows current month only. */
   receiptsCurrentMonthOnly?: boolean
+  /** Class suite feature: year graph from report 891. */
+  showYearNetSales?: boolean
 }
 
 export function SmCubeGrid({
@@ -64,9 +67,10 @@ export function SmCubeGrid({
   biSlot,
   hideOrders7Days = false,
   receiptsCurrentMonthOnly = false,
+  showYearNetSales = false,
 }: SmCubeGridProps) {
   const { t } = useLocale()
-  const { salesMtd, openOrders, returnsMtd, openDebt, ordersLast7Days, receipts } = kpis
+  const { salesMtd, openOrders, returnsMtd, openDebt, ordersLast7Days, receipts, yearNetSales } = kpis
   const goalDisplay = goalCash == null ? '—' : fmt(goalCash)
   const debtDisplay = openDebt ? fmt(openDebt.grandTotal) : '—'
   const multiCoReport = ordersReportCompanies.length > 1
@@ -81,7 +85,7 @@ export function SmCubeGrid({
   const showTsomet = tsometOpenBudget != null
 
   return (
-    <div className={`sm-cube-grid${showTsomet ? ' sm-cube-grid--tsomet' : ''}`}>
+    <div className={`sm-cube-grid${showTsomet ? ' sm-cube-grid--tsomet' : ''}${showYearNetSales ? '' : ' sm-cube-grid--no-year-sales'}`}>
       <div className="sm-cube sm-cube--mtd">
         <div className="sm-cube-title">{t('sm.cube.salesMtdGoal', { month: monthLbl })}</div>
         <div className="sm-cube-val grn">{fmt(salesMtd.cash)}</div>
@@ -209,6 +213,13 @@ export function SmCubeGrid({
           </button>
         ) : null}
       </div>
+
+      {showYearNetSales ? (
+      <div className="sm-cube sm-cube--year-sales">
+        <div className="sm-cube-title">{t('sm.cube.yearNetSales', { year: String(yearNetSales.year) })}</div>
+        <SmYearNetSalesChart data={yearNetSales} />
+      </div>
+      ) : null}
     </div>
   )
 }

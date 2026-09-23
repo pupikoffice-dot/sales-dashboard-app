@@ -3,6 +3,7 @@ import { useLocale } from '../../../context/LocaleContext'
 import { OversiteOrdersLast7Days } from '../OversiteOrdersLast7Days'
 import { OversiteOrdersReportButton } from '../OversiteOrdersReportButton'
 import { OversiteReceipts } from '../OversiteReceipts'
+import { SmYearNetSalesChart } from './SmYearNetSalesChart'
 import type { LogicalCompany } from '../../../types/dashboard'
 import type { SmOrdersReportTarget } from './SmCubeGrid'
 import type { SmTsometOpenBudgetKpiProps } from './SmCubeGrid'
@@ -21,6 +22,7 @@ export interface SmVsCompanyViewProps {
   onOpenReceiptsReport?: () => void
   tsometOpenBudget?: SmTsometOpenBudgetKpiProps | null
   biBlock?: ReactNode
+  showYearNetSales?: boolean
 }
 
 /** Vs mode: comparison cubes — agents pivoted in one chart per KPI. */
@@ -35,6 +37,7 @@ export function SmVsCompanyView({
   onOpenReceiptsReport,
   tsometOpenBudget,
   biBlock,
+  showYearNetSales = false,
 }: SmVsCompanyViewProps) {
   const { t } = useLocale()
   const agents = series.agents
@@ -87,7 +90,7 @@ export function SmVsCompanyView({
 
   return (
     <div className="sm-vs-company">
-    <div className={`sm-vs-grid${showTsomet ? ' sm-vs-grid--tsomet' : ''}`}>
+    <div className={`sm-vs-grid${showTsomet ? ' sm-vs-grid--tsomet' : ''}${showYearNetSales ? '' : ' sm-vs-grid--no-year-sales'}`}>
       <div className="sm-cube sm-cube--vs-mtd">
         <div className="sm-cube-title">{t('sm.cube.salesMtdGoal', { month: monthLbl })}</div>
         <SmVsPivotChart
@@ -187,6 +190,15 @@ export function SmVsCompanyView({
           </button>
         ) : null}
       </div>
+
+      {showYearNetSales ? (
+      <div className="sm-cube sm-cube--vs-year-sales">
+        <div className="sm-cube-title">
+          {t('sm.cube.yearNetSales', { year: String(series.yearNetSales.year) })}
+        </div>
+        <SmYearNetSalesChart data={series.yearNetSales} />
+      </div>
+      ) : null}
     </div>
     </div>
   )

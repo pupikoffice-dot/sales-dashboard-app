@@ -3786,11 +3786,25 @@ html[data-theme='light'] .sm-suite-disclaimer {
   gap: 14px;
   grid-template-areas:
     'mtd mtd open returns'
-    'debt orders7 orders7 receipts';
+    'debt orders7 orders7 receipts'
+    'yearsales yearsales yearsales yearsales';
 }
 
 .sm-vs-grid--tsomet {
   grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-areas:
+    'mtd mtd open tsomet returns'
+    'debt orders7 orders7 orders7 receipts'
+    'yearsales yearsales yearsales yearsales yearsales';
+}
+
+.sm-vs-grid--no-year-sales {
+  grid-template-areas:
+    'mtd mtd open returns'
+    'debt orders7 orders7 receipts';
+}
+
+.sm-vs-grid--tsomet.sm-vs-grid--no-year-sales {
   grid-template-areas:
     'mtd mtd open tsomet returns'
     'debt orders7 orders7 orders7 receipts';
@@ -3904,10 +3918,30 @@ html[data-theme='light'] .sm-suite-disclaimer {
       'open returns'
       'debt debt'
       'orders7 orders7'
-      'receipts receipts';
+      'receipts receipts'
+      'yearsales yearsales';
   }
 
   .sm-vs-grid--tsomet {
+    grid-template-areas:
+      'mtd mtd'
+      'open tsomet'
+      'returns debt'
+      'orders7 orders7'
+      'receipts receipts'
+      'yearsales yearsales';
+  }
+
+  .sm-vs-grid--no-year-sales {
+    grid-template-areas:
+      'mtd mtd'
+      'open returns'
+      'debt debt'
+      'orders7 orders7'
+      'receipts receipts';
+  }
+
+  .sm-vs-grid--tsomet.sm-vs-grid--no-year-sales {
     grid-template-areas:
       'mtd mtd'
       'open tsomet'
@@ -4009,13 +4043,27 @@ html[data-theme='light'] .sm-suite-disclaimer {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   grid-template-areas:
     'mtd open returns debt'
-    'orders orders orders receipts';
+    'orders orders orders receipts'
+    'yearsales yearsales yearsales yearsales';
   gap: 12px;
   align-items: stretch;
 }
 
 .sm-cube-grid--tsomet {
   grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-areas:
+    'mtd open tsomet returns debt'
+    'orders orders orders orders receipts'
+    'yearsales yearsales yearsales yearsales yearsales';
+}
+
+.sm-cube-grid--no-year-sales {
+  grid-template-areas:
+    'mtd open returns debt'
+    'orders orders orders receipts';
+}
+
+.sm-cube-grid--tsomet.sm-cube-grid--no-year-sales {
   grid-template-areas:
     'mtd open tsomet returns debt'
     'orders orders orders orders receipts';
@@ -4060,6 +4108,11 @@ html[data-theme='light'] .sm-suite-disclaimer {
   grid-area: receipts;
   min-height: 220px;
   overflow-x: auto;
+}
+.sm-cube--year-sales,
+.sm-cube--vs-year-sales {
+  grid-area: yearsales;
+  min-width: 0;
 }
 
 .sm-orders-main {
@@ -4625,10 +4678,29 @@ html[data-theme='light'] .sm-suite-disclaimer {
       'mtd open'
       'returns debt'
       'orders orders'
-      'receipts receipts';
+      'receipts receipts'
+      'yearsales yearsales';
   }
 
   .sm-cube-grid--tsomet {
+    grid-template-areas:
+      'mtd open'
+      'tsomet returns'
+      'debt debt'
+      'orders orders'
+      'receipts receipts'
+      'yearsales yearsales';
+  }
+
+  .sm-cube-grid--no-year-sales {
+    grid-template-areas:
+      'mtd open'
+      'returns debt'
+      'orders orders'
+      'receipts receipts';
+  }
+
+  .sm-cube-grid--tsomet.sm-cube-grid--no-year-sales {
     grid-template-areas:
       'mtd open'
       'tsomet returns'
@@ -4665,10 +4737,33 @@ html[data-theme='light'] .sm-suite-disclaimer {
       'returns'
       'debt'
       'orders'
-      'receipts';
+      'receipts'
+      'yearsales';
   }
 
   .sm-cube-grid--tsomet {
+    grid-template-areas:
+      'mtd'
+      'open'
+      'tsomet'
+      'returns'
+      'debt'
+      'orders'
+      'receipts'
+      'yearsales';
+  }
+
+  .sm-cube-grid--no-year-sales {
+    grid-template-areas:
+      'mtd'
+      'open'
+      'returns'
+      'debt'
+      'orders'
+      'receipts';
+  }
+
+  .sm-cube-grid--tsomet.sm-cube-grid--no-year-sales {
     grid-template-areas:
       'mtd'
       'open'
