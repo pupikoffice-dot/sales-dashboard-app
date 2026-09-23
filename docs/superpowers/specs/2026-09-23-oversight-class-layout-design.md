@@ -38,8 +38,8 @@ On the class editor, section **Oversight look**, after the class is selected.
 - Tabs: **Classic** and **Suite**.
 - Card list: drag handle, label, width (full / half / third), shown or hidden.
 - Style panel for the open tab: accent, density, card style.
-- **Save look** writes that class only. It does not rewrite permission grants.
-- **Reset** restores that tab to the built-in default and can then be saved.
+- **Save look** writes the whole layout for that class: both boards and both styles. It does not rewrite permission grants. The tab that was not edited is kept as already stored, or as its built-in seed if this class has no row yet. The suite seed is the Sales Agent seed when the class suite is Sales Agent, and the Sales Manager seed otherwise. A save never stores a partial layout.
+- **Reset** replaces only the open tab’s draft with that tab’s built-in seed. It does not write until Save.
 
 Style choices:
 
@@ -51,17 +51,17 @@ Style choices:
 
 ## Cards
 
-**Classic** ids, default order: `ordersToday`, `ordersMtd`, `openOrders`, `salesMtd`, `topItems`, `suppliers`, `returns`, `debt`, `receipts`, `stockAlerts`. Default width is full. Default visibility matches today’s sections.
+**Classic** ids, seed order: `ordersToday`, `ordersMtd`, `openOrders`, `salesMtd`, `topItems`, `suppliers`, `returns`, `debt`, `receipts`, `stockAlerts`. Seed width is `third` for every card, all shown. That seed is what the editor shows and what Reset loads. It is not live until Save.
 
-**Suite** ids, default order: `salesMtd`, `openOrders`, `tsometOpenBudget`, `returns`, `openDebt`, `ordersLast7`, `receipts`, `yearNetSales`. Default widths match today’s cube grid (top KPI row, then orders and receipts, then the year graph full width). Sales Agent’s built-in default keeps `ordersLast7` hidden, matching today. A saved suite board may show it.
+**Suite** ids, seed order: `salesMtd`, `openOrders`, `tsometOpenBudget`, `returns`, `openDebt`, `ordersLast7`, `receipts`, `yearNetSales`. Seed widths: the first four KPI cards `third`, `ordersLast7` and `receipts` `half`, `yearNetSales` `full`. Sales Manager seed shows `ordersLast7`. Sales Agent seed hides `ordersLast7`. That is the only built-in difference between those two suite seeds. A saved suite board may show the 7-day chart on Sales Agent.
 
 Cards missing from a saved board are appended at the end, visible, at their default width, so a new cube does not disappear. Unknown ids are dropped.
 
 ## What users see
 
-- Classic: inside each company column, cards flow in saved order. Full spans the column, half takes half, third takes a third. Below 900px every card is full width, stacked in that order. The second company column stays light grey.
-- Single-company classic with no save keeps today’s three-across section grid. Multi-company classic with no save keeps today’s stacked sections.
-- Suite: each Alone window and the Vs view use the same suite board. Widths use a 12-column grid: full = 12, half = 6, third = 4. Below 900px every cube is full width, stacked in saved order.
+- No `class_oversight_layout` row: classic and suite render exactly as they do today. Single-company classic stays the three-across section grid. Multi-company classic stays stacked sections inside each company column. Suite keeps today’s cube grid, including Sales Agent hiding the 7-day orders chart.
+- After a save, both company counts use the width flow. Inside each company column, and inside each suite window, cards sit on a 12-column grid: full = 12, half = 6, third = 4. Cards are placed in saved order, left to right. A card that does not fit the remaining columns wraps to the next row. Leftover columns stay empty. Example: half + half fills a row; half + third stays on one row (10 of 12); a following full wraps. Below 900px every card is full width, stacked in saved order. The second company column stays light grey.
+- Suite after save: each Alone window and the Vs view use that same suite board.
 - Per-user Oversight module visibility and widget denies still apply on top of the class layout.
 - Sidebar is unchanged.
 
@@ -88,7 +88,7 @@ New table `class_oversight_layout`:
 }
 ```
 
-Widths are only `full`, `half`, or `third`. Reads: any authenticated user may read the row for their own class. Writes: super admin only. No row means use the built-in default.
+Widths are only `full`, `half`, or `third`. Reads: any authenticated user may read the row for their own class. Writes: super admin only. No row means render today’s code path, not the seed grid.
 
 ## Error handling
 
@@ -100,10 +100,12 @@ Widths are only `full`, `half`, or `third`. Reads: any authenticated user may re
 
 - Saved order, width, hide, and style apply for that class only.
 - A second class is unaffected.
-- No row uses the built-in default, including Sales Agent hiding the 7-day orders chart.
+- No row keeps today’s classic and suite layouts, including Sales Agent hiding the 7-day orders chart.
+- Save stores both boards. Reset changes only the open tab’s draft until Save.
 - A denied card stays hidden.
 - `yearNetSales` hidden when the class grant is off, even if the board shows it.
-- Below 900px, cards stack in saved order at full width.
+- Half + third share a row. A full after them wraps. Leftover columns stay empty.
+- Below 900px, saved cards stack in order at full width.
 - Unknown card ids are dropped. Omitted known cards are appended.
 
 ## Out of scope
