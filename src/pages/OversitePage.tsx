@@ -291,12 +291,13 @@ function ClassicOversitePage({
               forecast,
               supplierMatrix,
               ordersLast7,
-            }) => {
+            }, coIdx) => {
             const multiCo = visibleCompanies.length > 1
+            const secondCo = multiCo && coIdx === 1
             return (
               <div
                 key={co.id}
-                className={`ov-col${visibleCompanies.length === 1 ? ' ov-col--sections-grid' : ''}${multiCo ? ' ov-col--accented' : ''}`}
+                className={`ov-col${visibleCompanies.length === 1 ? ' ov-col--sections-grid' : ''}${multiCo ? ' ov-col--accented' : ''}${secondCo ? ' ov-col--alt' : ''}`}
                 style={multiCo ? ({ ['--co-accent' as string]: co.accentColor } as CSSProperties) : undefined}
               >
                 <div className="ov-col-hdr">

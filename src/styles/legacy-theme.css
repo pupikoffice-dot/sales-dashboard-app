@@ -614,6 +614,16 @@ body.sales-agent-no-nav .dashboard-main {
   --ov-accent: var(--co-accent, var(--acc));
 }
 
+.ov-col--alt {
+  background: rgba(203, 213, 225, 0.16);
+  border-radius: calc(var(--r) + 4px);
+  padding: 12px;
+}
+
+[data-theme='light'] .ov-col--alt {
+  background: #e8e8ed;
+}
+
 .ov-col--accented .ov-section {
   border-top: 2px solid color-mix(in srgb, var(--ov-accent) 45%, transparent);
 }
