@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import type { LogicalCompany } from '../../../types/dashboard'
 import { SmCubeGrid, type SmOrdersReportTarget, type SmTsometOpenBudgetKpiProps } from './SmCubeGrid'
+import type { OversightBoard } from '../../../lib/oversightClassLayout'
 import type { SmSuiteKpis } from './smMetrics'
 
 /** Soft window tint slots — matches stacked-chart agent palette (c0–c5). */
@@ -33,6 +34,7 @@ export interface SmAgentWindowProps {
   hideOrders7Days?: boolean
   receiptsCurrentMonthOnly?: boolean
   showYearNetSales?: boolean
+  suiteBoard?: OversightBoard | null
 }
 
 export function SmAgentWindow({
@@ -52,6 +54,7 @@ export function SmAgentWindow({
   hideOrders7Days,
   receiptsCurrentMonthOnly,
   showYearNetSales,
+  suiteBoard,
 }: SmAgentWindowProps) {
   return (
     <section className={`sm-window ${windowTintClass(agentId)}`}>
@@ -71,6 +74,7 @@ export function SmAgentWindow({
         hideOrders7Days={hideOrders7Days}
         receiptsCurrentMonthOnly={receiptsCurrentMonthOnly}
         showYearNetSales={showYearNetSales}
+        suiteBoard={suiteBoard}
       />
     </section>
   )

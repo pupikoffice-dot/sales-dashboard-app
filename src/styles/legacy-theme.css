@@ -651,6 +651,69 @@ body.sales-agent-no-nav .dashboard-main {
   }
 }
 
+.ov-col--flow,
+.sm-cube-grid--flow,
+.sm-vs-grid--flow {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-areas: none;
+  gap: 14px;
+}
+
+.ov-col--flow .ov-col-hdr {
+  grid-column: 1 / -1;
+}
+
+.ov-flow {
+  min-width: 0;
+}
+
+.ov-flow--full { grid-column: span 12; }
+.ov-flow--half { grid-column: span 6; }
+.ov-flow--third { grid-column: span 4; }
+
+.sm-cube-grid--flow > .ov-flow .sm-cube,
+.sm-vs-grid--flow > .ov-flow .sm-cube {
+  grid-area: auto;
+  height: 100%;
+}
+
+[data-ov-accent='indigo'] { --ov-look-accent: #4f46e5; }
+[data-ov-accent='green'] { --ov-look-accent: #16a34a; }
+[data-ov-accent='amber'] { --ov-look-accent: #d97706; }
+[data-ov-accent='slate'] { --ov-look-accent: #64748b; }
+
+[data-ov-accent] .ov-section,
+[data-ov-accent] .sm-cube {
+  border-top: 2px solid color-mix(in srgb, var(--ov-look-accent) 55%, transparent);
+}
+
+[data-ov-density='compact'] .ov-section,
+[data-ov-density='compact'] .sm-cube {
+  padding: 8px 10px;
+}
+
+[data-ov-card='solid'] .ov-section,
+[data-ov-card='solid'] .sm-cube {
+  background: var(--sur2);
+  backdrop-filter: none;
+}
+
+[data-ov-card='outline'] .ov-section,
+[data-ov-card='outline'] .sm-cube {
+  background: transparent;
+  border: 1.5px solid var(--bdr);
+  backdrop-filter: none;
+}
+
+@media (max-width: 899px) {
+  .ov-flow--full,
+  .ov-flow--half,
+  .ov-flow--third {
+    grid-column: span 12;
+  }
+}
+
 .ov-col-hdr {
   font-size: 0.95rem;
   font-weight: 700;
@@ -3731,6 +3794,127 @@ html[dir='rtl'] .hdr-brand,
   gap: 10px;
   align-items: center;
   flex-wrap: wrap;
+}
+
+.ov-look-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--bdr);
+  border-radius: var(--r);
+  background: var(--panel-bg);
+}
+
+.ov-look-editor-head h3 {
+  margin: 0 0 4px;
+  font-size: 0.92rem;
+}
+
+.ov-look-editor-head p {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.ov-look-tabs {
+  display: flex;
+  gap: 6px;
+}
+
+.ov-look-tabs button {
+  background: var(--sur2);
+  border: 1px solid var(--bdr);
+  color: var(--txt);
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.ov-look-tabs button.active {
+  border-color: var(--acc);
+  background: color-mix(in srgb, var(--acc) 14%, var(--sur2));
+}
+
+.ov-look-board {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ov-look-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+  padding: 7px 10px;
+  border: 1px solid var(--bdr);
+  border-radius: 6px;
+  background: var(--sur2);
+}
+
+.ov-look-card--hidden {
+  opacity: 0.55;
+}
+
+.ov-look-handle {
+  cursor: grab;
+  color: var(--muted);
+  letter-spacing: -2px;
+}
+
+.ov-look-label {
+  font-size: 0.8rem;
+}
+
+.ov-look-card select,
+.ov-look-style select {
+  background: var(--panel-bg);
+  border: 1px solid var(--bdr);
+  color: var(--txt);
+  border-radius: 5px;
+  padding: 3px 6px;
+  font-family: inherit;
+}
+
+.ov-look-eye {
+  background: transparent;
+  border: 1px solid var(--bdr);
+  color: var(--txt);
+  border-radius: 5px;
+  padding: 3px 8px;
+  font-size: 0.7rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.ov-look-style {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.ov-look-style label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.ov-look-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.ov-look-reset {
+  background: transparent;
 }
 
 /* ── Sales Manager suite (translucent 4+2 cubes) ─────────────────────────── */

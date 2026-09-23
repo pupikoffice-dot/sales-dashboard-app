@@ -14,6 +14,7 @@ import {
   resolveVisibleSuiteUiModuleIds,
   YEAR_NET_SALES_MODULE_ID,
 } from '../../../lib/suiteUiModules'
+import { useClassOversightLayout } from '../../../hooks/useClassOversightLayout'
 import { useUiModuleCatalog, useUiModules } from '../../../hooks/useUiModules'
 import { formatGeneratedDisplay } from '../../../lib/format'
 import { getOversiteDateContext, resolveOrdersTag, type OrderTodayGroup, type Top10Item } from '../../../lib/oversiteMetrics'
@@ -78,6 +79,8 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
   const biConfigQ = useBiConfig()
   const uiCatalogQ = useUiModuleCatalog()
   const classUiQ = useUiModules()
+  const classLookQ = useClassOversightLayout()
+  const suiteBoard = classLookQ.data?.layout.suite ?? null
   const grantUserId = isPreviewing && previewUser ? previewUser.id : session?.user.id
   const biGrantsQ = useBiUserGrants(grantUserId)
   const suiteUiGrantsQ = useSuiteUiUserGrants(grantUserId)
@@ -433,6 +436,7 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
                             hideOrders7Days
                             receiptsCurrentMonthOnly
                             showYearNetSales={showYearNetSales}
+                            suiteBoard={suiteBoard}
                             onOpenDebtReport={() =>
                               openDebtReport(company, [agentId], `${label} — ${winTitle}`)
                             }
@@ -475,6 +479,7 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
                       series={vsSeries}
                       monthLbl={dateCtx.monthLbl}
                       showYearNetSales={showYearNetSales}
+                      suiteBoard={suiteBoard}
                       ordersReportCompanies={reportCos}
                       onOpenOrdersReport={companyId => openOrdersReport(companyId, allAgentsScope)}
                       onOpenDebtReport={() => openDebtReport(company, allAgentsScope, `${label} — Vs`)}
@@ -518,6 +523,7 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
                         monthLbl={dateCtx.monthLbl}
                         agentId={null}
                         showYearNetSales={showYearNetSales}
+                        suiteBoard={suiteBoard}
                         ordersReportCompanies={reportCos}
                         onOpenOrdersReport={companyId => openOrdersReport(companyId, allAgentsScope)}
                         onOpenDebtReport={() =>
@@ -562,6 +568,7 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
                             monthLbl={dateCtx.monthLbl}
                             agentId={agentId}
                             showYearNetSales={showYearNetSales}
+                            suiteBoard={suiteBoard}
                             ordersReportCompanies={reportCos}
                             onOpenOrdersReport={companyId => openOrdersReport(companyId, [agentId])}
                             onOpenDebtReport={() =>

@@ -1,5 +1,7 @@
 import { useMemo, type ReactNode } from 'react'
 import { useLocale } from '../../../context/LocaleContext'
+import { boardShowsCard, boardStyleAttrs, type OversightBoard } from '../../../lib/oversightClassLayout'
+import { OversightFlowCards } from '../OversightFlowCards'
 import { OversiteOrdersLast7Days } from '../OversiteOrdersLast7Days'
 import { OversiteOrdersReportButton } from '../OversiteOrdersReportButton'
 import { OversiteReceipts } from '../OversiteReceipts'
@@ -23,6 +25,7 @@ export interface SmVsCompanyViewProps {
   tsometOpenBudget?: SmTsometOpenBudgetKpiProps | null
   biBlock?: ReactNode
   showYearNetSales?: boolean
+  suiteBoard?: OversightBoard | null
 }
 
 /** Vs mode: comparison cubes — agents pivoted in one chart per KPI. */
@@ -38,6 +41,7 @@ export function SmVsCompanyView({
   tsometOpenBudget,
   biBlock,
   showYearNetSales = false,
+  suiteBoard = null,
 }: SmVsCompanyViewProps) {
   const { t } = useLocale()
   const agents = series.agents
@@ -87,10 +91,10 @@ export function SmVsCompanyView({
   }
 
   const showTsomet = tsometOpenBudget != null
+  const useSavedLook = suiteBoard != null
 
-  return (
-    <div className="sm-vs-company">
-    <div className={`sm-vs-grid${showTsomet ? ' sm-vs-grid--tsomet' : ''}${showYearNetSales ? '' : ' sm-vs-grid--no-year-sales'}`}>
+  const cubeNodes: Record<string, ReactNode> = {
+    salesMtd: (
       <div className="sm-cube sm-cube--vs-mtd">
         <div className="sm-cube-title">{t('sm.cube.salesMtdGoal', { month: monthLbl })}</div>
         <SmVsPivotChart
@@ -99,7 +103,8 @@ export function SmVsCompanyView({
           ariaLabel={t('sm.cube.salesMtdGoal', { month: monthLbl })}
         />
       </div>
-
+    ),
+    openOrders: (
       <div className="sm-cube sm-cube--vs-open">
         <div className="sm-cube-title">{t('sm.cube.openOrders')}</div>
         <SmVsPivotChart
@@ -113,16 +118,8 @@ export function SmVsCompanyView({
           </button>
         ) : null}
       </div>
-
-      {showTsomet ? (
-        <SmTsometOpenBudgetCube
-          openBudget={tsometOpenBudget.openBudget}
-          budgetCash={tsometOpenBudget.budgetCash}
-          isLoading={tsometOpenBudget.isLoading}
-          variant="vs"
-        />
-      ) : null}
-
+    ),
+    returns: (
       <div className="sm-cube sm-cube--vs-returns">
         <div className="sm-cube-title">{t('sm.cube.returns')}</div>
         <SmVsPivotChart
@@ -136,7 +133,8 @@ export function SmVsCompanyView({
           </button>
         ) : null}
       </div>
-
+    ),
+    openDebt: (
       <div className="sm-cube sm-cube--vs-debt">
         <div className="sm-cube-title">{t('sm.cube.openDebt')}</div>
         <SmVsPivotChart
@@ -150,7 +148,8 @@ export function SmVsCompanyView({
           </button>
         ) : null}
       </div>
-
+    ),
+    ordersLast7: (
       <div className={`sm-cube sm-cube--vs-orders7${biBlock ? ' sm-cube--orders-with-bi' : ''}`}>
         <div className="sm-orders-main">
           <div className="sm-cube-title">{t('oversite.ordersLast7Days')}</div>
@@ -172,7 +171,8 @@ export function SmVsCompanyView({
         </div>
         {biBlock ? <div className="sm-orders-bi">{biBlock}</div> : null}
       </div>
-
+    ),
+    receipts: (
       <div className="sm-cube sm-cube--vs-receipts">
         <div className="sm-cube-title">{t('sm.cube.receipts')}</div>
         {Object.keys(receipts.monthly).length > 0 ? (
@@ -190,15 +190,58 @@ export function SmVsCompanyView({
           </button>
         ) : null}
       </div>
-
-      {showYearNetSales ? (
+    ),
+  }
+  if (showTsomet) {
+    cubeNodes.tsometOpenBudget = (
+      <SmTsometOpenBudgetCube
+        openBudget={tsometOpenBudget.openBudget}
+        budgetCash={tsometOpenBudget.budgetCash}
+        isLoading={tsometOpenBudget.isLoading}
+        variant="vs"
+      />
+    )
+  }
+  if (showYearNetSales) {
+    cubeNodes.yearNetSales = (
       <div className="sm-cube sm-cube--vs-year-sales">
         <div className="sm-cube-title">
           {t('sm.cube.yearNetSales', { year: String(series.yearNetSales.year) })}
         </div>
         <SmYearNetSalesChart data={series.yearNetSales} />
       </div>
-      ) : null}
+    )
+  }
+
+  return (
+    <div className="sm-vs-company">
+    <div
+      className={`sm-vs-grid${useSavedLook ? ' sm-vs-grid--flow' : ''}${showTsomet ? ' sm-vs-grid--tsomet' : ''}${showYearNetSales ? '' : ' sm-vs-grid--no-year-sales'}`}
+      {...(useSavedLook ? boardStyleAttrs(suiteBoard.style) : {})}
+    >
+      {useSavedLook ? (
+        <>
+          <OversightFlowCards board={suiteBoard} nodes={cubeNodes} />
+          {biBlock && !boardShowsCard(suiteBoard, 'ordersLast7') ? (
+            <div className="ov-flow ov-flow--full">
+              <div className="sm-cube sm-cube--vs-orders7 sm-cube--orders-with-bi">
+                <div className="sm-orders-bi">{biBlock}</div>
+              </div>
+            </div>
+          ) : null}
+        </>
+      ) : (
+        <>
+          {cubeNodes.salesMtd}
+          {cubeNodes.openOrders}
+          {cubeNodes.tsometOpenBudget}
+          {cubeNodes.returns}
+          {cubeNodes.openDebt}
+          {cubeNodes.ordersLast7}
+          {cubeNodes.receipts}
+          {cubeNodes.yearNetSales}
+        </>
+      )}
     </div>
     </div>
   )

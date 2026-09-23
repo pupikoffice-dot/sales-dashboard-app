@@ -6,8 +6,10 @@ import {
 } from '../../lib/permissionsApi'
 import { diffClassGrants, normalizeClassAgentScope, ALL_AGENTS_ITEM_KEY } from '../../lib/classPermissions'
 import { countOversightSuiteItemKeys } from '../../lib/uiModules'
+import { OversightLookEditor } from '../../components/admin/OversightLookEditor'
 import { PermissionSections } from '../../components/admin/PermissionSections'
 import { useUiModuleCatalog } from '../../hooks/useUiModules'
+import { suiteKindFromGrantKeys } from '../../lib/oversightClassLayout'
 import { isClassGrantableUiModule } from '../../lib/suiteUiModules'
 import type { AppClass } from '../../types/permissions'
 
@@ -180,6 +182,12 @@ export function ClassesPage() {
             knownAgents={knownAgents}
             uiModules={activeUiModules}
           />
+          {selectedId ? (
+            <OversightLookEditor
+              classId={selectedId}
+              suiteKind={suiteKindFromGrantKeys(desiredChecked)}
+            />
+          ) : null}
           <div className="class-editor-actions">
             <button type="button" onClick={saveClass} disabled={!draft.label || saveMutation.isPending}>
               {saveMutation.isPending ? 'Saving…' : 'Save'}

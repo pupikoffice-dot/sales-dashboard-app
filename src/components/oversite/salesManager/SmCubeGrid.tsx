@@ -2,6 +2,8 @@ import type { ReactNode } from 'react'
 import type { LogicalCompany } from '../../../types/dashboard'
 import { useLocale } from '../../../context/LocaleContext'
 import { fmt } from '../../../lib/format'
+import { boardShowsCard, boardStyleAttrs, type OversightBoard } from '../../../lib/oversightClassLayout'
+import { OversightFlowCards } from '../OversightFlowCards'
 import { OversiteOrdersLast7Days } from '../OversiteOrdersLast7Days'
 import { OversiteOrdersReportButton } from '../OversiteOrdersReportButton'
 import { OversiteReceipts } from '../OversiteReceipts'
@@ -51,6 +53,8 @@ export interface SmCubeGridProps {
   receiptsCurrentMonthOnly?: boolean
   /** Class suite feature: year graph from report 891. */
   showYearNetSales?: boolean
+  /** Saved class suite board. Null = today's cube grid. */
+  suiteBoard?: OversightBoard | null
 }
 
 export function SmCubeGrid({
@@ -68,6 +72,7 @@ export function SmCubeGrid({
   hideOrders7Days = false,
   receiptsCurrentMonthOnly = false,
   showYearNetSales = false,
+  suiteBoard = null,
 }: SmCubeGridProps) {
   const { t } = useLocale()
   const { salesMtd, openOrders, returnsMtd, openDebt, ordersLast7Days, receipts, yearNetSales } = kpis
@@ -83,9 +88,11 @@ export function SmCubeGrid({
   const overGoal = goalCash != null && goalCash > 0 && salesMtd.cash > goalCash
 
   const showTsomet = tsometOpenBudget != null
+  const hideChart = suiteBoard ? false : hideOrders7Days
+  const useSavedLook = suiteBoard != null
 
-  return (
-    <div className={`sm-cube-grid${showTsomet ? ' sm-cube-grid--tsomet' : ''}${showYearNetSales ? '' : ' sm-cube-grid--no-year-sales'}`}>
+  const cubeNodes: Record<string, ReactNode> = {
+    salesMtd: (
       <div className="sm-cube sm-cube--mtd">
         <div className="sm-cube-title">{t('sm.cube.salesMtdGoal', { month: monthLbl })}</div>
         <div className="sm-cube-val grn">{fmt(salesMtd.cash)}</div>
@@ -129,7 +136,8 @@ export function SmCubeGrid({
           </div>
         )}
       </div>
-
+    ),
+    openOrders: (
       <div className="sm-cube sm-cube--open">
         <div className="sm-cube-title">{t('sm.cube.openOrders')}</div>
         <div className="sm-cube-val grn">{fmt(openOrders.cash)}</div>
@@ -142,15 +150,8 @@ export function SmCubeGrid({
           </button>
         ) : null}
       </div>
-
-      {showTsomet ? (
-        <SmTsometOpenBudgetCube
-          openBudget={tsometOpenBudget.openBudget}
-          budgetCash={tsometOpenBudget.budgetCash}
-          isLoading={tsometOpenBudget.isLoading}
-        />
-      ) : null}
-
+    ),
+    returns: (
       <div className="sm-cube sm-cube--returns">
         <div className="sm-cube-title">{t('sm.cube.returns')}</div>
         <div className="sm-cube-val amber">{fmt(returnsMtd.cash)}</div>
@@ -163,7 +164,8 @@ export function SmCubeGrid({
           </button>
         ) : null}
       </div>
-
+    ),
+    openDebt: (
       <div className="sm-cube sm-cube--debt">
         <div className="sm-cube-title">{t('sm.cube.openDebt')}</div>
         <div className="sm-cube-val">{debtDisplay}</div>
@@ -173,13 +175,14 @@ export function SmCubeGrid({
           </button>
         ) : null}
       </div>
-
+    ),
+    ordersLast7: (
       <div
-        className={`sm-cube sm-cube--orders${biSlot ? ' sm-cube--orders-with-bi' : ''}${hideOrders7Days ? ' sm-cube--orders-no-chart' : ''}`}
+        className={`sm-cube sm-cube--orders${biSlot ? ' sm-cube--orders-with-bi' : ''}${hideChart ? ' sm-cube--orders-no-chart' : ''}`}
       >
-        {!hideOrders7Days || (onOpenOrdersReport && ordersReportCompanies.length > 0) ? (
-          <div className={`sm-orders-main${hideOrders7Days ? ' sm-orders-main--report-only' : ''}`}>
-            {!hideOrders7Days ? <OversiteOrdersLast7Days data={ordersLast7Days} /> : null}
+        {!hideChart || (onOpenOrdersReport && ordersReportCompanies.length > 0) ? (
+          <div className={`sm-orders-main${hideChart ? ' sm-orders-main--report-only' : ''}`}>
+            {!hideChart ? <OversiteOrdersLast7Days data={ordersLast7Days} /> : null}
             {onOpenOrdersReport && ordersReportCompanies.length > 0 ? (
               <div className="sm-orders-report">
                 {ordersReportCompanies.map(co => (
@@ -194,7 +197,8 @@ export function SmCubeGrid({
         ) : null}
         {biSlot ? <div className="sm-orders-bi">{biSlot}</div> : null}
       </div>
-
+    ),
+    receipts: (
       <div className="sm-cube sm-cube--receipts">
         <div className="sm-cube-title">{t('sm.cube.receipts')}</div>
         {Object.keys(receipts.monthly).length > 0 ? (
@@ -213,13 +217,54 @@ export function SmCubeGrid({
           </button>
         ) : null}
       </div>
-
-      {showYearNetSales ? (
+    ),
+  }
+  if (showTsomet) {
+    cubeNodes.tsometOpenBudget = (
+      <SmTsometOpenBudgetCube
+        openBudget={tsometOpenBudget.openBudget}
+        budgetCash={tsometOpenBudget.budgetCash}
+        isLoading={tsometOpenBudget.isLoading}
+      />
+    )
+  }
+  if (showYearNetSales) {
+    cubeNodes.yearNetSales = (
       <div className="sm-cube sm-cube--year-sales">
         <div className="sm-cube-title">{t('sm.cube.yearNetSales', { year: String(yearNetSales.year) })}</div>
         <SmYearNetSalesChart data={yearNetSales} />
       </div>
-      ) : null}
+    )
+  }
+
+  return (
+    <div
+      className={`sm-cube-grid${useSavedLook ? ' sm-cube-grid--flow' : ''}${showTsomet ? ' sm-cube-grid--tsomet' : ''}${showYearNetSales ? '' : ' sm-cube-grid--no-year-sales'}`}
+      {...(useSavedLook ? boardStyleAttrs(suiteBoard.style) : {})}
+    >
+      {useSavedLook ? (
+        <>
+          <OversightFlowCards board={suiteBoard} nodes={cubeNodes} />
+          {biSlot && !boardShowsCard(suiteBoard, 'ordersLast7') ? (
+            <div className="ov-flow ov-flow--full">
+              <div className="sm-cube sm-cube--orders sm-cube--orders-with-bi">
+                <div className="sm-orders-bi">{biSlot}</div>
+              </div>
+            </div>
+          ) : null}
+        </>
+      ) : (
+        <>
+          {cubeNodes.salesMtd}
+          {cubeNodes.openOrders}
+          {cubeNodes.tsometOpenBudget}
+          {cubeNodes.returns}
+          {cubeNodes.openDebt}
+          {cubeNodes.ordersLast7}
+          {cubeNodes.receipts}
+          {cubeNodes.yearNetSales}
+        </>
+      )}
     </div>
   )
 }
