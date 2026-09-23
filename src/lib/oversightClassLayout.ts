@@ -230,6 +230,18 @@ export function moveCard(cards: LayoutCard[], from: number, to: number): LayoutC
   return next
 }
 
+export function moveCardById(cards: LayoutCard[], fromId: string, toId: string): LayoutCard[] {
+  return moveCard(
+    cards,
+    cards.findIndex(c => c.id === fromId),
+    cards.findIndex(c => c.id === toId),
+  )
+}
+
+export function setCardHidden(cards: LayoutCard[], id: string, hidden: boolean): LayoutCard[] {
+  return cards.map(c => (c.id === id ? { ...c, hidden } : c))
+}
+
 export function boardStyleAttrs(style: LayoutStyle): Record<string, string> {
   return {
     'data-ov-accent': style.accent,

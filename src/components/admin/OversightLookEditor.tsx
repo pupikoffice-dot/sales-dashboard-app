@@ -2,14 +2,19 @@ import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useClassOversightLayoutEditor } from '../../hooks/useClassOversightLayout'
 import {
+  boardStyleAttrs,
   classicCardLabel,
-  moveCard,
+  flowWidthClass,
+  moveCardById,
   seedClassicBoard,
   seedClassLayout,
   seedSuiteBoard,
+  setCardHidden,
   suiteCardLabel,
+  visibleCards,
   type ClassOversightLayout,
   type LayoutAccent,
+  type LayoutCard,
   type LayoutCardStyle,
   type LayoutDensity,
   type LayoutSurface,
@@ -72,7 +77,7 @@ export function OversightLookEditor({ classId, suiteKind }: OversightLookEditorP
     <section className="ov-look-editor">
       <div className="ov-look-editor-head">
         <h3>Oversight look</h3>
-        <p>Drag cards for every user in this class. Save look does not change permissions.</p>
+        <p>Drag the preview cards. This is one company column — the same wrap users will see.</p>
       </div>
       <div className="ov-look-tabs" role="tablist">
         <button type="button" role="tab" aria-selected={tab === 'classic'} className={tab === 'classic' ? 'active' : ''} onClick={() => setTab('classic')}>
@@ -82,14 +87,14 @@ export function OversightLookEditor({ classId, suiteKind }: OversightLookEditorP
           Suite
         </button>
       </div>
+      <LookStylePanel
+        style={board.style}
+        onChange={style => patchBoard({ ...board, style })}
+      />
       <LookBoard
         surface={tab}
         board={board}
         onChange={patchBoard}
-      />
-      <LookStylePanel
-        style={board.style}
-        onChange={style => patchBoard({ ...board, style })}
       />
       <div className="ov-look-actions">
         <button type="button" onClick={() => saveMut.mutate()} disabled={saveMut.isPending || savedQ.isLoading}>
@@ -118,60 +123,144 @@ function LookBoard({
   board: OversightBoard
   onChange: (next: OversightBoard) => void
 }) {
-  const [dragFrom, setDragFrom] = useState<number | null>(null)
+  const [dragId, setDragId] = useState<string | null>(null)
   const labelOf = surface === 'classic' ? classicCardLabel : suiteCardLabel
+  const shown = visibleCards(board)
+  const hidden = board.cards.filter(c => c.hidden)
 
-  function onDrop(to: number) {
-    if (dragFrom == null) return
-    onChange({ ...board, cards: moveCard(board.cards, dragFrom, to) })
-    setDragFrom(null)
+  function patchCards(cards: LayoutCard[]) {
+    onChange({ ...board, cards })
+  }
+
+  function onDropOnCard(toId: string) {
+    if (!dragId || dragId === toId) return
+    let next = setCardHidden(board.cards, dragId, false)
+    next = moveCardById(next, dragId, toId)
+    patchCards(next)
+    setDragId(null)
+  }
+
+  function onDropHide() {
+    if (!dragId) return
+    patchCards(setCardHidden(board.cards, dragId, true))
+    setDragId(null)
+  }
+
+  function setWidth(id: string, width: LayoutWidth) {
+    patchCards(board.cards.map(c => (c.id === id ? { ...c, width } : c)))
   }
 
   return (
-    <ul className="ov-look-board">
-      {board.cards.map((card, index) => (
-        <li
-          key={card.id}
-          className={`ov-look-card${card.hidden ? ' ov-look-card--hidden' : ''}`}
-          draggable
-          onDragStart={() => setDragFrom(index)}
-          onDragOver={e => e.preventDefault()}
-          onDrop={() => onDrop(index)}
-        >
-          <span className="ov-look-handle" aria-hidden>⋮⋮</span>
-          <span className="ov-look-label">{labelOf(card.id)}</span>
-          <select
-            aria-label={`Width for ${labelOf(card.id)}`}
-            value={card.width}
-            onChange={e => {
-              const width = e.target.value as LayoutWidth
-              onChange({
-                ...board,
-                cards: board.cards.map((c, i) => (i === index ? { ...c, width } : c)),
-              })
-            }}
-          >
-            {WIDTHS.map(w => (
-              <option key={w} value={w}>{w}</option>
+    <div className="ov-look-stage">
+      <div
+        className="ov-look-canvas ov-col--flow"
+        {...boardStyleAttrs(board.style)}
+        onDragOver={e => e.preventDefault()}
+        onDrop={() => {
+          if (!dragId) return
+          patchCards(setCardHidden(board.cards, dragId, false))
+          setDragId(null)
+        }}
+      >
+        <div className="ov-look-canvas-hdr">Preview — one company column</div>
+        {shown.map(card => (
+          <div key={card.id} className={flowWidthClass(card.width)}>
+            <article
+              className={`ov-look-tile ${surface === 'classic' ? 'ov-section' : 'sm-cube'}${dragId === card.id ? ' ov-look-tile--dragging' : ''}`}
+              draggable
+              onDragStart={() => setDragId(card.id)}
+              onDragEnd={() => setDragId(null)}
+              onDragOver={e => e.preventDefault()}
+              onDrop={e => {
+                e.stopPropagation()
+                onDropOnCard(card.id)
+              }}
+            >
+              <header className="ov-look-tile-bar">
+                <span className="ov-look-handle" aria-hidden>⋮⋮</span>
+                <span className="ov-look-label">{labelOf(card.id)}</span>
+                <select
+                  aria-label={`Width for ${labelOf(card.id)}`}
+                  value={card.width}
+                  onPointerDown={e => e.stopPropagation()}
+                  onChange={e => setWidth(card.id, e.target.value as LayoutWidth)}
+                >
+                  {WIDTHS.map(w => (
+                    <option key={w} value={w}>{w}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="ov-look-eye"
+                  title="Hide card"
+                  onPointerDown={e => e.stopPropagation()}
+                  onClick={() => patchCards(setCardHidden(board.cards, card.id, true))}
+                >
+                  Hide
+                </button>
+              </header>
+              <LookTileSketch surface={surface} width={card.width} />
+            </article>
+          </div>
+        ))}
+      </div>
+      <div
+        className="ov-look-hidden"
+        onDragOver={e => e.preventDefault()}
+        onDrop={onDropHide}
+      >
+        <h4>Hidden</h4>
+        {hidden.length === 0 ? (
+          <p>Drop a card here to hide it from users.</p>
+        ) : (
+          <ul>
+            {hidden.map(card => (
+              <li
+                key={card.id}
+                draggable
+                onDragStart={() => setDragId(card.id)}
+                onDragEnd={() => setDragId(null)}
+              >
+                <span>{labelOf(card.id)}</span>
+                <button
+                  type="button"
+                  className="ov-look-eye"
+                  onClick={() => patchCards(setCardHidden(board.cards, card.id, false))}
+                >
+                  Show
+                </button>
+              </li>
             ))}
-          </select>
-          <button
-            type="button"
-            className="ov-look-eye"
-            aria-pressed={!card.hidden}
-            title={card.hidden ? 'Show card' : 'Hide card'}
-            onClick={() =>
-              onChange({
-                ...board,
-                cards: board.cards.map((c, i) => (i === index ? { ...c, hidden: !c.hidden } : c)),
-              })
-            }
-          >
-            {card.hidden ? 'Hidden' : 'Shown'}
-          </button>
-        </li>
-      ))}
-    </ul>
+          </ul>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function LookTileSketch({ surface, width }: { surface: LayoutSurface; width: LayoutWidth }) {
+  if (surface === 'suite') {
+    return (
+      <div className="ov-look-sketch ov-look-sketch--suite">
+        <div className="ov-look-sketch-val">12,480</div>
+        <div className="ov-look-sketch-bar" style={{ width: width === 'full' ? '72%' : width === 'half' ? '58%' : '46%' }} />
+        <div className="ov-look-sketch-meta">clients · qty</div>
+      </div>
+    )
+  }
+  return (
+    <div className="ov-look-sketch">
+      <div className="ov-look-sketch-kpis">
+        <span />
+        <span />
+        <span />
+      </div>
+      <div className="ov-look-sketch-rows">
+        <i />
+        <i />
+        <i />
+      </div>
+    </div>
   )
 }
 

@@ -3837,28 +3837,46 @@ html[dir='rtl'] .hdr-brand,
   background: color-mix(in srgb, var(--acc) 14%, var(--sur2));
 }
 
-.ov-look-board {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.ov-look-stage {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
 }
 
-.ov-look-card {
-  display: grid;
-  grid-template-columns: auto 1fr auto auto;
-  gap: 8px;
-  align-items: center;
-  padding: 7px 10px;
-  border: 1px solid var(--bdr);
-  border-radius: 6px;
+.ov-look-canvas {
+  min-height: 220px;
+  padding: 12px;
+  border: 1px dashed color-mix(in srgb, var(--bdr) 80%, var(--acc));
+  border-radius: 10px;
   background: var(--sur2);
 }
 
-.ov-look-card--hidden {
+.ov-look-canvas-hdr {
+  grid-column: 1 / -1;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 8px 12px;
+  background: var(--panel-bg-hdr);
+  border: 1px solid var(--bdr);
+  border-radius: 8px;
+}
+
+.ov-look-tile {
+  min-height: 118px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: grab;
+}
+
+.ov-look-tile--dragging {
   opacity: 0.55;
+}
+
+.ov-look-tile-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .ov-look-handle {
@@ -3868,10 +3886,13 @@ html[dir='rtl'] .hdr-brand,
 }
 
 .ov-look-label {
-  font-size: 0.8rem;
+  flex: 1;
+  min-width: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
 }
 
-.ov-look-card select,
+.ov-look-tile select,
 .ov-look-style select {
   background: var(--panel-bg);
   border: 1px solid var(--bdr);
@@ -3890,6 +3911,99 @@ html[dir='rtl'] .hdr-brand,
   font-size: 0.7rem;
   font-family: inherit;
   cursor: pointer;
+}
+
+.ov-look-sketch {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.ov-look-sketch-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.ov-look-sketch-kpis span {
+  height: 28px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--ov-look-accent, var(--acc)) 16%, var(--sur2));
+}
+
+.ov-look-sketch-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ov-look-sketch-rows i {
+  display: block;
+  height: 6px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--txt) 12%, transparent);
+}
+
+.ov-look-sketch-rows i:nth-child(2) { width: 82%; }
+.ov-look-sketch-rows i:nth-child(3) { width: 64%; }
+
+.ov-look-sketch-val {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--grn, #22c55e);
+}
+
+.ov-look-sketch-bar {
+  height: 7px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--ov-look-accent, var(--acc)) 55%, transparent);
+}
+
+.ov-look-sketch-meta {
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.ov-look-hidden {
+  min-height: 56px;
+  padding: 8px 10px;
+  border: 1px dashed var(--bdr);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--sur2) 70%, transparent);
+}
+
+.ov-look-hidden h4 {
+  margin: 0 0 6px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.ov-look-hidden p {
+  margin: 0;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.ov-look-hidden ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ov-look-hidden li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border: 1px solid var(--bdr);
+  border-radius: 6px;
+  background: var(--panel-bg);
+  cursor: grab;
+  font-size: 0.74rem;
 }
 
 .ov-look-style {
@@ -3915,6 +4029,24 @@ html[dir='rtl'] .hdr-brand,
 
 .ov-look-reset {
   background: transparent;
+}
+
+/* Keep the editor preview at saved widths so admins can see wrap. */
+.ov-look-canvas.ov-col--flow .ov-flow--full { grid-column: span 12; }
+.ov-look-canvas.ov-col--flow .ov-flow--half { grid-column: span 6; }
+.ov-look-canvas.ov-col--flow .ov-flow--third { grid-column: span 4; }
+
+@media (max-width: 899px) {
+  .ov-look-canvas.ov-col--flow .ov-flow--full { grid-column: span 12; }
+  .ov-look-canvas.ov-col--flow .ov-flow--half { grid-column: span 6; }
+  .ov-look-canvas.ov-col--flow .ov-flow--third { grid-column: span 4; }
+}
+
+@media (max-width: 520px) {
+  .ov-look-canvas.ov-col--flow .ov-flow--half,
+  .ov-look-canvas.ov-col--flow .ov-flow--third {
+    grid-column: span 12;
+  }
 }
 
 /* ── Sales Manager suite (translucent 4+2 cubes) ─────────────────────────── */

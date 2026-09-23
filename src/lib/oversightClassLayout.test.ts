@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
+  moveCardById,
   normalizeBoard,
   packRows,
   parseClassLayout,
   seedSuiteBoard,
+  setCardHidden,
   suiteKindFromGrantKeys,
   visibleCards,
 } from './oversightClassLayout'
@@ -81,6 +83,26 @@ describe('visibleCards / suiteKindFromGrantKeys', () => {
   it('reads Sales Agent from grant keys', () => {
     expect(suiteKindFromGrantKeys(['node:ui.oversight.suite.sales_agent:'])).toBe('agent')
     expect(suiteKindFromGrantKeys(['ui.oversight.suite.sales_manager'])).toBe('manager')
+  })
+})
+
+describe('moveCardById / setCardHidden', () => {
+  const cards = [
+    { id: 'a', width: 'full' as const, hidden: false },
+    { id: 'b', width: 'half' as const, hidden: true },
+    { id: 'c', width: 'third' as const, hidden: false },
+  ]
+
+  it('moves by id', () => {
+    expect(moveCardById(cards, 'c', 'a').map(c => c.id)).toEqual(['c', 'a', 'b'])
+  })
+
+  it('toggles hidden without changing order', () => {
+    expect(setCardHidden(cards, 'b', false).map(c => ({ id: c.id, hidden: c.hidden }))).toEqual([
+      { id: 'a', hidden: false },
+      { id: 'b', hidden: false },
+      { id: 'c', hidden: false },
+    ])
   })
 })
 
