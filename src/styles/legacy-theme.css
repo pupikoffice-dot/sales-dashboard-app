@@ -4113,6 +4113,98 @@ html[data-theme='light'] .sm-suite-disclaimer {
 .sm-cube--vs-year-sales {
   grid-area: yearsales;
   min-width: 0;
+  min-height: 240px;
+}
+
+.sm-year-sales {
+  min-width: 0;
+}
+
+.sm-year-chart {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  height: 180px;
+  margin-top: 6px;
+}
+
+.sm-year-col {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.sm-year-col--current .sm-year-lbl {
+  color: var(--grn);
+  font-weight: 700;
+}
+
+.sm-year-val {
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--txt);
+  line-height: 1.1;
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sm-year-plot {
+  flex: 1 1 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 0;
+}
+
+.sm-year-stack {
+  width: 100%;
+  max-width: 36px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column-reverse;
+  border-radius: 3px 3px 0 0;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.sm-year-stack--neg {
+  opacity: 0.75;
+}
+
+.sm-year-seg {
+  width: 100%;
+  min-height: 2px;
+  flex: 1 1 auto;
+}
+
+.sm-year-seg.grn {
+  background: var(--grn);
+}
+
+.sm-year-seg.receipt {
+  background: var(--chart-c0);
+}
+
+.sm-year-seg.agent-c0 { background: var(--chart-c0); }
+.sm-year-seg.agent-c1 { background: var(--chart-c1); }
+.sm-year-seg.agent-c2 { background: var(--chart-c2); }
+.sm-year-seg.agent-c3 { background: var(--chart-c3); }
+.sm-year-seg.agent-c4 { background: var(--chart-c4); }
+.sm-year-seg.agent-c5 { background: var(--chart-c5); }
+
+.sm-year-lbl {
+  font-size: 0.6rem;
+  color: var(--muted2);
+  text-align: center;
+  line-height: 1.15;
+  white-space: nowrap;
 }
 
 .sm-orders-main {
