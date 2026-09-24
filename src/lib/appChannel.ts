@@ -19,7 +19,7 @@ export type AppChannel = 'production' | 'beta' | 'legacy'
 
 /** Product line currently under construction on the beta channel. */
 export const BETA_PRODUCT_VERSION =
-  (import.meta.env.VITE_PRODUCT_VERSION as string | undefined)?.trim() || '2.4'
+  (import.meta.env.VITE_PRODUCT_VERSION as string | undefined)?.trim() || '2.5'
 
 /** Frozen product line on the legacy backup channel. */
 export const LEGACY_PRODUCT_VERSION = '1.0'
