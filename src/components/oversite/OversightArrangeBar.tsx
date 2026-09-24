@@ -106,6 +106,9 @@ export function OversightArrangeBar({ arrange }: { arrange: OversightArrangeApi 
       <button type="button" onClick={arrange.save} disabled={arrange.isSaving}>
         {arrange.isSaving ? 'Saving…' : 'Save'}
       </button>
+      <button type="button" onClick={arrange.undo} disabled={!arrange.canUndo}>
+        Undo
+      </button>
       <button type="button" className="ov-arrange-reset" onClick={arrange.resetOpen}>
         Reset
       </button>
@@ -152,7 +155,7 @@ export function ArrangeCardChrome({
       cards: setCardSize(current.cards, cardId, next),
     }
     boardRef.current = updated
-    arrange.patchActiveBoard(updated)
+    arrange.patchActiveBoard(updated, { skipHistory: true })
   }
 
   function startResize(axis: ResizeAxis, e: ReactPointerEvent<HTMLButtonElement>) {
@@ -160,6 +163,7 @@ export function ArrangeCardChrome({
     e.stopPropagation()
     const shell = shellRef.current
     if (!shell) return
+    arrange.checkpoint()
     const grid = shell.closest('.ov-col--flow, .sm-cube-grid--flow, .sm-vs-grid--flow') as HTMLElement | null
     const gridWidth = grid?.clientWidth || shell.parentElement?.clientWidth || 1
     const colUnit = gridWidth / 12
@@ -235,7 +239,14 @@ export function ArrangeCardChrome({
           onPointerDown={e => e.stopPropagation()}
           onChange={e => {
             const width = e.target.value as LayoutWidth
-            patchSize({ cols: WIDTH_COLS[width] })
+            const current = boardRef.current
+            if (!current) return
+            const updated = {
+              ...current,
+              cards: setCardSize(current.cards, cardId, { cols: WIDTH_COLS[width] }),
+            }
+            boardRef.current = updated
+            arrange.patchActiveBoard(updated)
           }}
         >
           {WIDTHS.map(w => (
@@ -263,7 +274,16 @@ export function ArrangeCardChrome({
             className="ov-look-eye"
             title="Clear fixed height"
             onPointerDown={e => e.stopPropagation()}
-            onClick={() => patchSize({ heightPx: null })}
+            onClick={() => {
+              const current = boardRef.current
+              if (!current) return
+              const updated = {
+                ...current,
+                cards: setCardSize(current.cards, cardId, { heightPx: null }),
+              }
+              boardRef.current = updated
+              arrange.patchActiveBoard(updated)
+            }}
           >
             Auto H
           </button>

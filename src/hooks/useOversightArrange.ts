@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useArrangeTargetClassId, useSignedInProfileRole } from './useCanArrangeOversight'
 import { useClassOversightLayout } from './useClassOversightLayout'
@@ -12,6 +12,27 @@ import {
   type SuiteKind,
 } from '../lib/oversightClassLayout'
 import { upsertClassOversightLayout } from '../lib/oversightClassLayoutApi'
+
+const MAX_UNDO = 40
+
+function cloneBoard(board: OversightBoard): OversightBoard {
+  return {
+    style: { ...board.style },
+    cards: board.cards.map(c => ({ ...c })),
+  }
+}
+
+function cloneLayout(layout: ClassOversightLayout): ClassOversightLayout {
+  return {
+    classic: cloneBoard(layout.classic),
+    suite: cloneBoard(layout.suite),
+  }
+}
+
+export interface PatchBoardOptions {
+  /** When true, do not push the previous board onto the undo stack (e.g. mid-resize). */
+  skipHistory?: boolean
+}
 
 export interface OversightArrangeApi {
   canArrange: boolean
@@ -28,11 +49,15 @@ export interface OversightArrangeApi {
   notice: string | null
   error: string | null
   isSaving: boolean
+  canUndo: boolean
   start: () => void
   cancel: () => void
   resetOpen: () => void
+  undo: () => void
+  /** Snapshot the open board before a multi-step gesture (e.g. mouse resize). */
+  checkpoint: () => void
   save: () => void
-  patchActiveBoard: (next: OversightBoard) => void
+  patchActiveBoard: (next: OversightBoard, opts?: PatchBoardOptions) => void
 }
 
 export function useOversightArrange(surface: LayoutSurface): OversightArrangeApi {
@@ -51,7 +76,13 @@ export function useOversightArrange(surface: LayoutSurface): OversightArrangeApi
 
   const [arranging, setArranging] = useState(false)
   const [draft, setDraft] = useState<ClassOversightLayout | null>(null)
+  const [undoStack, setUndoStack] = useState<OversightBoard[]>([])
   const [notice, setNotice] = useState<string | null>(null)
+  const draftRef = useRef<ClassOversightLayout | null>(null)
+
+  useEffect(() => {
+    draftRef.current = draft
+  }, [draft])
 
   useEffect(() => {
     if (!notice) return
@@ -64,16 +95,26 @@ export function useOversightArrange(surface: LayoutSurface): OversightArrangeApi
     if (!canStart) {
       setArranging(false)
       setDraft(null)
+      setUndoStack([])
     }
   }, [arranging, canStart])
+
+  const pushUndo = useCallback((board: OversightBoard) => {
+    setUndoStack(prev => [...prev.slice(-(MAX_UNDO - 1)), cloneBoard(board)])
+  }, [])
+
+  const checkpoint = useCallback(() => {
+    const current = draftRef.current
+    if (!current) return
+    const board = surface === 'classic' ? current.classic : current.suite
+    pushUndo(board)
+  }, [pushUndo, surface])
 
   const start = useCallback(() => {
     if (!canStart) return
     const base = savedLayout ?? seedClassLayout(suiteKind)
-    setDraft({
-      classic: { cards: base.classic.cards.map(c => ({ ...c })), style: { ...base.classic.style } },
-      suite: { cards: base.suite.cards.map(c => ({ ...c })), style: { ...base.suite.style } },
-    })
+    setDraft(cloneLayout(base))
+    setUndoStack([])
     setArranging(true)
     setNotice(null)
   }, [canStart, savedLayout, suiteKind])
@@ -81,25 +122,46 @@ export function useOversightArrange(surface: LayoutSurface): OversightArrangeApi
   const cancel = useCallback(() => {
     setArranging(false)
     setDraft(null)
+    setUndoStack([])
     setNotice(null)
   }, [])
 
   const resetOpen = useCallback(() => {
     setDraft(prev => {
       if (!prev) return prev
+      const open = surface === 'classic' ? prev.classic : prev.suite
+      pushUndo(open)
       if (surface === 'classic') return { ...prev, classic: seedClassicBoard() }
       return { ...prev, suite: seedSuiteBoard(suiteKind) }
     })
-  }, [surface, suiteKind])
+  }, [pushUndo, surface, suiteKind])
+
+  const undo = useCallback(() => {
+    setUndoStack(prev => {
+      if (prev.length === 0) return prev
+      const restored = prev[prev.length - 1]!
+      setDraft(d => {
+        if (!d) return d
+        return surface === 'classic'
+          ? { ...d, classic: cloneBoard(restored) }
+          : { ...d, suite: cloneBoard(restored) }
+      })
+      return prev.slice(0, -1)
+    })
+  }, [surface])
 
   const patchActiveBoard = useCallback(
-    (next: OversightBoard) => {
+    (next: OversightBoard, opts?: PatchBoardOptions) => {
       setDraft(prev => {
         if (!prev) return prev
+        if (!opts?.skipHistory) {
+          const open = surface === 'classic' ? prev.classic : prev.suite
+          pushUndo(open)
+        }
         return surface === 'classic' ? { ...prev, classic: next } : { ...prev, suite: next }
       })
     },
-    [surface],
+    [pushUndo, surface],
   )
 
   const saveMut = useMutation({
@@ -112,6 +174,7 @@ export function useOversightArrange(surface: LayoutSurface): OversightArrangeApi
       await qc.invalidateQueries({ queryKey: ['class-oversight-layout-editor'] })
       setArranging(false)
       setDraft(null)
+      setUndoStack([])
       setNotice('Look saved')
     },
   })
@@ -138,9 +201,12 @@ export function useOversightArrange(surface: LayoutSurface): OversightArrangeApi
     notice,
     error: saveMut.error instanceof Error ? saveMut.error.message : null,
     isSaving: saveMut.isPending,
+    canUndo: undoStack.length > 0,
     start,
     cancel,
     resetOpen,
+    undo,
+    checkpoint,
     save: () => saveMut.mutate(),
     patchActiveBoard,
   }
