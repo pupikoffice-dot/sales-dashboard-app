@@ -1,8 +1,9 @@
-import { useMemo, useState, type CSSProperties } from 'react'
+import { useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import { usePreview } from '../context/PreviewContext'
 import { useLocale } from '../context/LocaleContext'
 import { useDashboardAccess } from '../context/DashboardAccessContext'
 import { useDashboardData } from '../hooks/useDashboardData'
+import { useOversightArrange } from '../hooks/useOversightArrange'
 import { useOversightLayout } from '../hooks/useOversightLayout'
 import { OversightLayoutToggle } from '../components/oversite/OversightLayoutToggle'
 import { SalesAgentSuite } from '../components/oversite/salesManager/SalesAgentSuite'
@@ -52,7 +53,14 @@ import { OversiteCollapsible } from '../components/oversite/OversiteCollapsible'
 import { OversiteKpiRow, OversiteSection, SalesLyBars } from '../components/oversite/OversiteKpiRow'
 import { OversiteOrdersByDocTable } from '../components/oversite/OversiteOrdersByDocTable'
 import { OversiteTop10Table } from '../components/oversite/OversiteTop10Table'
+import { OversightFlowCards } from '../components/oversite/OversightFlowCards'
+import {
+  ArrangeCardChrome,
+  ArrangeHiddenTray,
+  OversightArrangeBar,
+} from '../components/oversite/OversightArrangeBar'
 import { OversiteLegend } from '../components/oversite/OversiteLegend'
+import { boardStyleAttrs } from '../lib/oversightClassLayout'
 import { SmReceiptsReportModal } from '../components/oversite/salesManager/SmReceiptsReportModal'
 
 export function OversitePage() {
@@ -104,6 +112,8 @@ function ClassicOversitePage({
   // Use access-scoped `rows` from the hook (already memoised) — do not re-filter allRows.
   const { rows: companyRows, debtRows, debtLastUpdate, wmsStock, wmsNames, isLoading, error, data: dashboardData } =
     useDashboardData()
+  const arrange = useOversightArrange('classic')
+  const classicBoard = arrange.displayBoard
   const [debtModalCo, setDebtModalCo] = useState<LogicalCompany | null>(null)
   const [ordersModal, setOrdersModal] = useState<{
     company: LogicalCompany
@@ -247,6 +257,7 @@ function ClassicOversitePage({
                 onSelect={layoutToggle.onSelect}
               />
             ) : null}
+            <OversightArrangeBar arrange={arrange} />
             <OversiteLegend />
           </div>
         </div>
@@ -260,6 +271,7 @@ function ClassicOversitePage({
           ) : null}{' '}
           · {t('oversite.month')}: <b>{ctx.monthLbl}</b>
         </div>
+        {arrange.arranging ? <ArrangeHiddenTray arrange={arrange} surface="classic" /> : null}
       </div>
 
       {visibleCompanies.length === 0 ? (
@@ -291,19 +303,13 @@ function ClassicOversitePage({
               forecast,
               supplierMatrix,
               ordersLast7,
-            }) => {
+            }, coIdx) => {
             const multiCo = visibleCompanies.length > 1
-            return (
-              <div
-                key={co.id}
-                className={`ov-col${visibleCompanies.length === 1 ? ' ov-col--sections-grid' : ''}${multiCo ? ' ov-col--accented' : ''}`}
-                style={multiCo ? ({ ['--co-accent' as string]: co.accentColor } as CSSProperties) : undefined}
-              >
-                <div className="ov-col-hdr">
-                  {co.label}
-                </div>
-
-                {showModule('ordersToday') && (
+            const secondCo = multiCo && coIdx === 1
+            const useSavedLook = classicBoard != null
+            const sectionNodes: Record<string, ReactNode> = {}
+            if (showModule('ordersToday')) {
+              sectionNodes.ordersToday = (
                   <OversiteSection title={`📋 ${t('oversite.ordersToday')}`} updatedAt={segUpdated(co.id, 'orders')} sourceFile={srcFile(co.id, 'ordersToday')}>
                     <OversiteKpiRow
                       kpis={[
@@ -320,9 +326,10 @@ function ClassicOversitePage({
                     />
                     <OversiteOrdersLast7Days data={ordersLast7} />
                   </OversiteSection>
-                )}
-
-                {showModule('ordersMtd') && (
+              )
+            }
+            if (showModule('ordersMtd')) {
+              sectionNodes.ordersMtd = (
                   <OversiteSection title={`📋 ${t('oversite.ordersMtd', { month: ctx.monthLbl })}`} updatedAt={segUpdated(co.id, 'orders')} sourceFile={srcFile(co.id, 'ordersMtd')}>
                     <OversiteKpiRow
                       kpis={[
@@ -340,9 +347,10 @@ function ClassicOversitePage({
                       />
                     </OversiteCollapsible>
                   </OversiteSection>
-                )}
-
-                {showModule('openOrders') && (
+              )
+            }
+            if (showModule('openOrders')) {
+              sectionNodes.openOrders = (
                   <OversiteSection title={`📋 ${t('oversite.openOrders')}`} updatedAt={segUpdated(co.id, 'openorders')} sourceFile={srcFile(co.id, 'openOrders')}>
                     <OversiteKpiRow
                       kpis={[
@@ -360,9 +368,10 @@ function ClassicOversitePage({
                       />
                     </OversiteCollapsible>
                   </OversiteSection>
-                )}
-
-                {showModule('salesMtd') && (
+              )
+            }
+            if (showModule('salesMtd')) {
+              sectionNodes.salesMtd = (
                   <OversiteSection title={`💰 ${t('oversite.salesMtd', { month: ctx.monthLbl })}`} updatedAt={segUpdated(co.id, 'sales')} sourceFile={srcFile(co.id, 'salesMtd')}>
                     <OversiteKpiRow
                       kpis={[
@@ -402,9 +411,10 @@ function ClassicOversitePage({
                       />
                     </OversiteCollapsible>
                   </OversiteSection>
-                )}
-
-                {showModule('topItems') && (
+              )
+            }
+            if (showModule('topItems')) {
+              sectionNodes.topItems = (
                   <OversiteSection title={`🏆 ${t('oversite.top10Items')}`} updatedAt={segUpdated(co.id, 'sales')} sourceFile={srcFile(co.id, 'topItems')}>
                     <OversiteTop10Table
                       items={salesTop10}
@@ -413,15 +423,17 @@ function ClassicOversitePage({
                       detailRows={salesMtdRows}
                     />
                   </OversiteSection>
-                )}
-
-                {showModule('suppliers') && (
+              )
+            }
+            if (showModule('suppliers')) {
+              sectionNodes.suppliers = (
                   <OversiteSection title={`🏭 ${t('oversite.supplierMonthly')}`} updatedAt={segUpdated(co.id, 'sales')} sourceFile={srcFile(co.id, 'suppliers')}>
                     <OversiteSuppliersMatrix matrix={supplierMatrix} />
                   </OversiteSection>
-                )}
-
-                {showModule('returns') && (
+              )
+            }
+            if (showModule('returns')) {
+              sectionNodes.returns = (
                   <OversiteSection title={`↩️ ${t('oversite.returnsMtd')}`} updatedAt={segUpdated(co.id, 'returns')} sourceFile={srcFile(co.id, 'returns')}>
                     <OversiteKpiRow
                       kpis={[
@@ -433,9 +445,10 @@ function ClassicOversitePage({
                       <OversiteTop10Table items={returnsTop10} emptyLabel={t('oversite.noReturns')} showSku />
                     </OversiteCollapsible>
                   </OversiteSection>
-                )}
-
-                {showModule('debt') && (
+              )
+            }
+            if (showModule('debt')) {
+              sectionNodes.debt = (
                   <OversiteSection
                     title={`💳 ${t('oversite.openDebt')}${debtUpdated ? ` · ${t('oversite.lastUpdate')}: ${debtUpdated}` : ''}`}
                     updatedAt={segUpdated(co.id, 'debt')}
@@ -447,11 +460,14 @@ function ClassicOversitePage({
                       onOpenReport={() => setDebtModalCo(co.id)}
                     />
                   </OversiteSection>
-                )}
-
-                {showModule('receipts') &&
-                  dashboardData?.receiptsMonthly?.[co.id] &&
-                  Object.keys(dashboardData.receiptsMonthly[co.id]).length > 0 && (
+              )
+            }
+            if (
+              showModule('receipts') &&
+              dashboardData?.receiptsMonthly?.[co.id] &&
+              Object.keys(dashboardData.receiptsMonthly[co.id]).length > 0
+            ) {
+              sectionNodes.receipts = (
                     <OversiteSection title={`🧾 ${t('oversite.receipts')}`} sourceFile={srcFile(co.id, 'receipts')}>
                       <OversiteReceipts monthly={dashboardData.receiptsMonthly[co.id]} />
                       {(() => {
@@ -482,9 +498,10 @@ function ClassicOversitePage({
                         📋 {t('sm.cube.fullReport')}
                       </button>
                     </OversiteSection>
-                  )}
-
-                {showModule('stockAlerts') && (
+              )
+            }
+            if (showModule('stockAlerts')) {
+              sectionNodes.stockAlerts = (
                   <StockAlertsPanel
                     company={co.id}
                     companyRows={companyRows}
@@ -492,6 +509,45 @@ function ClassicOversitePage({
                     wmsNames={wmsNames}
                     sourceFile={srcFile(co.id, 'stockAlerts')}
                   />
+              )
+            }
+            return (
+              <div
+                key={co.id}
+                className={`ov-col${useSavedLook ? ' ov-col--flow' : visibleCompanies.length === 1 ? ' ov-col--sections-grid' : ''}${multiCo ? ' ov-col--accented' : ''}${secondCo ? ' ov-col--alt' : ''}`}
+                style={multiCo ? ({ ['--co-accent' as string]: co.accentColor } as CSSProperties) : undefined}
+                {...(useSavedLook ? boardStyleAttrs(classicBoard.style) : {})}
+              >
+                <div className="ov-col-hdr">
+                  {co.label}
+                </div>
+                {useSavedLook ? (
+                  <OversightFlowCards
+                    board={classicBoard}
+                    nodes={sectionNodes}
+                    wrapNode={
+                      arrange.arranging
+                        ? (id, node) => (
+                            <ArrangeCardChrome arrange={arrange} cardId={id}>
+                              {node}
+                            </ArrangeCardChrome>
+                          )
+                        : undefined
+                    }
+                  />
+                ) : (
+                  <>
+                    {sectionNodes.ordersToday}
+                    {sectionNodes.ordersMtd}
+                    {sectionNodes.openOrders}
+                    {sectionNodes.salesMtd}
+                    {sectionNodes.topItems}
+                    {sectionNodes.suppliers}
+                    {sectionNodes.returns}
+                    {sectionNodes.debt}
+                    {sectionNodes.receipts}
+                    {sectionNodes.stockAlerts}
+                  </>
                 )}
               </div>
             )

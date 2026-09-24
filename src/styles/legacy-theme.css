@@ -614,6 +614,16 @@ body.sales-agent-no-nav .dashboard-main {
   --ov-accent: var(--co-accent, var(--acc));
 }
 
+.ov-col--alt {
+  background: rgba(203, 213, 225, 0.16);
+  border-radius: calc(var(--r) + 4px);
+  padding: 12px;
+}
+
+[data-theme='light'] .ov-col--alt {
+  background: #e8e8ed;
+}
+
 .ov-col--accented .ov-section {
   border-top: 2px solid color-mix(in srgb, var(--ov-accent) 45%, transparent);
 }
@@ -638,6 +648,69 @@ body.sales-agent-no-nav .dashboard-main {
 @media (max-width: 600px) {
   .ov-col.ov-col--sections-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+.ov-col--flow,
+.sm-cube-grid--flow,
+.sm-vs-grid--flow {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-areas: none;
+  gap: 14px;
+}
+
+.ov-col--flow .ov-col-hdr {
+  grid-column: 1 / -1;
+}
+
+.ov-flow {
+  min-width: 0;
+}
+
+.ov-flow--full { grid-column: span 12; }
+.ov-flow--half { grid-column: span 6; }
+.ov-flow--third { grid-column: span 4; }
+
+.sm-cube-grid--flow > .ov-flow .sm-cube,
+.sm-vs-grid--flow > .ov-flow .sm-cube {
+  grid-area: auto;
+  height: 100%;
+}
+
+[data-ov-accent='indigo'] { --ov-look-accent: #4f46e5; }
+[data-ov-accent='green'] { --ov-look-accent: #16a34a; }
+[data-ov-accent='amber'] { --ov-look-accent: #d97706; }
+[data-ov-accent='slate'] { --ov-look-accent: #64748b; }
+
+[data-ov-accent] .ov-section,
+[data-ov-accent] .sm-cube {
+  border-top: 2px solid color-mix(in srgb, var(--ov-look-accent) 55%, transparent);
+}
+
+[data-ov-density='compact'] .ov-section,
+[data-ov-density='compact'] .sm-cube {
+  padding: 8px 10px;
+}
+
+[data-ov-card='solid'] .ov-section,
+[data-ov-card='solid'] .sm-cube {
+  background: var(--sur2);
+  backdrop-filter: none;
+}
+
+[data-ov-card='outline'] .ov-section,
+[data-ov-card='outline'] .sm-cube {
+  background: transparent;
+  border: 1.5px solid var(--bdr);
+  backdrop-filter: none;
+}
+
+@media (max-width: 899px) {
+  .ov-flow--full,
+  .ov-flow--half,
+  .ov-flow--third {
+    grid-column: span 12;
   }
 }
 
@@ -3723,6 +3796,448 @@ html[dir='rtl'] .hdr-brand,
   flex-wrap: wrap;
 }
 
+.ov-look-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--bdr);
+  border-radius: var(--r);
+  background: var(--panel-bg);
+}
+
+.ov-look-editor-head h3 {
+  margin: 0 0 4px;
+  font-size: 0.92rem;
+}
+
+.ov-look-editor-head p {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.ov-look-tabs {
+  display: flex;
+  gap: 6px;
+}
+
+.ov-look-tabs button {
+  background: var(--sur2);
+  border: 1px solid var(--bdr);
+  color: var(--txt);
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.ov-look-tabs button.active {
+  border-color: var(--acc);
+  background: color-mix(in srgb, var(--acc) 14%, var(--sur2));
+}
+
+.ov-look-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ov-look-canvas {
+  min-height: 220px;
+  padding: 12px;
+  border: 1px dashed color-mix(in srgb, var(--bdr) 80%, var(--acc));
+  border-radius: 10px;
+  background: var(--sur2);
+}
+
+.ov-look-canvas-hdr {
+  grid-column: 1 / -1;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 8px 12px;
+  background: var(--panel-bg-hdr);
+  border: 1px solid var(--bdr);
+  border-radius: 8px;
+}
+
+.ov-look-tile {
+  min-height: 118px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: grab;
+}
+
+.ov-look-tile--dragging {
+  opacity: 0.55;
+}
+
+.ov-look-tile-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ov-look-handle {
+  cursor: grab;
+  color: var(--muted);
+  letter-spacing: -2px;
+}
+
+.ov-look-label {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.ov-look-tile select,
+.ov-look-style select {
+  background: var(--panel-bg);
+  border: 1px solid var(--bdr);
+  color: var(--txt);
+  border-radius: 5px;
+  padding: 3px 6px;
+  font-family: inherit;
+}
+
+.ov-look-eye {
+  background: transparent;
+  border: 1px solid var(--bdr);
+  color: var(--txt);
+  border-radius: 5px;
+  padding: 3px 8px;
+  font-size: 0.7rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.ov-look-sketch {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.ov-look-sketch-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.ov-look-sketch-kpis span {
+  height: 28px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--ov-look-accent, var(--acc)) 16%, var(--sur2));
+}
+
+.ov-look-sketch-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ov-look-sketch-rows i {
+  display: block;
+  height: 6px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--txt) 12%, transparent);
+}
+
+.ov-look-sketch-rows i:nth-child(2) { width: 82%; }
+.ov-look-sketch-rows i:nth-child(3) { width: 64%; }
+
+.ov-look-sketch-val {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--grn, #22c55e);
+}
+
+.ov-look-sketch-bar {
+  height: 7px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--ov-look-accent, var(--acc)) 55%, transparent);
+}
+
+.ov-look-sketch-meta {
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.ov-look-hidden {
+  min-height: 56px;
+  padding: 8px 10px;
+  border: 1px dashed var(--bdr);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--sur2) 70%, transparent);
+}
+
+.ov-look-hidden h4 {
+  margin: 0 0 6px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.ov-look-hidden p {
+  margin: 0;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.ov-look-hidden ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ov-look-hidden li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border: 1px solid var(--bdr);
+  border-radius: 6px;
+  background: var(--panel-bg);
+  cursor: grab;
+  font-size: 0.74rem;
+}
+
+.ov-look-style {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.ov-look-style label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.ov-look-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.ov-look-reset {
+  background: transparent;
+}
+
+.ov-arrange-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.ov-arrange-bar--on {
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--acc) 40%, var(--bdr));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--acc) 8%, var(--panel-bg));
+}
+
+.ov-arrange-toggle {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.ov-arrange-toggle:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ov-arrange-hint {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.ov-arrange-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--acc);
+}
+
+.ov-arrange-style {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.ov-arrange-style select {
+  background: var(--panel-bg);
+  border: 1px solid var(--bdr);
+  color: var(--txt);
+  border-radius: 5px;
+  padding: 3px 6px;
+  font-family: inherit;
+}
+
+.ov-arrange-reset,
+.ov-arrange-cancel {
+  background: transparent;
+}
+
+.ov-arrange-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+  min-height: 0;
+}
+
+.ov-arrange-card-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ov-arrange-card-body > * {
+  flex: 1;
+  min-height: 0;
+}
+
+.ov-arrange-card-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ov-arrange-size-lbl {
+  font-size: 0.68rem;
+  color: var(--muted);
+  min-width: 4.5rem;
+}
+
+.ov-arrange-card-bar select {
+  background: var(--panel-bg);
+  border: 1px solid var(--bdr);
+  color: var(--txt);
+  border-radius: 5px;
+  padding: 2px 5px;
+  font-family: inherit;
+  font-size: 0.68rem;
+}
+
+.ov-resize-handle {
+  position: absolute;
+  z-index: 3;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: color-mix(in srgb, var(--acc) 55%, transparent);
+  opacity: 0.55;
+}
+
+.ov-resize-handle:hover,
+.ov-resize-handle:focus-visible {
+  opacity: 1;
+}
+
+.ov-resize-handle--e {
+  top: 28px;
+  right: -3px;
+  bottom: 14px;
+  width: 6px;
+  cursor: ew-resize;
+  border-radius: 3px;
+}
+
+.ov-resize-handle--s {
+  left: 8px;
+  right: 14px;
+  bottom: -3px;
+  height: 6px;
+  cursor: ns-resize;
+  border-radius: 3px;
+}
+
+.ov-resize-handle--se {
+  right: -4px;
+  bottom: -4px;
+  width: 12px;
+  height: 12px;
+  cursor: nwse-resize;
+  border-radius: 2px;
+  background: var(--acc);
+  opacity: 0.85;
+}
+
+.ov-arrange-hidden {
+  margin-top: 8px;
+  min-height: 48px;
+  padding: 8px 10px;
+  border: 1px dashed var(--bdr);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--sur2) 70%, transparent);
+}
+
+.ov-arrange-hidden h4 {
+  margin: 0 0 6px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.ov-arrange-hidden p {
+  margin: 0;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.ov-arrange-hidden ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ov-arrange-hidden li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border: 1px solid var(--bdr);
+  border-radius: 6px;
+  background: var(--panel-bg);
+  font-size: 0.74rem;
+}
+
+/* Keep the editor preview at saved widths so admins can see wrap. */
+.ov-look-canvas.ov-col--flow .ov-flow--full { grid-column: span 12; }
+.ov-look-canvas.ov-col--flow .ov-flow--half { grid-column: span 6; }
+.ov-look-canvas.ov-col--flow .ov-flow--third { grid-column: span 4; }
+
+@media (max-width: 899px) {
+  .ov-look-canvas.ov-col--flow .ov-flow--full { grid-column: span 12; }
+  .ov-look-canvas.ov-col--flow .ov-flow--half { grid-column: span 6; }
+  .ov-look-canvas.ov-col--flow .ov-flow--third { grid-column: span 4; }
+}
+
+@media (max-width: 520px) {
+  .ov-look-canvas.ov-col--flow .ov-flow--half,
+  .ov-look-canvas.ov-col--flow .ov-flow--third {
+    grid-column: span 12;
+  }
+}
+
 /* ── Sales Manager suite (translucent 4+2 cubes) ─────────────────────────── */
 
 .sm-suite {
@@ -3786,11 +4301,25 @@ html[data-theme='light'] .sm-suite-disclaimer {
   gap: 14px;
   grid-template-areas:
     'mtd mtd open returns'
-    'debt orders7 orders7 receipts';
+    'debt orders7 orders7 receipts'
+    'yearsales yearsales yearsales yearsales';
 }
 
 .sm-vs-grid--tsomet {
   grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-areas:
+    'mtd mtd open tsomet returns'
+    'debt orders7 orders7 orders7 receipts'
+    'yearsales yearsales yearsales yearsales yearsales';
+}
+
+.sm-vs-grid--no-year-sales {
+  grid-template-areas:
+    'mtd mtd open returns'
+    'debt orders7 orders7 receipts';
+}
+
+.sm-vs-grid--tsomet.sm-vs-grid--no-year-sales {
   grid-template-areas:
     'mtd mtd open tsomet returns'
     'debt orders7 orders7 orders7 receipts';
@@ -3904,10 +4433,30 @@ html[data-theme='light'] .sm-suite-disclaimer {
       'open returns'
       'debt debt'
       'orders7 orders7'
-      'receipts receipts';
+      'receipts receipts'
+      'yearsales yearsales';
   }
 
   .sm-vs-grid--tsomet {
+    grid-template-areas:
+      'mtd mtd'
+      'open tsomet'
+      'returns debt'
+      'orders7 orders7'
+      'receipts receipts'
+      'yearsales yearsales';
+  }
+
+  .sm-vs-grid--no-year-sales {
+    grid-template-areas:
+      'mtd mtd'
+      'open returns'
+      'debt debt'
+      'orders7 orders7'
+      'receipts receipts';
+  }
+
+  .sm-vs-grid--tsomet.sm-vs-grid--no-year-sales {
     grid-template-areas:
       'mtd mtd'
       'open tsomet'
@@ -4009,13 +4558,27 @@ html[data-theme='light'] .sm-suite-disclaimer {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   grid-template-areas:
     'mtd open returns debt'
-    'orders orders orders receipts';
+    'orders orders orders receipts'
+    'yearsales yearsales yearsales yearsales';
   gap: 12px;
   align-items: stretch;
 }
 
 .sm-cube-grid--tsomet {
   grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-areas:
+    'mtd open tsomet returns debt'
+    'orders orders orders orders receipts'
+    'yearsales yearsales yearsales yearsales yearsales';
+}
+
+.sm-cube-grid--no-year-sales {
+  grid-template-areas:
+    'mtd open returns debt'
+    'orders orders orders receipts';
+}
+
+.sm-cube-grid--tsomet.sm-cube-grid--no-year-sales {
   grid-template-areas:
     'mtd open tsomet returns debt'
     'orders orders orders orders receipts';
@@ -4060,6 +4623,103 @@ html[data-theme='light'] .sm-suite-disclaimer {
   grid-area: receipts;
   min-height: 220px;
   overflow-x: auto;
+}
+.sm-cube--year-sales,
+.sm-cube--vs-year-sales {
+  grid-area: yearsales;
+  min-width: 0;
+  min-height: 240px;
+}
+
+.sm-year-sales {
+  min-width: 0;
+}
+
+.sm-year-chart {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  height: 180px;
+  margin-top: 6px;
+}
+
+.sm-year-col {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.sm-year-col--current .sm-year-lbl {
+  color: var(--grn);
+  font-weight: 700;
+}
+
+.sm-year-val {
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--txt);
+  line-height: 1.1;
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sm-year-plot {
+  flex: 1 1 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 0;
+}
+
+.sm-year-stack {
+  width: 100%;
+  max-width: 36px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column-reverse;
+  border-radius: 3px 3px 0 0;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.sm-year-stack--neg {
+  opacity: 0.75;
+}
+
+.sm-year-seg {
+  width: 100%;
+  min-height: 2px;
+  flex: 1 1 auto;
+}
+
+.sm-year-seg.grn {
+  background: var(--grn);
+}
+
+.sm-year-seg.receipt {
+  background: var(--chart-c0);
+}
+
+.sm-year-seg.agent-c0 { background: var(--chart-c0); }
+.sm-year-seg.agent-c1 { background: var(--chart-c1); }
+.sm-year-seg.agent-c2 { background: var(--chart-c2); }
+.sm-year-seg.agent-c3 { background: var(--chart-c3); }
+.sm-year-seg.agent-c4 { background: var(--chart-c4); }
+.sm-year-seg.agent-c5 { background: var(--chart-c5); }
+
+.sm-year-lbl {
+  font-size: 0.6rem;
+  color: var(--muted2);
+  text-align: center;
+  line-height: 1.15;
+  white-space: nowrap;
 }
 
 .sm-orders-main {
@@ -4625,10 +5285,29 @@ html[data-theme='light'] .sm-suite-disclaimer {
       'mtd open'
       'returns debt'
       'orders orders'
-      'receipts receipts';
+      'receipts receipts'
+      'yearsales yearsales';
   }
 
   .sm-cube-grid--tsomet {
+    grid-template-areas:
+      'mtd open'
+      'tsomet returns'
+      'debt debt'
+      'orders orders'
+      'receipts receipts'
+      'yearsales yearsales';
+  }
+
+  .sm-cube-grid--no-year-sales {
+    grid-template-areas:
+      'mtd open'
+      'returns debt'
+      'orders orders'
+      'receipts receipts';
+  }
+
+  .sm-cube-grid--tsomet.sm-cube-grid--no-year-sales {
     grid-template-areas:
       'mtd open'
       'tsomet returns'
@@ -4665,10 +5344,33 @@ html[data-theme='light'] .sm-suite-disclaimer {
       'returns'
       'debt'
       'orders'
-      'receipts';
+      'receipts'
+      'yearsales';
   }
 
   .sm-cube-grid--tsomet {
+    grid-template-areas:
+      'mtd'
+      'open'
+      'tsomet'
+      'returns'
+      'debt'
+      'orders'
+      'receipts'
+      'yearsales';
+  }
+
+  .sm-cube-grid--no-year-sales {
+    grid-template-areas:
+      'mtd'
+      'open'
+      'returns'
+      'debt'
+      'orders'
+      'receipts';
+  }
+
+  .sm-cube-grid--tsomet.sm-cube-grid--no-year-sales {
     grid-template-areas:
       'mtd'
       'open'

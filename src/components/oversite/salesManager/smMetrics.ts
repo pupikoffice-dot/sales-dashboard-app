@@ -235,6 +235,16 @@ export interface SmReceiptsMetrics {
   agents: string[]
 }
 
+/** Calendar-year sales from report 891 only — that export is already net when summed. */
+export interface SmYearNetSales {
+  year: number
+  throughMonth: number
+  monthly: Record<string, number>
+  byAgent: Record<string, Record<string, number>>
+  agents: string[]
+  total: number
+}
+
 export interface SmSuiteKpis {
   salesMtd: SalesMtdMetrics
   openOrders: OpenOrdersMetrics
@@ -242,6 +252,7 @@ export interface SmSuiteKpis {
   openDebt: DebtSummary | null
   ordersLast7Days: OrdersLast7DaysResult
   receipts: SmReceiptsMetrics
+  yearNetSales: SmYearNetSales
 }
 
 export interface BuildSmSuiteKpisArgs {
@@ -288,6 +299,49 @@ function emptyReturns(): ReturnsMtdMetrics {
   return { cash: 0, qty: 0 }
 }
 
+function ymKey(year: number, month: number): string {
+  return `${year}-${String(month).padStart(2, '0')}`
+}
+
+export function emptyYearNetSales(year: number, throughMonth: number): SmYearNetSales {
+  const monthly: Record<string, number> = {}
+  for (let m = 1; m <= throughMonth; m++) monthly[ymKey(year, m)] = 0
+  return { year, throughMonth, monthly, byAgent: {}, agents: [], total: 0 }
+}
+
+/**
+ * Jan–current-month sales for one company ∩ window agents.
+ * Uses company-tagged 891 rows only. That report already nets invoices and
+ * credit notes when summed — do not also subtract 855 returns.
+ */
+export function buildSmYearNetSales(args: {
+  invoiceRows: SalesRow[]
+  invoiceTag: string
+  year: number
+  throughMonth: number
+}): SmYearNetSales {
+  const { invoiceRows, invoiceTag, year, throughMonth } = args
+  const out = emptyYearNetSales(year, throughMonth)
+
+  const add = (agent: string, month: number, delta: number) => {
+    if (month < 1 || month > throughMonth) return
+    const ym = ymKey(year, month)
+    out.monthly[ym] = (out.monthly[ym] || 0) + delta
+    if (!out.byAgent[agent]) out.byAgent[agent] = {}
+    out.byAgent[agent][ym] = (out.byAgent[agent][ym] || 0) + delta
+  }
+
+  for (const r of invoiceRows) {
+    if (r.company !== invoiceTag) continue
+    if (Number(r.year) !== year) continue
+    add(String(r.agent ?? '').trim(), Number(r.month), Number(r.cash) || 0)
+  }
+
+  out.agents = Object.keys(out.byAgent).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+  out.total = Object.values(out.monthly).reduce((s, v) => s + v, 0)
+  return out
+}
+
 /**
  * Suite KPIs for **one** company and the window's agent set.
  * CORE RULE: one company only — never combine. Callers must not pass sidebar filter company.
@@ -311,6 +365,7 @@ export function buildSmSuiteKpis(args: BuildSmSuiteKpisArgs): SmSuiteKpis {
         company: args.company,
         agents: args.agents,
       }),
+      yearNetSales: emptyYearNetSales(dateCtx.curYear, dateCtx.curMonth),
     }
   }
 
@@ -339,6 +394,12 @@ export function buildSmSuiteKpis(args: BuildSmSuiteKpisArgs): SmSuiteKpis {
     company: args.company,
     agents: args.agents,
   })
+  const yearNetSales = buildSmYearNetSales({
+    invoiceRows: salesSlice,
+    invoiceTag: args.company,
+    year: dateCtx.curYear,
+    throughMonth: dateCtx.curMonth,
+  })
 
   return {
     salesMtd: sales,
@@ -347,6 +408,7 @@ export function buildSmSuiteKpis(args: BuildSmSuiteKpisArgs): SmSuiteKpis {
     openDebt,
     ordersLast7Days,
     receipts,
+    yearNetSales,
   }
 }
 
@@ -478,6 +540,7 @@ export interface SmVsCompanySeries {
   receipts: SmReceiptsMetrics
   /** Orders last-7 for all suite agents ∩ this company (shared chart). */
   ordersLast7Days: OrdersLast7DaysResult
+  yearNetSales: SmYearNetSales
 }
 
 export interface BuildSmVsAgentSeriesArgs {
@@ -541,6 +604,7 @@ export function buildSmVsAgentSeries(args: BuildSmVsAgentSeriesArgs): SmVsCompan
     agents,
     receipts: allKpis.receipts,
     ordersLast7Days: allKpis.ordersLast7Days,
+    yearNetSales: allKpis.yearNetSales,
   }
 }
 
@@ -570,5 +634,6 @@ export function buildSmVsAgentSeriesFromKpis(args: {
     agents,
     receipts: args.allKpis.receipts,
     ordersLast7Days: args.allKpis.ordersLast7Days,
+    yearNetSales: args.allKpis.yearNetSales,
   }
 }

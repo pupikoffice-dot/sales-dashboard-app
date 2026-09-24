@@ -5,6 +5,7 @@ import {
   buildSmSuiteKpis,
   buildSmVsAgentSeries,
   buildSmVsAgentSeriesFromKpis,
+  buildSmYearNetSales,
   partitionSalesRowsByTag,
 } from './smMetrics'
 
@@ -514,5 +515,49 @@ describe('oversight speed — golden (same numbers)', () => {
         goalsReady: false,
       }),
     )
+  })
+})
+
+describe('buildSmYearNetSales', () => {
+  it('sums 891 rows Jan through current month and ignores 855 returns', () => {
+    const kpis = buildSmSuiteKpis({
+      rows: [
+        salesRow({ company: 'pupik', year: 2026, month: 1, agent: '24', cash: 1000 }),
+        salesRow({ company: 'pupik', year: 2026, month: 3, agent: '24', cash: 400 }),
+        salesRow({ company: 'returns-pupik', year: 2026, month: 3, agent: '24', cash: -50 }),
+        salesRow({ company: 'pupik', year: 2026, month: 8, agent: '24', cash: 200 }),
+        salesRow({ company: 'pupik', year: 2025, month: 8, agent: '24', cash: 999 }),
+        salesRow({ company: 'pupik', year: 2026, month: 9, agent: '24', cash: 888 }),
+        salesRow({ company: 'pupik', year: 2026, month: 3, agent: '99', cash: 500 }),
+      ],
+      debtRows: [],
+      company: 'pupik',
+      agents: ['24'],
+      dateCtx,
+    })
+
+    expect(kpis.yearNetSales.year).toBe(2026)
+    expect(kpis.yearNetSales.throughMonth).toBe(8)
+    expect(kpis.yearNetSales.monthly['2026-01']).toBe(1000)
+    expect(kpis.yearNetSales.monthly['2026-03']).toBe(400)
+    expect(kpis.yearNetSales.monthly['2026-08']).toBe(200)
+    expect(kpis.yearNetSales.monthly['2026-02']).toBe(0)
+    expect(kpis.yearNetSales.monthly['2026-09']).toBeUndefined()
+    expect(kpis.yearNetSales.total).toBe(1600)
+    expect(kpis.yearNetSales.byAgent['24']['2026-03']).toBe(400)
+    expect(kpis.yearNetSales.byAgent['99']).toBeUndefined()
+  })
+
+  it('sums 891 cash as stored, including negative lines already in the report', () => {
+    const result = buildSmYearNetSales({
+      invoiceRows: [
+        salesRow({ company: 'mt', year: 2026, month: 2, agent: '57', cash: 100 }),
+        salesRow({ company: 'mt', year: 2026, month: 2, agent: '57', cash: -15 }),
+      ],
+      invoiceTag: 'mt',
+      year: 2026,
+      throughMonth: 2,
+    })
+    expect(result.monthly['2026-02']).toBe(85)
   })
 })

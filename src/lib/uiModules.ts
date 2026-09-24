@@ -6,7 +6,7 @@ import type {
   UiModuleRef,
   UiModuleSurface,
 } from '../types/uiModules'
-import { isSuiteMountableUiModuleId } from './suiteUiModules'
+import { isSuiteClassFeatureId, isSuiteMountableUiModuleId } from './suiteUiModules'
 
 /** Grant key prefix for Oversight UI modules (class `node` grants). */
 export const UI_OVERSIGHT_GRANT_PREFIX = 'ui.oversight.'
@@ -95,7 +95,9 @@ export function pickOversightMode(modules: UiModuleRef[]): OversightMode {
   }
   return {
     mode: 'classic',
-    addonIds: oversight.filter((m) => m.kind === 'addon').map((m) => m.id),
+    addonIds: oversight
+      .filter((m) => m.kind === 'addon' && !isSuiteClassFeatureId(m.id))
+      .map((m) => m.id),
   }
 }
 
