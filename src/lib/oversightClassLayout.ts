@@ -7,7 +7,12 @@ export type SuiteKind = 'agent' | 'manager'
 
 export interface LayoutCard {
   id: string
+  /** Named snap used by the width select; kept in sync with cols. */
   width: LayoutWidth
+  /** 1–12 grid columns. Mouse resize writes this. */
+  cols: number
+  /** Pixel height from mouse resize; null = natural height. */
+  heightPx: number | null
   hidden: boolean
 }
 
@@ -60,6 +65,37 @@ export const WIDTH_COLS: Record<LayoutWidth, number> = {
   third: 4,
 }
 
+export const MIN_CARD_COLS = 2
+export const MAX_CARD_COLS = 12
+export const MIN_CARD_HEIGHT_PX = 120
+export const MAX_CARD_HEIGHT_PX = 900
+
+export function widthFromCols(cols: number): LayoutWidth {
+  if (cols >= 10) return 'full'
+  if (cols >= 5) return 'half'
+  return 'third'
+}
+
+export function clampCols(cols: number): number {
+  return Math.min(MAX_CARD_COLS, Math.max(MIN_CARD_COLS, Math.round(cols)))
+}
+
+export function clampHeightPx(px: number): number {
+  return Math.min(MAX_CARD_HEIGHT_PX, Math.max(MIN_CARD_HEIGHT_PX, Math.round(px)))
+}
+
+export function cardCols(card: LayoutCard): number {
+  if (typeof card.cols === 'number' && Number.isFinite(card.cols)) return clampCols(card.cols)
+  return WIDTH_COLS[card.width] ?? 4
+}
+
+export function cardHeightPx(card: LayoutCard): number | null {
+  if (typeof card.heightPx === 'number' && Number.isFinite(card.heightPx) && card.heightPx > 0) {
+    return clampHeightPx(card.heightPx)
+  }
+  return null
+}
+
 export const DEFAULT_STYLE: LayoutStyle = {
   accent: 'indigo',
   density: 'comfortable',
@@ -110,18 +146,26 @@ function defaultWidth(surface: LayoutSurface, id: string): LayoutWidth {
 
 export function seedClassicBoard(): OversightBoard {
   return {
-    cards: CLASSIC_CARD_IDS.map(id => ({ id, width: 'third' as const, hidden: false })),
+    cards: CLASSIC_CARD_IDS.map(id => {
+      const width = 'third' as const
+      return { id, width, cols: WIDTH_COLS[width], heightPx: null, hidden: false }
+    }),
     style: { ...DEFAULT_STYLE },
   }
 }
 
 export function seedSuiteBoard(kind: SuiteKind): OversightBoard {
   return {
-    cards: SUITE_CARD_IDS.map(id => ({
-      id,
-      width: defaultWidth('suite', id),
-      hidden: kind === 'agent' && id === 'ordersLast7',
-    })),
+    cards: SUITE_CARD_IDS.map(id => {
+      const width = defaultWidth('suite', id)
+      return {
+        id,
+        width,
+        cols: WIDTH_COLS[width],
+        heightPx: null,
+        hidden: kind === 'agent' && id === 'ordersLast7',
+      }
+    }),
     style: { ...DEFAULT_STYLE },
   }
 }
@@ -152,6 +196,27 @@ function asStyle(raw: unknown): LayoutStyle {
   }
 }
 
+function asCols(row: Record<string, unknown>, width: LayoutWidth): number {
+  if (typeof row.cols === 'number' && Number.isFinite(row.cols)) return clampCols(row.cols)
+  if (typeof row.cols === 'string' && row.cols.trim() !== '') {
+    const n = Number(row.cols)
+    if (Number.isFinite(n)) return clampCols(n)
+  }
+  return WIDTH_COLS[width]
+}
+
+function asHeightPx(row: Record<string, unknown>): number | null {
+  if (row.heightPx == null || row.heightPx === false) return null
+  if (typeof row.heightPx === 'number' && Number.isFinite(row.heightPx) && row.heightPx > 0) {
+    return clampHeightPx(row.heightPx)
+  }
+  if (typeof row.heightPx === 'string' && row.heightPx.trim() !== '') {
+    const n = Number(row.heightPx)
+    if (Number.isFinite(n) && n > 0) return clampHeightPx(n)
+  }
+  return null
+}
+
 export function normalizeBoard(
   raw: unknown,
   surface: LayoutSurface,
@@ -170,9 +235,13 @@ export function normalizeBoard(
     const id = typeof row.id === 'string' ? row.id : ''
     if (!knownSet.has(id) || seen.has(id)) continue
     seen.add(id)
+    const width = asWidth(row.width, defaultWidth(surface, id))
+    const cols = asCols(row, width)
     cards.push({
       id,
-      width: asWidth(row.width, defaultWidth(surface, id)),
+      width: widthFromCols(cols),
+      cols,
+      heightPx: asHeightPx(row),
       hidden: row.hidden === true,
     })
   }
@@ -202,7 +271,7 @@ export function packRows(cards: LayoutCard[]): LayoutCard[][] {
   let row: LayoutCard[] = []
   let used = 0
   for (const card of cards) {
-    const span = WIDTH_COLS[card.width]
+    const span = cardCols(card)
     if (used > 0 && used + span > 12) {
       rows.push(row)
       row = []
@@ -242,6 +311,24 @@ export function setCardHidden(cards: LayoutCard[], id: string, hidden: boolean):
   return cards.map(c => (c.id === id ? { ...c, hidden } : c))
 }
 
+export function setCardSize(
+  cards: LayoutCard[],
+  id: string,
+  size: { cols?: number; heightPx?: number | null },
+): LayoutCard[] {
+  return cards.map(c => {
+    if (c.id !== id) return c
+    const cols = size.cols != null ? clampCols(size.cols) : cardCols(c)
+    const heightPx =
+      size.heightPx === undefined
+        ? c.heightPx
+        : size.heightPx == null
+          ? null
+          : clampHeightPx(size.heightPx)
+    return { ...c, cols, width: widthFromCols(cols), heightPx }
+  })
+}
+
 export function boardStyleAttrs(style: LayoutStyle): Record<string, string> {
   return {
     'data-ov-accent': style.accent,
@@ -252,6 +339,15 @@ export function boardStyleAttrs(style: LayoutStyle): Record<string, string> {
 
 export function flowWidthClass(width: LayoutWidth): string {
   return `ov-flow ov-flow--${width}`
+}
+
+export function flowCardStyle(card: LayoutCard): { gridColumn: string; minHeight?: string } {
+  const style: { gridColumn: string; minHeight?: string } = {
+    gridColumn: `span ${cardCols(card)}`,
+  }
+  const h = cardHeightPx(card)
+  if (h != null) style.minHeight = `${h}px`
+  return style
 }
 
 /** After a save: show the cube only if the board lists it and it is not hidden. */

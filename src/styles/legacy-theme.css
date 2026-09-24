@@ -4093,17 +4093,36 @@ html[dir='rtl'] .hdr-brand,
 }
 
 .ov-arrange-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 6px;
   height: 100%;
-  cursor: grab;
+  min-height: 0;
+}
+
+.ov-arrange-card-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ov-arrange-card-body > * {
+  flex: 1;
+  min-height: 0;
 }
 
 .ov-arrange-card-bar {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.ov-arrange-size-lbl {
+  font-size: 0.68rem;
+  color: var(--muted);
+  min-width: 4.5rem;
 }
 
 .ov-arrange-card-bar select {
@@ -4114,6 +4133,50 @@ html[dir='rtl'] .hdr-brand,
   padding: 2px 5px;
   font-family: inherit;
   font-size: 0.68rem;
+}
+
+.ov-resize-handle {
+  position: absolute;
+  z-index: 3;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: color-mix(in srgb, var(--acc) 55%, transparent);
+  opacity: 0.55;
+}
+
+.ov-resize-handle:hover,
+.ov-resize-handle:focus-visible {
+  opacity: 1;
+}
+
+.ov-resize-handle--e {
+  top: 28px;
+  right: -3px;
+  bottom: 14px;
+  width: 6px;
+  cursor: ew-resize;
+  border-radius: 3px;
+}
+
+.ov-resize-handle--s {
+  left: 8px;
+  right: 14px;
+  bottom: -3px;
+  height: 6px;
+  cursor: ns-resize;
+  border-radius: 3px;
+}
+
+.ov-resize-handle--se {
+  right: -4px;
+  bottom: -4px;
+  width: 12px;
+  height: 12px;
+  cursor: nwse-resize;
+  border-radius: 2px;
+  background: var(--acc);
+  opacity: 0.85;
 }
 
 .ov-arrange-hidden {

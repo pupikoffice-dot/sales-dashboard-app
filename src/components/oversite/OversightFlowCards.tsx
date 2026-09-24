@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { flowWidthClass, visibleCards, type OversightBoard } from '../../lib/oversightClassLayout'
+import { flowCardStyle, visibleCards, type OversightBoard } from '../../lib/oversightClassLayout'
 
 /** Place saved-board cards on the 12-column flow. Missing/denied nodes are skipped. */
 export function OversightFlowCards({
@@ -18,7 +18,7 @@ export function OversightFlowCards({
         if (!node) return null
         const inner = wrapNode ? wrapNode(card.id, node) : node
         return (
-          <div key={card.id} className={flowWidthClass(card.width)}>
+          <div key={card.id} className="ov-flow" style={flowCardStyle(card)}>
             {inner}
           </div>
         )

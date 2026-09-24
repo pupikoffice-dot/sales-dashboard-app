@@ -1,9 +1,16 @@
-import type { ReactNode } from 'react'
+import { useEffect, useRef, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
 import {
+  cardCols,
+  cardHeightPx,
   classicCardLabel,
+  clampCols,
+  clampHeightPx,
+  MAX_CARD_COLS,
   moveCardById,
   setCardHidden,
+  setCardSize,
   suiteCardLabel,
+  WIDTH_COLS,
   type LayoutAccent,
   type LayoutCardStyle,
   type LayoutDensity,
@@ -47,6 +54,7 @@ export function OversightArrangeBar({ arrange }: { arrange: OversightArrangeApi 
   return (
     <div className="ov-arrange-bar ov-arrange-bar--on">
       <span className="ov-arrange-badge">Arranging</span>
+      <span className="ov-arrange-hint">Drag ⋮⋮ to move · edges to resize</span>
       <label className="ov-arrange-style">
         <span>Accent</span>
         <select
@@ -111,6 +119,8 @@ export function OversightArrangeBar({ arrange }: { arrange: OversightArrangeApi 
   )
 }
 
+type ResizeAxis = 'x' | 'y' | 'xy'
+
 export function ArrangeCardChrome({
   arrange,
   cardId,
@@ -120,44 +130,113 @@ export function ArrangeCardChrome({
   cardId: string
   children: ReactNode
 }) {
+  const shellRef = useRef<HTMLDivElement>(null)
+  const boardRef = useRef(arrange.activeBoard)
+  useEffect(() => {
+    boardRef.current = arrange.activeBoard
+  }, [arrange.activeBoard])
+
   if (!arrange.arranging || !arrange.activeBoard) return <>{children}</>
   const board = arrange.activeBoard
   const card = board.cards.find(c => c.id === cardId)
   if (!card || card.hidden) return null
 
+  const cols = cardCols(card)
+  const heightPx = cardHeightPx(card)
+
+  function patchSize(next: { cols?: number; heightPx?: number | null }) {
+    const current = boardRef.current
+    if (!current) return
+    const updated = {
+      ...current,
+      cards: setCardSize(current.cards, cardId, next),
+    }
+    boardRef.current = updated
+    arrange.patchActiveBoard(updated)
+  }
+
+  function startResize(axis: ResizeAxis, e: ReactPointerEvent<HTMLButtonElement>) {
+    e.preventDefault()
+    e.stopPropagation()
+    const shell = shellRef.current
+    if (!shell) return
+    const grid = shell.closest('.ov-col--flow, .sm-cube-grid--flow, .sm-vs-grid--flow') as HTMLElement | null
+    const gridWidth = grid?.clientWidth || shell.parentElement?.clientWidth || 1
+    const colUnit = gridWidth / 12
+    const startX = e.clientX
+    const startY = e.clientY
+    const startCols = cols
+    const startHeight = heightPx ?? shell.offsetHeight
+
+    const target = e.currentTarget
+    target.setPointerCapture(e.pointerId)
+
+    function onMove(ev: PointerEvent) {
+      const patch: { cols?: number; heightPx?: number | null } = {}
+      if (axis === 'x' || axis === 'xy') {
+        patch.cols = clampCols(startCols + (ev.clientX - startX) / colUnit)
+      }
+      if (axis === 'y' || axis === 'xy') {
+        patch.heightPx = clampHeightPx(startHeight + (ev.clientY - startY))
+      }
+      patchSize(patch)
+    }
+
+    function onUp(ev: PointerEvent) {
+      target.releasePointerCapture(ev.pointerId)
+      target.removeEventListener('pointermove', onMove)
+      target.removeEventListener('pointerup', onUp)
+      target.removeEventListener('pointercancel', onUp)
+    }
+
+    target.addEventListener('pointermove', onMove)
+    target.addEventListener('pointerup', onUp)
+    target.addEventListener('pointercancel', onUp)
+  }
+
   return (
     <div
+      ref={shellRef}
       className="ov-arrange-card"
-      draggable
-      onDragStart={e => {
-        e.dataTransfer.setData('text/ov-card-id', cardId)
-        e.dataTransfer.effectAllowed = 'move'
-      }}
+      style={heightPx != null ? { minHeight: heightPx } : undefined}
       onDragOver={e => e.preventDefault()}
       onDrop={e => {
         e.preventDefault()
         const fromId = e.dataTransfer.getData('text/ov-card-id')
         if (!fromId || fromId === cardId) return
+        const current = boardRef.current
+        if (!current) return
         arrange.patchActiveBoard({
-          ...board,
-          cards: moveCardById(board.cards, fromId, cardId),
+          ...current,
+          cards: moveCardById(current.cards, fromId, cardId),
         })
       }}
     >
       <div className="ov-arrange-card-bar">
-        <span className="ov-look-handle" aria-hidden>⋮⋮</span>
+        <span
+          className="ov-look-handle"
+          draggable
+          title="Drag to reorder"
+          onDragStart={e => {
+            e.dataTransfer.setData('text/ov-card-id', cardId)
+            e.dataTransfer.effectAllowed = 'move'
+          }}
+          aria-hidden
+        >
+          ⋮⋮
+        </span>
+        <span className="ov-arrange-size-lbl">
+          {cols}/{MAX_CARD_COLS}
+          {heightPx != null ? ` · ${heightPx}px` : ''}
+        </span>
         <select
-          aria-label="Card width"
+          aria-label="Card width snap"
           value={card.width}
           onPointerDown={e => e.stopPropagation()}
-          onChange={e =>
-            arrange.patchActiveBoard({
-              ...board,
-              cards: board.cards.map(c =>
-                c.id === cardId ? { ...c, width: e.target.value as LayoutWidth } : c,
-              ),
-            })
-          }
+          onChange={e => {
+            const width = e.target.value as LayoutWidth
+            patchSize({ cols: WIDTH_COLS[width] })
+          }}
         >
           {WIDTHS.map(w => (
             <option key={w} value={w}>{w}</option>
@@ -167,17 +246,48 @@ export function ArrangeCardChrome({
           type="button"
           className="ov-look-eye"
           onPointerDown={e => e.stopPropagation()}
-          onClick={() =>
+          onClick={() => {
+            const current = boardRef.current
+            if (!current) return
             arrange.patchActiveBoard({
-              ...board,
-              cards: setCardHidden(board.cards, cardId, true),
+              ...current,
+              cards: setCardHidden(current.cards, cardId, true),
             })
-          }
+          }}
         >
           Hide
         </button>
+        {heightPx != null ? (
+          <button
+            type="button"
+            className="ov-look-eye"
+            title="Clear fixed height"
+            onPointerDown={e => e.stopPropagation()}
+            onClick={() => patchSize({ heightPx: null })}
+          >
+            Auto H
+          </button>
+        ) : null}
       </div>
-      {children}
+      <div className="ov-arrange-card-body">{children}</div>
+      <button
+        type="button"
+        className="ov-resize-handle ov-resize-handle--e"
+        aria-label="Resize width"
+        onPointerDown={e => startResize('x', e)}
+      />
+      <button
+        type="button"
+        className="ov-resize-handle ov-resize-handle--s"
+        aria-label="Resize height"
+        onPointerDown={e => startResize('y', e)}
+      />
+      <button
+        type="button"
+        className="ov-resize-handle ov-resize-handle--se"
+        aria-label="Resize width and height"
+        onPointerDown={e => startResize('xy', e)}
+      />
     </div>
   )
 }
