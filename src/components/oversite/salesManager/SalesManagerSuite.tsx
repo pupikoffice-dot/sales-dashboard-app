@@ -14,7 +14,7 @@ import {
   resolveVisibleSuiteUiModuleIds,
   YEAR_NET_SALES_MODULE_ID,
 } from '../../../lib/suiteUiModules'
-import { useClassOversightLayout } from '../../../hooks/useClassOversightLayout'
+import { useOversightArrange } from '../../../hooks/useOversightArrange'
 import { useUiModuleCatalog, useUiModules } from '../../../hooks/useUiModules'
 import { formatGeneratedDisplay } from '../../../lib/format'
 import { getOversiteDateContext, resolveOrdersTag, type OrderTodayGroup, type Top10Item } from '../../../lib/oversiteMetrics'
@@ -31,6 +31,10 @@ import { SmReceiptsReportModal } from './SmReceiptsReportModal'
 import { SmVsCompanyView } from './SmVsCompanyView'
 import type { OversightLayoutPreference } from '../../../lib/oversightLayouts'
 import { OversightLayoutToggle } from '../OversightLayoutToggle'
+import {
+  ArrangeHiddenTray,
+  OversightArrangeBar,
+} from '../OversightArrangeBar'
 import {
   buildSmDebtRows,
   buildSmOpenOrdersReport,
@@ -79,8 +83,8 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
   const biConfigQ = useBiConfig()
   const uiCatalogQ = useUiModuleCatalog()
   const classUiQ = useUiModules()
-  const classLookQ = useClassOversightLayout()
-  const suiteBoard = classLookQ.data?.layout.suite ?? null
+  const arrange = useOversightArrange('suite')
+  const suiteBoard = arrange.displayBoard
   const grantUserId = isPreviewing && previewUser ? previewUser.id : session?.user.id
   const biGrantsQ = useBiUserGrants(grantUserId)
   const suiteUiGrantsQ = useSuiteUiUserGrants(grantUserId)
@@ -385,6 +389,7 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
                 </button>
               </div>
             ) : null}
+            <OversightArrangeBar arrange={arrange} />
           </div>
         </div>
         <div className="ov-sub">
@@ -403,6 +408,7 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
             </>
           ) : null}
         </div>
+        {arrange.arranging ? <ArrangeHiddenTray arrange={arrange} surface="suite" /> : null}
       </div>
 
       {companies.length === 0 ? (
@@ -437,6 +443,7 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
                             receiptsCurrentMonthOnly
                             showYearNetSales={showYearNetSales}
                             suiteBoard={suiteBoard}
+                            arrange={arrange}
                             onOpenDebtReport={() =>
                               openDebtReport(company, [agentId], `${label} — ${winTitle}`)
                             }
@@ -480,6 +487,7 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
                       monthLbl={dateCtx.monthLbl}
                       showYearNetSales={showYearNetSales}
                       suiteBoard={suiteBoard}
+                      arrange={arrange}
                       ordersReportCompanies={reportCos}
                       onOpenOrdersReport={companyId => openOrdersReport(companyId, allAgentsScope)}
                       onOpenDebtReport={() => openDebtReport(company, allAgentsScope, `${label} — Vs`)}
@@ -524,6 +532,7 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
                         agentId={null}
                         showYearNetSales={showYearNetSales}
                         suiteBoard={suiteBoard}
+                        arrange={arrange}
                         ordersReportCompanies={reportCos}
                         onOpenOrdersReport={companyId => openOrdersReport(companyId, allAgentsScope)}
                         onOpenDebtReport={() =>
@@ -569,6 +578,7 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
                             agentId={agentId}
                             showYearNetSales={showYearNetSales}
                             suiteBoard={suiteBoard}
+                            arrange={arrange}
                             ordersReportCompanies={reportCos}
                             onOpenOrdersReport={companyId => openOrdersReport(companyId, [agentId])}
                             onOpenDebtReport={() =>

@@ -3,7 +3,7 @@ import { usePreview } from '../context/PreviewContext'
 import { useLocale } from '../context/LocaleContext'
 import { useDashboardAccess } from '../context/DashboardAccessContext'
 import { useDashboardData } from '../hooks/useDashboardData'
-import { useClassOversightLayout } from '../hooks/useClassOversightLayout'
+import { useOversightArrange } from '../hooks/useOversightArrange'
 import { useOversightLayout } from '../hooks/useOversightLayout'
 import { OversightLayoutToggle } from '../components/oversite/OversightLayoutToggle'
 import { SalesAgentSuite } from '../components/oversite/salesManager/SalesAgentSuite'
@@ -54,6 +54,11 @@ import { OversiteKpiRow, OversiteSection, SalesLyBars } from '../components/over
 import { OversiteOrdersByDocTable } from '../components/oversite/OversiteOrdersByDocTable'
 import { OversiteTop10Table } from '../components/oversite/OversiteTop10Table'
 import { OversightFlowCards } from '../components/oversite/OversightFlowCards'
+import {
+  ArrangeCardChrome,
+  ArrangeHiddenTray,
+  OversightArrangeBar,
+} from '../components/oversite/OversightArrangeBar'
 import { OversiteLegend } from '../components/oversite/OversiteLegend'
 import { boardStyleAttrs } from '../lib/oversightClassLayout'
 import { SmReceiptsReportModal } from '../components/oversite/salesManager/SmReceiptsReportModal'
@@ -107,6 +112,8 @@ function ClassicOversitePage({
   // Use access-scoped `rows` from the hook (already memoised) — do not re-filter allRows.
   const { rows: companyRows, debtRows, debtLastUpdate, wmsStock, wmsNames, isLoading, error, data: dashboardData } =
     useDashboardData()
+  const arrange = useOversightArrange('classic')
+  const classicBoard = arrange.displayBoard
   const [debtModalCo, setDebtModalCo] = useState<LogicalCompany | null>(null)
   const [ordersModal, setOrdersModal] = useState<{
     company: LogicalCompany
@@ -120,8 +127,6 @@ function ClassicOversitePage({
     company: LogicalCompany
   } | null>(null)
 
-  const classLookQ = useClassOversightLayout()
-  const classicBoard = classLookQ.data?.layout.classic ?? null
   const ctx = useMemo(() => getOversiteDateContext(), [])
   const companiesKey = access?.companies?.join(',') ?? ''
   const visibleCompanies = useMemo(
@@ -252,6 +257,7 @@ function ClassicOversitePage({
                 onSelect={layoutToggle.onSelect}
               />
             ) : null}
+            <OversightArrangeBar arrange={arrange} />
             <OversiteLegend />
           </div>
         </div>
@@ -265,6 +271,7 @@ function ClassicOversitePage({
           ) : null}{' '}
           · {t('oversite.month')}: <b>{ctx.monthLbl}</b>
         </div>
+        {arrange.arranging ? <ArrangeHiddenTray arrange={arrange} surface="classic" /> : null}
       </div>
 
       {visibleCompanies.length === 0 ? (
@@ -515,7 +522,19 @@ function ClassicOversitePage({
                   {co.label}
                 </div>
                 {useSavedLook ? (
-                  <OversightFlowCards board={classicBoard} nodes={sectionNodes} />
+                  <OversightFlowCards
+                    board={classicBoard}
+                    nodes={sectionNodes}
+                    wrapNode={
+                      arrange.arranging
+                        ? (id, node) => (
+                            <ArrangeCardChrome arrange={arrange} cardId={id}>
+                              {node}
+                            </ArrangeCardChrome>
+                          )
+                        : undefined
+                    }
+                  />
                 ) : (
                   <>
                     {sectionNodes.ordersToday}

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { usePreview } from '../context/PreviewContext'
-import { fetchClassOversightLayout, fetchUserClassOversightLayout } from '../lib/oversightClassLayoutApi'
+import { fetchUserClassOversightLayout } from '../lib/oversightClassLayoutApi'
 
 function useEffectiveUserId(): string | null {
   const { session } = useAuth()
@@ -10,7 +10,10 @@ function useEffectiveUserId(): string | null {
   return session?.user.id ?? null
 }
 
-/** Saved class look for the effective user (View-as honoured). Null = today's layout. */
+/**
+ * Class look for the effective user (View-as honoured).
+ * Null = no class. Use hasSavedRow to tell seed vs stored.
+ */
 export function useClassOversightLayout() {
   const userId = useEffectiveUserId()
   return useQuery({
@@ -18,14 +21,5 @@ export function useClassOversightLayout() {
     queryFn: () => fetchUserClassOversightLayout(userId!),
     enabled: !!userId,
     staleTime: 60_000,
-  })
-}
-
-export function useClassOversightLayoutEditor(classId: string | null) {
-  return useQuery({
-    queryKey: ['class-oversight-layout-editor', classId],
-    queryFn: () => fetchClassOversightLayout(classId!),
-    enabled: !!classId,
-    staleTime: 30_000,
   })
 }

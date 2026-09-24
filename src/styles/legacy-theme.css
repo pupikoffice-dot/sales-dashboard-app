@@ -4031,6 +4031,132 @@ html[dir='rtl'] .hdr-brand,
   background: transparent;
 }
 
+.ov-arrange-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.ov-arrange-bar--on {
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--acc) 40%, var(--bdr));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--acc) 8%, var(--panel-bg));
+}
+
+.ov-arrange-toggle {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.ov-arrange-toggle:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ov-arrange-hint {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.ov-arrange-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--acc);
+}
+
+.ov-arrange-style {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.ov-arrange-style select {
+  background: var(--panel-bg);
+  border: 1px solid var(--bdr);
+  color: var(--txt);
+  border-radius: 5px;
+  padding: 3px 6px;
+  font-family: inherit;
+}
+
+.ov-arrange-reset,
+.ov-arrange-cancel {
+  background: transparent;
+}
+
+.ov-arrange-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+  cursor: grab;
+}
+
+.ov-arrange-card-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ov-arrange-card-bar select {
+  background: var(--panel-bg);
+  border: 1px solid var(--bdr);
+  color: var(--txt);
+  border-radius: 5px;
+  padding: 2px 5px;
+  font-family: inherit;
+  font-size: 0.68rem;
+}
+
+.ov-arrange-hidden {
+  margin-top: 8px;
+  min-height: 48px;
+  padding: 8px 10px;
+  border: 1px dashed var(--bdr);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--sur2) 70%, transparent);
+}
+
+.ov-arrange-hidden h4 {
+  margin: 0 0 6px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.ov-arrange-hidden p {
+  margin: 0;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.ov-arrange-hidden ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ov-arrange-hidden li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border: 1px solid var(--bdr);
+  border-radius: 6px;
+  background: var(--panel-bg);
+  font-size: 0.74rem;
+}
+
 /* Keep the editor preview at saved widths so admins can see wrap. */
 .ov-look-canvas.ov-col--flow .ov-flow--full { grid-column: span 12; }
 .ov-look-canvas.ov-col--flow .ov-flow--half { grid-column: span 6; }

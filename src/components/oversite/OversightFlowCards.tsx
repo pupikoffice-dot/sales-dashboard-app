@@ -5,18 +5,21 @@ import { flowWidthClass, visibleCards, type OversightBoard } from '../../lib/ove
 export function OversightFlowCards({
   board,
   nodes,
+  wrapNode,
 }: {
   board: OversightBoard
   nodes: Record<string, ReactNode>
+  wrapNode?: (id: string, node: ReactNode) => ReactNode
 }) {
   return (
     <>
       {visibleCards(board).map(card => {
         const node = nodes[card.id]
         if (!node) return null
+        const inner = wrapNode ? wrapNode(card.id, node) : node
         return (
           <div key={card.id} className={flowWidthClass(card.width)}>
-            {node}
+            {inner}
           </div>
         )
       })}

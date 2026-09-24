@@ -1,6 +1,8 @@
 import { useMemo, type ReactNode } from 'react'
 import { useLocale } from '../../../context/LocaleContext'
 import { boardShowsCard, boardStyleAttrs, type OversightBoard } from '../../../lib/oversightClassLayout'
+import type { OversightArrangeApi } from '../../../hooks/useOversightArrange'
+import { ArrangeCardChrome } from '../OversightArrangeBar'
 import { OversightFlowCards } from '../OversightFlowCards'
 import { OversiteOrdersLast7Days } from '../OversiteOrdersLast7Days'
 import { OversiteOrdersReportButton } from '../OversiteOrdersReportButton'
@@ -26,6 +28,7 @@ export interface SmVsCompanyViewProps {
   biBlock?: ReactNode
   showYearNetSales?: boolean
   suiteBoard?: OversightBoard | null
+  arrange?: OversightArrangeApi | null
 }
 
 /** Vs mode: comparison cubes — agents pivoted in one chart per KPI. */
@@ -42,6 +45,7 @@ export function SmVsCompanyView({
   biBlock,
   showYearNetSales = false,
   suiteBoard = null,
+  arrange = null,
 }: SmVsCompanyViewProps) {
   const { t } = useLocale()
   const agents = series.agents
@@ -221,7 +225,19 @@ export function SmVsCompanyView({
     >
       {useSavedLook ? (
         <>
-          <OversightFlowCards board={suiteBoard} nodes={cubeNodes} />
+          <OversightFlowCards
+            board={suiteBoard}
+            nodes={cubeNodes}
+            wrapNode={
+              arrange?.arranging
+                ? (id, node) => (
+                    <ArrangeCardChrome arrange={arrange} cardId={id}>
+                      {node}
+                    </ArrangeCardChrome>
+                  )
+                : undefined
+            }
+          />
           {biBlock && !boardShowsCard(suiteBoard, 'ordersLast7') ? (
             <div className="ov-flow ov-flow--full">
               <div className="sm-cube sm-cube--vs-orders7 sm-cube--orders-with-bi">

@@ -1,5 +1,6 @@
 import {
   parseClassLayout,
+  seedClassLayout,
   suiteKindFromGrantKeys,
   type ClassOversightLayout,
   type SuiteKind,
@@ -11,6 +12,8 @@ export interface ClassOversightLayoutRow {
   classId: string
   layout: ClassOversightLayout
   suiteKind: SuiteKind
+  /** False when the class has no saved row yet (layout is the seed). */
+  hasSavedRow: boolean
 }
 
 async function suiteKindForClass(classId: string): Promise<SuiteKind> {
@@ -24,23 +27,34 @@ async function suiteKindForClass(classId: string): Promise<SuiteKind> {
   return suiteKindFromGrantKeys((data ?? []).map(r => String((r as { key: string }).key)))
 }
 
-export async function fetchClassOversightLayout(classId: string): Promise<ClassOversightLayoutRow | null> {
+export async function fetchClassOversightLayout(classId: string): Promise<ClassOversightLayoutRow> {
+  const suiteKind = await suiteKindForClass(classId)
   const { data, error } = await supabase
     .from('class_oversight_layout')
     .select('class_id, layout')
     .eq('class_id', classId)
     .maybeSingle()
   if (error) throw error
-  if (!data) return null
-  const suiteKind = await suiteKindForClass(classId)
+  if (!data) {
+    return {
+      classId,
+      suiteKind,
+      layout: seedClassLayout(suiteKind),
+      hasSavedRow: false,
+    }
+  }
   return {
     classId,
     suiteKind,
     layout: parseClassLayout((data as { layout: unknown }).layout, suiteKind),
+    hasSavedRow: true,
   }
 }
 
-/** Layout for the user's class, or null when they have no class / no saved look. */
+/**
+ * Layout for the user's class.
+ * Null only when the user has no class. No saved row → seed + hasSavedRow false.
+ */
 export async function fetchUserClassOversightLayout(userId: string): Promise<ClassOversightLayoutRow | null> {
   const { data: membership, error: membershipError } = await supabase
     .from('app_user_class')

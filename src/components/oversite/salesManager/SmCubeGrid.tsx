@@ -3,6 +3,8 @@ import type { LogicalCompany } from '../../../types/dashboard'
 import { useLocale } from '../../../context/LocaleContext'
 import { fmt } from '../../../lib/format'
 import { boardShowsCard, boardStyleAttrs, type OversightBoard } from '../../../lib/oversightClassLayout'
+import type { OversightArrangeApi } from '../../../hooks/useOversightArrange'
+import { ArrangeCardChrome } from '../OversightArrangeBar'
 import { OversightFlowCards } from '../OversightFlowCards'
 import { OversiteOrdersLast7Days } from '../OversiteOrdersLast7Days'
 import { OversiteOrdersReportButton } from '../OversiteOrdersReportButton'
@@ -55,6 +57,7 @@ export interface SmCubeGridProps {
   showYearNetSales?: boolean
   /** Saved class suite board. Null = today's cube grid. */
   suiteBoard?: OversightBoard | null
+  arrange?: OversightArrangeApi | null
 }
 
 export function SmCubeGrid({
@@ -73,6 +76,7 @@ export function SmCubeGrid({
   receiptsCurrentMonthOnly = false,
   showYearNetSales = false,
   suiteBoard = null,
+  arrange = null,
 }: SmCubeGridProps) {
   const { t } = useLocale()
   const { salesMtd, openOrders, returnsMtd, openDebt, ordersLast7Days, receipts, yearNetSales } = kpis
@@ -244,7 +248,19 @@ export function SmCubeGrid({
     >
       {useSavedLook ? (
         <>
-          <OversightFlowCards board={suiteBoard} nodes={cubeNodes} />
+          <OversightFlowCards
+            board={suiteBoard}
+            nodes={cubeNodes}
+            wrapNode={
+              arrange?.arranging
+                ? (id, node) => (
+                    <ArrangeCardChrome arrange={arrange} cardId={id}>
+                      {node}
+                    </ArrangeCardChrome>
+                  )
+                : undefined
+            }
+          />
           {biSlot && !boardShowsCard(suiteBoard, 'ordersLast7') ? (
             <div className="ov-flow ov-flow--full">
               <div className="sm-cube sm-cube--orders sm-cube--orders-with-bi">
