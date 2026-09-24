@@ -1,23 +1,24 @@
 # HANDOFF — sales-dashboard-app
 
 ## Current State
-_Last updated: 2026-09-23 10:00:37 by Cursor_
+_Last updated: 2026-09-24 13:43:54 by Cursor_
 
 **Status:** Active  
-**Phase:** v2.3 live on production; beta on v2.4 work line
+**Phase:** v2.4 live on production; beta on v2.5 work line
 
-- Works now: Production (`main`) at sales-dashboard-app-omega.vercel.app — DB `active_version` **2.3**
-- Works now: Beta year-sales graph (report 891 only) on Sales Agent and Sales Manager; class checkbox to turn it on or off
-- Works now: Sales Agent and Sales Manager classes have the graph checked on by default
+- Works now: Production (Omega) at sales-dashboard-app-omega.vercel.app — version **2.4**, including Arrange, mouse resize, Undo, and the year graph
+- Works now: Arrange on live Oversight for admin and super admin — drag, width, height, color, hide, Save; super admin uses View-as first, an admin edits their own class
+- Works now: Year-sales graph (report 891 only, vertical) on Sales Agent and Sales Manager; class checkbox to turn it on or off; those classes checked on by default
+- Works now: Classic Oversight second company block uses a light grey background
 - Works now: Sales MTD bar stacks invoices + delivery notes + open orders; headline sum stays invoices+deliveries; second sum includes open orders
 - Works now: Orders Today agent rows open that agent’s orders; order row expands line details; full-report button hidden on classic Oversight
 - Works now: Intercompany link in user config; linked logins get a top-bar company switch
 - Works now: Agent-scoped users no longer get false “721mt missing from export” health alarm
-- Works now: Beta at pupik-sales-dashboard-beta.vercel.app — **2.4 · beta**
+- Works now: Beta at pupik-sales-dashboard-beta.vercel.app — **2.5 · beta**
 - Works now: Legacy backup unchanged on `legacy` branch
-- In progress: Pushing year-sales class feature to beta
-- Blocked: GitHub promote workflow still needs Supabase repo secrets
-- Next up: Confirm beta deploy; uncheck the class feature if a class should not see the graph
+- In progress: Nothing in progress
+- Blocked: GitHub promote workflow still needs Supabase repo secrets (this promote set the live version directly)
+- Next up: Waiting for the next request
 
 ### CORE RULES (suite)
 
@@ -29,7 +30,7 @@ _Last updated: 2026-09-23 10:00:37 by Cursor_
 
 | Concept | Meaning | Today |
 |--------|---------|--------|
-| **Version** | Product release line (`1.0`, `2.0`, `2.1`…) | Production live = **2.3** (DB). Beta work line = **2.4** |
+| **Version** | Product release line (`1.0`, `2.0`, `2.1`…) | Production live = **2.4** (DB). Beta work line = **2.5** |
 | **Channel** | Where you iterate: production (stable) vs **beta** (next work) | `main` / prod URL vs `beta` / `pupik-sales-dashboard-beta.vercel.app` |
 
 - **Beta** = working iteration of the next (or in-progress) version. Title: `{productVersion} · beta`.
@@ -50,6 +51,25 @@ Phase 1 hides Cost, Total Cost, Price, and cost-based charts in the UI only. The
 ---
 
 ## Session Log
+
+### 2026-09-24 13:43:54 — Cursor
+**Done:**
+- Made the year graph vertical
+- Gave the second company block in classic Oversight a light grey background
+- Built Arrange on the live Oversight page for admin and super admin (move, size, color, hide, save)
+- Added mouse resize of cards in width and height, and Undo for the last Arrange change
+- Promoted beta v2.4 to Omega, set the live version to 2.4, and bumped the beta work line to 2.5
+
+**Decisions:**
+- Arrange saves the class on screen: super admin uses View-as first; an admin saves their own class
+- Oversight is the only place to arrange; Classes keeps permissions only
+- A class with no saved layout keeps today’s look until the first Save
+- One mouse-resize gesture counts as one undo
+
+**Next:**
+- Waiting for the next request
+
+---
 
 ### 2026-09-23 10:00:37 — Cursor
 **Done:**
