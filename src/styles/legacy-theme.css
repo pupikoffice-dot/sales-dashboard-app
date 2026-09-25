@@ -3040,6 +3040,145 @@ label.ck .ck-label {
   margin: 0;
 }
 
+/* ── Operations → Deliveries ── */
+.ops-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.ops-page-hdr h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--txt);
+}
+
+.ops-page-hdr p {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.ops-co-block {
+  background: var(--panel-bg);
+  border: 1px solid var(--bdr);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.ops-co-hdr {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.ops-co-hdr h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--txt);
+}
+
+.ops-co-totals {
+  display: flex;
+  gap: 14px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.ops-co-totals strong {
+  color: var(--txt);
+}
+
+.ops-month-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ops-month-card {
+  background: var(--glass-panel);
+  border: 1px solid var(--bdr);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ops-month-card.is-current {
+  border-color: var(--acc);
+}
+
+.ops-month-hdr {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--txt);
+}
+
+.ops-mtd-tag {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--acc);
+  background: var(--acc-bg);
+  border-radius: 6px;
+  padding: 2px 6px;
+  text-transform: uppercase;
+}
+
+.ops-graph-lbl {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+
+.ops-graph-lbl strong {
+  color: var(--txt);
+  font-size: 0.85rem;
+}
+
+.ops-bar-track {
+  height: 10px;
+  border-radius: 5px;
+  background: var(--sur3);
+  overflow: hidden;
+}
+
+.ops-bar {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.3s ease;
+}
+
+.ops-bar--cartons {
+  background: var(--acc);
+}
+
+.ops-bar--pallets {
+  background: var(--grn);
+}
+
+@media (max-width: 1100px) {
+  .ops-month-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .ops-month-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* ── Responsive (tablet + mobile) ── */
 @media (max-width: 900px) {
   :root {

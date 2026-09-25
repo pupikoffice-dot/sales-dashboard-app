@@ -7,7 +7,7 @@ import { ALL_OVERSITE_MODULE_IDS } from '../lib/oversiteModules'
 
 const ALL_MODULES: DashboardModuleId[] = [
   'oversite', 'sales_performance', 'orders_mtd', 'open_orders', 'returns',
-  'debt', 'stock_alerts', 'stock', 'export',
+  'debt', 'stock_alerts', 'stock', 'export', 'ops_deliveries',
 ]
 
 const ALL_COMPANIES: LogicalCompany[] = ['pupik', 'mt', 'grow', 'gold']

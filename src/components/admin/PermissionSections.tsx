@@ -14,7 +14,7 @@ export const FIELDS: { key: string; label: string; wired: boolean }[] = [
 ]
 export const VIEWS = [
   'oversite', 'sales_performance', 'orders_mtd', 'open_orders',
-  'returns', 'debt', 'stock_alerts', 'stock', 'export',
+  'returns', 'debt', 'stock_alerts', 'stock', 'export', 'ops_deliveries',
 ] as const
 export const OVERSITE_WIDGETS = [
   'ordersToday', 'ordersMtd', 'openOrders', 'salesMtd', 'deliveryNotes', 'topItems',

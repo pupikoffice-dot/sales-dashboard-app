@@ -10,6 +10,7 @@ export type DashboardModuleId =
   | 'stock_alerts'
   | 'stock'
   | 'export'
+  | 'ops_deliveries'
 
 export interface DashboardAccess {
   userId: string

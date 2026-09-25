@@ -11,6 +11,7 @@ import { OrdersMtdPage } from './pages/OrdersMtdPage'
 import { PlaceholderModulePage } from './pages/PlaceholderModulePage'
 import { SalesPage } from './pages/SalesPage'
 import { StockPage } from './pages/StockPage'
+import { DeliveriesPage } from './pages/operations/DeliveriesPage'
 import { UsersPage } from './pages/admin/UsersPage'
 import { ClassesPage } from './pages/admin/ClassesPage'
 import { ModulesPage } from './pages/admin/ModulesPage'
@@ -42,6 +43,7 @@ function ProtectedApp() {
         <Route path="stock-alerts" element={<RequireModule moduleId="stock_alerts"><PlaceholderModulePage title="Stock Alerts" /></RequireModule>} />
         <Route path="stock" element={<RequireModule moduleId="stock"><StockPage /></RequireModule>} />
         <Route path="export" element={<RequireModule moduleId="export"><PlaceholderModulePage title="Export" /></RequireModule>} />
+        <Route path="operations/deliveries" element={<RequireModule moduleId="ops_deliveries"><DeliveriesPage /></RequireModule>} />
         {isSuperAdmin && <Route path="admin/users" element={<UsersPage />} />}
         {isSuperAdmin && <Route path="admin/classes" element={<ClassesPage />} />}
         {isSuperAdmin && <Route path="admin/modules" element={<ModulesPage />} />}
