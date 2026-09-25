@@ -4939,6 +4939,32 @@ html[data-theme='light'] .sm-suite-disclaimer {
   margin-top: 14px;
 }
 
+.delivery-doc-link {
+  color: var(--acc);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.delivery-docs-table .ov-order-row:focus-visible td {
+  background: var(--acc-row-bg);
+  outline: none;
+}
+
+.delivery-doc-back {
+  margin: 0 0 12px;
+}
+
+.delivery-doc-lines {
+  margin-top: 12px;
+}
+
+@media (max-width: 520px) {
+  .delivery-col-lines {
+    display: none;
+  }
+}
+
 @media (max-width: 900px) {
   .debt-overlay > .sm-items-modal {
     width: 100%;

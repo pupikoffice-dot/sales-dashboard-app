@@ -504,6 +504,28 @@ export function computeDelivery720Mtd(
   return { clients, cash, qty }
 }
 
+/**
+ * Report 720 MTD grouped into delivery note documents (newest first), each with its lines.
+ * The 720 export has no client name — its client ID is a synthetic `720:<doc>` key, so it is blanked.
+ */
+export function computeDelivery720MtdDocs(
+  rows: SalesRow[],
+  delivery720Tag: string,
+  monthStart: string,
+  todayStr: string,
+): OrderTodayGroup[] {
+  const matched = rows.filter(
+    r => r.company === delivery720Tag && r.date && r.date >= monthStart && r.date <= todayStr,
+  )
+  return groupSalesRowsByDoc(matched)
+    .map(doc => (doc.clientName.startsWith('720:') ? { ...doc, clientName: '' } : doc))
+    .sort(
+      (a, b) =>
+        (b.orderDate ?? '').localeCompare(a.orderDate ?? '') ||
+        b.docNum.localeCompare(a.docNum, undefined, { numeric: true }),
+    )
+}
+
 export function computeDelivery720MtdTop10(
   rows: SalesRow[],
   delivery720Tag: string,

@@ -22,7 +22,7 @@ import {
   OVERSITE_COMPANIES,
   computeAgentBreakdown,
   computeDelivery720Mtd,
-  computeDelivery720MtdTop10,
+  computeDelivery720MtdDocs,
   computeOpenOrders,
   computeOrdersMtd,
   computeOrdersMtdTop10,
@@ -176,7 +176,7 @@ function ClassicOversitePage({
         ctx.monthStart,
         ctx.todayStr,
       )
-      const delivery720MtdTop10 = computeDelivery720MtdTop10(
+      const delivery720MtdDocs = computeDelivery720MtdDocs(
         companyRows,
         co.delivery720Tag,
         ctx.monthStart,
@@ -217,7 +217,7 @@ function ClassicOversitePage({
         openOrders,
         openOrdersTop10,
         delivery720Mtd,
-        delivery720MtdTop10,
+        delivery720MtdDocs,
         salesMtd,
         salesMtdCombinedLyPct,
         ordersTop10,
@@ -628,7 +628,7 @@ function ClassicOversitePage({
         <DeliveryNotesModal
           title={`${deliveryModal.co.label} — ${t('oversite.deliveryNotes')}`}
           metrics={deliveryModal.delivery720Mtd}
-          items={deliveryModal.delivery720MtdTop10}
+          docs={deliveryModal.delivery720MtdDocs}
           onClose={closeDeliveryModal}
         />
       )}

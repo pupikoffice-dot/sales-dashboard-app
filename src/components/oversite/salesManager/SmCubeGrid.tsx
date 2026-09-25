@@ -94,7 +94,7 @@ export function SmCubeGrid({
   const {
     salesMtd,
     delivery720Mtd,
-    delivery720MtdTop10,
+    delivery720MtdDocs,
     salesMtdCombinedLyPct,
     openOrders,
     returnsMtd,
@@ -184,7 +184,7 @@ export function SmCubeGrid({
                     : t('oversite.deliveryNotes')
                 }
                 metrics={delivery720Mtd}
-                items={delivery720MtdTop10}
+                docs={delivery720MtdDocs}
                 onClose={closeDelivery}
               />
             ) : null}

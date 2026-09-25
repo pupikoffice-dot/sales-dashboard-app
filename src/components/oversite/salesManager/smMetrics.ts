@@ -16,7 +16,7 @@ import {
   type SalesMtdMetrics,
   type Top10Item,
   computeDelivery720Mtd,
-  computeDelivery720MtdTop10,
+  computeDelivery720MtdDocs,
   type Delivery720Metrics,
 } from '../../../lib/oversiteMetrics'
 
@@ -252,7 +252,8 @@ export interface SmSuiteKpis {
   salesMtd: SalesMtdMetrics
   /** Report 720 delivery notes MTD (same scope as other suite KPIs). */
   delivery720Mtd: Delivery720Metrics
-  delivery720MtdTop10: Top10Item[]
+  /** Report 720 MTD documents (newest first) with their lines. */
+  delivery720MtdDocs: OrderTodayGroup[]
   /** YoY % when 891 + 720 are combined (classic Sales MTD rule). */
   salesMtdCombinedLyPct: number | null
   openOrders: OpenOrdersMetrics
@@ -375,7 +376,7 @@ export function buildSmSuiteKpis(args: BuildSmSuiteKpisArgs): SmSuiteKpis {
     return {
       salesMtd,
       delivery720Mtd: emptyDelivery720(),
-      delivery720MtdTop10: [],
+      delivery720MtdDocs: [],
       salesMtdCombinedLyPct: combinedSalesLyPct(salesMtd, 0),
       openOrders: emptyOpen(),
       returnsMtd: emptyReturns(),
@@ -406,7 +407,7 @@ export function buildSmSuiteKpis(args: BuildSmSuiteKpisArgs): SmSuiteKpis {
     dateCtx.monthStart,
     dateCtx.todayStr,
   )
-  const delivery720MtdTop10 = computeDelivery720MtdTop10(
+  const delivery720MtdDocs = computeDelivery720MtdDocs(
     deliverySlice,
     def.delivery720Tag,
     dateCtx.monthStart,
@@ -438,7 +439,7 @@ export function buildSmSuiteKpis(args: BuildSmSuiteKpisArgs): SmSuiteKpis {
   return {
     salesMtd: sales,
     delivery720Mtd,
-    delivery720MtdTop10,
+    delivery720MtdDocs,
     salesMtdCombinedLyPct: combinedSalesLyPct(sales, delivery720Mtd.cash),
     openOrders: open,
     returnsMtd: returns,
