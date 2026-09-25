@@ -127,6 +127,8 @@ export const messages = {
   'ops.closePicker': 'Close',
   'ops.searchAgent': 'Search agent name or number…',
   'ops.searchClient': 'Search client name or number…',
+  'ops.clientCount': '{count} clients · most cartons first',
+  'ops.agentCount': '{count} agents · most cartons first',
   'ops.noMatches': 'No matches with deliveries in the last 12 months.',
   'ops.noDataEntity': 'No deliveries in the last 12 months.',
   'ops.saveError': 'Could not save your change. Please try again.',

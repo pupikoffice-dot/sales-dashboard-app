@@ -3370,9 +3370,15 @@ label.ck .ck-label {
   box-shadow: var(--input-inset);
 }
 
+.ops-add-count {
+  margin: 8px 2px 0;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
 .ops-add-list {
   list-style: none;
-  margin: 8px 0 0;
+  margin: 4px 0 0;
   padding: 0;
   max-height: 280px;
   overflow-y: auto;

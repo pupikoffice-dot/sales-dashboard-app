@@ -129,6 +129,8 @@ export const messages: Record<keyof typeof en, string> = {
   'ops.closePicker': 'סגירה',
   'ops.searchAgent': 'חיפוש לפי שם או מספר סוכן…',
   'ops.searchClient': 'חיפוש לפי שם או מספר לקוח…',
+  'ops.clientCount': '{count} לקוחות · מהכי הרבה קרטונים',
+  'ops.agentCount': '{count} סוכנים · מהכי הרבה קרטונים',
   'ops.noMatches': 'אין תוצאות עם משלוחים ב-12 החודשים האחרונים.',
   'ops.noDataEntity': 'אין משלוחים ב-12 החודשים האחרונים.',
   'ops.saveError': 'לא ניתן לשמור את השינוי. נסו שוב.',

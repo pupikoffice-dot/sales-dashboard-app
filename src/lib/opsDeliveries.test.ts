@@ -87,6 +87,21 @@ describe('filterDeliveryEntities', () => {
     expect(r.map(e => e.entityId)).toEqual(['200', '100'])
   })
 
+  it('returns every match (no cap)', () => {
+    const many = Array.from({ length: 40 }, (_, i) => ({
+      company: 'pupik',
+      kind: 'client' as const,
+      entityId: String(i),
+      name: `Client ${i}`,
+      cartons: i,
+      pallets: 0,
+    }))
+    const r = filterDeliveryEntities(many, 'pupik', 'client', '', new Set())
+    expect(r).toHaveLength(40)
+    expect(r[0].cartons).toBe(39)
+    expect(r[39].cartons).toBe(0)
+  })
+
   it('matches name or number and skips already-added ids', () => {
     expect(filterDeliveryEntities(entities, 'pupik', 'client', 'shuf', new Set()).map(e => e.entityId)).toEqual(['100'])
     expect(filterDeliveryEntities(entities, 'pupik', 'client', '20', new Set()).map(e => e.entityId)).toEqual(['200'])

@@ -277,6 +277,10 @@ function AddBoxControl({
       ) : matches.length === 0 ? (
         <p className="ov-empty">{t('ops.noMatches')}</p>
       ) : (
+        <>
+        <p className="ops-add-count">
+          {t(kind === 'agent' ? 'ops.agentCount' : 'ops.clientCount', { count: matches.length.toLocaleString() })}
+        </p>
         <ul className="ops-add-list">
           {matches.map(e => (
             <li key={e.entityId}>
@@ -299,6 +303,7 @@ function AddBoxControl({
             </li>
           ))}
         </ul>
+        </>
       )}
     </div>
   )

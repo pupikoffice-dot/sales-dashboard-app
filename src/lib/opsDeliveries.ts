@@ -140,7 +140,7 @@ export interface DeliveryBox {
 
 /**
  * Picker matches for one company + kind: name or number contains `query`
- * (case-insensitive), skipping already-added ids, biggest cartons volume first.
+ * (case-insensitive), skipping already-added ids, most cartons first.
  */
 export function filterDeliveryEntities(
   entities: DeliveryEntity[],
@@ -148,7 +148,6 @@ export function filterDeliveryEntities(
   kind: DeliveryEntityKind,
   query: string,
   excludeIds: Set<string>,
-  limit = 12,
 ): DeliveryEntity[] {
   const q = query.trim().toLowerCase()
   return entities
@@ -160,7 +159,6 @@ export function filterDeliveryEntities(
         (!q || e.name.toLowerCase().includes(q) || e.entityId.toLowerCase().includes(q)),
     )
     .sort((a, b) => b.cartons - a.cartons || b.pallets - a.pallets || a.name.localeCompare(b.name))
-    .slice(0, limit)
 }
 
 /** Bar width 0–100 for `value` against the block max (negative net months render empty). */
