@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { barPct, buildMonthlyDeliveryBlocks, deliverySeriesStats, lastNMonths } from './opsDeliveries'
+import {
+  barPct,
+  buildMonthlyDeliveryBlocks,
+  deliverySeriesStats,
+  filterDeliveryEntities,
+  lastNMonths,
+} from './opsDeliveries'
 
 const today = new Date(2026, 8, 25)
 
@@ -65,6 +71,41 @@ describe('deliverySeriesStats', () => {
   it('returns null without data', () => {
     const months = mk([null, null])
     expect(deliverySeriesStats(months, [0, 0])).toBeNull()
+  })
+})
+
+describe('filterDeliveryEntities', () => {
+  const entities = [
+    { company: 'pupik', kind: 'client' as const, entityId: '100', name: 'Shufersal Deal', cartons: 50, pallets: 2 },
+    { company: 'pupik', kind: 'client' as const, entityId: '200', name: 'Rami Levy', cartons: 90, pallets: 1 },
+    { company: 'pupik', kind: 'agent' as const, entityId: '24', name: 'Cash Center', cartons: 900, pallets: 9 },
+    { company: 'mt', kind: 'client' as const, entityId: '300', name: 'Shufersal Online', cartons: 10, pallets: 0 },
+  ]
+
+  it('filters by company and kind, biggest volume first', () => {
+    const r = filterDeliveryEntities(entities, 'pupik', 'client', '', new Set())
+    expect(r.map(e => e.entityId)).toEqual(['200', '100'])
+  })
+
+  it('returns every match (no cap)', () => {
+    const many = Array.from({ length: 40 }, (_, i) => ({
+      company: 'pupik',
+      kind: 'client' as const,
+      entityId: String(i),
+      name: `Client ${i}`,
+      cartons: i,
+      pallets: 0,
+    }))
+    const r = filterDeliveryEntities(many, 'pupik', 'client', '', new Set())
+    expect(r).toHaveLength(40)
+    expect(r[0].cartons).toBe(39)
+    expect(r[39].cartons).toBe(0)
+  })
+
+  it('matches name or number and skips already-added ids', () => {
+    expect(filterDeliveryEntities(entities, 'pupik', 'client', 'shuf', new Set()).map(e => e.entityId)).toEqual(['100'])
+    expect(filterDeliveryEntities(entities, 'pupik', 'client', '20', new Set()).map(e => e.entityId)).toEqual(['200'])
+    expect(filterDeliveryEntities(entities, 'pupik', 'client', '', new Set(['200'])).map(e => e.entityId)).toEqual(['100'])
   })
 })
 
