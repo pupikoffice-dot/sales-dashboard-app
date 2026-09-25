@@ -4935,6 +4935,28 @@ html[data-theme='light'] .sm-suite-disclaimer {
   overflow: auto;
 }
 
+.delivery-modal-subhdr {
+  margin-top: 14px;
+}
+
+@media (max-width: 900px) {
+  .debt-overlay > .sm-items-modal {
+    width: 100%;
+    max-height: 92dvh;
+    border-radius: var(--r) var(--r) 0 0;
+  }
+
+  .debt-overlay > .sm-items-modal .sm-items-modal-body {
+    padding-bottom: max(18px, env(safe-area-inset-bottom));
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .debt-overlay > .sm-items-modal .debt-modal-close {
+    min-width: 40px;
+    min-height: 40px;
+  }
+}
+
 .sm-report-hint {
   margin: 0 0 12px;
   font-size: 0.85rem;

@@ -38,6 +38,8 @@ export interface SmAgentWindowProps {
   suiteBoard?: OversightBoard | null
   arrange?: OversightArrangeApi | null
   showDeliveryNotes?: boolean
+  /** Company / window context for the delivery notes popup title. */
+  deliveryContextLabel?: string
 }
 
 export function SmAgentWindow({
@@ -60,6 +62,7 @@ export function SmAgentWindow({
   suiteBoard,
   arrange,
   showDeliveryNotes,
+  deliveryContextLabel,
 }: SmAgentWindowProps) {
   return (
     <section className={`sm-window ${windowTintClass(agentId)}`}>
@@ -82,6 +85,7 @@ export function SmAgentWindow({
         suiteBoard={suiteBoard}
         arrange={arrange}
         showDeliveryNotes={showDeliveryNotes}
+        deliveryContextLabel={deliveryContextLabel ?? title}
       />
     </section>
   )

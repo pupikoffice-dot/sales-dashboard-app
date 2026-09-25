@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { usePreview } from '../context/PreviewContext'
 import { useLocale } from '../context/LocaleContext'
@@ -14,6 +14,7 @@ import { computeDebtAgentMatrix, computeDebtSummary, debtRowsForCompany } from '
 import { fmt, formatGeneratedDisplay } from '../lib/format'
 import type { LogicalCompany } from '../types/dashboard'
 import { DebtModal } from '../components/oversite/DebtModal'
+import { DeliveryNotesModal } from '../components/oversite/DeliveryNotesModal'
 import { OversiteDebtSummary } from '../components/oversite/OversiteDebtSummary'
 import { OrdersTodayModal } from '../components/oversite/OrdersTodayModal'
 import { StockAlertsPanel } from '../components/oversite/StockAlertsPanel'
@@ -134,6 +135,8 @@ function ClassicOversitePage({
     companyLabel: string
     company: LogicalCompany
   } | null>(null)
+  const [deliveryModalCo, setDeliveryModalCo] = useState<LogicalCompany | null>(null)
+  const closeDeliveryModal = useCallback(() => setDeliveryModalCo(null), [])
 
   const ctx = useMemo(() => getOversiteDateContext(), [])
   const companiesKey = access?.companies?.join(',') ?? ''
@@ -234,6 +237,10 @@ function ClassicOversitePage({
     })
   }, [displayedCompanies, companyRows, debtRows, ctx, dashboardData?.debtFileDates, debtLastUpdate])
 
+  const deliveryModal = deliveryModalCo
+    ? companyColumns.find(c => c.co.id === deliveryModalCo) ?? null
+    : null
+
   if (isLoading) return <p className="status-msg">{t('common.loadingSalesData')}</p>
   if (error) return <p className="status-msg error">{(error as Error).message}</p>
 
@@ -320,7 +327,6 @@ function ClassicOversitePage({
               openOrders,
               openOrdersTop10,
               delivery720Mtd,
-              delivery720MtdTop10,
               salesMtd,
               salesMtdCombinedLyPct,
               ordersTop10,
@@ -433,24 +439,14 @@ function ClassicOversitePage({
                       }
                     />
                     {showDeliveryNotes ? (
-                      <OversiteCollapsible label={`📄 ${t('oversite.deliveryNotes')} ▾`}>
-                        <OversiteKpiRow
-                          kpis={[
-                            { label: t('oversite.clients'), value: String(delivery720Mtd.clients) },
-                            { label: t('oversite.qty'), value: fmt(delivery720Mtd.qty) },
-                            {
-                              label: t('oversite.cash'),
-                              value: fmt(delivery720Mtd.cash),
-                              tone: 'grn',
-                            },
-                          ]}
-                        />
-                        <OversiteTop10Table
-                          items={delivery720MtdTop10}
-                          emptyLabel={t('oversite.noDeliveryNotes')}
-                          showSku
-                        />
-                      </OversiteCollapsible>
+                      <button
+                        type="button"
+                        className="ov-toggle-btn"
+                        aria-haspopup="dialog"
+                        onClick={() => setDeliveryModalCo(co.id)}
+                      >
+                        📄 {t('oversite.deliveryNotes')} · {fmt(delivery720Mtd.cash)}
+                      </button>
                     ) : null}
                   </OversiteSection>
               )
@@ -625,6 +621,15 @@ function ClassicOversitePage({
           company={receiptsModal.company}
           agents={RECEIPTS_TEAM_AGENTS[receiptsModal.company] ?? null}
           onClose={() => setReceiptsModal(null)}
+        />
+      )}
+
+      {deliveryModal && (
+        <DeliveryNotesModal
+          title={`${deliveryModal.co.label} — ${t('oversite.deliveryNotes')}`}
+          metrics={deliveryModal.delivery720Mtd}
+          items={deliveryModal.delivery720MtdTop10}
+          onClose={closeDeliveryModal}
         />
       )}
     </>

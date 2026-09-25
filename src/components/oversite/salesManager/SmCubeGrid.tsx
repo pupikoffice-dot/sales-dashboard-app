@@ -1,11 +1,10 @@
-import { useMemo, type ReactNode } from 'react'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import type { LogicalCompany } from '../../../types/dashboard'
 import { useLocale } from '../../../context/LocaleContext'
 import { fmt } from '../../../lib/format'
 import { getOversiteDateContext } from '../../../lib/oversiteMetrics'
-import { OversiteCollapsible } from '../OversiteCollapsible'
-import { OversiteKpiRow, SalesLyBars } from '../OversiteKpiRow'
-import { OversiteTop10Table } from '../OversiteTop10Table'
+import { DeliveryNotesModal } from '../DeliveryNotesModal'
+import { SalesLyBars } from '../OversiteKpiRow'
 import { boardShowsCard, boardStyleAttrs, type OversightBoard } from '../../../lib/oversightClassLayout'
 import type { OversightArrangeApi } from '../../../hooks/useOversightArrange'
 import { ArrangeCardChrome } from '../OversightArrangeBar'
@@ -64,6 +63,8 @@ export interface SmCubeGridProps {
   arrange?: OversightArrangeApi | null
   /** Admin grant: show 720 delivery inside Sales MTD (requires sales MTD module). */
   showDeliveryNotes?: boolean
+  /** Company / window context for the delivery notes popup title. */
+  deliveryContextLabel?: string
 }
 
 export function SmCubeGrid({
@@ -84,9 +85,12 @@ export function SmCubeGrid({
   suiteBoard = null,
   arrange = null,
   showDeliveryNotes = false,
+  deliveryContextLabel,
 }: SmCubeGridProps) {
   const { t } = useLocale()
   const dateCtx = useMemo(() => getOversiteDateContext(), [])
+  const [deliveryOpen, setDeliveryOpen] = useState(false)
+  const closeDelivery = useCallback(() => setDeliveryOpen(false), [])
   const {
     salesMtd,
     delivery720Mtd,
@@ -164,20 +168,26 @@ export function SmCubeGrid({
               lyChangeCashPct={salesMtdCombinedLyPct}
               withOpenOrdersLbl={t('oversite.salesMtdWithOpenOrders')}
             />
-            <OversiteCollapsible label={`📄 ${t('oversite.deliveryNotes')} ▾`}>
-              <OversiteKpiRow
-                kpis={[
-                  { label: t('oversite.clients'), value: String(delivery720Mtd.clients) },
-                  { label: t('oversite.qty'), value: fmt(delivery720Mtd.qty) },
-                  { label: t('oversite.cash'), value: fmt(delivery720Mtd.cash), tone: 'grn' },
-                ]}
-              />
-              <OversiteTop10Table
+            <button
+              type="button"
+              className="ov-toggle-btn"
+              aria-haspopup="dialog"
+              onClick={() => setDeliveryOpen(true)}
+            >
+              📄 {t('oversite.deliveryNotes')} · {fmt(delivery720Mtd.cash)}
+            </button>
+            {deliveryOpen ? (
+              <DeliveryNotesModal
+                title={
+                  deliveryContextLabel
+                    ? `${deliveryContextLabel} — ${t('oversite.deliveryNotes')}`
+                    : t('oversite.deliveryNotes')
+                }
+                metrics={delivery720Mtd}
                 items={delivery720MtdTop10}
-                emptyLabel={t('oversite.noDeliveryNotes')}
-                showSku
+                onClose={closeDelivery}
               />
-            </OversiteCollapsible>
+            ) : null}
           </>
         ) : salesMtd.lyChangeCashPct != null ? (
           <div className={`sm-cube-delta ${salesMtd.lyChangeCashPct >= 0 ? 'up' : 'down'}`}>

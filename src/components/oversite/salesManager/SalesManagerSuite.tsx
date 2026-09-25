@@ -445,6 +445,7 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
                             goalCash={goalCash}
                             monthLbl={dateCtx.monthLbl}
                             showDeliveryNotes={showDeliveryNotes}
+                            deliveryContextLabel={`${label} — ${winTitle}`}
                             agentId={agentId}
                             hideOrders7Days
                             receiptsCurrentMonthOnly
@@ -537,6 +538,7 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
                         goalCash={allGoal}
                         monthLbl={dateCtx.monthLbl}
                         showDeliveryNotes={showDeliveryNotes}
+                        deliveryContextLabel={`${label} — ${allTitle}`}
                         agentId={null}
                         showYearNetSales={showYearNetSales}
                         suiteBoard={suiteBoard}
@@ -584,6 +586,7 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
                             goalCash={goalCash}
                             monthLbl={dateCtx.monthLbl}
                             showDeliveryNotes={showDeliveryNotes}
+                            deliveryContextLabel={`${label} — ${winTitle}`}
                             agentId={agentId}
                             showYearNetSales={showYearNetSales}
                             suiteBoard={suiteBoard}
