@@ -46,6 +46,7 @@ const NAV_KEYS: Record<string, MessageKey> = {
   stock_alerts: 'nav.stockAlerts',
   stock: 'nav.stock',
   export: 'nav.export',
+  ops_deliveries: 'nav.opsDeliveries',
 }
 
 export function navLabel(locale: AppLocale, moduleId: string): string {

@@ -101,6 +101,8 @@ export function DashboardLayout() {
   }
 
   const visible = MODULE_REGISTRY.filter(m => canShowModule(access, m.id, effectiveIsSuperAdmin))
+  const visibleMain = visible.filter(m => m.section === 'main')
+  const visibleOps = visible.filter(m => m.section === 'operations')
   const rowCount = allRows.length
   const debtCount = debtRows.length
 
@@ -112,7 +114,7 @@ export function DashboardLayout() {
     <aside className={`dashboard-sidebar${sidebarOpen ? ' is-open' : ''}`}>
       <div className="sidebar-label">{t('nav.navigation')}</div>
       <nav>
-        {visible.map(m => (
+        {visibleMain.map(m => (
           <NavLink
             key={m.id}
             to={m.path}
@@ -128,6 +130,23 @@ export function DashboardLayout() {
             {navLabel(locale, m.id)}
           </NavLink>
         ))}
+        {visibleOps.length > 0 && (
+          <>
+            <div className="sidebar-label" style={{ marginTop: 8 }}>
+              {t('nav.operations')}
+            </div>
+            {visibleOps.map(m => (
+              <NavLink
+                key={m.id}
+                to={m.path}
+                onClick={() => setSidebarOpen(false)}
+                className={({ isActive }) => `nav-btn${isActive ? ' active' : ''}`}
+              >
+                {navLabel(locale, m.id)}
+              </NavLink>
+            ))}
+          </>
+        )}
         {isSuperAdmin && (
           <>
             <div className="sidebar-label" style={{ marginTop: 8 }}>

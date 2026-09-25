@@ -10,3 +10,5 @@ supabase/.temp/
 .vercel
 .worktrees/
 .superpowers/
+
+*.tsbuildinfo

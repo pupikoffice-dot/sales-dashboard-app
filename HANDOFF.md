@@ -1,21 +1,21 @@
 # HANDOFF — sales-dashboard-app
 
 ## Current State
-_Last updated: 2026-09-25 07:03:07 by Cursor_
+_Last updated: 2026-09-25 07:22:41 by Cursor_
 
 **Status:** Active  
-**Phase:** v2.5 on production; beta v2.6 — delivery notes add-on opens as a popup on classic + Sales Manager suite
+**Phase:** v2.6 live on production (Omega); beta work line is now 2.7
 
-- Works now: Production (Omega) at sales-dashboard-app-omega.vercel.app — version **2.5** (no delivery-notes add-on until promote)
-- Works now: Beta at pupik-sales-dashboard-beta.vercel.app — **2.6 · beta**, aliased to commit **05d7bac** (delivery popup + suite delivery fix + prior bundle)
+- Works now: Production (Omega) at sales-dashboard-app-omega.vercel.app — version **2.6** (promote commit **fde1f36**; DB active_version 2.6)
+- Works now: Beta at pupik-sales-dashboard-beta.vercel.app — **2.7 · beta**, aliased to commit **bdde54b** (same features as production plus the version bump)
 - Works now: **Delivery notes (720)** opt-in per user — Admin Oversight checkboxes **Sales MTD** + **Delivery notes**; shared gate requires both; applies to every user, not specific logins
-- Works now: Classic Oversight and Sales Manager / Sales Agent suite — stacked Sales MTD bar stays inline; a button with the delivery total opens a popup (clients, qty, cash, top 10 items)
-- Works now: Popup is a bottom sheet on phones (full width, safe-area padding, larger close button); closes via ✕, tapping outside, or Esc
-- Works now: Stock, classic company filter, Gold WMS, Arrange, suites, year graph, intercompany on respective channels
+- Works now: Classic Oversight and Sales Manager / Sales Agent suite — stacked Sales MTD bar stays inline; a button with the delivery total opens a popup listing every MTD delivery note document (newest first); tapping a document shows its lines with a back button
+- Works now: Popup is a bottom sheet on phones (full width, safe-area padding, larger close button, Lines column hidden on narrow screens); closes via ✕, tapping outside, or Esc
+- Works now: Stock page, classic company filter, Gold WMS from Pupik, Arrange, suites, year graph, intercompany
 - Works now: Legacy backup unchanged on `legacy` branch
 - In progress: Nothing in progress
-- Blocked: GitHub promote workflow still needs Supabase repo secrets; rep891gold sync remains ops outside this repo
-- Next up: Check the delivery popup on a real phone with View-as on users 55 / 57; promote to Omega when approved; optional delivery in suite Vs mode and company filter on suite
+- Blocked: GitHub promote workflow still needs Supabase repo secrets (Action fails on each promote; steps done by hand); rep891gold sync remains ops outside this repo
+- Next up: New 2.7 work on beta; optional delivery in suite Vs mode and company filter on suite
 
 ### CORE RULES (suite)
 
@@ -27,7 +27,7 @@ _Last updated: 2026-09-25 07:03:07 by Cursor_
 
 | Concept | Meaning | Today |
 |--------|---------|--------|
-| **Version** | Product release line (`1.0`, `2.0`, `2.1`…) | Production live = **2.5** (DB). Beta work line = **2.6** |
+| **Version** | Product release line (`1.0`, `2.0`, `2.1`…) | Production live = **2.6** (DB). Beta work line = **2.7** |
 | **Channel** | Where you iterate: production (stable) vs **beta** (next work) | `main` / prod URL vs `beta` / `pupik-sales-dashboard-beta.vercel.app` |
 
 - **Beta** = working iteration of the next (or in-progress) version. Title: `{productVersion} · beta`.
@@ -48,6 +48,21 @@ Phase 1 hides Cost, Total Cost, Price, and cost-based charts in the UI only. The
 ---
 
 ## Session Log
+
+### 2026-09-25 07:22:41 — Cursor
+**Done:**
+- Delivery notes popup now lists every MTD delivery note document; tapping one opens its lines (user confirmed it works)
+- Promoted beta v2.6 to Omega: merged beta into main, production deploy ready, set live version to 2.6
+- Bumped beta work line to 2.7 and pointed the friendly beta URL at the new deploy
+
+**Decisions:**
+- 720 export has no client names, so the client column is hidden unless real names appear
+- Promote database and beta-bump steps done by hand because the GitHub Action still lacks secrets
+
+**Next:**
+- Start 2.7 work on beta when requested
+
+---
 
 ### 2026-09-25 07:03:07 — Cursor
 **Done:**
