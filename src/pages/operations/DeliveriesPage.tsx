@@ -3,7 +3,12 @@ import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { useLocale } from '../../context/LocaleContext'
 import { useOpsDeliveries } from '../../hooks/useOpsDeliveries'
 import { monthNamesForLocale } from '../../i18n'
-import { barPct, buildMonthlyDeliveryBlocks, type DeliveryMonth } from '../../lib/opsDeliveries'
+import {
+  barPct,
+  buildMonthlyDeliveryBlocks,
+  deliverySeriesStats,
+  type DeliveryMonth,
+} from '../../lib/opsDeliveries'
 import { companyLabel } from '../../lib/salesMetrics'
 
 const MONTHS = 12
@@ -33,39 +38,93 @@ function YearChart({
   currentYm: string
 }) {
   const { t } = useLocale()
+  const values = months.map(pick)
+  const stats = deliverySeriesStats(months, values)
+  const n = months.length
+  const trendAt = (i: number) => (stats ? stats.intercept + stats.slope * i : 0)
+  const scale = Math.max(
+    max,
+    stats?.avg ?? 0,
+    stats ? trendAt(stats.fromIdx) : 0,
+    stats ? trendAt(n - 1) : 0,
+  )
+  const xAt = (i: number) => ((i + 0.5) / n) * 100
+  const yAt = (v: number) => 100 - Math.min(100, Math.max(0, (v / (scale || 1)) * 100))
+  const slopeTxt = stats ? `${stats.slope >= 0 ? '▲ +' : '▼ '}${fmtQty(stats.slope)}` : ''
+
   return (
     <div className="ops-chart">
       <div className="ops-chart-hdr">
         <span>{title}</span>
-        <span className="ops-chart-total">
+      </div>
+      <div className="ops-chart-stats">
+        <span>
           {t('ops.total')}: <strong>{fmtQty(total)}</strong>
         </span>
+        {stats && (
+          <>
+            <span title={t('ops.avgHint')}>
+              <i className="ops-legend ops-legend--avg" aria-hidden />
+              {t('ops.avgPerMonth')}: <strong>{fmtQty(stats.avg)}</strong>
+            </span>
+            <span title={t('ops.trendHint')}>
+              <i className={`ops-legend ops-legend--trend-${variant}`} aria-hidden />
+              {t('ops.trend')}:{' '}
+              <strong className={stats.slope >= 0 ? 'ops-up' : 'ops-down'}>
+                {slopeTxt} {t('ops.perMonth')}
+              </strong>
+            </span>
+          </>
+        )}
       </div>
-      <div className="ops-chart-plot" role="img" aria-label={title}>
-        {months.map((m, i) => {
+      <div className="ops-chart-plot" dir="ltr" role="img" aria-label={title}>
+        {months.map(m => {
           const v = pick(m)
           const isCurrent = m.ym === currentYm
-          const showYear = i === 0 || m.month === 0
+          const pct = barPct(v, scale)
           return (
             <div
               key={m.ym}
               className={`ops-chart-col${isCurrent ? ' is-current' : ''}`}
               title={`${monthNames[m.month]} ${m.year}: ${fmtQty(v)}${isCurrent ? ` (${t('ops.mtd')})` : ''}`}
             >
-              <span className="ops-chart-val">{fmtQty(v)}</span>
-              <div className="ops-chart-bar-wrap">
-                <div
-                  className={`ops-chart-bar ops-chart-bar--${variant}`}
-                  style={{ height: `${barPct(v, max)}%` }}
-                />
-              </div>
-              <span className="ops-chart-x">
-                {monthNames[m.month]}
-                <span className="ops-chart-yr">{showYear ? `'${String(m.year).slice(2)}` : '\u00a0'}</span>
+              <span className="ops-chart-val" style={{ bottom: `calc(${pct}% + 2px)` }}>
+                {fmtQty(v)}
               </span>
+              <div className={`ops-chart-bar ops-chart-bar--${variant}`} style={{ height: `${pct}%` }} />
             </div>
           )
         })}
+        {stats && (
+          <svg className="ops-chart-overlay" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
+            <line
+              className="ops-avg-line"
+              x1={xAt(stats.fromIdx)}
+              x2={xAt(n - 1)}
+              y1={yAt(stats.avg)}
+              y2={yAt(stats.avg)}
+              vectorEffect="non-scaling-stroke"
+            />
+            {stats.toIdx > stats.fromIdx && (
+              <line
+                className={`ops-trend-line ops-trend-line--${variant}`}
+                x1={xAt(stats.fromIdx)}
+                x2={xAt(n - 1)}
+                y1={yAt(trendAt(stats.fromIdx))}
+                y2={yAt(trendAt(n - 1))}
+                vectorEffect="non-scaling-stroke"
+              />
+            )}
+          </svg>
+        )}
+      </div>
+      <div className="ops-chart-axis" dir="ltr">
+        {months.map((m, i) => (
+          <span key={m.ym} className={`ops-chart-x${m.ym === currentYm ? ' is-current' : ''}`}>
+            {monthNames[m.month]}
+            <span className="ops-chart-yr">{i === 0 || m.month === 0 ? `'${String(m.year).slice(2)}` : '\u00a0'}</span>
+          </span>
+        ))}
       </div>
     </div>
   )

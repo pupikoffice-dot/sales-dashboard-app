@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { barPct, buildMonthlyDeliveryBlocks, lastNMonths } from './opsDeliveries'
+import { barPct, buildMonthlyDeliveryBlocks, deliverySeriesStats, lastNMonths } from './opsDeliveries'
 
 const today = new Date(2026, 8, 25)
 
@@ -39,6 +39,32 @@ describe('buildMonthlyDeliveryBlocks', () => {
   it('omits companies outside access or without rows', () => {
     expect(buildMonthlyDeliveryBlocks(rows, ['mt'], 12, today).map(b => b.company)).toEqual(['mt'])
     expect(buildMonthlyDeliveryBlocks(rows, ['gold'], 12, today)).toEqual([])
+  })
+})
+
+describe('deliverySeriesStats', () => {
+  const mk = (vals: (number | null)[]) =>
+    vals.map((v, i) => ({ ym: `m${i}`, year: 2026, month: i, cartons: v ?? 0, pallets: 0, hasData: v !== null }))
+
+  it('skips months before data starts and the current partial month', () => {
+    const months = mk([null, null, 10, 20, 30, 5])
+    const s = deliverySeriesStats(months, months.map(m => m.cartons))!
+    expect(s.fromIdx).toBe(2)
+    expect(s.toIdx).toBe(4)
+    expect(s.avg).toBe(20)
+    expect(s.slope).toBeCloseTo(10)
+    expect(s.intercept + s.slope * 2).toBeCloseTo(10)
+  })
+
+  it('uses the current month when it is the only month with data', () => {
+    const months = mk([null, null, 7])
+    const s = deliverySeriesStats(months, months.map(m => m.cartons))!
+    expect(s).toMatchObject({ fromIdx: 2, toIdx: 2, avg: 7, slope: 0 })
+  })
+
+  it('returns null without data', () => {
+    const months = mk([null, null])
+    expect(deliverySeriesStats(months, [0, 0])).toBeNull()
   })
 })
 

@@ -15,6 +15,8 @@ export interface DeliveryMonth {
   month: number
   cartons: number
   pallets: number
+  /** False when the source report has no lines for this month (e.g. before data starts). */
+  hasData: boolean
 }
 
 export interface DeliveryCompanyBlock {
@@ -62,7 +64,7 @@ export function buildMonthlyDeliveryBlocks(
     const byYm = new Map(coRows.map(r => [r.ym, r]))
     const monthCards: DeliveryMonth[] = window.map(w => {
       const r = byYm.get(w.ym)
-      return { ...w, cartons: Number(r?.cartons) || 0, pallets: Number(r?.pallets) || 0 }
+      return { ...w, cartons: Number(r?.cartons) || 0, pallets: Number(r?.pallets) || 0, hasData: !!r }
     })
     blocks.push({
       company,
@@ -74,6 +76,45 @@ export function buildMonthlyDeliveryBlocks(
     })
   }
   return blocks
+}
+
+export interface SeriesStats {
+  /** Inclusive index range (chronological) used for the average and trend. */
+  fromIdx: number
+  toIdx: number
+  avg: number
+  /** Least-squares line over the range: value ≈ intercept + slope * index. */
+  slope: number
+  intercept: number
+}
+
+/**
+ * Average and linear trend for a chronological series (current month last).
+ * Skips months before the first month with data, and the current (partial) month
+ * unless it is the only month with data. Null when there is no data at all.
+ */
+export function deliverySeriesStats(months: DeliveryMonth[], values: number[]): SeriesStats | null {
+  const fromIdx = months.findIndex(m => m.hasData)
+  if (fromIdx < 0) return null
+  const lastComplete = months.length - 2
+  const toIdx = lastComplete >= fromIdx ? lastComplete : months.length - 1
+  const n = toIdx - fromIdx + 1
+  let sumX = 0
+  let sumY = 0
+  let sumXY = 0
+  let sumXX = 0
+  for (let i = fromIdx; i <= toIdx; i++) {
+    const y = values[i] ?? 0
+    sumX += i
+    sumY += y
+    sumXY += i * y
+    sumXX += i * i
+  }
+  const avg = sumY / n
+  const denom = n * sumXX - sumX * sumX
+  const slope = n > 1 && denom !== 0 ? (n * sumXY - sumX * sumY) / denom : 0
+  const intercept = (sumY - slope * sumX) / n
+  return { fromIdx, toIdx, avg, slope, intercept }
 }
 
 /** Bar width 0–100 for `value` against the block max (negative net months render empty). */
