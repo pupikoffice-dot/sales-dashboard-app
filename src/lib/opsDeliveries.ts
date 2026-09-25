@@ -117,6 +117,52 @@ export function deliverySeriesStats(months: DeliveryMonth[], values: number[]): 
   return { fromIdx, toIdx, avg, slope, intercept }
 }
 
+export type DeliveryEntityKind = 'agent' | 'client'
+
+/** Agent or client with deliveries in the last 12 months (get_ops_delivery_entities). */
+export interface DeliveryEntity {
+  company: string
+  kind: DeliveryEntityKind
+  entityId: string
+  name: string
+  cartons: number
+  pallets: number
+}
+
+/** Saved per-user chart box (ops_delivery_boxes). */
+export interface DeliveryBox {
+  id: string
+  company: LogicalCompany
+  kind: DeliveryEntityKind
+  entityId: string
+  label: string
+}
+
+/**
+ * Picker matches for one company + kind: name or number contains `query`
+ * (case-insensitive), skipping already-added ids, biggest cartons volume first.
+ */
+export function filterDeliveryEntities(
+  entities: DeliveryEntity[],
+  company: string,
+  kind: DeliveryEntityKind,
+  query: string,
+  excludeIds: Set<string>,
+  limit = 12,
+): DeliveryEntity[] {
+  const q = query.trim().toLowerCase()
+  return entities
+    .filter(
+      e =>
+        e.company === company &&
+        e.kind === kind &&
+        !excludeIds.has(e.entityId) &&
+        (!q || e.name.toLowerCase().includes(q) || e.entityId.toLowerCase().includes(q)),
+    )
+    .sort((a, b) => b.cartons - a.cartons || b.pallets - a.pallets || a.name.localeCompare(b.name))
+    .slice(0, limit)
+}
+
 /** Bar width 0–100 for `value` against the block max (negative net months render empty). */
 export function barPct(value: number, max: number): number {
   if (max <= 0 || value <= 0) return 0

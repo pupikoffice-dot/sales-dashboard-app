@@ -51,6 +51,25 @@ Phase 1 hides Cost, Total Cost, Price, and cost-based charts in the UI only. The
 
 ## Session Log
 
+### 2026-09-25 14:17:36 — Cursor
+**Done:**
+- Added an Operations section to the sidebar with a Deliveries page as its first feature (opt-in module, super admins see it by default)
+- Sync now loads the Pupik and Monkeytime rep893 reports (cartons and pallets lines) from the office data share on every hourly run; row counts and monthly totals verified against the files
+- New database table and access-scoped monthly deliveries function (respects the user's companies, agents and module permission)
+- Deliveries page shows per company a yearly cartons chart and a yearly pallets chart, each with total, average per month and a trend line
+- Promoted beta v2.7 to Omega: merged beta into main, production deploy ready, set live version to 2.7
+- Bumped beta work line to 2.8 and re-pointed the beta URL
+
+**Decisions:**
+- Monthly totals only, last 12 months, companies shown as separate blocks — per user answers and the never-combine rule
+- Average and trend skip months before the data starts and exclude the current partial month, so an incomplete month does not drag them down
+- Deliveries is its own module under a new Operations sidebar section so future operations features can sit alongside it
+
+**Next:**
+- Tick Deliveries for the users who should see it; continue 2.8 work on beta
+
+---
+
 ### 2026-09-25 07:22:41 — Cursor
 **Done:**
 - Delivery notes popup now lists every MTD delivery note document; tapping one opens its lines (user confirmed it works)
