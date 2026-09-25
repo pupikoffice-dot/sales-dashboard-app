@@ -320,6 +320,9 @@ export const messages: Record<keyof typeof en, string> = {
   'suiteUi.bestClients.empty': 'אין מכירות ללקוחות החודש בחלון זה.',
 
   'oversite.title': 'לוח מבט על',
+  'oversite.companyFilter': 'חברות',
+  'oversite.companyFilterSearch': 'חיפוש חברות…',
+  'oversite.noCompaniesSelected': 'לא נבחרו חברות — השתמש במסנן החברות למעלה.',
   'oversite.layout.label': 'פריסת מבט־על',
   'oversite.layout.classic': 'קלאסי',
   'oversite.layout.salesManager': 'מנהל מכירות',

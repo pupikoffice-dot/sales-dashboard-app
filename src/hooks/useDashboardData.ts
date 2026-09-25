@@ -11,6 +11,7 @@ import { fetchDashboardLoader } from '../lib/parseDashboardLoader'
 import { loadDashboardDataFromSupabase } from '../lib/loadFromSupabase'
 import { normalizeSalesDate } from '../lib/salesDate'
 import { buildSalesFilterIndex, type SalesFilterIndex } from '../lib/salesFilterIndex'
+import { augmentWmsMapsForGold } from '../lib/goldPupikWms'
 import { buildWmsMaps } from '../lib/wmsData'
 import type { DashboardData, DebtRow, SalesRow } from '../types/dashboard'
 
@@ -147,7 +148,10 @@ export function useDashboardData() {
   // rebuilding them on every render gave them a new identity each time, which
   // restarted long-running effects and could stop a large report from ever
   // finishing.
-  const { wmsStock, wmsNames } = useMemo(() => buildWmsMaps(data?.wmsRows), [data?.wmsRows])
+  const { wmsStock, wmsNames } = useMemo(() => {
+    const base = buildWmsMaps(data?.wmsRows)
+    return augmentWmsMapsForGold(base.wmsStock, base.wmsNames)
+  }, [data?.wmsRows])
   const itemCost = useMemo(
     () =>
       buildItemCostMap(

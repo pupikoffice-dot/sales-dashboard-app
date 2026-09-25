@@ -10,6 +10,7 @@ import { OpenOrdersPage } from './pages/OpenOrdersPage'
 import { OrdersMtdPage } from './pages/OrdersMtdPage'
 import { PlaceholderModulePage } from './pages/PlaceholderModulePage'
 import { SalesPage } from './pages/SalesPage'
+import { StockPage } from './pages/StockPage'
 import { UsersPage } from './pages/admin/UsersPage'
 import { ClassesPage } from './pages/admin/ClassesPage'
 import { ModulesPage } from './pages/admin/ModulesPage'
@@ -39,7 +40,7 @@ function ProtectedApp() {
         <Route path="returns" element={<RequireModule moduleId="returns"><PlaceholderModulePage title="Returns" /></RequireModule>} />
         <Route path="debt" element={<RequireModule moduleId="debt"><PlaceholderModulePage title="Open Debt" /></RequireModule>} />
         <Route path="stock-alerts" element={<RequireModule moduleId="stock_alerts"><PlaceholderModulePage title="Stock Alerts" /></RequireModule>} />
-        <Route path="stock" element={<RequireModule moduleId="stock"><PlaceholderModulePage title="Stock" /></RequireModule>} />
+        <Route path="stock" element={<RequireModule moduleId="stock"><StockPage /></RequireModule>} />
         <Route path="export" element={<RequireModule moduleId="export"><PlaceholderModulePage title="Export" /></RequireModule>} />
         {isSuperAdmin && <Route path="admin/users" element={<UsersPage />} />}
         {isSuperAdmin && <Route path="admin/classes" element={<ClassesPage />} />}

@@ -1,4 +1,5 @@
 import type { LogicalCompany, SalesRow } from '../types/dashboard'
+import { returnsTagForCompany } from './goldPupikWms'
 import { preferItemName } from './itemNames'
 import type { WmsNamesMap, WmsStockMap } from './wmsData'
 
@@ -51,7 +52,7 @@ export interface StockAlertsResult {
 }
 
 export function extractGroupCategories(rows: SalesRow[], co: LogicalCompany): string[] {
-  const retCo = co === 'pupik' ? 'returns-pupik' : 'returns-mt'
+  const retCo = returnsTagForCompany(co)
   const cats = new Set<string>()
   for (const r of rows) {
     if (r.company !== co && r.company !== retCo) continue
@@ -70,7 +71,7 @@ export function computeStockAlerts(
 ): StockAlertsResult {
   const today = new Date(now)
   today.setHours(0, 0, 0, 0)
-  const retCo = co === 'pupik' ? 'returns-pupik' : 'returns-mt'
+  const retCo = returnsTagForCompany(co)
   const cut30 = new Date(today.getTime() - SLOW_DAYS * DAY_MS).toISOString().slice(0, 10)
   const cut6m = new Date(today.getFullYear(), today.getMonth() - 7, 1).toISOString().slice(0, 10)
   const baseYMs: string[] = []

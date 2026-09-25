@@ -33,7 +33,11 @@ const FILES: Record<OversiteSegment, Partial<Record<LogicalCompany, string>>> = 
   debt: { pupik: 'Debt clients.xlsm (pupik)', mt: 'Debt clients.xlsm (monkey)', grow: 'Debt clients.xlsm (grow)' },
   receipts: { pupik: 'collectyear008pupik.xls', mt: 'collectyear008mt.xls' },
   // Stock alerts compare sales velocity (rep891) against WMS stock on hand (000*).
-  stockAlerts: { pupik: '000pupik.xls', mt: '000mt.xls' },
+  stockAlerts: {
+    pupik: '000pupik.xls',
+    mt: '000mt.xls',
+    gold: '000pupik.xls (QPL/SCR prefixes)',
+  },
 }
 
 /** Source-file label for a section+company, or undefined if none is mapped. */

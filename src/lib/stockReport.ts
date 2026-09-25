@@ -1,4 +1,5 @@
 import { MONTH_NAMES } from './format'
+import { openOrdersTagForCompany } from './goldPupikWms'
 import { preferItemName } from './itemNames'
 import { isWmsTotalRow } from './wmsData'
 import type { LogicalCompany, SalesRow, SkuValueMap } from '../types/dashboard'
@@ -28,12 +29,6 @@ export interface StockReport {
   }
 }
 
-function openOrdersCompany(company: LogicalCompany): string {
-  if (company === 'mt') return 'openorders-mt'
-  if (company === 'grow') return 'openorders-grow'
-  return 'openorders'
-}
-
 export function buildStockReport(
   allRows: SalesRow[],
   company: LogicalCompany,
@@ -42,7 +37,7 @@ export function buildStockReport(
   itemCost: SkuValueMap,
   itemPrice: SkuValueMap,
 ): StockReport {
-  const ooCo = openOrdersCompany(company)
+  const ooCo = openOrdersTagForCompany(company)
   const wmsData = wmsStock[company] || {}
   const names = wmsNames[company] || {}
   const costData = itemCost[company] || {}

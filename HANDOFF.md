@@ -1,12 +1,12 @@
 # HANDOFF — sales-dashboard-app
 
 ## Current State
-_Last updated: 2026-09-24 13:43:54 by Cursor_
+_Last updated: 2026-09-24 14:35:32 by Cursor_
 
 **Status:** Active  
-**Phase:** v2.4 live on production; beta on v2.5 work line
+**Phase:** v2.5 live on production; beta on v2.6 work line
 
-- Works now: Production (Omega) at sales-dashboard-app-omega.vercel.app — version **2.4**, including Arrange, mouse resize, Undo, and the year graph
+- Works now: Production (Omega) at sales-dashboard-app-omega.vercel.app — version **2.5**, including Arrange, mouse resize, Undo, and the year graph
 - Works now: Arrange on live Oversight for admin and super admin — drag, width, height, color, hide, Save; super admin uses View-as first, an admin edits their own class
 - Works now: Year-sales graph (report 891 only, vertical) on Sales Agent and Sales Manager; class checkbox to turn it on or off; those classes checked on by default
 - Works now: Classic Oversight second company block uses a light grey background
@@ -14,7 +14,7 @@ _Last updated: 2026-09-24 13:43:54 by Cursor_
 - Works now: Orders Today agent rows open that agent’s orders; order row expands line details; full-report button hidden on classic Oversight
 - Works now: Intercompany link in user config; linked logins get a top-bar company switch
 - Works now: Agent-scoped users no longer get false “721mt missing from export” health alarm
-- Works now: Beta at pupik-sales-dashboard-beta.vercel.app — **2.5 · beta**
+- Works now: Beta at pupik-sales-dashboard-beta.vercel.app — **2.6 · beta**
 - Works now: Legacy backup unchanged on `legacy` branch
 - In progress: Nothing in progress
 - Blocked: GitHub promote workflow still needs Supabase repo secrets (this promote set the live version directly)
@@ -30,7 +30,7 @@ _Last updated: 2026-09-24 13:43:54 by Cursor_
 
 | Concept | Meaning | Today |
 |--------|---------|--------|
-| **Version** | Product release line (`1.0`, `2.0`, `2.1`…) | Production live = **2.4** (DB). Beta work line = **2.5** |
+| **Version** | Product release line (`1.0`, `2.0`, `2.1`…) | Production live = **2.5** (DB). Beta work line = **2.6** |
 | **Channel** | Where you iterate: production (stable) vs **beta** (next work) | `main` / prod URL vs `beta` / `pupik-sales-dashboard-beta.vercel.app` |
 
 - **Beta** = working iteration of the next (or in-progress) version. Title: `{productVersion} · beta`.
@@ -51,6 +51,19 @@ Phase 1 hides Cost, Total Cost, Price, and cost-based charts in the UI only. The
 ---
 
 ## Session Log
+
+### 2026-09-24 14:35:32 — Cursor
+**Done:**
+- Promoted the current beta onto Omega and set the live version to 2.5
+- Bumped the beta work line to 2.6
+
+**Decisions:**
+- A later “push” means beta into Omega, not only a beta-branch upload
+
+**Next:**
+- Waiting for the next request
+
+---
 
 ### 2026-09-24 13:43:54 — Cursor
 **Done:**

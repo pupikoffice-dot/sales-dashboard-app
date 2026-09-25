@@ -318,6 +318,9 @@ export const messages = {
   'suiteUi.bestClients.empty': 'No MTD client sales in this window.',
 
   'oversite.title': 'Oversight Dashboard',
+  'oversite.companyFilter': 'Companies',
+  'oversite.companyFilterSearch': 'Search companies…',
+  'oversite.noCompaniesSelected': 'No companies selected — use the Companies filter above.',
   'oversite.layout.label': 'Oversight layout',
   'oversite.layout.classic': 'Classic',
   'oversite.layout.salesManager': 'Sales Manager',

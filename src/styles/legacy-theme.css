@@ -846,6 +846,25 @@ body.sales-agent-no-nav .dashboard-main {
   border-radius: var(--r);
 }
 
+.ov-co-filter {
+  position: relative;
+  display: inline-block;
+}
+
+.ov-co-filter-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 40;
+  min-width: 220px;
+  margin-top: 6px;
+  padding: 8px;
+  background: var(--sur2);
+  border: 1px solid var(--bdr);
+  border-radius: var(--r);
+  box-shadow: var(--shadow-md, 0 8px 24px rgba(0, 0, 0, 0.15));
+}
+
 .ov-drop {
   margin-top: 8px;
 }

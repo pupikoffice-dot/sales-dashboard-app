@@ -1,4 +1,5 @@
-import { useMemo, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
+import { useAuth } from '../context/AuthContext'
 import { usePreview } from '../context/PreviewContext'
 import { useLocale } from '../context/LocaleContext'
 import { useDashboardAccess } from '../context/DashboardAccessContext'
@@ -60,6 +61,11 @@ import {
   OversightArrangeBar,
 } from '../components/oversite/OversightArrangeBar'
 import { OversiteLegend } from '../components/oversite/OversiteLegend'
+import { OversightCompanyFilter } from '../components/oversite/OversightCompanyFilter'
+import {
+  readOversightCompanyFilter,
+  writeOversightCompanyFilter,
+} from '../lib/oversightCompanyFilter'
 import { boardStyleAttrs } from '../lib/oversightClassLayout'
 import { SmReceiptsReportModal } from '../components/oversite/salesManager/SmReceiptsReportModal'
 
@@ -108,6 +114,7 @@ function ClassicOversitePage({
   layoutToggle?: { active: 'classic' | 'suite'; onSelect: (p: OversightLayoutPreference) => void }
 }) {
   const { t } = useLocale()
+  const { session } = useAuth()
   const { access } = useDashboardAccess()
   // Use access-scoped `rows` from the hook (already memoised) — do not re-filter allRows.
   const { rows: companyRows, debtRows, debtLastUpdate, wmsStock, wmsNames, isLoading, error, data: dashboardData } =
@@ -135,9 +142,24 @@ function ClassicOversitePage({
     [companiesKey],
   )
 
+  const allowedCoIds = useMemo(() => visibleCompanies.map(c => c.id), [visibleCompanies])
+  const userId = session?.user.id ?? ''
+  const [selectedCos, setSelectedCos] = useState<Set<LogicalCompany>>(() =>
+    readOversightCompanyFilter(userId, allowedCoIds),
+  )
+
+  useEffect(() => {
+    setSelectedCos(readOversightCompanyFilter(userId, allowedCoIds))
+  }, [userId, companiesKey, allowedCoIds])
+
+  const displayedCompanies = useMemo(
+    () => visibleCompanies.filter(c => selectedCos.has(c.id)),
+    [visibleCompanies, selectedCos],
+  )
+
   /** Per-company metrics — memoised so UI toggles (modals) do not re-scan all rows. */
   const companyColumns = useMemo(() => {
-    return visibleCompanies.map(co => {
+    return displayedCompanies.map(co => {
       const ordersTag = resolveOrdersTag(companyRows, co.ordersTag)
       const openOrdersTag = resolveOpenOrdersTag(companyRows, co.openOrdersTag)
       const ordersToday = computeOrdersToday(companyRows, ordersTag, ctx.todayStr)
@@ -209,7 +231,7 @@ function ClassicOversitePage({
         ordersLast7,
       }
     })
-  }, [visibleCompanies, companyRows, debtRows, ctx, dashboardData?.debtFileDates, debtLastUpdate])
+  }, [displayedCompanies, companyRows, debtRows, ctx, dashboardData?.debtFileDates, debtLastUpdate])
 
   if (isLoading) return <p className="status-msg">{t('common.loadingSalesData')}</p>
   if (error) return <p className="status-msg error">{(error as Error).message}</p>
@@ -251,6 +273,14 @@ function ClassicOversitePage({
         <div className="ov-header-row">
           <h2>🏠 {t('oversite.title')}</h2>
           <div className="ov-header-actions">
+            <OversightCompanyFilter
+              allowed={allowedCoIds}
+              selected={selectedCos}
+              onChange={next => {
+                setSelectedCos(next)
+                if (userId) writeOversightCompanyFilter(userId, next)
+              }}
+            />
             {layoutToggle ? (
               <OversightLayoutToggle
                 active={layoutToggle.active}
@@ -276,8 +306,10 @@ function ClassicOversitePage({
 
       {visibleCompanies.length === 0 ? (
         <p className="ov-empty">{t('oversite.noCompanies')}</p>
+      ) : displayedCompanies.length === 0 ? (
+        <p className="ov-empty">{t('oversite.noCompaniesSelected')}</p>
       ) : (
-        <div className={`ov-grid${visibleCompanies.length === 1 ? ' ov-grid--single-co' : ''}`}>
+        <div className={`ov-grid${displayedCompanies.length === 1 ? ' ov-grid--single-co' : ''}`}>
           {companyColumns.map(
             ({
               co,
@@ -304,7 +336,7 @@ function ClassicOversitePage({
               supplierMatrix,
               ordersLast7,
             }, coIdx) => {
-            const multiCo = visibleCompanies.length > 1
+            const multiCo = displayedCompanies.length > 1
             const secondCo = multiCo && coIdx === 1
             const useSavedLook = classicBoard != null
             const sectionNodes: Record<string, ReactNode> = {}
@@ -514,7 +546,7 @@ function ClassicOversitePage({
             return (
               <div
                 key={co.id}
-                className={`ov-col${useSavedLook ? ' ov-col--flow' : visibleCompanies.length === 1 ? ' ov-col--sections-grid' : ''}${multiCo ? ' ov-col--accented' : ''}${secondCo ? ' ov-col--alt' : ''}`}
+                className={`ov-col${useSavedLook ? ' ov-col--flow' : displayedCompanies.length === 1 ? ' ov-col--sections-grid' : ''}${multiCo ? ' ov-col--accented' : ''}${secondCo ? ' ov-col--alt' : ''}`}
                 style={multiCo ? ({ ['--co-accent' as string]: co.accentColor } as CSSProperties) : undefined}
                 {...(useSavedLook ? boardStyleAttrs(classicBoard.style) : {})}
               >
