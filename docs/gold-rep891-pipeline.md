@@ -46,6 +46,10 @@ If Goldbug showed zero for September:
 
 4. Re-run sync and hard-refresh the dashboard.
 
+**Fast path after updating `Z:\Biz-Dev\Data\rep891gold.xls`:** full hourly sync reads Google Drive first; the share file can be newer. Run:
+
+`Mobile App for salesteam\sync\run_sync.bat` with `--only-gold-891`, or let the hourly job run — full sync now also loads local `rep891gold.xls` from `LOCAL_ERP_DATA_DIR` (default `Z:\Biz-Dev\Data`) after Drive files.
+
 ## Goldbug stock (no 000gold)
 
 Goldbug has **no WMS**. The beta app maps **Pupik `000pupik`** SKUs whose prefix is **QPL** or **SCR** into virtual Goldbug warehouse stock (`src/lib/goldPupikWms.ts`). Extend `GOLD_PUPIK_WMS_PREFIXES` as you add brands.

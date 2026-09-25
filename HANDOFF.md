@@ -1,24 +1,22 @@
 # HANDOFF — sales-dashboard-app
 
 ## Current State
-_Last updated: 2026-09-24 14:35:32 by Cursor_
+_Last updated: 2026-09-25 06:16:11 by Cursor_
 
 **Status:** Active  
-**Phase:** v2.5 live on production; beta on v2.6 work line
+**Phase:** v2.5 live on production; beta v2.6 feature bundle deployed and verified
 
-- Works now: Production (Omega) at sales-dashboard-app-omega.vercel.app — version **2.5**, including Arrange, mouse resize, Undo, and the year graph
-- Works now: Arrange on live Oversight for admin and super admin — drag, width, height, color, hide, Save; super admin uses View-as first, an admin edits their own class
-- Works now: Year-sales graph (report 891 only, vertical) on Sales Agent and Sales Manager; class checkbox to turn it on or off; those classes checked on by default
-- Works now: Classic Oversight second company block uses a light grey background
-- Works now: Sales MTD bar stacks invoices + delivery notes + open orders; headline sum stays invoices+deliveries; second sum includes open orders
-- Works now: Orders Today agent rows open that agent’s orders; order row expands line details; full-report button hidden on classic Oversight
-- Works now: Intercompany link in user config; linked logins get a top-bar company switch
-- Works now: Agent-scoped users no longer get false “721mt missing from export” health alarm
-- Works now: Beta at pupik-sales-dashboard-beta.vercel.app — **2.6 · beta**
+- Works now: Production (Omega) at sales-dashboard-app-omega.vercel.app — version **2.5** (Arrange, year graph, etc.)
+- Works now: Beta at pupik-sales-dashboard-beta.vercel.app — **2.6 · beta**, aliased to latest `beta` deploy (Stock, classic company filter, Gold Pupik WMS)
+- Works now: **Stock** module at `/stock` — real warehouse report (not placeholder); sidebar **Stock** (not Stock Alerts)
+- Works now: Classic Oversight **Companies** checklist filter in header (layout toggle → Classic; needs 2+ companies in user access)
+- Works now: Goldbug WMS augmented from Pupik `000pupik` for QPL/SCR prefixes; gold open-orders tag aligned
+- Works now: Ops doc for rep891 gold pipeline; Desktop Task Dashboard **Sales Dash P1- Data** runs 720/721 batch on schedule (not disabled Windows BI tasks)
+- Works now: Arrange, suites, year graph, intercompany, and prior beta features unchanged on respective channels
 - Works now: Legacy backup unchanged on `legacy` branch
 - In progress: Nothing in progress
-- Blocked: GitHub promote workflow still needs Supabase repo secrets (this promote set the live version directly)
-- Next up: Waiting for the next request
+- Blocked: GitHub promote workflow still needs Supabase repo secrets; FinPro 891 in full group BAT and rep891gold sync still ops follow-up outside this repo
+- Next up: User testing on beta; promote to Omega when ready; optional company filter on Sales Manager suite
 
 ### CORE RULES (suite)
 
@@ -51,6 +49,21 @@ Phase 1 hides Cost, Total Cost, Price, and cost-based charts in the UI only. The
 ---
 
 ## Session Log
+
+### 2026-09-25 06:16:11 — Cursor
+**Done:**
+- Shipped beta v2.6 bundle: Stock route, classic Oversight company filter, Gold Pupik WMS, rep891 gold pipeline doc
+- Pushed to `beta`; re-pointed pupik-sales-dashboard-beta.vercel.app when friendly alias lagged git-beta deploy
+- Confirmed super-admin testing: features visible after alias fix (Stock vs Stock Alerts, Classic for company filter)
+
+**Decisions:**
+- Friendly beta domain must stay on latest `beta` deployment — git-beta URL can be ahead until alias is reassigned
+- Company filter stays classic Oversight only for this release
+
+**Next:**
+- Continue beta testing; promote to Omega when approved
+
+---
 
 ### 2026-09-24 14:35:32 — Cursor
 **Done:**

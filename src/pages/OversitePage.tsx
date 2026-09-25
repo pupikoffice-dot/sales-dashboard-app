@@ -339,6 +339,7 @@ function ClassicOversitePage({
             const multiCo = displayedCompanies.length > 1
             const secondCo = multiCo && coIdx === 1
             const useSavedLook = classicBoard != null
+            const showDeliveryNotes = showModule('deliveryNotes')
             const sectionNodes: Record<string, ReactNode> = {}
             if (showModule('ordersToday')) {
               sectionNodes.ordersToday = (
@@ -415,10 +416,12 @@ function ClassicOversitePage({
                       monthLbl={ctx.monthLbl}
                       lyMonthLbl={ctx.lyMonthLbl}
                       cash={salesMtd.cash}
-                      deliveryCash={delivery720Mtd.cash}
+                      deliveryCash={showDeliveryNotes ? delivery720Mtd.cash : 0}
                       openOrdersCash={openOrders.cash}
                       lyCash={salesMtd.lyCash}
-                      lyChangeCashPct={salesMtdCombinedLyPct}
+                      lyChangeCashPct={
+                        showDeliveryNotes ? salesMtdCombinedLyPct : salesMtd.lyChangeCashPct
+                      }
                       withOpenOrdersLbl={t('oversite.salesMtdWithOpenOrders')}
                       forecastCash={forecast?.projected}
                       forecastLbl={`🔮 ${t('oversite.projected')}`}
@@ -428,20 +431,26 @@ function ClassicOversitePage({
                           : undefined
                       }
                     />
-                    <OversiteCollapsible label={`📄 ${t('oversite.deliveryNotes')} ▾`}>
-                      <OversiteKpiRow
-                        kpis={[
-                          { label: t('oversite.clients'), value: String(delivery720Mtd.clients) },
-                          { label: t('oversite.qty'), value: fmt(delivery720Mtd.qty) },
-                          { label: t('oversite.cash'), value: fmt(delivery720Mtd.cash), tone: 'grn' },
-                        ]}
-                      />
-                      <OversiteTop10Table
-                        items={delivery720MtdTop10}
-                        emptyLabel={t('oversite.noDeliveryNotes')}
-                        showSku
-                      />
-                    </OversiteCollapsible>
+                    {showDeliveryNotes ? (
+                      <OversiteCollapsible label={`📄 ${t('oversite.deliveryNotes')} ▾`}>
+                        <OversiteKpiRow
+                          kpis={[
+                            { label: t('oversite.clients'), value: String(delivery720Mtd.clients) },
+                            { label: t('oversite.qty'), value: fmt(delivery720Mtd.qty) },
+                            {
+                              label: t('oversite.cash'),
+                              value: fmt(delivery720Mtd.cash),
+                              tone: 'grn',
+                            },
+                          ]}
+                        />
+                        <OversiteTop10Table
+                          items={delivery720MtdTop10}
+                          emptyLabel={t('oversite.noDeliveryNotes')}
+                          showSku
+                        />
+                      </OversiteCollapsible>
+                    ) : null}
                   </OversiteSection>
               )
             }
