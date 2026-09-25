@@ -1,7 +1,10 @@
-import type { ReactNode } from 'react'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import type { LogicalCompany } from '../../../types/dashboard'
 import { useLocale } from '../../../context/LocaleContext'
 import { fmt } from '../../../lib/format'
+import { getOversiteDateContext } from '../../../lib/oversiteMetrics'
+import { DeliveryNotesModal } from '../DeliveryNotesModal'
+import { SalesLyBars } from '../OversiteKpiRow'
 import { boardShowsCard, boardStyleAttrs, type OversightBoard } from '../../../lib/oversightClassLayout'
 import type { OversightArrangeApi } from '../../../hooks/useOversightArrange'
 import { ArrangeCardChrome } from '../OversightArrangeBar'
@@ -58,6 +61,10 @@ export interface SmCubeGridProps {
   /** Saved class suite board. Null = today's cube grid. */
   suiteBoard?: OversightBoard | null
   arrange?: OversightArrangeApi | null
+  /** Admin grant: show 720 delivery inside Sales MTD (requires sales MTD module). */
+  showDeliveryNotes?: boolean
+  /** Company / window context for the delivery notes popup title. */
+  deliveryContextLabel?: string
 }
 
 export function SmCubeGrid({
@@ -77,9 +84,25 @@ export function SmCubeGrid({
   showYearNetSales = false,
   suiteBoard = null,
   arrange = null,
+  showDeliveryNotes = false,
+  deliveryContextLabel,
 }: SmCubeGridProps) {
   const { t } = useLocale()
-  const { salesMtd, openOrders, returnsMtd, openDebt, ordersLast7Days, receipts, yearNetSales } = kpis
+  const dateCtx = useMemo(() => getOversiteDateContext(), [])
+  const [deliveryOpen, setDeliveryOpen] = useState(false)
+  const closeDelivery = useCallback(() => setDeliveryOpen(false), [])
+  const {
+    salesMtd,
+    delivery720Mtd,
+    delivery720MtdDocs,
+    salesMtdCombinedLyPct,
+    openOrders,
+    returnsMtd,
+    openDebt,
+    ordersLast7Days,
+    receipts,
+    yearNetSales,
+  } = kpis
   const goalDisplay = goalCash == null ? '—' : fmt(goalCash)
   const debtDisplay = openDebt ? fmt(openDebt.grandTotal) : '—'
   const multiCoReport = ordersReportCompanies.length > 1
@@ -133,12 +156,45 @@ export function SmCubeGrid({
           </div>
         ) : null}
 
-        {salesMtd.lyChangeCashPct != null && (
+        {showDeliveryNotes ? (
+          <>
+            <SalesLyBars
+              monthLbl={monthLbl}
+              lyMonthLbl={dateCtx.lyMonthLbl}
+              cash={salesMtd.cash}
+              deliveryCash={delivery720Mtd.cash}
+              openOrdersCash={openOrders.cash}
+              lyCash={salesMtd.lyCash}
+              lyChangeCashPct={salesMtdCombinedLyPct}
+              withOpenOrdersLbl={t('oversite.salesMtdWithOpenOrders')}
+            />
+            <button
+              type="button"
+              className="ov-toggle-btn"
+              aria-haspopup="dialog"
+              onClick={() => setDeliveryOpen(true)}
+            >
+              📄 {t('oversite.deliveryNotes')} · {fmt(delivery720Mtd.cash)}
+            </button>
+            {deliveryOpen ? (
+              <DeliveryNotesModal
+                title={
+                  deliveryContextLabel
+                    ? `${deliveryContextLabel} — ${t('oversite.deliveryNotes')}`
+                    : t('oversite.deliveryNotes')
+                }
+                metrics={delivery720Mtd}
+                docs={delivery720MtdDocs}
+                onClose={closeDelivery}
+              />
+            ) : null}
+          </>
+        ) : salesMtd.lyChangeCashPct != null ? (
           <div className={`sm-cube-delta ${salesMtd.lyChangeCashPct >= 0 ? 'up' : 'down'}`}>
             {salesMtd.lyChangeCashPct >= 0 ? '▲' : '▼'}
             {Math.abs(salesMtd.lyChangeCashPct).toFixed(1)}%
           </div>
-        )}
+        ) : null}
       </div>
     ),
     openOrders: (

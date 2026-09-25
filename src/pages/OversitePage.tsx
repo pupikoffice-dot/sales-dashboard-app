@@ -1,4 +1,5 @@
-import { useMemo, useState, type CSSProperties, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
+import { useAuth } from '../context/AuthContext'
 import { usePreview } from '../context/PreviewContext'
 import { useLocale } from '../context/LocaleContext'
 import { useDashboardAccess } from '../context/DashboardAccessContext'
@@ -13,6 +14,7 @@ import { computeDebtAgentMatrix, computeDebtSummary, debtRowsForCompany } from '
 import { fmt, formatGeneratedDisplay } from '../lib/format'
 import type { LogicalCompany } from '../types/dashboard'
 import { DebtModal } from '../components/oversite/DebtModal'
+import { DeliveryNotesModal } from '../components/oversite/DeliveryNotesModal'
 import { OversiteDebtSummary } from '../components/oversite/OversiteDebtSummary'
 import { OrdersTodayModal } from '../components/oversite/OrdersTodayModal'
 import { StockAlertsPanel } from '../components/oversite/StockAlertsPanel'
@@ -20,7 +22,7 @@ import {
   OVERSITE_COMPANIES,
   computeAgentBreakdown,
   computeDelivery720Mtd,
-  computeDelivery720MtdTop10,
+  computeDelivery720MtdDocs,
   computeOpenOrders,
   computeOrdersMtd,
   computeOrdersMtdTop10,
@@ -48,6 +50,7 @@ import { computeSalesForecast } from '../lib/salesForecast'
 import { computeSupplierMonthlyMatrix } from '../lib/supplierMetrics'
 import { getOversiteSourceFile, type OversiteSegment } from '../lib/oversiteSourceFiles'
 import type { OversiteModuleId } from '../lib/oversiteModules'
+import { canShowOversiteModule } from '../lib/oversiteModuleGate'
 import { OversiteSuppliersMatrix } from '../components/oversite/OversiteSuppliersMatrix'
 import { OversiteCollapsible } from '../components/oversite/OversiteCollapsible'
 import { OversiteKpiRow, OversiteSection, SalesLyBars } from '../components/oversite/OversiteKpiRow'
@@ -60,6 +63,11 @@ import {
   OversightArrangeBar,
 } from '../components/oversite/OversightArrangeBar'
 import { OversiteLegend } from '../components/oversite/OversiteLegend'
+import { OversightCompanyFilter } from '../components/oversite/OversightCompanyFilter'
+import {
+  readOversightCompanyFilter,
+  writeOversightCompanyFilter,
+} from '../lib/oversightCompanyFilter'
 import { boardStyleAttrs } from '../lib/oversightClassLayout'
 import { SmReceiptsReportModal } from '../components/oversite/salesManager/SmReceiptsReportModal'
 
@@ -108,6 +116,7 @@ function ClassicOversitePage({
   layoutToggle?: { active: 'classic' | 'suite'; onSelect: (p: OversightLayoutPreference) => void }
 }) {
   const { t } = useLocale()
+  const { session } = useAuth()
   const { access } = useDashboardAccess()
   // Use access-scoped `rows` from the hook (already memoised) — do not re-filter allRows.
   const { rows: companyRows, debtRows, debtLastUpdate, wmsStock, wmsNames, isLoading, error, data: dashboardData } =
@@ -126,6 +135,8 @@ function ClassicOversitePage({
     companyLabel: string
     company: LogicalCompany
   } | null>(null)
+  const [deliveryModalCo, setDeliveryModalCo] = useState<LogicalCompany | null>(null)
+  const closeDeliveryModal = useCallback(() => setDeliveryModalCo(null), [])
 
   const ctx = useMemo(() => getOversiteDateContext(), [])
   const companiesKey = access?.companies?.join(',') ?? ''
@@ -135,9 +146,24 @@ function ClassicOversitePage({
     [companiesKey],
   )
 
+  const allowedCoIds = useMemo(() => visibleCompanies.map(c => c.id), [visibleCompanies])
+  const userId = session?.user.id ?? ''
+  const [selectedCos, setSelectedCos] = useState<Set<LogicalCompany>>(() =>
+    readOversightCompanyFilter(userId, allowedCoIds),
+  )
+
+  useEffect(() => {
+    setSelectedCos(readOversightCompanyFilter(userId, allowedCoIds))
+  }, [userId, companiesKey, allowedCoIds])
+
+  const displayedCompanies = useMemo(
+    () => visibleCompanies.filter(c => selectedCos.has(c.id)),
+    [visibleCompanies, selectedCos],
+  )
+
   /** Per-company metrics — memoised so UI toggles (modals) do not re-scan all rows. */
   const companyColumns = useMemo(() => {
-    return visibleCompanies.map(co => {
+    return displayedCompanies.map(co => {
       const ordersTag = resolveOrdersTag(companyRows, co.ordersTag)
       const openOrdersTag = resolveOpenOrdersTag(companyRows, co.openOrdersTag)
       const ordersToday = computeOrdersToday(companyRows, ordersTag, ctx.todayStr)
@@ -150,7 +176,7 @@ function ClassicOversitePage({
         ctx.monthStart,
         ctx.todayStr,
       )
-      const delivery720MtdTop10 = computeDelivery720MtdTop10(
+      const delivery720MtdDocs = computeDelivery720MtdDocs(
         companyRows,
         co.delivery720Tag,
         ctx.monthStart,
@@ -191,7 +217,7 @@ function ClassicOversitePage({
         openOrders,
         openOrdersTop10,
         delivery720Mtd,
-        delivery720MtdTop10,
+        delivery720MtdDocs,
         salesMtd,
         salesMtdCombinedLyPct,
         ordersTop10,
@@ -209,7 +235,11 @@ function ClassicOversitePage({
         ordersLast7,
       }
     })
-  }, [visibleCompanies, companyRows, debtRows, ctx, dashboardData?.debtFileDates, debtLastUpdate])
+  }, [displayedCompanies, companyRows, debtRows, ctx, dashboardData?.debtFileDates, debtLastUpdate])
+
+  const deliveryModal = deliveryModalCo
+    ? companyColumns.find(c => c.co.id === deliveryModalCo) ?? null
+    : null
 
   if (isLoading) return <p className="status-msg">{t('common.loadingSalesData')}</p>
   if (error) return <p className="status-msg error">{(error as Error).message}</p>
@@ -243,7 +273,7 @@ function ClassicOversitePage({
   // Per-user Oversight section visibility (admin-configurable). Super-admins
   // always see everything; everyone else is gated by their granted list.
   const showModule = (id: OversiteModuleId): boolean =>
-    isSuperAdmin || (access?.oversiteModules?.includes(id) ?? false)
+    canShowOversiteModule(access, id, isSuperAdmin)
 
   return (
     <>
@@ -251,6 +281,14 @@ function ClassicOversitePage({
         <div className="ov-header-row">
           <h2>🏠 {t('oversite.title')}</h2>
           <div className="ov-header-actions">
+            <OversightCompanyFilter
+              allowed={allowedCoIds}
+              selected={selectedCos}
+              onChange={next => {
+                setSelectedCos(next)
+                if (userId) writeOversightCompanyFilter(userId, next)
+              }}
+            />
             {layoutToggle ? (
               <OversightLayoutToggle
                 active={layoutToggle.active}
@@ -276,8 +314,10 @@ function ClassicOversitePage({
 
       {visibleCompanies.length === 0 ? (
         <p className="ov-empty">{t('oversite.noCompanies')}</p>
+      ) : displayedCompanies.length === 0 ? (
+        <p className="ov-empty">{t('oversite.noCompaniesSelected')}</p>
       ) : (
-        <div className={`ov-grid${visibleCompanies.length === 1 ? ' ov-grid--single-co' : ''}`}>
+        <div className={`ov-grid${displayedCompanies.length === 1 ? ' ov-grid--single-co' : ''}`}>
           {companyColumns.map(
             ({
               co,
@@ -287,7 +327,6 @@ function ClassicOversitePage({
               openOrders,
               openOrdersTop10,
               delivery720Mtd,
-              delivery720MtdTop10,
               salesMtd,
               salesMtdCombinedLyPct,
               ordersTop10,
@@ -304,9 +343,10 @@ function ClassicOversitePage({
               supplierMatrix,
               ordersLast7,
             }, coIdx) => {
-            const multiCo = visibleCompanies.length > 1
+            const multiCo = displayedCompanies.length > 1
             const secondCo = multiCo && coIdx === 1
             const useSavedLook = classicBoard != null
+            const showDeliveryNotes = showModule('deliveryNotes')
             const sectionNodes: Record<string, ReactNode> = {}
             if (showModule('ordersToday')) {
               sectionNodes.ordersToday = (
@@ -383,10 +423,12 @@ function ClassicOversitePage({
                       monthLbl={ctx.monthLbl}
                       lyMonthLbl={ctx.lyMonthLbl}
                       cash={salesMtd.cash}
-                      deliveryCash={delivery720Mtd.cash}
+                      deliveryCash={showDeliveryNotes ? delivery720Mtd.cash : 0}
                       openOrdersCash={openOrders.cash}
                       lyCash={salesMtd.lyCash}
-                      lyChangeCashPct={salesMtdCombinedLyPct}
+                      lyChangeCashPct={
+                        showDeliveryNotes ? salesMtdCombinedLyPct : salesMtd.lyChangeCashPct
+                      }
                       withOpenOrdersLbl={t('oversite.salesMtdWithOpenOrders')}
                       forecastCash={forecast?.projected}
                       forecastLbl={`🔮 ${t('oversite.projected')}`}
@@ -396,20 +438,16 @@ function ClassicOversitePage({
                           : undefined
                       }
                     />
-                    <OversiteCollapsible label={`📄 ${t('oversite.deliveryNotes')} ▾`}>
-                      <OversiteKpiRow
-                        kpis={[
-                          { label: t('oversite.clients'), value: String(delivery720Mtd.clients) },
-                          { label: t('oversite.qty'), value: fmt(delivery720Mtd.qty) },
-                          { label: t('oversite.cash'), value: fmt(delivery720Mtd.cash), tone: 'grn' },
-                        ]}
-                      />
-                      <OversiteTop10Table
-                        items={delivery720MtdTop10}
-                        emptyLabel={t('oversite.noDeliveryNotes')}
-                        showSku
-                      />
-                    </OversiteCollapsible>
+                    {showDeliveryNotes ? (
+                      <button
+                        type="button"
+                        className="ov-toggle-btn"
+                        aria-haspopup="dialog"
+                        onClick={() => setDeliveryModalCo(co.id)}
+                      >
+                        📄 {t('oversite.deliveryNotes')} · {fmt(delivery720Mtd.cash)}
+                      </button>
+                    ) : null}
                   </OversiteSection>
               )
             }
@@ -514,7 +552,7 @@ function ClassicOversitePage({
             return (
               <div
                 key={co.id}
-                className={`ov-col${useSavedLook ? ' ov-col--flow' : visibleCompanies.length === 1 ? ' ov-col--sections-grid' : ''}${multiCo ? ' ov-col--accented' : ''}${secondCo ? ' ov-col--alt' : ''}`}
+                className={`ov-col${useSavedLook ? ' ov-col--flow' : displayedCompanies.length === 1 ? ' ov-col--sections-grid' : ''}${multiCo ? ' ov-col--accented' : ''}${secondCo ? ' ov-col--alt' : ''}`}
                 style={multiCo ? ({ ['--co-accent' as string]: co.accentColor } as CSSProperties) : undefined}
                 {...(useSavedLook ? boardStyleAttrs(classicBoard.style) : {})}
               >
@@ -583,6 +621,15 @@ function ClassicOversitePage({
           company={receiptsModal.company}
           agents={RECEIPTS_TEAM_AGENTS[receiptsModal.company] ?? null}
           onClose={() => setReceiptsModal(null)}
+        />
+      )}
+
+      {deliveryModal && (
+        <DeliveryNotesModal
+          title={`${deliveryModal.co.label} — ${t('oversite.deliveryNotes')}`}
+          metrics={deliveryModal.delivery720Mtd}
+          docs={deliveryModal.delivery720MtdDocs}
+          onClose={closeDeliveryModal}
         />
       )}
     </>

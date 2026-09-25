@@ -1,24 +1,21 @@
 # HANDOFF — sales-dashboard-app
 
 ## Current State
-_Last updated: 2026-09-24 13:43:54 by Cursor_
+_Last updated: 2026-09-25 07:03:07 by Cursor_
 
 **Status:** Active  
-**Phase:** v2.4 live on production; beta on v2.5 work line
+**Phase:** v2.5 on production; beta v2.6 — delivery notes add-on opens as a popup on classic + Sales Manager suite
 
-- Works now: Production (Omega) at sales-dashboard-app-omega.vercel.app — version **2.4**, including Arrange, mouse resize, Undo, and the year graph
-- Works now: Arrange on live Oversight for admin and super admin — drag, width, height, color, hide, Save; super admin uses View-as first, an admin edits their own class
-- Works now: Year-sales graph (report 891 only, vertical) on Sales Agent and Sales Manager; class checkbox to turn it on or off; those classes checked on by default
-- Works now: Classic Oversight second company block uses a light grey background
-- Works now: Sales MTD bar stacks invoices + delivery notes + open orders; headline sum stays invoices+deliveries; second sum includes open orders
-- Works now: Orders Today agent rows open that agent’s orders; order row expands line details; full-report button hidden on classic Oversight
-- Works now: Intercompany link in user config; linked logins get a top-bar company switch
-- Works now: Agent-scoped users no longer get false “721mt missing from export” health alarm
-- Works now: Beta at pupik-sales-dashboard-beta.vercel.app — **2.5 · beta**
+- Works now: Production (Omega) at sales-dashboard-app-omega.vercel.app — version **2.5** (no delivery-notes add-on until promote)
+- Works now: Beta at pupik-sales-dashboard-beta.vercel.app — **2.6 · beta**, aliased to commit **05d7bac** (delivery popup + suite delivery fix + prior bundle)
+- Works now: **Delivery notes (720)** opt-in per user — Admin Oversight checkboxes **Sales MTD** + **Delivery notes**; shared gate requires both; applies to every user, not specific logins
+- Works now: Classic Oversight and Sales Manager / Sales Agent suite — stacked Sales MTD bar stays inline; a button with the delivery total opens a popup (clients, qty, cash, top 10 items)
+- Works now: Popup is a bottom sheet on phones (full width, safe-area padding, larger close button); closes via ✕, tapping outside, or Esc
+- Works now: Stock, classic company filter, Gold WMS, Arrange, suites, year graph, intercompany on respective channels
 - Works now: Legacy backup unchanged on `legacy` branch
 - In progress: Nothing in progress
-- Blocked: GitHub promote workflow still needs Supabase repo secrets (this promote set the live version directly)
-- Next up: Waiting for the next request
+- Blocked: GitHub promote workflow still needs Supabase repo secrets; rep891gold sync remains ops outside this repo
+- Next up: Check the delivery popup on a real phone with View-as on users 55 / 57; promote to Omega when approved; optional delivery in suite Vs mode and company filter on suite
 
 ### CORE RULES (suite)
 
@@ -30,7 +27,7 @@ _Last updated: 2026-09-24 13:43:54 by Cursor_
 
 | Concept | Meaning | Today |
 |--------|---------|--------|
-| **Version** | Product release line (`1.0`, `2.0`, `2.1`…) | Production live = **2.4** (DB). Beta work line = **2.5** |
+| **Version** | Product release line (`1.0`, `2.0`, `2.1`…) | Production live = **2.5** (DB). Beta work line = **2.6** |
 | **Channel** | Where you iterate: production (stable) vs **beta** (next work) | `main` / prod URL vs `beta` / `pupik-sales-dashboard-beta.vercel.app` |
 
 - **Beta** = working iteration of the next (or in-progress) version. Title: `{productVersion} · beta`.
@@ -51,6 +48,63 @@ Phase 1 hides Cost, Total Cost, Price, and cost-based charts in the UI only. The
 ---
 
 ## Session Log
+
+### 2026-09-25 07:03:07 — Cursor
+**Done:**
+- Replaced the inline delivery notes dropdown with a shared popup on both Classic Oversight and the Sales Manager suite
+- Added mobile bottom-sheet styling for the popup; confirmed it is not a problem on Android or iPhone since the app already uses the same overlay pattern
+- Pushed to beta and pointed the friendly beta URL at the new deploy
+
+**Decisions:**
+- Button shows the delivery total so the figure is visible without opening the popup
+- Popup title includes company and window so multi-company users know which data they are viewing
+
+**Next:**
+- User checks the popup on a phone; promote when approved
+
+---
+
+### 2026-09-25 06:51:01 — Cursor
+**Done:**
+- Wired delivery notes into Sales Manager suite Sales MTD cube (720 KPIs, top 10, stacked YoY bar) for any user with both Oversight grants
+- Added shared oversite module gate so delivery requires Sales MTD on classic and suite
+- Committed and pushed to beta; Vercel deploy ready; reassigned friendly beta alias to latest deploy
+
+**Decisions:**
+- Permission-driven only — no user-id or agent hardcoding; preview uses target user access row
+
+**Next:**
+- User verification on beta (e.g. users 55 and 57); promote when approved
+
+---
+
+### 2026-09-25 06:16:11 — Cursor
+**Done:**
+- Shipped beta v2.6 bundle: Stock route, classic Oversight company filter, Gold Pupik WMS, rep891 gold pipeline doc
+- Pushed to `beta`; re-pointed pupik-sales-dashboard-beta.vercel.app when friendly alias lagged git-beta deploy
+- Confirmed super-admin testing: features visible after alias fix (Stock vs Stock Alerts, Classic for company filter)
+
+**Decisions:**
+- Friendly beta domain must stay on latest `beta` deployment — git-beta URL can be ahead until alias is reassigned
+- Company filter stays classic Oversight only for this release
+
+**Next:**
+- Continue beta testing; promote to Omega when approved
+
+---
+
+### 2026-09-24 14:35:32 — Cursor
+**Done:**
+- Promoted the current beta onto Omega and set the live version to 2.5
+- Bumped the beta work line to 2.6
+
+**Decisions:**
+- A later “push” means beta into Omega, not only a beta-branch upload
+
+**Next:**
+- Waiting for the next request
+
+---
 
 ### 2026-09-24 13:43:54 — Cursor
 **Done:**

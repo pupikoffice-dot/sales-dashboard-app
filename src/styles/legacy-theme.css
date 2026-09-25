@@ -846,6 +846,25 @@ body.sales-agent-no-nav .dashboard-main {
   border-radius: var(--r);
 }
 
+.ov-co-filter {
+  position: relative;
+  display: inline-block;
+}
+
+.ov-co-filter-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 40;
+  min-width: 220px;
+  margin-top: 6px;
+  padding: 8px;
+  background: var(--sur2);
+  border: 1px solid var(--bdr);
+  border-radius: var(--r);
+  box-shadow: var(--shadow-md, 0 8px 24px rgba(0, 0, 0, 0.15));
+}
+
 .ov-drop {
   margin-top: 8px;
 }
@@ -4914,6 +4933,54 @@ html[data-theme='light'] .sm-suite-disclaimer {
 .sm-items-modal-body {
   padding: 12px 16px 18px;
   overflow: auto;
+}
+
+.delivery-modal-subhdr {
+  margin-top: 14px;
+}
+
+.delivery-doc-link {
+  color: var(--acc);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.delivery-docs-table .ov-order-row:focus-visible td {
+  background: var(--acc-row-bg);
+  outline: none;
+}
+
+.delivery-doc-back {
+  margin: 0 0 12px;
+}
+
+.delivery-doc-lines {
+  margin-top: 12px;
+}
+
+@media (max-width: 520px) {
+  .delivery-col-lines {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .debt-overlay > .sm-items-modal {
+    width: 100%;
+    max-height: 92dvh;
+    border-radius: var(--r) var(--r) 0 0;
+  }
+
+  .debt-overlay > .sm-items-modal .sm-items-modal-body {
+    padding-bottom: max(18px, env(safe-area-inset-bottom));
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .debt-overlay > .sm-items-modal .debt-modal-close {
+    min-width: 40px;
+    min-height: 40px;
+  }
 }
 
 .sm-report-hint {

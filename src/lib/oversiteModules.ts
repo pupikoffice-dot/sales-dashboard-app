@@ -3,14 +3,15 @@
  * from the page-level DashboardModuleId — this is granular visibility inside
  * the Oversight page itself). IDs match OversiteSegment in
  * oversiteSourceFiles.ts for the sections that map 1:1 to a top-level
- * OversiteSection (Delivery Notes is a sub-block of Sales MTD, not its own
- * toggle).
+ * Most map 1:1 to an OversiteSection. `deliveryNotes` is an add-on inside the
+ * Sales MTD card (720 bar segment + collapsible), not a separate column card.
  */
 export type OversiteModuleId =
   | 'ordersToday'
   | 'ordersMtd'
   | 'openOrders'
   | 'salesMtd'
+  | 'deliveryNotes'
   | 'topItems'
   | 'suppliers'
   | 'returns'
@@ -28,6 +29,7 @@ export const OVERSITE_MODULE_REGISTRY: OversiteModuleDef[] = [
   { id: 'ordersMtd', label: 'Orders MTD' },
   { id: 'openOrders', label: 'Open Orders' },
   { id: 'salesMtd', label: 'Sales MTD' },
+  { id: 'deliveryNotes', label: 'Delivery notes (720) in Sales MTD' },
   { id: 'topItems', label: 'Top 10 Items' },
   { id: 'suppliers', label: 'Suppliers' },
   { id: 'returns', label: 'Returns MTD' },
