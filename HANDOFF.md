@@ -1,22 +1,21 @@
 # HANDOFF — sales-dashboard-app
 
 ## Current State
-_Last updated: 2026-09-25 06:16:11 by Cursor_
+_Last updated: 2026-09-25 07:03:07 by Cursor_
 
 **Status:** Active  
-**Phase:** v2.5 live on production; beta v2.6 feature bundle deployed and verified
+**Phase:** v2.5 on production; beta v2.6 — delivery notes add-on opens as a popup on classic + Sales Manager suite
 
-- Works now: Production (Omega) at sales-dashboard-app-omega.vercel.app — version **2.5** (Arrange, year graph, etc.)
-- Works now: Beta at pupik-sales-dashboard-beta.vercel.app — **2.6 · beta**, aliased to latest `beta` deploy (Stock, classic company filter, Gold Pupik WMS)
-- Works now: **Stock** module at `/stock` — real warehouse report (not placeholder); sidebar **Stock** (not Stock Alerts)
-- Works now: Classic Oversight **Companies** checklist filter in header (layout toggle → Classic; needs 2+ companies in user access)
-- Works now: Goldbug WMS augmented from Pupik `000pupik` for QPL/SCR prefixes; gold open-orders tag aligned
-- Works now: Ops doc for rep891 gold pipeline; Desktop Task Dashboard **Sales Dash P1- Data** runs 720/721 batch on schedule (not disabled Windows BI tasks)
-- Works now: Arrange, suites, year graph, intercompany, and prior beta features unchanged on respective channels
+- Works now: Production (Omega) at sales-dashboard-app-omega.vercel.app — version **2.5** (no delivery-notes add-on until promote)
+- Works now: Beta at pupik-sales-dashboard-beta.vercel.app — **2.6 · beta**, aliased to commit **05d7bac** (delivery popup + suite delivery fix + prior bundle)
+- Works now: **Delivery notes (720)** opt-in per user — Admin Oversight checkboxes **Sales MTD** + **Delivery notes**; shared gate requires both; applies to every user, not specific logins
+- Works now: Classic Oversight and Sales Manager / Sales Agent suite — stacked Sales MTD bar stays inline; a button with the delivery total opens a popup (clients, qty, cash, top 10 items)
+- Works now: Popup is a bottom sheet on phones (full width, safe-area padding, larger close button); closes via ✕, tapping outside, or Esc
+- Works now: Stock, classic company filter, Gold WMS, Arrange, suites, year graph, intercompany on respective channels
 - Works now: Legacy backup unchanged on `legacy` branch
 - In progress: Nothing in progress
-- Blocked: GitHub promote workflow still needs Supabase repo secrets; FinPro 891 in full group BAT and rep891gold sync still ops follow-up outside this repo
-- Next up: User testing on beta; promote to Omega when ready; optional company filter on Sales Manager suite
+- Blocked: GitHub promote workflow still needs Supabase repo secrets; rep891gold sync remains ops outside this repo
+- Next up: Check the delivery popup on a real phone with View-as on users 55 / 57; promote to Omega when approved; optional delivery in suite Vs mode and company filter on suite
 
 ### CORE RULES (suite)
 
@@ -49,6 +48,35 @@ Phase 1 hides Cost, Total Cost, Price, and cost-based charts in the UI only. The
 ---
 
 ## Session Log
+
+### 2026-09-25 07:03:07 — Cursor
+**Done:**
+- Replaced the inline delivery notes dropdown with a shared popup on both Classic Oversight and the Sales Manager suite
+- Added mobile bottom-sheet styling for the popup; confirmed it is not a problem on Android or iPhone since the app already uses the same overlay pattern
+- Pushed to beta and pointed the friendly beta URL at the new deploy
+
+**Decisions:**
+- Button shows the delivery total so the figure is visible without opening the popup
+- Popup title includes company and window so multi-company users know which data they are viewing
+
+**Next:**
+- User checks the popup on a phone; promote when approved
+
+---
+
+### 2026-09-25 06:51:01 — Cursor
+**Done:**
+- Wired delivery notes into Sales Manager suite Sales MTD cube (720 KPIs, top 10, stacked YoY bar) for any user with both Oversight grants
+- Added shared oversite module gate so delivery requires Sales MTD on classic and suite
+- Committed and pushed to beta; Vercel deploy ready; reassigned friendly beta alias to latest deploy
+
+**Decisions:**
+- Permission-driven only — no user-id or agent hardcoding; preview uses target user access row
+
+**Next:**
+- User verification on beta (e.g. users 55 and 57); promote when approved
+
+---
 
 ### 2026-09-25 06:16:11 — Cursor
 **Done:**
