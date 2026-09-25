@@ -18,6 +18,7 @@ import { useOversightArrange } from '../../../hooks/useOversightArrange'
 import { useUiModuleCatalog, useUiModules } from '../../../hooks/useUiModules'
 import { formatGeneratedDisplay } from '../../../lib/format'
 import { getOversiteDateContext, resolveOrdersTag, type OrderTodayGroup, type Top10Item } from '../../../lib/oversiteMetrics'
+import { canShowOversiteModule } from '../../../lib/oversiteModuleGate'
 import { sortAgentIds, sumGoals } from '../../../lib/uiModules'
 import type { DebtRow, LogicalCompany, SalesRow } from '../../../types/dashboard'
 import { DebtModal } from '../DebtModal'
@@ -73,8 +74,8 @@ const EMPTY_STOCK: Record<string, number> = {}
 export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesManagerSuiteProps) {
   const isAgentSuite = variant === 'agent'
   const { t } = useLocale()
-  const { session, isSuperAdmin } = useAuth()
-  const { isPreviewing, previewUser } = usePreview()
+  const { session } = useAuth()
+  const { isPreviewing, previewUser, effectiveIsSuperAdmin: isSuperAdmin } = usePreview()
   const { access } = useDashboardAccess()
   const { rows, debtRows, isLoading, error, data, debtLastUpdate, wmsStock } = useDashboardData()
   const dateCtx = useMemo(() => getOversiteDateContext(), [])
@@ -109,6 +110,11 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
         catalog: uiCatalogQ.data ?? [],
       }),
     [isSuperAdmin, isPreviewing, suiteUiGrantsQ.data, uiCatalogQ.data],
+  )
+
+  const showDeliveryNotes = useMemo(
+    () => canShowOversiteModule(access, 'deliveryNotes', isSuperAdmin),
+    [access, isSuperAdmin],
   )
 
   const showYearNetSales = useMemo(
@@ -438,6 +444,7 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
                             kpis={kpis}
                             goalCash={goalCash}
                             monthLbl={dateCtx.monthLbl}
+                            showDeliveryNotes={showDeliveryNotes}
                             agentId={agentId}
                             hideOrders7Days
                             receiptsCurrentMonthOnly
@@ -529,6 +536,7 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
                         kpis={allKpis}
                         goalCash={allGoal}
                         monthLbl={dateCtx.monthLbl}
+                        showDeliveryNotes={showDeliveryNotes}
                         agentId={null}
                         showYearNetSales={showYearNetSales}
                         suiteBoard={suiteBoard}
@@ -575,6 +583,7 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
                             kpis={kpis}
                             goalCash={goalCash}
                             monthLbl={dateCtx.monthLbl}
+                            showDeliveryNotes={showDeliveryNotes}
                             agentId={agentId}
                             showYearNetSales={showYearNetSales}
                             suiteBoard={suiteBoard}

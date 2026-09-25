@@ -37,6 +37,7 @@ export interface SmAgentWindowProps {
   showYearNetSales?: boolean
   suiteBoard?: OversightBoard | null
   arrange?: OversightArrangeApi | null
+  showDeliveryNotes?: boolean
 }
 
 export function SmAgentWindow({
@@ -58,6 +59,7 @@ export function SmAgentWindow({
   showYearNetSales,
   suiteBoard,
   arrange,
+  showDeliveryNotes,
 }: SmAgentWindowProps) {
   return (
     <section className={`sm-window ${windowTintClass(agentId)}`}>
@@ -79,6 +81,7 @@ export function SmAgentWindow({
         showYearNetSales={showYearNetSales}
         suiteBoard={suiteBoard}
         arrange={arrange}
+        showDeliveryNotes={showDeliveryNotes}
       />
     </section>
   )

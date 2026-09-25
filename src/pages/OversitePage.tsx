@@ -49,6 +49,7 @@ import { computeSalesForecast } from '../lib/salesForecast'
 import { computeSupplierMonthlyMatrix } from '../lib/supplierMetrics'
 import { getOversiteSourceFile, type OversiteSegment } from '../lib/oversiteSourceFiles'
 import type { OversiteModuleId } from '../lib/oversiteModules'
+import { canShowOversiteModule } from '../lib/oversiteModuleGate'
 import { OversiteSuppliersMatrix } from '../components/oversite/OversiteSuppliersMatrix'
 import { OversiteCollapsible } from '../components/oversite/OversiteCollapsible'
 import { OversiteKpiRow, OversiteSection, SalesLyBars } from '../components/oversite/OversiteKpiRow'
@@ -265,7 +266,7 @@ function ClassicOversitePage({
   // Per-user Oversight section visibility (admin-configurable). Super-admins
   // always see everything; everyone else is gated by their granted list.
   const showModule = (id: OversiteModuleId): boolean =>
-    isSuperAdmin || (access?.oversiteModules?.includes(id) ?? false)
+    canShowOversiteModule(access, id, isSuperAdmin)
 
   return (
     <>

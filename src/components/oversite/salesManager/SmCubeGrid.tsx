@@ -1,7 +1,11 @@
-import type { ReactNode } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import type { LogicalCompany } from '../../../types/dashboard'
 import { useLocale } from '../../../context/LocaleContext'
 import { fmt } from '../../../lib/format'
+import { getOversiteDateContext } from '../../../lib/oversiteMetrics'
+import { OversiteCollapsible } from '../OversiteCollapsible'
+import { OversiteKpiRow, SalesLyBars } from '../OversiteKpiRow'
+import { OversiteTop10Table } from '../OversiteTop10Table'
 import { boardShowsCard, boardStyleAttrs, type OversightBoard } from '../../../lib/oversightClassLayout'
 import type { OversightArrangeApi } from '../../../hooks/useOversightArrange'
 import { ArrangeCardChrome } from '../OversightArrangeBar'
@@ -58,6 +62,8 @@ export interface SmCubeGridProps {
   /** Saved class suite board. Null = today's cube grid. */
   suiteBoard?: OversightBoard | null
   arrange?: OversightArrangeApi | null
+  /** Admin grant: show 720 delivery inside Sales MTD (requires sales MTD module). */
+  showDeliveryNotes?: boolean
 }
 
 export function SmCubeGrid({
@@ -77,9 +83,22 @@ export function SmCubeGrid({
   showYearNetSales = false,
   suiteBoard = null,
   arrange = null,
+  showDeliveryNotes = false,
 }: SmCubeGridProps) {
   const { t } = useLocale()
-  const { salesMtd, openOrders, returnsMtd, openDebt, ordersLast7Days, receipts, yearNetSales } = kpis
+  const dateCtx = useMemo(() => getOversiteDateContext(), [])
+  const {
+    salesMtd,
+    delivery720Mtd,
+    delivery720MtdTop10,
+    salesMtdCombinedLyPct,
+    openOrders,
+    returnsMtd,
+    openDebt,
+    ordersLast7Days,
+    receipts,
+    yearNetSales,
+  } = kpis
   const goalDisplay = goalCash == null ? '—' : fmt(goalCash)
   const debtDisplay = openDebt ? fmt(openDebt.grandTotal) : '—'
   const multiCoReport = ordersReportCompanies.length > 1
@@ -133,12 +152,39 @@ export function SmCubeGrid({
           </div>
         ) : null}
 
-        {salesMtd.lyChangeCashPct != null && (
+        {showDeliveryNotes ? (
+          <>
+            <SalesLyBars
+              monthLbl={monthLbl}
+              lyMonthLbl={dateCtx.lyMonthLbl}
+              cash={salesMtd.cash}
+              deliveryCash={delivery720Mtd.cash}
+              openOrdersCash={openOrders.cash}
+              lyCash={salesMtd.lyCash}
+              lyChangeCashPct={salesMtdCombinedLyPct}
+              withOpenOrdersLbl={t('oversite.salesMtdWithOpenOrders')}
+            />
+            <OversiteCollapsible label={`📄 ${t('oversite.deliveryNotes')} ▾`}>
+              <OversiteKpiRow
+                kpis={[
+                  { label: t('oversite.clients'), value: String(delivery720Mtd.clients) },
+                  { label: t('oversite.qty'), value: fmt(delivery720Mtd.qty) },
+                  { label: t('oversite.cash'), value: fmt(delivery720Mtd.cash), tone: 'grn' },
+                ]}
+              />
+              <OversiteTop10Table
+                items={delivery720MtdTop10}
+                emptyLabel={t('oversite.noDeliveryNotes')}
+                showSku
+              />
+            </OversiteCollapsible>
+          </>
+        ) : salesMtd.lyChangeCashPct != null ? (
           <div className={`sm-cube-delta ${salesMtd.lyChangeCashPct >= 0 ? 'up' : 'down'}`}>
             {salesMtd.lyChangeCashPct >= 0 ? '▲' : '▼'}
             {Math.abs(salesMtd.lyChangeCashPct).toFixed(1)}%
           </div>
-        )}
+        ) : null}
       </div>
     ),
     openOrders: (

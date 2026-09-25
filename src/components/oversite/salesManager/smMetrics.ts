@@ -15,6 +15,9 @@ import {
   type ReturnsMtdMetrics,
   type SalesMtdMetrics,
   type Top10Item,
+  computeDelivery720Mtd,
+  computeDelivery720MtdTop10,
+  type Delivery720Metrics,
 } from '../../../lib/oversiteMetrics'
 
 /**
@@ -247,6 +250,11 @@ export interface SmYearNetSales {
 
 export interface SmSuiteKpis {
   salesMtd: SalesMtdMetrics
+  /** Report 720 delivery notes MTD (same scope as other suite KPIs). */
+  delivery720Mtd: Delivery720Metrics
+  delivery720MtdTop10: Top10Item[]
+  /** YoY % when 891 + 720 are combined (classic Sales MTD rule). */
+  salesMtdCombinedLyPct: number | null
   openOrders: OpenOrdersMetrics
   returnsMtd: ReturnsMtdMetrics
   openDebt: DebtSummary | null
@@ -297,6 +305,15 @@ function emptyOpen(): OpenOrdersMetrics {
 
 function emptyReturns(): ReturnsMtdMetrics {
   return { cash: 0, qty: 0 }
+}
+
+function emptyDelivery720(): Delivery720Metrics {
+  return { clients: 0, cash: 0, qty: 0 }
+}
+
+function combinedSalesLyPct(sales: SalesMtdMetrics, deliveryCash: number): number | null {
+  const combined = sales.cash + deliveryCash
+  return sales.lyCash > 0 ? ((combined - sales.lyCash) / sales.lyCash) * 100 : null
 }
 
 function ymKey(year: number, month: number): string {
@@ -354,8 +371,12 @@ export function buildSmSuiteKpis(args: BuildSmSuiteKpisArgs): SmSuiteKpis {
   const def = companyDef(args.company)
 
   if (!def) {
+    const salesMtd = emptySales()
     return {
-      salesMtd: emptySales(),
+      salesMtd,
+      delivery720Mtd: emptyDelivery720(),
+      delivery720MtdTop10: [],
+      salesMtdCombinedLyPct: combinedSalesLyPct(salesMtd, 0),
       openOrders: emptyOpen(),
       returnsMtd: emptyReturns(),
       openDebt: computeDebtSummary(debtRowsForCompany(scopedDebt, args.company)),
@@ -378,6 +399,19 @@ export function buildSmSuiteKpis(args: BuildSmSuiteKpisArgs): SmSuiteKpis {
   const ordersSlice = narrowByAgents(tagSlice(partition, ordersTag), args.agents)
 
   const sales = salesMtdFromSlice(salesSlice, args.company, dateCtx.curYear, dateCtx.curMonth)
+  const deliverySlice = narrowByAgents(tagSlice(partition, def.delivery720Tag), args.agents)
+  const delivery720Mtd = computeDelivery720Mtd(
+    deliverySlice,
+    def.delivery720Tag,
+    dateCtx.monthStart,
+    dateCtx.todayStr,
+  )
+  const delivery720MtdTop10 = computeDelivery720MtdTop10(
+    deliverySlice,
+    def.delivery720Tag,
+    dateCtx.monthStart,
+    dateCtx.todayStr,
+  )
   const open = openOrdersFromSlice(openSlice, openTag)
   const returns = returnsMtdFromSlice(
     returnsSlice,
@@ -403,6 +437,9 @@ export function buildSmSuiteKpis(args: BuildSmSuiteKpisArgs): SmSuiteKpis {
 
   return {
     salesMtd: sales,
+    delivery720Mtd,
+    delivery720MtdTop10,
+    salesMtdCombinedLyPct: combinedSalesLyPct(sales, delivery720Mtd.cash),
     openOrders: open,
     returnsMtd: returns,
     openDebt,
