@@ -30,7 +30,7 @@ _Last updated: 2026-09-27 09:45:48 by Cursor_
 
 | Concept | Meaning | Today |
 |--------|---------|--------|
-| **Version** | Product release line (`1.0`, `2.0`, `2.1`…) | Production live = **2.7** (DB). Beta work line = **2.8** |
+| **Version** | Product release line (`1.0`, `2.0`, `2.1`…) | Production live = **2.8** (DB). Beta work line = **2.9** |
 | **Channel** | Where you iterate: production (stable) vs **beta** (next work) | `main` / prod URL vs `beta` / `pupik-sales-dashboard-beta.vercel.app` |
 
 - **Beta** = working iteration of the next (or in-progress) version. Title: `{productVersion} · beta`.
@@ -51,6 +51,25 @@ Phase 1 hides Cost, Total Cost, Price, and cost-based charts in the UI only. The
 ---
 
 ## Session Log
+
+### 2026-09-27 09:45:48 — Cursor
+**Done:**
+- Deliveries: added client / agent chart boxes under each company, each with the same yearly cartons and pallets charts (total, average, trend)
+- Searchable picker for clients or agents with deliveries in the last 12 months; lists all of them (no cap), most cartons first, with a count
+- Boxes saved per user account in a new table that only the owner can read or change; filtered monthly deliveries and a picker list added to the database, both within the user's access
+- Sync now stores agent names from the rep893 reports; data reloaded
+- Promoted beta v2.8 to Omega: merged beta into main, production deploy ready, set live version to 2.8
+- Bumped beta work line to 2.9 and re-pointed the beta URL
+
+**Decisions:**
+- Boxes saved to the account, placed inside their company, same charts as the company box — recommended defaults applied when the question got no answer
+- Add/remove hidden while previewing another user, since preview is read-only
+- Picker shows every client instead of a top-12 list, per user request
+
+**Next:**
+- Tick Deliveries for the users who should see it; continue 2.9 work on beta
+
+---
 
 ### 2026-09-25 14:17:36 — Cursor
 **Done:**
