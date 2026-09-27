@@ -1,15 +1,16 @@
 # HANDOFF — sales-dashboard-app
 
 ## Current State
-_Last updated: 2026-09-25 14:17:36 by Cursor_
+_Last updated: 2026-09-27 09:45:48 by Cursor_
 
 **Status:** Active  
-**Phase:** v2.7 live on production (Omega); beta work line is now 2.8
+**Phase:** v2.8 live on production (Omega); beta work line is now 2.9
 
-- Works now: Production (Omega) at sales-dashboard-app-omega.vercel.app — version **2.7** (promote commit **90c7d65**; DB active_version 2.7)
-- Works now: Beta at pupik-sales-dashboard-beta.vercel.app — **2.8 · beta**, aliased to commit **69860c1** (same features as production plus the version bump)
+- Works now: Production (Omega) at sales-dashboard-app-omega.vercel.app — version **2.8** (promote commit **a82898b**; DB active_version 2.8)
+- Works now: Beta at pupik-sales-dashboard-beta.vercel.app — **2.9 · beta**, aliased to commit **9efd945** (same features as production plus the version bump)
 - Works now: **Operations** sidebar section with **Deliveries** page (opt-in module, per user in Admin → Users) — per company (Pupik, then Monkeytime, never combined) a yearly cartons chart and a yearly pallets chart for the last 12 months, each with total, average per month (dashed line) and linear trend line with monthly slope
-- Works now: rep893 delivery logistics data (cartons and pallets per delivery line) loaded from the office data share by the hourly sync, plus a narrow refresh option; access scoped by the user's companies and agents
+- Works now: Deliveries **client / agent boxes** — under each company, add a box for any client or agent (searchable picker listing all of them, most cartons first, with a count); each box shows the same two yearly charts for that client or agent; boxes are saved per user account (same on every device), removable, hidden add/remove while previewing another user
+- Works now: rep893 delivery logistics data (cartons and pallets per delivery line, now including agent names) loaded from the office data share by the hourly sync, plus a narrow refresh option; access scoped by the user's companies and agents
 - Works now: **Delivery notes (720)** opt-in per user — Admin Oversight checkboxes **Sales MTD** + **Delivery notes**; shared gate requires both; applies to every user, not specific logins
 - Works now: Classic Oversight and Sales Manager / Sales Agent suite — stacked Sales MTD bar stays inline; a button with the delivery total opens a popup listing every MTD delivery note document (newest first); tapping a document shows its lines with a back button
 - Works now: Popup is a bottom sheet on phones (full width, safe-area padding, larger close button, Lines column hidden on narrow screens); closes via ✕, tapping outside, or Esc
@@ -17,7 +18,7 @@ _Last updated: 2026-09-25 14:17:36 by Cursor_
 - Works now: Legacy backup unchanged on `legacy` branch
 - In progress: Nothing in progress
 - Blocked: GitHub promote workflow still needs Supabase repo secrets (Action fails on each promote; steps done by hand); rep891gold sync remains ops outside this repo
-- Next up: New 2.8 work on beta (more Operations features); tick Deliveries for the users who should see it; optional delivery in suite Vs mode and company filter on suite
+- Next up: New 2.9 work on beta (more Operations features); tick Deliveries for the users who should see it; optional delivery in suite Vs mode and company filter on suite
 
 ### CORE RULES (suite)
 
