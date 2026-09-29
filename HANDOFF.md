@@ -1,7 +1,7 @@
 # HANDOFF — sales-dashboard-app
 
 ## Current State
-_Last updated: 2026-09-27 09:45:48 by Cursor_
+_Last updated: 2026-09-29 18:50:58 by Cursor_
 
 **Status:** Active  
 **Phase:** v2.8 live on production (Omega); beta work line is now 2.9
@@ -15,10 +15,11 @@ _Last updated: 2026-09-27 09:45:48 by Cursor_
 - Works now: Classic Oversight and Sales Manager / Sales Agent suite — stacked Sales MTD bar stays inline; a button with the delivery total opens a popup listing every MTD delivery note document (newest first); tapping a document shows its lines with a back button
 - Works now: Popup is a bottom sheet on phones (full width, safe-area padding, larger close button, Lines column hidden on narrow screens); closes via ✕, tapping outside, or Esc
 - Works now: Stock page, classic company filter, Gold WMS from Pupik, Arrange, suites, year graph, intercompany
+- Works now: **Arrange** limited to super admin and users with the admin role (kadima roy super admin; Avishai and roypupik admin); Dudi changed to manager, so he no longer sees Arrange (user confirmed fixed); dashboard data unaffected since it follows dashboard permissions, not role
 - Works now: Legacy backup unchanged on `legacy` branch
 - In progress: Nothing in progress
 - Blocked: GitHub promote workflow still needs Supabase repo secrets (Action fails on each promote; steps done by hand); rep891gold sync remains ops outside this repo
-- Next up: New 2.9 work on beta (more Operations features); tick Deliveries for the users who should see it; optional delivery in suite Vs mode and company filter on suite
+- Next up: New 2.9 work on beta (more Operations features); tick Deliveries for the users who should see it; optional: show each user's role on the Admin → Users page (roles are currently invisible there); optional delivery in suite Vs mode and company filter on suite
 
 ### CORE RULES (suite)
 
@@ -51,6 +52,21 @@ Phase 1 hides Cost, Total Cost, Price, and cost-based charts in the UI only. The
 ---
 
 ## Session Log
+
+### 2026-09-29 18:50:58 — Cursor
+**Done:**
+- Investigated Arrange showing for Dudi on Omega: the Arrange rule was already correct (super admin or admin role); Dudi's account simply had the admin role
+- Changed Dudi's role from admin to manager; verified his dashboard modules and companies are unchanged and that the database now refuses his layout edits
+- User confirmed Arrange is gone for Dudi
+
+**Decisions:**
+- Fixed by changing Dudi's role rather than the code — user chose to keep Avishai and roypupik as admins
+- No code change or deploy needed; roles live in the database, so the fix applies to Omega and beta alike
+
+**Next:**
+- Optional: show each user's role on the Admin → Users page so admin roles are visible; continue 2.9 work on beta
+
+---
 
 ### 2026-09-27 09:45:48 — Cursor
 **Done:**
