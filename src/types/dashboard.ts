@@ -21,6 +21,8 @@ export interface DashboardAccess {
   active: boolean
   showItemCost: boolean
   showClientProfit: boolean
+  /** Sidebar button ids to hide for this user. Empty = show everything they otherwise have. */
+  hiddenSidebar: string[]
   /** Which individual Oversight sections this user can see. Empty = none (opt-in). */
   oversiteModules: string[]
 }

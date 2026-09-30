@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import { useDashboardAccess } from './context/DashboardAccessContext'
 import { useLocale } from './context/LocaleContext'
+import { useSignedInProfileRole } from './hooks/useCanArrangeOversight'
 import { pathForModule } from './modules/registry'
 import { LoginPage } from './pages/LoginPage'
 import { DashboardLayout, RequireModule } from './pages/DashboardLayout'
@@ -26,6 +27,8 @@ function HomeRedirect() {
 
 function ProtectedApp() {
   const { session, loading, isSuperAdmin } = useAuth()
+  const { role } = useSignedInProfileRole()
+  const canManageUsers = isSuperAdmin || role === 'admin'
   const { t } = useLocale()
   if (loading) return <p className="status-msg p-6">{t('common.loading')}</p>
   if (!session) return <Navigate to="/login" replace />
@@ -44,7 +47,7 @@ function ProtectedApp() {
         <Route path="stock" element={<RequireModule moduleId="stock"><StockPage /></RequireModule>} />
         <Route path="export" element={<RequireModule moduleId="export"><PlaceholderModulePage title="Export" /></RequireModule>} />
         <Route path="operations/deliveries" element={<RequireModule moduleId="ops_deliveries"><DeliveriesPage /></RequireModule>} />
-        {isSuperAdmin && <Route path="admin/users" element={<UsersPage />} />}
+        {canManageUsers && <Route path="admin/users" element={<UsersPage />} />}
         {isSuperAdmin && <Route path="admin/classes" element={<ClassesPage />} />}
         {isSuperAdmin && <Route path="admin/modules" element={<ModulesPage />} />}
       </Route>

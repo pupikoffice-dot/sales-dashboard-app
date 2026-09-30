@@ -188,6 +188,7 @@ export const messages = {
   'filters.selectItems': 'Select Items',
   'filters.loadingItems': 'Loading items…',
   'filters.searchItems': 'Search items…',
+  'filters.searchSku': 'SKU starts with… (GRP, FNK)',
   'filters.searchClients': 'Search clients…',
   'filters.listTotal': 'total',
   'filters.showPerItem': 'Show Per Item',

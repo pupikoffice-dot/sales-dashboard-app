@@ -19,6 +19,7 @@ import { useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { formatHeaderVersionBadge } from '../lib/appChannel'
 import { useSalesAgentNavHide } from '../hooks/useSalesAgentNavHide'
+import { useSignedInProfileRole } from '../hooks/useCanArrangeOversight'
 import { useUserProfile } from '../hooks/useUserProfile'
 import { useOversightLayout } from '../hooks/useOversightLayout'
 
@@ -37,6 +38,8 @@ export function DashboardLayout() {
   // while previewing, so the admin can walk between the settings editor and the
   // preview without exiting. Everything else gates on the effective flag.
   const { signOut, isSuperAdmin } = useAuth()
+  const { role: signedInRole } = useSignedInProfileRole()
+  const canManageUsers = isSuperAdmin || signedInRole === 'admin'
   const { isPreviewing, effectiveIsSuperAdmin } = usePreview()
   const { access, loading } = useDashboardAccess()
   const { isRendering, showOversiteDashboard } = useDashboardFilters()
@@ -147,18 +150,21 @@ export function DashboardLayout() {
             ))}
           </>
         )}
-        {isSuperAdmin && (
+        {(isSuperAdmin || canManageUsers) && (
           <>
             <div className="sidebar-label" style={{ marginTop: 8 }}>
               {t('nav.admin')}
             </div>
-            <NavLink
-              to="/admin/users"
-              onClick={() => setSidebarOpen(false)}
-              className={({ isActive }) => `nav-btn${isActive ? ' active' : ''}`}
-            >
-              {t('nav.adminUsers')}
-            </NavLink>
+            {canManageUsers && (
+              <NavLink
+                to="/admin/users"
+                onClick={() => setSidebarOpen(false)}
+                className={({ isActive }) => `nav-btn${isActive ? ' active' : ''}`}
+              >
+                {t('nav.adminUsers')}
+              </NavLink>
+            )}
+            {isSuperAdmin && (
             <NavLink
               to="/admin/classes"
               onClick={() => setSidebarOpen(false)}
@@ -166,6 +172,8 @@ export function DashboardLayout() {
             >
               {t('nav.adminClasses')}
             </NavLink>
+            )}
+            {isSuperAdmin && (
             <NavLink
               to="/admin/modules"
               onClick={() => setSidebarOpen(false)}
@@ -173,6 +181,7 @@ export function DashboardLayout() {
             >
               {t('nav.adminModules')}
             </NavLink>
+            )}
           </>
         )}
       </nav>

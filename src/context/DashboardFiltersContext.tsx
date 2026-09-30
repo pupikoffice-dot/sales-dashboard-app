@@ -69,6 +69,10 @@ interface DashboardFiltersValue extends DashboardFiltersState {
   selectCategoryIds: (ids: string[]) => void
   selectItemSkus: (ids: string[]) => void
   selectSupplierIds: (ids: string[]) => void
+  setClientIds: (ids: string[]) => void
+  setCategoryIds: (ids: string[]) => void
+  setItemSkus: (ids: string[]) => void
+  setSupplierIds: (ids: string[]) => void
   clearClientIds: () => void
   clearCategoryIds: () => void
   clearItemSkus: () => void
@@ -355,6 +359,32 @@ export function DashboardFiltersProvider({ children }: { children: ReactNode }) 
     invalidateApply()
   }
 
+  function setClientIds(ids: string[]) {
+    setSelectedClientIds(prev => (setsEqual(prev, ids) ? prev : new Set(ids)))
+    invalidateApply()
+  }
+
+  function setCategoryIds(ids: string[]) {
+    let changed = false
+    setSelectedCategories(prev => {
+      if (setsEqual(prev, ids)) return prev
+      changed = true
+      return new Set(ids)
+    })
+    if (changed) setItemListEpoch(e => e + 1)
+    invalidateApply()
+  }
+
+  function setItemSkus(ids: string[]) {
+    setSelectedItemSkus(prev => (setsEqual(prev, ids) ? prev : new Set(ids)))
+    invalidateApply()
+  }
+
+  function setSupplierIds(ids: string[]) {
+    setSelectedSuppliers(prev => (setsEqual(prev, ids) ? prev : new Set(ids)))
+    invalidateApply()
+  }
+
   function clearClientIds() {
     setSelectedClientIds(new Set())
     invalidateApply()
@@ -452,6 +482,10 @@ export function DashboardFiltersProvider({ children }: { children: ReactNode }) 
         selectCategoryIds,
         selectItemSkus,
         selectSupplierIds,
+        setClientIds,
+        setCategoryIds,
+        setItemSkus,
+        setSupplierIds,
         clearClientIds,
         clearCategoryIds,
         clearItemSkus,

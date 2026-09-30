@@ -12,6 +12,7 @@ function access(modules: string[]): DashboardAccess {
     defaultModule: 'oversite',
     showItemCost: false,
     showClientProfit: false,
+    hiddenSidebar: [],
     oversiteModules: modules,
   }
 }

@@ -139,7 +139,9 @@ export function SidebarFilters() {
       <div className="panel">
         <div className="panel-title">① {t('filters.company')}</div>
         <div className="btn-grp">
-          {allowedCompanies.map(c => (
+          {allowedCompanies
+            .filter(c => !access?.hiddenSidebar?.includes(`company.${c.id}`))
+            .map(c => (
             <button
               key={c.id}
               type="button"
@@ -155,7 +157,7 @@ export function SidebarFilters() {
       <div className={`panel${f.company ? '' : ' disabled'}`}>
         <div className="panel-title">② {t('filters.dateFilter')}</div>
         <div className="tab-row">
-          {DATE_TAB_KEYS.map(tab => (
+          {DATE_TAB_KEYS.filter(tab => !access?.hiddenSidebar?.includes(`date.${tab.id}`)).map(tab => (
             <button
               key={tab.id}
               type="button"
@@ -273,6 +275,7 @@ export function SidebarFilters() {
             className={`btn${f.view === 'clients' ? ' active' : ''}`}
             onClick={() => f.setView('clients')}
             disabled={!f.viewPanelEnabled}
+            hidden={access?.hiddenSidebar?.includes('view.clients')}
           >
             👥 {t('filters.clients')}
           </button>
@@ -281,6 +284,7 @@ export function SidebarFilters() {
             className={`btn${f.view === 'items' ? ' active' : ''}`}
             onClick={() => f.setView('items')}
             disabled={!f.viewPanelEnabled}
+            hidden={access?.hiddenSidebar?.includes('view.items')}
           >
             📦 {t('filters.items')}
           </button>
@@ -289,6 +293,7 @@ export function SidebarFilters() {
             className={`btn${f.view === 'suppliers' ? ' active' : ''}`}
             onClick={() => f.setView('suppliers')}
             disabled={!f.viewPanelEnabled}
+            hidden={access?.hiddenSidebar?.includes('view.suppliers')}
           >
             🏭 {t('filters.suppliers')}
           </button>
@@ -307,6 +312,7 @@ export function SidebarFilters() {
                 selected={f.selectedClientIds}
                 onToggle={f.toggleClientId}
                 onSelectVisible={f.selectClientIds}
+                onSetSelected={f.setClientIds}
                 onClear={f.clearClientIds}
                 searchPlaceholder={t('filters.searchClients')}
               />
@@ -320,6 +326,7 @@ export function SidebarFilters() {
                 type="button"
                 className={`btn${f.clientMode === 'items' ? ' active' : ''}`}
                 onClick={() => f.setClientMode('items')}
+                hidden={access?.hiddenSidebar?.includes('clientMode.items')}
               >
                 📦 {t('filters.itemsBreakdown')}
               </button>
@@ -327,6 +334,7 @@ export function SidebarFilters() {
                 type="button"
                 className={`btn${f.clientMode === 'cash' ? ' active' : ''}`}
                 onClick={() => f.setClientMode('cash')}
+                hidden={access?.hiddenSidebar?.includes('clientMode.cash')}
               >
                 💰 {t('filters.cashSummary')}
               </button>
@@ -355,6 +363,7 @@ export function SidebarFilters() {
                 type="button"
                 className={`btn${f.catType === 'tablet' ? ' active' : ''}`}
                 onClick={() => f.setCatType('tablet')}
+                hidden={access?.hiddenSidebar?.includes('cat.tablet')}
               >
                 🏷 {t('filters.tabletCategory')}
               </button>
@@ -362,6 +371,7 @@ export function SidebarFilters() {
                 type="button"
                 className={`btn${f.catType === 'category' ? ' active' : ''}`}
                 onClick={() => f.setCatType('category')}
+                hidden={access?.hiddenSidebar?.includes('cat.group')}
               >
                 📂 {t('filters.groupCategory')}
               </button>
@@ -376,8 +386,10 @@ export function SidebarFilters() {
                 onSelectVisible={ids => {
                   f.selectCategoryIds(ids)
                 }}
+                onSetSelected={f.setCategoryIds}
                 onClear={f.clearCategoryIds}
                 searchPlaceholder={t('filters.searchCategories')}
+                match="prefix"
                 maxHeight={140}
               />
             )}
@@ -397,8 +409,11 @@ export function SidebarFilters() {
                   selected={f.selectedItemSkus}
                   onToggle={f.toggleItemSku}
                   onSelectVisible={f.selectItemSkus}
+                  onSetSelected={f.setItemSkus}
                   onClear={f.clearItemSkus}
                   searchPlaceholder={t('filters.searchItems')}
+                  skuFilter
+                  skuPlaceholder={t('filters.searchSku')}
                 />
               )}
             </div>
@@ -412,6 +427,7 @@ export function SidebarFilters() {
                   type="button"
                   className={`btn${f.itemMode === 'clients' ? ' active' : ''}`}
                   onClick={() => f.setItemMode('clients')}
+                hidden={access?.hiddenSidebar?.includes('itemMode.clients')}
                 >
                   👥 {t('filters.byClients')}
                 </button>
@@ -419,6 +435,7 @@ export function SidebarFilters() {
                   type="button"
                   className={`btn${f.itemMode === 'items' ? ' active' : ''}`}
                   onClick={() => f.setItemMode('items')}
+                hidden={access?.hiddenSidebar?.includes('itemMode.items')}
                 >
                   📦 {t('filters.itemsSummary')}
                 </button>
@@ -440,6 +457,7 @@ export function SidebarFilters() {
                 selected={f.selectedSuppliers}
                 onToggle={f.toggleSupplierId}
                 onSelectVisible={f.selectSupplierIds}
+                onSetSelected={f.setSupplierIds}
                 onClear={f.clearSupplierIds}
                 searchPlaceholder={t('filters.searchSuppliers')}
               />
@@ -455,6 +473,7 @@ export function SidebarFilters() {
                 type="button"
                 className={`btn${f.supplierMode === 'items' ? ' active' : ''}`}
                 onClick={() => f.setSupplierMode('items')}
+                hidden={access?.hiddenSidebar?.includes('supplierMode.items')}
               >
                 📦 {t('filters.itemsBreakdown')}
               </button>
@@ -462,6 +481,7 @@ export function SidebarFilters() {
                 type="button"
                 className={`btn${f.supplierMode === 'cash' ? ' active' : ''}`}
                 onClick={() => f.setSupplierMode('cash')}
+                hidden={access?.hiddenSidebar?.includes('supplierMode.cash')}
               >
                 💰 {t('filters.cashSummary')}
               </button>

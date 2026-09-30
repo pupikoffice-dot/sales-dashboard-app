@@ -190,6 +190,7 @@ export const messages: Record<keyof typeof en, string> = {
   'filters.selectItems': 'בחר פריטים',
   'filters.loadingItems': 'טוען פריטים…',
   'filters.searchItems': 'חפש פריטים…',
+  'filters.searchSku': 'מק״ט מתחיל ב… (GRP, FNK)',
   'filters.searchClients': 'חפש לקוחות…',
   'filters.listTotal': 'סה״כ',
   'filters.showPerItem': 'הצג לפי פריט',
