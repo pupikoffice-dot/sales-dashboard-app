@@ -15,6 +15,7 @@ import { ViewAsSwitcher } from '../components/admin/ViewAsSwitcher'
 import { IntercompanySwitcher } from '../components/IntercompanySwitcher'
 import { SidebarFilters } from '../components/sidebar/SidebarFilters'
 import { MODULE_REGISTRY } from '../modules/registry'
+import { sidebarNavHideId } from '../lib/sidebarHide'
 import { useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { formatHeaderVersionBadge } from '../lib/appChannel'
@@ -104,8 +105,9 @@ export function DashboardLayout() {
   }
 
   const visible = MODULE_REGISTRY.filter(m => canShowModule(access, m.id, effectiveIsSuperAdmin))
-  const visibleMain = visible.filter(m => m.section === 'main')
-  const visibleOps = visible.filter(m => m.section === 'operations')
+  const hiddenNav = new Set(access.hiddenSidebar ?? [])
+  const visibleMain = visible.filter(m => m.section === 'main' && !hiddenNav.has(sidebarNavHideId(m.id)))
+  const visibleOps = visible.filter(m => m.section === 'operations' && !hiddenNav.has(sidebarNavHideId(m.id)))
   const rowCount = allRows.length
   const debtCount = debtRows.length
 

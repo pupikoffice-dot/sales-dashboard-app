@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../context/AuthContext'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
@@ -22,7 +22,7 @@ import {
 } from '../../lib/oversightLayoutsApi'
 import { SUITE_MOUNTABLE_UI_MODULE_IDS } from '../../lib/suiteUiModules'
 import { OVERSIGHT_ALTERNATE_LAYOUT_IDS } from '../../lib/oversightLayouts'
-import { SIDEBAR_HIDE_OPTIONS } from '../../lib/sidebarHide'
+import { SIDEBAR_HIDE_GROUPS } from '../../lib/sidebarHide'
 
 interface UserRow {
   id: string
@@ -431,6 +431,18 @@ export function UsersPage() {
   )
 }
 
+function EditorGroup({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
+  return (
+    <details className="admin-form-group">
+      <summary>{title}</summary>
+      <div className="admin-form-group-body">
+        {hint ? <p className="ov-sub admin-form-hint">{hint}</p> : null}
+        {children}
+      </div>
+    </details>
+  )
+}
+
 function EditAccessModal({
   userId,
   userName,
@@ -616,11 +628,10 @@ function EditAccessModal({
             {error && <p className="status-msg error" style={{ margin: 0 }}>{error}</p>}
 
             {profile?.role !== 'super_admin' && (
-              <div>
-                <div className="admin-form-section-title">Org hierarchy (Phase 2.5)</div>
-                <p className="ov-sub" style={{ margin: '0 0 8px', fontSize: '.72rem' }}>
-                  ERP agent ID links this login to sales rows. Reports-to builds the manager subtree. Permission Class is set below (not a separate Role field).
-                </p>
+              <EditorGroup
+                title="Org hierarchy"
+                hint="ERP agent ID links this login to sales rows. Reports-to builds the manager subtree. Permission Class is set below."
+              >
                 <label>
                   ERP agent ID
                   <input
@@ -645,17 +656,13 @@ function EditAccessModal({
                     ))}
                   </select>
                 </label>
-              </div>
+              </EditorGroup>
             )}
 
-            <div>
-              <div className="admin-form-section-title">Intercompany link</div>
-              <p className="ov-sub" style={{ margin: '0 0 8px', fontSize: '.72rem' }}>
-                For one person who holds two agent identities in two companies (e.g. agent 25 in
-                Pupik and agent 57 in Monkeytime). Both logins get a switch in the top bar. The two
-                access configs stay separate and only one is ever active, so neither company sees
-                the other's data.
-              </p>
+            <EditorGroup
+              title="Intercompany link"
+              hint="For one person who holds two agent identities in two companies. Both logins get a switch in the top bar. Only one identity is active at a time."
+            >
               <label>
                 Linked account
                 <select
@@ -672,10 +679,9 @@ function EditAccessModal({
                   ))}
                 </select>
               </label>
-            </div>
+            </EditorGroup>
 
-            <div>
-              <div className="admin-form-section-title">Modules</div>
+            <EditorGroup title="Modules">
               <div className="admin-form-checklist">
                 {MODULE_REGISTRY.map(m => (
                   <label key={m.id} className="admin-form-check">
@@ -684,14 +690,13 @@ function EditAccessModal({
                   </label>
                 ))}
               </div>
-            </div>
+            </EditorGroup>
 
             {modules.includes('oversite') && (
-              <div>
-                <div className="admin-form-section-title">Oversight Modules</div>
-                <p className="ov-sub" style={{ margin: '0 0 6px', fontSize: '.72rem' }}>
-                  Which sections this user sees inside Oversight. Unchecked sections are hidden entirely.
-                </p>
+              <EditorGroup
+                title="Oversight Modules"
+                hint="Which sections this user sees inside Oversight. Unchecked sections are hidden entirely."
+              >
                 <div className="admin-form-checklist">
                   {OVERSITE_MODULE_REGISTRY.map(m => (
                     <label key={m.id} className="admin-form-check">
@@ -704,14 +709,10 @@ function EditAccessModal({
                     </label>
                   ))}
                 </div>
-              </div>
+              </EditorGroup>
             )}
 
-            <div>
-              <div className="admin-form-section-title">{t('admin.oversightLayouts')}</div>
-              <p className="ov-sub" style={{ margin: '0 0 6px', fontSize: '.72rem' }}>
-                {t('admin.oversightLayoutsHint')}
-              </p>
+            <EditorGroup title={t('admin.oversightLayouts')} hint={t('admin.oversightLayoutsHint')}>
               <div className="admin-form-checklist">
                 {activeOversightLayouts.map(m => (
                   <label key={m.id} className="admin-form-check">
@@ -724,13 +725,9 @@ function EditAccessModal({
                   </label>
                 ))}
               </div>
-            </div>
+            </EditorGroup>
 
-            <div>
-              <div className="admin-form-section-title">{t('admin.biModules')}</div>
-              <p className="ov-sub" style={{ margin: '0 0 6px', fontSize: '.72rem' }}>
-                {t('admin.biModulesHint')}
-              </p>
+            <EditorGroup title={t('admin.biModules')} hint={t('admin.biModulesHint')}>
               <div className="admin-form-checklist">
                 {activeBiModules.map(m => (
                   <label key={m.id} className="admin-form-check">
@@ -743,13 +740,9 @@ function EditAccessModal({
                   </label>
                 ))}
               </div>
-            </div>
+            </EditorGroup>
 
-            <div>
-              <div className="admin-form-section-title">{t('admin.suiteUiModules')}</div>
-              <p className="ov-sub" style={{ margin: '0 0 6px', fontSize: '.72rem' }}>
-                {t('admin.suiteUiModulesHint')}
-              </p>
+            <EditorGroup title={t('admin.suiteUiModules')} hint={t('admin.suiteUiModulesHint')}>
               <div className="admin-form-checklist">
                 {activeSuiteUiModules.map(m => (
                   <label key={m.id} className="admin-form-check">
@@ -762,33 +755,35 @@ function EditAccessModal({
                   </label>
                 ))}
               </div>
-            </div>
+            </EditorGroup>
 
-            <div>
-              <div className="admin-form-section-title">Hide in sidebar</div>
-              <p className="ov-sub" style={{ margin: '0 0 6px', fontSize: '.72rem' }}>
-                Checked buttons are hidden for this user. Pages are hidden with Modules above.
-              </p>
-              <div className="admin-form-checklist">
-                {SIDEBAR_HIDE_OPTIONS.map(opt => (
-                  <label key={opt.id} className="admin-form-check">
-                    <input
-                      type="checkbox"
-                      checked={hiddenSidebar.includes(opt.id)}
-                      onChange={() =>
-                        setHiddenSidebar(prev =>
-                          prev.includes(opt.id) ? prev.filter(id => id !== opt.id) : [...prev, opt.id],
-                        )
-                      }
-                    />
-                    {opt.label}
-                  </label>
-                ))}
-              </div>
-            </div>
+            <EditorGroup
+              title="Hide in sidebar"
+              hint="Checked buttons are hidden for this user. Open Navigation for Oversight, Sales, Orders, and the rest of the menu."
+            >
+              {SIDEBAR_HIDE_GROUPS.map(group => (
+                <EditorGroup key={group.title} title={group.title}>
+                  <div className="admin-form-checklist">
+                    {group.options.map(opt => (
+                      <label key={opt.id} className="admin-form-check">
+                        <input
+                          type="checkbox"
+                          checked={hiddenSidebar.includes(opt.id)}
+                          onChange={() =>
+                            setHiddenSidebar(prev =>
+                              prev.includes(opt.id) ? prev.filter(id => id !== opt.id) : [...prev, opt.id],
+                            )
+                          }
+                        />
+                        {opt.label}
+                      </label>
+                    ))}
+                  </div>
+                </EditorGroup>
+              ))}
+            </EditorGroup>
 
-            <div>
-              <div className="admin-form-section-title">Companies</div>
+            <EditorGroup title="Companies">
               <div className="admin-form-checkrow">
                 {COMPANIES.map(c => (
                   <label key={c} className="admin-form-check capitalize">
@@ -797,10 +792,9 @@ function EditAccessModal({
                   </label>
                 ))}
               </div>
-            </div>
+            </EditorGroup>
 
-            <div>
-              <div className="admin-form-section-title">{t('admin.itemsParameters')}</div>
+            <EditorGroup title={t('admin.itemsParameters')}>
               <label className="admin-form-check">
                 <input
                   type="checkbox"
@@ -809,10 +803,9 @@ function EditAccessModal({
                 />
                 {t('admin.showItemCost')}
               </label>
-            </div>
+            </EditorGroup>
 
-            <div>
-              <div className="admin-form-section-title">{t('admin.clientsParameters')}</div>
+            <EditorGroup title={t('admin.clientsParameters')}>
               <label className="admin-form-check">
                 <input
                   type="checkbox"
@@ -821,47 +814,46 @@ function EditAccessModal({
                 />
                 {t('admin.showClientProfit')}
               </label>
-            </div>
+            </EditorGroup>
 
-            <label>
-              Agents (comma-separated, empty = all)
-              <input
-                className="sbar-search block-input"
-                value={agentsText}
-                onChange={e => setAgentsText(e.target.value)}
-                placeholder="24, 25, 27"
-              />
-            </label>
-
-            <div>
-              <div className="admin-form-section-title">Class &amp; permission overrides</div>
+            <EditorGroup title="Class & permission overrides">
               <UserPermissionsEditor userId={userId} />
-            </div>
+            </EditorGroup>
 
-            <label>
-              Default module
-              <select
-                className="block-input"
-                value={defaultModule}
-                onChange={e => setDefaultModule(e.target.value as DashboardModuleId)}
-              >
-                {MODULE_REGISTRY.map(m => (
-                  <option key={m.id} value={m.id}>{m.label}</option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              Language
-              <select
-                className="block-input"
-                value={locale}
-                onChange={e => setLocale(e.target.value as AppLocale)}
-              >
-                <option value="en">English</option>
-                <option value="he">עברית (Hebrew)</option>
-              </select>
-            </label>
+            <EditorGroup title="General">
+              <label>
+                Agents (comma-separated, empty = all)
+                <input
+                  className="sbar-search block-input"
+                  value={agentsText}
+                  onChange={e => setAgentsText(e.target.value)}
+                  placeholder="24, 25, 27"
+                />
+              </label>
+              <label>
+                Default module
+                <select
+                  className="block-input"
+                  value={defaultModule}
+                  onChange={e => setDefaultModule(e.target.value as DashboardModuleId)}
+                >
+                  {MODULE_REGISTRY.map(m => (
+                    <option key={m.id} value={m.id}>{m.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Language
+                <select
+                  className="block-input"
+                  value={locale}
+                  onChange={e => setLocale(e.target.value as AppLocale)}
+                >
+                  <option value="en">English</option>
+                  <option value="he">עברית (Hebrew)</option>
+                </select>
+              </label>
+            </EditorGroup>
 
             <div className="admin-form-actions">
               <button type="button" className="sbar-minimize-btn" onClick={onClose}>
