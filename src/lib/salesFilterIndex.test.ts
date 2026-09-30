@@ -1,24 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { buildSalesFilterIndex, buildSkuNameLookupFromFilterIndex } from './salesFilterIndex'
+import { sortItemsBySku } from './salesFilterIndex'
 
-describe('buildSkuNameLookupFromFilterIndex', () => {
-  it('keeps the longest item label per SKU across categories', () => {
-    const index = buildSalesFilterIndex([
-      {
-        company: 'pupik',
-        groupCat: 'סקוט פעלולים',
-        itemSKU: 'GRP-675402',
-        itemName: 'סקוט ed edition',
-      } as never,
-      {
-        company: 'pupik',
-        groupCat: 'סקוט פעלולים',
-        itemSKU: 'GRP-675402',
-        itemName: 'סקוט Limited edition כחול',
-      } as never,
+describe('sortItemsBySku', () => {
+  it('orders A–Z by SKU, ignoring the product name', () => {
+    const sorted = sortItemsBySku([
+      { id: 'VTH-1', label: 'Apple' },
+      { id: 'fnk-2', label: 'Zebra' },
+      { id: 'GRB-10', label: 'Mango' },
+      { id: 'GRB-2', label: 'Banana' },
     ])
-
-    const lookup = buildSkuNameLookupFromFilterIndex(index, 'pupik')
-    expect(lookup['GRP-675402']).toBe('סקוט Limited edition כחול')
+    expect(sorted.map(i => i.id)).toEqual(['fnk-2', 'GRB-2', 'GRB-10', 'VTH-1'])
   })
 })

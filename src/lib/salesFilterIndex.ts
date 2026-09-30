@@ -32,6 +32,11 @@ function toSortedOptions(map: Map<string, string>): ListOption[] {
     .map(([id, label]) => ({ id, label }))
 }
 
+/** Select-items list: A–Z by SKU code, not by the product name. */
+export function sortItemsBySku(items: ListOption[]): ListOption[] {
+  return [...items].sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: 'base' }))
+}
+
 function toSortedCatOptions(set: Set<string>): ListOption[] {
   return [...set].sort().map(c => ({ id: c, label: c }))
 }
@@ -157,7 +162,7 @@ export function getIndexedItemOptions(
       merged.set(item.id, preferItemName(merged.get(item.id) ?? '', item.label))
     }
   }
-  return toSortedOptions(merged)
+  return sortItemsBySku([...merged.entries()].map(([id, label]) => ({ id, label })))
 }
 
 /** Longest item label per SKU for a company tag — same source as sidebar item pickers. */
