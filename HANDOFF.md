@@ -1,13 +1,13 @@
 # HANDOFF — sales-dashboard-app
 
 ## Current State
-_Last updated: 2026-09-29 18:50:58 by Cursor_
+_Last updated: 2026-09-30 18:23:19 by Cursor_
 
 **Status:** Active  
-**Phase:** v2.8 live on production (Omega); beta work line is now 2.9
+**Phase:** v2.8 live on production (Omega); beta work line is 2.9 (sidebar and user-editor work, not promoted)
 
 - Works now: Production (Omega) at sales-dashboard-app-omega.vercel.app — version **2.8** (promote commit **a82898b**; DB active_version 2.8)
-- Works now: Beta at pupik-sales-dashboard-beta.vercel.app — **2.9 · beta**, aliased to commit **9efd945** (same features as production plus the version bump)
+- Works now: Beta at pupik-sales-dashboard-beta.vercel.app — **2.9 · beta**, aliased to the latest sidebar editor deploy (commit **b766515**)
 - Works now: **Operations** sidebar section with **Deliveries** page (opt-in module, per user in Admin → Users) — per company (Pupik, then Monkeytime, never combined) a yearly cartons chart and a yearly pallets chart for the last 12 months, each with total, average per month (dashed line) and linear trend line with monthly slope
 - Works now: Deliveries **client / agent boxes** — under each company, add a box for any client or agent (searchable picker listing all of them, most cartons first, with a count); each box shows the same two yearly charts for that client or agent; boxes are saved per user account (same on every device), removable, hidden add/remove while previewing another user
 - Works now: rep893 delivery logistics data (cartons and pallets per delivery line, now including agent names) loaded from the office data share by the hourly sync, plus a narrow refresh option; access scoped by the user's companies and agents
@@ -16,10 +16,14 @@ _Last updated: 2026-09-29 18:50:58 by Cursor_
 - Works now: Popup is a bottom sheet on phones (full width, safe-area padding, larger close button, Lines column hidden on narrow screens); closes via ✕, tapping outside, or Esc
 - Works now: Stock page, classic company filter, Gold WMS from Pupik, Arrange, suites, year graph, intercompany
 - Works now: **Arrange** limited to super admin and users with the admin role (kadima roy super admin; Avishai and roypupik admin); Dudi changed to manager, so he no longer sees Arrange (user confirmed fixed); dashboard data unaffected since it follows dashboard permissions, not role
+- Works now: Select Items sorted A–Z by SKU, with a SKU prefix box that drops non-matches
+- Works now: Sidebar text filters clear checks on the first keystroke, keep the matches when the box is erased, and add the next search on top
+- Works now: Per-user **Hide in sidebar** (admin and super admin) — Navigation buttons (Oversight through Export), Deliveries, and the filter buttons; a check hides the button and leaves the module itself
+- Works now: User editor is a closed dropdown per group, including the hide groups and the class permission groups
 - Works now: Legacy backup unchanged on `legacy` branch
 - In progress: Nothing in progress
-- Blocked: GitHub promote workflow still needs Supabase repo secrets (Action fails on each promote; steps done by hand); rep891gold sync remains ops outside this repo
-- Next up: New 2.9 work on beta (more Operations features); tick Deliveries for the users who should see it; optional: show each user's role on the Admin → Users page (roles are currently invisible there); optional delivery in suite Vs mode and company filter on suite
+- Blocked: Dashboard sales data is stuck on 29 Sep (Monkeytime sales on 28 Sep). Hourly sync is succeeding, but Pupik and Monkeytime reports are still loaded from Drive, and those copies were last updated yesterday evening. Today's files are already on the office data share. Only Goldbug sales is read from that share. GitHub promote workflow still needs Supabase repo secrets (Action fails on each promote; steps done by hand)
+- Next up: Point the Pupik and Monkeytime sync at the office share the same way Goldbug already works, then run a refresh so 30 Sep shows up. Continue 2.9 work on beta; promote only when asked
 
 ### CORE RULES (suite)
 
@@ -52,6 +56,40 @@ Phase 1 hides Cost, Total Cost, Price, and cost-based charts in the UI only. The
 ---
 
 ## Session Log
+
+### 2026-09-30 18:23:19 — Cursor
+**Done:**
+- Checked why the dashboard is not updating: the hourly sync is healthy (last run 18:00, finished 18:12, no error) and the database has no sales dated 30 Sep
+- Pupik sales and orders stop on 29 Sep; Monkeytime sales stop on 28 Sep
+- Drive copies of those reports were last changed yesterday evening; the office data share already has today's files (updated about 17:30–18:10)
+- Goldbug is the only sales file the sync reads from the office share, so the rest of the dashboard never sees today's export
+
+**Decisions:**
+- No code change yet — user asked for the cause only
+- Fix, when asked, is to load Pupik and Monkeytime from the office share the same way Goldbug already is, then refresh
+
+**Next:**
+- Point Pupik and Monkeytime sync at the office share and run a refresh
+
+---
+
+### 2026-09-30 10:54:01 — Cursor
+**Done:**
+- Select Items: SKU prefix box that drops non-matches, and the item list sorted A–Z by SKU
+- Sidebar text filters: the first keystroke clears checks, matches stay when the box is erased, and the next search adds to them
+- Per-user Hide in sidebar for admin and super admin, now including the navigation buttons and Deliveries as well as the filter buttons
+- User editor collapsed into a closed dropdown per group, including the hide groups and the class permission groups
+- Shipped on beta only; beta URL pointed at the new deploy
+
+**Decisions:**
+- Hiding a sidebar button does not remove the module; the page stays available if the user still has it
+- Editor groups start closed so the user screen is not one long form
+- Stays on beta until an explicit promote
+
+**Next:**
+- Continue 2.9 work on beta
+
+---
 
 ### 2026-09-29 18:50:58 — Cursor
 **Done:**
