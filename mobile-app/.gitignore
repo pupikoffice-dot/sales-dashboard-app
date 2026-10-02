@@ -1,0 +1,9 @@
+.env
+.env.local
+.env.staging
+.env.*.local
+node_modules/
+
+# Generated native projects (local APK builds via expo prebuild)
+/android
+/ios

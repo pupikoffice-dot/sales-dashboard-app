@@ -32,6 +32,6 @@ export default defineConfig({
   },
   test: {
     environment: 'happy-dom',
-    exclude: ['**/node_modules/**', '**/.worktrees/**'],
+    exclude: ['**/node_modules/**', '**/.worktrees/**', 'mobile-app/**', 'admin-app/**', 'supabase/**'],
   },
 })

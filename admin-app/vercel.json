@@ -1,0 +1,4 @@
+{
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
+  "alias": ["field-ai-admin.vercel.app"]
+}

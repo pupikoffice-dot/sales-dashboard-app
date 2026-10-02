@@ -12,3 +12,15 @@ supabase/.temp/
 .superpowers/
 
 *.tsbuildinfo
+
+# mobile-app / admin-app (imported from 'Mobile App for salesteam')
+*.env
+*.apk
+*.keystore
+*.jks
+.expo/
+mobile-app/android/**/build/
+mobile-app/android/.gradle/
+admin-app/dist/
+*.tmp.*
+vite.config.ts.timestamp-*
