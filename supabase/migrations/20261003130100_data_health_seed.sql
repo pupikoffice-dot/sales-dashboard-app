@@ -46,7 +46,7 @@ insert into public.source_files (file_name, company, file_group, producer, fix_h
 ('acc101gold.xls','gold','manual_clients','unknown (to identify)','Owner unknown: find who runs acc101','client list / agents','age',720,null,null),
 -- debt + tsomet: 7 days
 ('Debt clients.xlsm',null,'debt','user workbook + main PC "Copy debt clients file"','Update Debt clients.xlsm on the main PC; Task app "Copy debt clients file" copies it to Data','debt figures','age',168,null,null),
-('tsomet/budget.xlsx','mt','tsomet','main PC segment report','Main PC Task app: run "Segment sales report (tsomet)"','Tsomet cube (MT)','age',168,null,null),
+('tsomet/budget.xlsx','mt','frozen','yearly budget (manual)','-','Tsomet cube (MT) budget','frozen',null,null,null),
 ('tsomet/sales.xlsx','mt','tsomet','main PC segment report','Main PC Task app: run "Segment sales report (tsomet)"','Tsomet cube (MT)','age',168,null,null),
 -- known_broken: 2 days, incidents pre-acknowledged below
 ('721grow.xls','grow','known_broken','none running (grow exports stopped)','Investigate the grow ERP export','grow open orders','age',48,null,null),
