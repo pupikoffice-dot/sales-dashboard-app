@@ -1,14 +1,16 @@
 import { FormEvent, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLocale } from '../context/LocaleContext'
 import { fetchProfileLocale } from '../lib/userLocale'
 import { supabase } from '../lib/supabase'
+import { returnPathFrom } from '../lib/returnPath'
 
 export function LoginPage() {
   const { signIn } = useAuth()
   const { locale, setLocale, t } = useLocale()
   const navigate = useNavigate()
+  const location = useLocation()
   const [login, setLogin] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -32,7 +34,7 @@ export function LoginPage() {
     }
 
     setBusy(false)
-    navigate('/')
+    navigate(returnPathFrom(location.state), { replace: true })
   }
 
   return (

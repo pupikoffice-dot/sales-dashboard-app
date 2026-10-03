@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import { useDashboardAccess } from './context/DashboardAccessContext'
 import { useLocale } from './context/LocaleContext'
@@ -31,8 +31,9 @@ function ProtectedApp() {
   const { role } = useSignedInProfileRole()
   const canManageUsers = isSuperAdmin || role === 'admin'
   const { t } = useLocale()
+  const location = useLocation()
   if (loading) return <p className="status-msg p-6">{t('common.loading')}</p>
-  if (!session) return <Navigate to="/login" replace />
+  if (!session) return <Navigate to="/login" replace state={{ from: location }} />
 
   return (
     <Routes>

@@ -48,8 +48,8 @@ export function DataHealthPage() {
         {open.length === 0 && <p className="text-sm text-gray-500">None.</p>}
         <ul className="space-y-2">
           {open.map(i => (
-            <li key={i.id} className="border rounded p-2 text-sm">
-              <div><b>{i.check_key}</b> — {i.reason} (since {new Date(i.opened_at).toLocaleString()})</div>
+            <li key={i.id} className="border rounded p-2 text-sm" style={{ borderLeft: `4px solid ${COLOUR.red}` }}>
+              <div><span style={{ color: COLOUR.red }}>● red</span> <b>{i.check_key}</b> — {i.reason} (since {new Date(i.opened_at).toLocaleString()})</div>
               {ruleBy.get(i.check_key) && <div className="text-gray-600">How to fix: {ruleBy.get(i.check_key)!.fix_hint}</div>}
               {i.acknowledged_at
                 ? <div className="text-gray-500">Acknowledged {new Date(i.acknowledged_at).toLocaleString()}{i.notes ? ` — ${i.notes}` : ''}</div>

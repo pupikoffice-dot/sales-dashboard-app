@@ -17,6 +17,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [isSuperAdmin, setIsSuperAdmin] = useState(false)
+  // Which user the super-admin check has finished for. Until it matches the signed-in user,
+  // `loading` stays true: otherwise admin routes are not registered yet on a direct link
+  // (e.g. /admin/data-health from an email) and the catch-all redirects to the home page.
+  const [adminCheckedFor, setAdminCheckedFor] = useState<string | null>(null)
   const lastUserId = useRef<string | null>(null)
 
   useEffect(() => {
@@ -39,13 +43,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe()
   }, [])
 
+  const userId = session?.user.id ?? null
   useEffect(() => {
-    if (!session) {
+    if (!userId) {
       setIsSuperAdmin(false)
       return
     }
-    supabase.rpc('is_super_admin').then(({ data }) => setIsSuperAdmin(!!data))
-  }, [session])
+    // Re-checked only when the user changes, not on every token refresh.
+    let cancelled = false
+    const done = (admin: boolean) => {
+      if (cancelled) return
+      setIsSuperAdmin(admin)
+      setAdminCheckedFor(userId)
+    }
+    supabase.rpc('is_super_admin').then(({ data }) => done(!!data), () => done(false))
+    return () => { cancelled = true }
+  }, [userId])
+
+  const adminPending = userId !== null && adminCheckedFor !== userId
 
   async function signIn(login: string, password: string) {
     let email = login.trim()
@@ -63,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ session, loading, isSuperAdmin, signIn, signOut }}>
+    <AuthContext.Provider value={{ session, loading: loading || adminPending, isSuperAdmin, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   )
