@@ -39,6 +39,7 @@ function normalizeAccess(row: Record<string, unknown>, userId: string): Dashboar
     active: row.active !== false,
     showItemCost: row.show_item_cost === true,
     showClientProfit: row.show_client_profit === true,
+    hiddenSidebar: Array.isArray(row.hidden_sidebar) ? (row.hidden_sidebar as string[]) : [],
     oversiteModules: Array.isArray(row.oversite_modules) ? (row.oversite_modules as string[]) : [],
   }
 }
@@ -98,6 +99,7 @@ export function DashboardAccessProvider({ children }: { children: ReactNode }) {
           active: true,
           showItemCost: true,
           showClientProfit: true,
+          hiddenSidebar: [],
           oversiteModules: ALL_OVERSITE_MODULE_IDS,
         })
       } else {

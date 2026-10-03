@@ -1,0 +1,8 @@
+[functions.user-management]
+verify_jwt = false
+
+[functions.chat]
+verify_jwt = false
+
+[functions.trigger-sync]
+verify_jwt = false

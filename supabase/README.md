@@ -1,8 +1,19 @@
-# Not the source of truth
+# Supabase — single source of truth
 
-Schema for this project lives in **one** place:
+Schema for the shared database (dashboard web app, mobile app, admin app, ETL) lives in **one** place:
 
-    Mobile App for salesteam/supabase/migrations/
+    supabase/migrations/   (this folder, in git)
+
+Until 2026-10-02 the main history lived in `Mobile App for salesteam/supabase/migrations/`
+(Dropbox, not in git), while migrations from 2026-08-23 on were added here. Both sets were
+merged here on 2026-10-02. Do not add migrations to the old Dropbox folder.
+`20260827140000_tsomet_budget_tables.sql` existed in both; the copies differed only in
+comments, so the repo copy was kept.
+
+Other folders: `functions/` (edge functions for web, mobile and admin apps), `scripts/`
+(one-off admin SQL, not migrations), `config.toml` (Supabase CLI config).
+
+## Capture history (2026-08-18)
 
 The `.sql` files that used to sit here were applied by hand in the Supabase SQL
 editor and were never tracked as migrations. That drift was real: the `20260813*`

@@ -66,6 +66,6 @@ export function buildItemOptions(
     items[sku] = preferItemName(items[sku] ?? '', r.itemName || sku)
   })
   return Object.entries(items)
-    .sort((a, b) => a[1].localeCompare(b[1]))
+    .sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true, sensitivity: 'base' }))
     .map(([id, label]) => ({ id, label }))
 }

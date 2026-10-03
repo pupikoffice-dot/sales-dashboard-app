@@ -175,8 +175,8 @@ function DefineSections(props: DefineModeProps) {
 
   return (
     <div className="perm-sections">
-      <section className="perm-section">
-        <h3>Companies & Agents</h3>
+      <details className="perm-section">
+        <summary>Companies & Agents</summary>
         <div className="perm-grid">
           {COMPANIES.map(c => (
             <Item
@@ -219,10 +219,10 @@ function DefineSections(props: DefineModeProps) {
             ))}
           </select>
         </div>
-      </section>
+      </details>
 
-      <section className="perm-section">
-        <h3>Data Fields</h3>
+      <details className="perm-section">
+        <summary>Data Fields</summary>
         {FIELDS.map(f => (
           <Item
             key={f.key}
@@ -238,10 +238,10 @@ function DefineSections(props: DefineModeProps) {
             onSetChecked={(v) => setChecked('field', f.key, null, v)}
           />
         ))}
-      </section>
+      </details>
 
-      <section className="perm-section">
-        <h3>Pages & Widgets</h3>
+      <details className="perm-section">
+        <summary>Pages & Widgets</summary>
         {VIEWS.map(v => (
           <div key={v}>
             <Item
@@ -310,7 +310,7 @@ function DefineSections(props: DefineModeProps) {
             })}
           </div>
         )}
-      </section>
+      </details>
     </div>
   )
 }
@@ -330,8 +330,8 @@ function OverrideSections(props: OverrideModeProps) {
 
   return (
     <div className="perm-sections">
-      <section className="perm-section">
-        <h3>Companies & Agents</h3>
+      <details className="perm-section">
+        <summary>Companies & Agents</summary>
         <div className="perm-grid">
           {COMPANIES.map(c => (
             <Item
@@ -371,10 +371,10 @@ function OverrideSections(props: OverrideModeProps) {
             ))}
           </select>
         </div>
-      </section>
+      </details>
 
-      <section className="perm-section">
-        <h3>Data Fields</h3>
+      <details className="perm-section">
+        <summary>Data Fields</summary>
         {FIELDS.map(f => (
           <Item
             key={f.key}
@@ -390,10 +390,10 @@ function OverrideSections(props: OverrideModeProps) {
             onToggle={(v) => props.onToggle('field', f.key, null, v)}
           />
         ))}
-      </section>
+      </details>
 
-      <section className="perm-section">
-        <h3>Pages & Widgets</h3>
+      <details className="perm-section">
+        <summary>Pages & Widgets</summary>
         {VIEWS.map(v => (
           <div key={v}>
             <Item
@@ -462,7 +462,7 @@ function OverrideSections(props: OverrideModeProps) {
             })}
           </div>
         )}
-      </section>
+      </details>
     </div>
   )
 }

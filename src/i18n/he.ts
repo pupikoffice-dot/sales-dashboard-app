@@ -139,6 +139,7 @@ export const messages: Record<keyof typeof en, string> = {
   'nav.adminUsers': 'ניהול — משתמשים',
   'nav.adminClasses': 'ניהול — תפקידים',
   'nav.adminModules': 'ניהול — מודולים',
+  'nav.adminDataHealth': 'ניהול — תקינות נתונים',
 
   'header.title': 'לוח מכירות',
   'header.versionLabel': 'גרסת אפליקציה {version}',
@@ -190,6 +191,7 @@ export const messages: Record<keyof typeof en, string> = {
   'filters.selectItems': 'בחר פריטים',
   'filters.loadingItems': 'טוען פריטים…',
   'filters.searchItems': 'חפש פריטים…',
+  'filters.searchSku': 'מק״ט מתחיל ב… (GRP, FNK)',
   'filters.searchClients': 'חפש לקוחות…',
   'filters.listTotal': 'סה״כ',
   'filters.showPerItem': 'הצג לפי פריט',

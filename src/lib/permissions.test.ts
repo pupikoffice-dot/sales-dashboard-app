@@ -28,6 +28,7 @@ function access(over: Partial<DashboardAccess> = {}): DashboardAccess {
     active: true,
     showItemCost: false,
     showClientProfit: false,
+    hiddenSidebar: [],
     oversiteModules: [],
     ...over,
   }

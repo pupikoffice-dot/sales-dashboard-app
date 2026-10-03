@@ -1,23 +1,29 @@
 # HANDOFF — sales-dashboard-app
 
 ## Current State
-_Last updated: 2026-09-25 14:17:36 by Cursor_
+_Last updated: 2026-09-30 18:23:19 by Cursor_
 
 **Status:** Active  
-**Phase:** v2.7 live on production (Omega); beta work line is now 2.8
+**Phase:** v2.8 live on production (Omega); beta work line is 2.9 (sidebar and user-editor work, not promoted)
 
-- Works now: Production (Omega) at sales-dashboard-app-omega.vercel.app — version **2.7** (promote commit **90c7d65**; DB active_version 2.7)
-- Works now: Beta at pupik-sales-dashboard-beta.vercel.app — **2.8 · beta**, aliased to commit **69860c1** (same features as production plus the version bump)
+- Works now: Production (Omega) at sales-dashboard-app-omega.vercel.app — version **2.8** (promote commit **a82898b**; DB active_version 2.8)
+- Works now: Beta at pupik-sales-dashboard-beta.vercel.app — **2.9 · beta**, aliased to the latest sidebar editor deploy (commit **b766515**)
 - Works now: **Operations** sidebar section with **Deliveries** page (opt-in module, per user in Admin → Users) — per company (Pupik, then Monkeytime, never combined) a yearly cartons chart and a yearly pallets chart for the last 12 months, each with total, average per month (dashed line) and linear trend line with monthly slope
-- Works now: rep893 delivery logistics data (cartons and pallets per delivery line) loaded from the office data share by the hourly sync, plus a narrow refresh option; access scoped by the user's companies and agents
+- Works now: Deliveries **client / agent boxes** — under each company, add a box for any client or agent (searchable picker listing all of them, most cartons first, with a count); each box shows the same two yearly charts for that client or agent; boxes are saved per user account (same on every device), removable, hidden add/remove while previewing another user
+- Works now: rep893 delivery logistics data (cartons and pallets per delivery line, now including agent names) loaded from the office data share by the hourly sync, plus a narrow refresh option; access scoped by the user's companies and agents
 - Works now: **Delivery notes (720)** opt-in per user — Admin Oversight checkboxes **Sales MTD** + **Delivery notes**; shared gate requires both; applies to every user, not specific logins
 - Works now: Classic Oversight and Sales Manager / Sales Agent suite — stacked Sales MTD bar stays inline; a button with the delivery total opens a popup listing every MTD delivery note document (newest first); tapping a document shows its lines with a back button
 - Works now: Popup is a bottom sheet on phones (full width, safe-area padding, larger close button, Lines column hidden on narrow screens); closes via ✕, tapping outside, or Esc
 - Works now: Stock page, classic company filter, Gold WMS from Pupik, Arrange, suites, year graph, intercompany
+- Works now: **Arrange** limited to super admin and users with the admin role (kadima roy super admin; Avishai and roypupik admin); Dudi changed to manager, so he no longer sees Arrange (user confirmed fixed); dashboard data unaffected since it follows dashboard permissions, not role
+- Works now: Select Items sorted A–Z by SKU, with a SKU prefix box that drops non-matches
+- Works now: Sidebar text filters clear checks on the first keystroke, keep the matches when the box is erased, and add the next search on top
+- Works now: Per-user **Hide in sidebar** (admin and super admin) — Navigation buttons (Oversight through Export), Deliveries, and the filter buttons; a check hides the button and leaves the module itself
+- Works now: User editor is a closed dropdown per group, including the hide groups and the class permission groups
 - Works now: Legacy backup unchanged on `legacy` branch
 - In progress: Nothing in progress
-- Blocked: GitHub promote workflow still needs Supabase repo secrets (Action fails on each promote; steps done by hand); rep891gold sync remains ops outside this repo
-- Next up: New 2.8 work on beta (more Operations features); tick Deliveries for the users who should see it; optional delivery in suite Vs mode and company filter on suite
+- Blocked: Dashboard sales data is stuck on 29 Sep (Monkeytime sales on 28 Sep). Hourly sync is succeeding, but Pupik and Monkeytime reports are still loaded from Drive, and those copies were last updated yesterday evening. Today's files are already on the office data share. Only Goldbug sales is read from that share. GitHub promote workflow still needs Supabase repo secrets (Action fails on each promote; steps done by hand)
+- Next up: Point the Pupik and Monkeytime sync at the office share the same way Goldbug already works, then run a refresh so 30 Sep shows up. Continue 2.9 work on beta; promote only when asked
 
 ### CORE RULES (suite)
 
@@ -29,7 +35,7 @@ _Last updated: 2026-09-25 14:17:36 by Cursor_
 
 | Concept | Meaning | Today |
 |--------|---------|--------|
-| **Version** | Product release line (`1.0`, `2.0`, `2.1`…) | Production live = **2.7** (DB). Beta work line = **2.8** |
+| **Version** | Product release line (`1.0`, `2.0`, `2.1`…) | Production live = **2.8** (DB). Beta work line = **2.9** |
 | **Channel** | Where you iterate: production (stable) vs **beta** (next work) | `main` / prod URL vs `beta` / `pupik-sales-dashboard-beta.vercel.app` |
 
 - **Beta** = working iteration of the next (or in-progress) version. Title: `{productVersion} · beta`.
@@ -50,6 +56,74 @@ Phase 1 hides Cost, Total Cost, Price, and cost-based charts in the UI only. The
 ---
 
 ## Session Log
+
+### 2026-09-30 18:23:19 — Cursor
+**Done:**
+- Checked why the dashboard is not updating: the hourly sync is healthy (last run 18:00, finished 18:12, no error) and the database has no sales dated 30 Sep
+- Pupik sales and orders stop on 29 Sep; Monkeytime sales stop on 28 Sep
+- Drive copies of those reports were last changed yesterday evening; the office data share already has today's files (updated about 17:30–18:10)
+- Goldbug is the only sales file the sync reads from the office share, so the rest of the dashboard never sees today's export
+
+**Decisions:**
+- No code change yet — user asked for the cause only
+- Fix, when asked, is to load Pupik and Monkeytime from the office share the same way Goldbug already is, then refresh
+
+**Next:**
+- Point Pupik and Monkeytime sync at the office share and run a refresh
+
+---
+
+### 2026-09-30 10:54:01 — Cursor
+**Done:**
+- Select Items: SKU prefix box that drops non-matches, and the item list sorted A–Z by SKU
+- Sidebar text filters: the first keystroke clears checks, matches stay when the box is erased, and the next search adds to them
+- Per-user Hide in sidebar for admin and super admin, now including the navigation buttons and Deliveries as well as the filter buttons
+- User editor collapsed into a closed dropdown per group, including the hide groups and the class permission groups
+- Shipped on beta only; beta URL pointed at the new deploy
+
+**Decisions:**
+- Hiding a sidebar button does not remove the module; the page stays available if the user still has it
+- Editor groups start closed so the user screen is not one long form
+- Stays on beta until an explicit promote
+
+**Next:**
+- Continue 2.9 work on beta
+
+---
+
+### 2026-09-29 18:50:58 — Cursor
+**Done:**
+- Investigated Arrange showing for Dudi on Omega: the Arrange rule was already correct (super admin or admin role); Dudi's account simply had the admin role
+- Changed Dudi's role from admin to manager; verified his dashboard modules and companies are unchanged and that the database now refuses his layout edits
+- User confirmed Arrange is gone for Dudi
+
+**Decisions:**
+- Fixed by changing Dudi's role rather than the code — user chose to keep Avishai and roypupik as admins
+- No code change or deploy needed; roles live in the database, so the fix applies to Omega and beta alike
+
+**Next:**
+- Optional: show each user's role on the Admin → Users page so admin roles are visible; continue 2.9 work on beta
+
+---
+
+### 2026-09-27 09:45:48 — Cursor
+**Done:**
+- Deliveries: added client / agent chart boxes under each company, each with the same yearly cartons and pallets charts (total, average, trend)
+- Searchable picker for clients or agents with deliveries in the last 12 months; lists all of them (no cap), most cartons first, with a count
+- Boxes saved per user account in a new table that only the owner can read or change; filtered monthly deliveries and a picker list added to the database, both within the user's access
+- Sync now stores agent names from the rep893 reports; data reloaded
+- Promoted beta v2.8 to Omega: merged beta into main, production deploy ready, set live version to 2.8
+- Bumped beta work line to 2.9 and re-pointed the beta URL
+
+**Decisions:**
+- Boxes saved to the account, placed inside their company, same charts as the company box — recommended defaults applied when the question got no answer
+- Add/remove hidden while previewing another user, since preview is read-only
+- Picker shows every client instead of a top-12 list, per user request
+
+**Next:**
+- Tick Deliveries for the users who should see it; continue 2.9 work on beta
+
+---
 
 ### 2026-09-25 14:17:36 — Cursor
 **Done:**

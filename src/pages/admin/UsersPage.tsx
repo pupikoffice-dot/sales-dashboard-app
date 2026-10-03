@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useLocale } from '../../context/LocaleContext'
+import { useAuth } from '../../context/AuthContext'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
-import { usePreview } from '../../context/PreviewContext'
+import { useLocale } from '../../context/LocaleContext'
 import { supabase } from '../../lib/supabase'
 import { callUserManagement } from '../../lib/userManagement'
 import { displayLoginId, isEmailLogin, isInternalAuthEmail } from '../../lib/loginIdentifier'
@@ -22,6 +22,7 @@ import {
 } from '../../lib/oversightLayoutsApi'
 import { SUITE_MOUNTABLE_UI_MODULE_IDS } from '../../lib/suiteUiModules'
 import { OVERSIGHT_ALTERNATE_LAYOUT_IDS } from '../../lib/oversightLayouts'
+import { SIDEBAR_HIDE_GROUPS } from '../../lib/sidebarHide'
 
 interface UserRow {
   id: string
@@ -45,6 +46,7 @@ interface AccessRow {
   active: boolean
   show_item_cost?: boolean
   show_client_profit?: boolean
+  hidden_sidebar?: string[] | null
   oversite_modules?: string[] | null
 }
 
@@ -64,7 +66,7 @@ function formatAgents(agents: string[] | null | undefined, role: string) {
 
 export function UsersPage() {
   const qc = useQueryClient()
-  const { isPreviewing, previewUser } = usePreview()
+  const { isSuperAdmin } = useAuth()
   const { refresh: refreshAccess } = useDashboardAccess()
   const [showCreate, setShowCreate] = useState(false)
   const [newLogin, setNewLogin] = useState('')
@@ -78,32 +80,29 @@ export function UsersPage() {
   const [pwdEditValue, setPwdEditValue] = useState('')
 
   const { data, isLoading, error: loadError } = useQuery({
-    queryKey: ['admin-users'],
+    queryKey: ['admin-users', isSuperAdmin],
     queryFn: async () => {
+      const profileColumns = isSuperAdmin
+        ? 'id,email,username,name,role,active,password_display,agent_erp_id,parent_id'
+        : 'id,email,username,name,role,active,agent_erp_id,parent_id'
       const [profilesRes, accessRes, classRes] = await Promise.all([
-        supabase
-          .from('user_profiles')
-          .select('id,email,username,name,role,active,password_display,agent_erp_id,parent_id')
-          .order('name'),
-        supabase
-          .from('dashboard_user_access')
-          .select('user_id, companies, agents, locale'),
-        supabase
-          .from('app_user_class')
-          .select('user_id, class_id, app_class(label)'),
+        supabase.from('user_profiles').select(profileColumns).order('name'),
+        supabase.from('dashboard_user_access').select('user_id, companies, agents, locale'),
+        supabase.from('app_user_class').select('user_id, class_id, app_class(label)'),
       ])
       if (profilesRes.error) throw profilesRes.error
       if (accessRes.error) throw accessRes.error
-      if (classRes.error) throw classRes.error
       const accessMap = new Map(
         (accessRes.data ?? []).map(row => [row.user_id as string, row as AccessRow]),
       )
       const classLabelByUser = new Map<string, string>()
-      for (const row of classRes.data ?? []) {
-        const label = (row as { app_class?: { label?: string } | null }).app_class?.label
-        if (label) classLabelByUser.set(row.user_id as string, label)
+      if (!classRes.error) {
+        for (const row of classRes.data ?? []) {
+          const label = (row as { app_class?: { label?: string } | null }).app_class?.label
+          if (label) classLabelByUser.set(row.user_id as string, label)
+        }
       }
-      return { users: (profilesRes.data ?? []) as UserRow[], accessMap, classLabelByUser }
+      return { users: (profilesRes.data ?? []) as unknown as UserRow[], accessMap, classLabelByUser }
     },
   })
 
@@ -176,6 +175,7 @@ export function UsersPage() {
           <p className="ov-sub">Add users, set passwords, org hierarchy (ERP agent + manager), and access.</p>
         </div>
         <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+          {isSuperAdmin && (
           <button
             type="button"
             className="sbar-minimize-btn"
@@ -187,6 +187,8 @@ export function UsersPage() {
           >
             {showAllPasswords ? 'Hide all passwords' : 'Show all passwords'}
           </button>
+          )}
+          {isSuperAdmin && (
           <button
             type="button"
             className="ov-toggle-btn"
@@ -195,6 +197,7 @@ export function UsersPage() {
           >
             + Add user
           </button>
+          )}
         </div>
       </div>
 
@@ -274,7 +277,7 @@ export function UsersPage() {
               <th>Reports to</th>
               <th>Companies</th>
               <th>Agents</th>
-              <th>Password</th>
+              {isSuperAdmin && <th>Password</th>}
               <th></th>
             </tr>
           </thead>
@@ -312,6 +315,7 @@ export function UsersPage() {
                 <td style={{ fontSize: '.78rem' }}>
                   {formatAgents(access?.agents, u.role)}
                 </td>
+                {isSuperAdmin && (
                 <td>
                   {pwdEditId === u.id ? (
                     <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
@@ -370,6 +374,7 @@ export function UsersPage() {
                     </div>
                   )}
                 </td>
+                )}
                 <td style={{ whiteSpace: 'nowrap' }}>
                   <button
                     type="button"
@@ -379,7 +384,7 @@ export function UsersPage() {
                   >
                     Edit access
                   </button>
-                  {u.role !== 'super_admin' && (
+                  {isSuperAdmin && u.role !== 'super_admin' && (
                     <button
                       type="button"
                       className="sbar-minimize-btn"
@@ -418,13 +423,23 @@ export function UsersPage() {
             // If we're previewing the user whose access just changed, reload it
             // so the live preview reflects the new settings immediately (no
             // dashboard-data refetch needed — all narrowing is client-side).
-            if (isPreviewing && previewUser?.id === savedUserId) {
-              refreshAccess()
-            }
+            refreshAccess()
           }}
         />
       )}
     </div>
+  )
+}
+
+function EditorGroup({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
+  return (
+    <details className="admin-form-group">
+      <summary>{title}</summary>
+      <div className="admin-form-group-body">
+        {hint ? <p className="ov-sub admin-form-hint">{hint}</p> : null}
+        {children}
+      </div>
+    </details>
   )
 }
 
@@ -450,6 +465,7 @@ function EditAccessModal({
   const [locale, setLocale] = useState<AppLocale>('en')
   const [showItemCost, setShowItemCost] = useState(false)
   const [showClientProfit, setShowClientProfit] = useState(false)
+  const [hiddenSidebar, setHiddenSidebar] = useState<string[]>([])
   const [agentErpId, setAgentErpId] = useState('')
   const [parentId, setParentId] = useState('')
   const [linkedUserId, setLinkedUserId] = useState('')
@@ -491,10 +507,12 @@ function EditAccessModal({
           setLocale(row.locale === 'he' ? 'he' : 'en')
           setShowItemCost(row.show_item_cost === true)
           setShowClientProfit(row.show_client_profit === true)
+          setHiddenSidebar(Array.isArray(row.hidden_sidebar) ? row.hidden_sidebar : [])
         } else {
           setModules(['oversite'])
           setOversiteModules(OVERSITE_MODULE_REGISTRY.map(m => m.id))
           setCompanies(['pupik'])
+          setHiddenSidebar([])
         }
       })
     fetchUserBiGrants(userId)
@@ -574,6 +592,7 @@ function EditAccessModal({
       active: true,
       show_item_cost: showItemCost,
       show_client_profit: showClientProfit,
+      hidden_sidebar: hiddenSidebar,
       updated_at: new Date().toISOString(),
     })
     if (err) {
@@ -609,11 +628,10 @@ function EditAccessModal({
             {error && <p className="status-msg error" style={{ margin: 0 }}>{error}</p>}
 
             {profile?.role !== 'super_admin' && (
-              <div>
-                <div className="admin-form-section-title">Org hierarchy (Phase 2.5)</div>
-                <p className="ov-sub" style={{ margin: '0 0 8px', fontSize: '.72rem' }}>
-                  ERP agent ID links this login to sales rows. Reports-to builds the manager subtree. Permission Class is set below (not a separate Role field).
-                </p>
+              <EditorGroup
+                title="Org hierarchy"
+                hint="ERP agent ID links this login to sales rows. Reports-to builds the manager subtree. Permission Class is set below."
+              >
                 <label>
                   ERP agent ID
                   <input
@@ -638,17 +656,13 @@ function EditAccessModal({
                     ))}
                   </select>
                 </label>
-              </div>
+              </EditorGroup>
             )}
 
-            <div>
-              <div className="admin-form-section-title">Intercompany link</div>
-              <p className="ov-sub" style={{ margin: '0 0 8px', fontSize: '.72rem' }}>
-                For one person who holds two agent identities in two companies (e.g. agent 25 in
-                Pupik and agent 57 in Monkeytime). Both logins get a switch in the top bar. The two
-                access configs stay separate and only one is ever active, so neither company sees
-                the other's data.
-              </p>
+            <EditorGroup
+              title="Intercompany link"
+              hint="For one person who holds two agent identities in two companies. Both logins get a switch in the top bar. Only one identity is active at a time."
+            >
               <label>
                 Linked account
                 <select
@@ -665,10 +679,9 @@ function EditAccessModal({
                   ))}
                 </select>
               </label>
-            </div>
+            </EditorGroup>
 
-            <div>
-              <div className="admin-form-section-title">Modules</div>
+            <EditorGroup title="Modules">
               <div className="admin-form-checklist">
                 {MODULE_REGISTRY.map(m => (
                   <label key={m.id} className="admin-form-check">
@@ -677,14 +690,13 @@ function EditAccessModal({
                   </label>
                 ))}
               </div>
-            </div>
+            </EditorGroup>
 
             {modules.includes('oversite') && (
-              <div>
-                <div className="admin-form-section-title">Oversight Modules</div>
-                <p className="ov-sub" style={{ margin: '0 0 6px', fontSize: '.72rem' }}>
-                  Which sections this user sees inside Oversight. Unchecked sections are hidden entirely.
-                </p>
+              <EditorGroup
+                title="Oversight Modules"
+                hint="Which sections this user sees inside Oversight. Unchecked sections are hidden entirely."
+              >
                 <div className="admin-form-checklist">
                   {OVERSITE_MODULE_REGISTRY.map(m => (
                     <label key={m.id} className="admin-form-check">
@@ -697,14 +709,10 @@ function EditAccessModal({
                     </label>
                   ))}
                 </div>
-              </div>
+              </EditorGroup>
             )}
 
-            <div>
-              <div className="admin-form-section-title">{t('admin.oversightLayouts')}</div>
-              <p className="ov-sub" style={{ margin: '0 0 6px', fontSize: '.72rem' }}>
-                {t('admin.oversightLayoutsHint')}
-              </p>
+            <EditorGroup title={t('admin.oversightLayouts')} hint={t('admin.oversightLayoutsHint')}>
               <div className="admin-form-checklist">
                 {activeOversightLayouts.map(m => (
                   <label key={m.id} className="admin-form-check">
@@ -717,13 +725,9 @@ function EditAccessModal({
                   </label>
                 ))}
               </div>
-            </div>
+            </EditorGroup>
 
-            <div>
-              <div className="admin-form-section-title">{t('admin.biModules')}</div>
-              <p className="ov-sub" style={{ margin: '0 0 6px', fontSize: '.72rem' }}>
-                {t('admin.biModulesHint')}
-              </p>
+            <EditorGroup title={t('admin.biModules')} hint={t('admin.biModulesHint')}>
               <div className="admin-form-checklist">
                 {activeBiModules.map(m => (
                   <label key={m.id} className="admin-form-check">
@@ -736,13 +740,9 @@ function EditAccessModal({
                   </label>
                 ))}
               </div>
-            </div>
+            </EditorGroup>
 
-            <div>
-              <div className="admin-form-section-title">{t('admin.suiteUiModules')}</div>
-              <p className="ov-sub" style={{ margin: '0 0 6px', fontSize: '.72rem' }}>
-                {t('admin.suiteUiModulesHint')}
-              </p>
+            <EditorGroup title={t('admin.suiteUiModules')} hint={t('admin.suiteUiModulesHint')}>
               <div className="admin-form-checklist">
                 {activeSuiteUiModules.map(m => (
                   <label key={m.id} className="admin-form-check">
@@ -755,10 +755,35 @@ function EditAccessModal({
                   </label>
                 ))}
               </div>
-            </div>
+            </EditorGroup>
 
-            <div>
-              <div className="admin-form-section-title">Companies</div>
+            <EditorGroup
+              title="Hide in sidebar"
+              hint="Checked buttons are hidden for this user. Open Navigation for Oversight, Sales, Orders, and the rest of the menu."
+            >
+              {SIDEBAR_HIDE_GROUPS.map(group => (
+                <EditorGroup key={group.title} title={group.title}>
+                  <div className="admin-form-checklist">
+                    {group.options.map(opt => (
+                      <label key={opt.id} className="admin-form-check">
+                        <input
+                          type="checkbox"
+                          checked={hiddenSidebar.includes(opt.id)}
+                          onChange={() =>
+                            setHiddenSidebar(prev =>
+                              prev.includes(opt.id) ? prev.filter(id => id !== opt.id) : [...prev, opt.id],
+                            )
+                          }
+                        />
+                        {opt.label}
+                      </label>
+                    ))}
+                  </div>
+                </EditorGroup>
+              ))}
+            </EditorGroup>
+
+            <EditorGroup title="Companies">
               <div className="admin-form-checkrow">
                 {COMPANIES.map(c => (
                   <label key={c} className="admin-form-check capitalize">
@@ -767,10 +792,9 @@ function EditAccessModal({
                   </label>
                 ))}
               </div>
-            </div>
+            </EditorGroup>
 
-            <div>
-              <div className="admin-form-section-title">{t('admin.itemsParameters')}</div>
+            <EditorGroup title={t('admin.itemsParameters')}>
               <label className="admin-form-check">
                 <input
                   type="checkbox"
@@ -779,10 +803,9 @@ function EditAccessModal({
                 />
                 {t('admin.showItemCost')}
               </label>
-            </div>
+            </EditorGroup>
 
-            <div>
-              <div className="admin-form-section-title">{t('admin.clientsParameters')}</div>
+            <EditorGroup title={t('admin.clientsParameters')}>
               <label className="admin-form-check">
                 <input
                   type="checkbox"
@@ -791,47 +814,46 @@ function EditAccessModal({
                 />
                 {t('admin.showClientProfit')}
               </label>
-            </div>
+            </EditorGroup>
 
-            <label>
-              Agents (comma-separated, empty = all)
-              <input
-                className="sbar-search block-input"
-                value={agentsText}
-                onChange={e => setAgentsText(e.target.value)}
-                placeholder="24, 25, 27"
-              />
-            </label>
-
-            <div>
-              <div className="admin-form-section-title">Class &amp; permission overrides</div>
+            <EditorGroup title="Class & permission overrides">
               <UserPermissionsEditor userId={userId} />
-            </div>
+            </EditorGroup>
 
-            <label>
-              Default module
-              <select
-                className="block-input"
-                value={defaultModule}
-                onChange={e => setDefaultModule(e.target.value as DashboardModuleId)}
-              >
-                {MODULE_REGISTRY.map(m => (
-                  <option key={m.id} value={m.id}>{m.label}</option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              Language
-              <select
-                className="block-input"
-                value={locale}
-                onChange={e => setLocale(e.target.value as AppLocale)}
-              >
-                <option value="en">English</option>
-                <option value="he">עברית (Hebrew)</option>
-              </select>
-            </label>
+            <EditorGroup title="General">
+              <label>
+                Agents (comma-separated, empty = all)
+                <input
+                  className="sbar-search block-input"
+                  value={agentsText}
+                  onChange={e => setAgentsText(e.target.value)}
+                  placeholder="24, 25, 27"
+                />
+              </label>
+              <label>
+                Default module
+                <select
+                  className="block-input"
+                  value={defaultModule}
+                  onChange={e => setDefaultModule(e.target.value as DashboardModuleId)}
+                >
+                  {MODULE_REGISTRY.map(m => (
+                    <option key={m.id} value={m.id}>{m.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Language
+                <select
+                  className="block-input"
+                  value={locale}
+                  onChange={e => setLocale(e.target.value as AppLocale)}
+                >
+                  <option value="en">English</option>
+                  <option value="he">עברית (Hebrew)</option>
+                </select>
+              </label>
+            </EditorGroup>
 
             <div className="admin-form-actions">
               <button type="button" className="sbar-minimize-btn" onClick={onClose}>

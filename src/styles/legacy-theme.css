@@ -2368,6 +2368,50 @@ body.preview-mode .dashboard-shell {
   margin-bottom: 6px;
 }
 
+.admin-form-group {
+  border: 1px solid var(--bdr);
+  border-radius: 10px;
+  background: var(--panel-bg);
+}
+
+.admin-form-group > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 10px 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--txt);
+}
+
+.admin-form-group > summary::-webkit-details-marker {
+  display: none;
+}
+
+.admin-form-group > summary::before {
+  content: '▸  ';
+  color: var(--muted);
+}
+
+.admin-form-group[open] > summary::before {
+  content: '▾  ';
+}
+
+.admin-form-group-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+
+.admin-form-hint {
+  margin: 0;
+  font-size: 0.72rem;
+}
+
+.admin-form-group .admin-form-group {
+  background: transparent;
+}
+
 .admin-form label {
   display: block;
   font-size: 0.78rem;
@@ -3907,16 +3951,39 @@ html[dir='rtl'] .hdr-brand,
   background: var(--panel-bg);
   border: 1px solid var(--bdr);
   border-radius: var(--r);
-  padding: 14px;
+  padding: 0;
 }
 
-.perm-section h3 {
+.perm-section[open] {
+  padding: 0 14px 14px;
+}
+
+.perm-section > summary {
+  cursor: pointer;
+  list-style: none;
   font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 1.4px;
   text-transform: uppercase;
   color: var(--muted);
-  margin: 0 0 10px;
+  margin: 0;
+  padding: 14px;
+}
+
+.perm-section[open] > summary {
+  margin: 0 -14px 10px;
+}
+
+.perm-section > summary::-webkit-details-marker {
+  display: none;
+}
+
+.perm-section > summary::before {
+  content: '▸  ';
+}
+
+.perm-section[open] > summary::before {
+  content: '▾  ';
 }
 
 .perm-grid {
