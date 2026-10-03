@@ -4,6 +4,8 @@ export type Rule = {
   file_name: string; company: string | null; file_group: string; fix_hint: string; impact: string
   rule_kind: 'age' | 'nightly' | 'frozen'; max_age_hours: number | null
   eval_from: string | null; eval_to: string | null; active: boolean
+  /** false = skip the rows-dropped check (row count varies by design, e.g. 891 month-scoped files) */
+  rows_check?: boolean
 }
 export type Latest = {
   file_name: string; observed_at: string; modified_at: string | null
@@ -85,7 +87,7 @@ export function evaluate({ rules, latest, syncLogs, now, ignoreCalendar = false 
       out.push({ ...base, ...common, status,
         reason: status === 'green' ? `${fmtAge(age)} old` : `${r.file_name} is ${fmtAge(age)} old (limit ${fmtAge(limit)})` })
     }
-    if (r.rule_kind !== 'frozen' && l.processed && l.rows_loaded !== null) {
+    if (r.rule_kind !== 'frozen' && r.rows_check !== false && l.processed && l.rows_loaded !== null) {
       const hist = l.history ?? []
       const sorted = [...hist].sort((a, b) => a - b)
       const median = sorted.length ? sorted[Math.floor(sorted.length / 2)] : 0
