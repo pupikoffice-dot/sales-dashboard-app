@@ -7,7 +7,10 @@ import { evaluate, localParts, type Rule, type Latest, type SyncLog, type Status
 import { planIncidents, type OpenIncident } from './incidents.ts'
 import { alertEmail, resolvedEmail, summaryEmail, type Email } from './emails.ts'
 
-const PAGE_URL = Deno.env.get('DATA_HEALTH_PAGE_URL') ?? 'https://pupik-sales-dashboard-beta.vercel.app/admin/data-health'
+// Email links: production (OMEGA) project -> production site, otherwise the beta site. DATA_HEALTH_PAGE_URL overrides.
+const IS_OMEGA = (Deno.env.get('SUPABASE_URL') ?? '').includes('hzgpkkbqhmtwqhkcntcc')
+const PAGE_URL = Deno.env.get('DATA_HEALTH_PAGE_URL')
+  ?? (IS_OMEGA ? 'https://sales-dashboard-app-omega.vercel.app/admin/data-health' : 'https://pupik-sales-dashboard-beta.vercel.app/admin/data-health')
 
 const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { 'Content-Type': 'application/json' } })
