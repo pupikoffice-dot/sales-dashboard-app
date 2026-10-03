@@ -15,7 +15,8 @@ export type Status = {
   check_key: string; file_name: string | null; file_group: string; company: string | null
   status: Colour; reason: string; modified_at: string | null; age_hours: number | null; rows_loaded: number | null
 }
-export type EvalInput = { rules: Rule[]; latest: Latest[]; syncLogs: SyncLog[]; now: Date }
+/** ignoreCalendar: test switch (data_health_settings.ignore_calendar) - skip the Saturday, hours and rule-window gates. */
+export type EvalInput = { rules: Rule[]; latest: Latest[]; syncLogs: SyncLog[]; now: Date; ignoreCalendar?: boolean }
 
 const TZ = 'Asia/Jerusalem'
 const DAY_FROM = 7 * 60, DAY_TO = 22 * 60          // checker active window (local)
@@ -49,19 +50,19 @@ export function effectiveAgeHours(from: Date, to: Date): number {
 
 export const fmtAge = (h: number) => (h < 48 ? `${Math.round(h)} h` : `${Math.round(h / 24)} days`)
 
-export function evaluate({ rules, latest, syncLogs, now }: EvalInput): { statuses: Status[]; unruled: string[] } {
+export function evaluate({ rules, latest, syncLogs, now, ignoreCalendar = false }: EvalInput): { statuses: Status[]; unruled: string[] } {
   const local = localParts(now)
   const ruled = new Set(rules.map(r => r.file_name.toLowerCase()))
   const unruled = latest.filter(l => l.processed && !ruled.has(l.file_name.toLowerCase())).map(l => l.file_name).sort()
-  if (local.weekday === 'Sat' || local.minutes < DAY_FROM || local.minutes > DAY_TO) return { statuses: [], unruled }
+  if (!ignoreCalendar && (local.weekday === 'Sat' || local.minutes < DAY_FROM || local.minutes > DAY_TO)) return { statuses: [], unruled }
 
   const byFile = new Map(latest.map(l => [l.file_name.toLowerCase(), l]))
   const out: Status[] = []
 
   for (const r of rules) {
     if (!r.active) continue
-    if (r.eval_from && local.minutes < toMin(r.eval_from)) continue
-    if (r.eval_to && local.minutes > toMin(r.eval_to)) continue
+    if (!ignoreCalendar && r.eval_from && local.minutes < toMin(r.eval_from)) continue
+    if (!ignoreCalendar && r.eval_to && local.minutes > toMin(r.eval_to)) continue
     const l = byFile.get(r.file_name.toLowerCase())
     const base = { check_key: r.file_name, file_name: r.file_name, file_group: r.file_group, company: r.company }
     if (!l || !l.modified_at) {
@@ -96,7 +97,7 @@ export function evaluate({ rules, latest, syncLogs, now }: EvalInput): { statuse
     }
   }
 
-  if (local.minutes >= SYNC_FROM) {
+  if (ignoreCalendar || local.minutes >= SYNC_FROM) {
     const sorted = [...syncLogs].sort((a, b) => b.started_at.localeCompare(a.started_at))
     const lastOk = sorted.find(s => s.status === 'success')
     const okAge = lastOk ? (now.getTime() - new Date(lastOk.started_at).getTime()) / H : Infinity

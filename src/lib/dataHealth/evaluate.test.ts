@@ -40,6 +40,11 @@ describe('evaluate', () => {
     expect(evaluate({ rules: [rule({})], latest: [obs({})], syncLogs: okSync, now: at('2026-10-03T09:00:00Z') }).statuses).toEqual([])
     expect(evaluate({ rules: [rule({})], latest: [obs({})], syncLogs: okSync, now: at('2026-10-04T20:00:00Z') }).statuses).toEqual([])
   })
+  it('ignoreCalendar (test switch) evaluates on Saturday and outside rule windows', () => {
+    const now = at('2026-10-03T09:00:00Z') // Saturday 12:00
+    const res = evaluate({ rules: [rule({ eval_from: '13:00', eval_to: '14:00' })], latest: [obs({ modified_at: '2026-10-03T08:30:00Z' })], syncLogs: okSync, now, ignoreCalendar: true })
+    expect(byKey(res)['x.xls'].status).toBe('green')
+  })
   it('age rule: green, amber, red', () => {
     const now = at('2026-10-04T10:00:00Z') // Sun 13:00
     const r = (mod: string) => byKey(evaluate({ rules: [rule({})], latest: [obs({ modified_at: mod })], syncLogs: okSync, now }))['x.xls'].status

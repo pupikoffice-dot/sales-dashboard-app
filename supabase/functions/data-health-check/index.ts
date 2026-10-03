@@ -28,10 +28,12 @@ Deno.serve(async () => {
   const rules = rulesQ.data as Rule[]
   const settings = setQ.data as {
     recipients: string[]; from_address: string; summary_time: string; enabled: boolean; last_summary_date: string | null
+    ignore_calendar: boolean
   }
   const ruleByKey = new Map(rules.map(r => [r.file_name, r]))
+  const ignoreCalendar = settings.ignore_calendar === true // test switch, set only via SQL
 
-  const { statuses, unruled } = evaluate({ rules, latest: latestQ.data as Latest[], syncLogs: syncQ.data as SyncLog[], now })
+  const { statuses, unruled } = evaluate({ rules, latest: latestQ.data as Latest[], syncLogs: syncQ.data as SyncLog[], now, ignoreCalendar })
   if (statuses.length) {
     const up = await sb.from('source_file_status').upsert(statuses.map(s => ({ ...s, evaluated_at: now.toISOString() })))
     if (up.error) return json({ error: up.error.message }, 500)
@@ -73,7 +75,7 @@ Deno.serve(async () => {
   const local = localParts(now)
   const [sh, sm] = settings.summary_time.split(':').map(Number)
   let summarySent = false
-  if (local.weekday !== 'Sat' && local.minutes >= sh * 60 + sm && settings.last_summary_date !== local.date) {
+  if ((ignoreCalendar || local.weekday !== 'Sat') && local.minutes >= sh * 60 + sm && settings.last_summary_date !== local.date) {
     const all = await sb.from('source_file_status').select('*').order('file_group')
     const open = await sb.from('data_health_incidents').select('id', { count: 'exact', head: true }).is('closed_at', null)
     const label = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jerusalem', weekday: 'short', day: '2-digit', month: 'short' }).format(now)
