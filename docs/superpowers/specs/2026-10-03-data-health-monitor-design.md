@@ -57,7 +57,7 @@ Notes:
   rule are ignored.
 
 **Content check** (every file with a rule, except `frozen`): red if a run loaded **0 rows** where the previous
-successful run loaded > 0, or **< 50 %** of the median rows of its last 10 successful runs. (Would have caught the
+successful run loaded > 0, or **< 70 %** of the median rows of its last 10 successful runs. (Would have caught the
 `722mt` half load.)
 
 **Sync health:**
