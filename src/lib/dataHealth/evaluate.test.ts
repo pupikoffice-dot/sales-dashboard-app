@@ -81,6 +81,12 @@ describe('evaluate', () => {
     const ok = byKey(evaluate({ rules: [rule({})], latest: [obs({ rows_loaded: 38600, history: [38610, 38600, 38590] })], syncLogs: okSync, now }))['rows:x.xls']
     expect(zero.status).toBe('red'); expect(half.status).toBe('red'); expect(ok.status).toBe('green')
   })
+  it('rows check is skipped when the rule says so (891: two months daily, full year weekly)', () => {
+    const now = at('2026-10-04T10:00:00Z')
+    const res = byKey(evaluate({ rules: [rule({ rows_check: false })], latest: [obs({ rows_loaded: 5289, history: [35107, 35107, 35107] })], syncLogs: okSync, now }))
+    expect(res['rows:x.xls']).toBeUndefined()
+    expect(res['x.xls']).toBeDefined()
+  })
   it('sync health: no success in 2 h, stuck running, superseded running ignored', () => {
     const now = at('2026-10-04T10:00:00Z') // Sun 13:00
     const stale = byKey(evaluate({ rules: [], latest: [], syncLogs: [{ id: 'a', started_at: '2026-10-04T07:00:00Z', status: 'success' }], now }))
