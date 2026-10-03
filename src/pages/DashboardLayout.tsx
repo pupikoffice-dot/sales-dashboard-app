@@ -184,6 +184,15 @@ export function DashboardLayout() {
               {t('nav.adminModules')}
             </NavLink>
             )}
+            {isSuperAdmin && (
+            <NavLink
+              to="/admin/data-health"
+              onClick={() => setSidebarOpen(false)}
+              className={({ isActive }) => `nav-btn${isActive ? ' active' : ''}`}
+            >
+              {t('nav.adminDataHealth')}
+            </NavLink>
+            )}
           </>
         )}
       </nav>

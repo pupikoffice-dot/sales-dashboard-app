@@ -137,6 +137,7 @@ export const messages = {
   'nav.adminUsers': 'Admin — Users',
   'nav.adminClasses': 'Admin — Classes',
   'nav.adminModules': 'Admin — Modules',
+  'nav.adminDataHealth': 'Admin — Data health',
 
   'header.title': 'Sales Dashboard',
   'header.versionLabel': 'App version {version}',

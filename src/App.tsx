@@ -16,6 +16,7 @@ import { DeliveriesPage } from './pages/operations/DeliveriesPage'
 import { UsersPage } from './pages/admin/UsersPage'
 import { ClassesPage } from './pages/admin/ClassesPage'
 import { ModulesPage } from './pages/admin/ModulesPage'
+import { DataHealthPage } from './pages/admin/DataHealthPage'
 
 function HomeRedirect() {
   const { access, loading } = useDashboardAccess()
@@ -50,6 +51,7 @@ function ProtectedApp() {
         {canManageUsers && <Route path="admin/users" element={<UsersPage />} />}
         {isSuperAdmin && <Route path="admin/classes" element={<ClassesPage />} />}
         {isSuperAdmin && <Route path="admin/modules" element={<ModulesPage />} />}
+        {isSuperAdmin && <Route path="admin/data-health" element={<DataHealthPage />} />}
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

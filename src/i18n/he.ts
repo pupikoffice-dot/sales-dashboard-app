@@ -139,6 +139,7 @@ export const messages: Record<keyof typeof en, string> = {
   'nav.adminUsers': 'ניהול — משתמשים',
   'nav.adminClasses': 'ניהול — תפקידים',
   'nav.adminModules': 'ניהול — מודולים',
+  'nav.adminDataHealth': 'ניהול — תקינות נתונים',
 
   'header.title': 'לוח מכירות',
   'header.versionLabel': 'גרסת אפליקציה {version}',
