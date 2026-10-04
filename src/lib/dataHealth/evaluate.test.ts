@@ -81,11 +81,16 @@ describe('evaluate', () => {
     const ok = byKey(evaluate({ rules: [rule({})], latest: [obs({ rows_loaded: 38600, history: [38610, 38600, 38590] })], syncLogs: okSync, now }))['rows:x.xls']
     expect(zero.status).toBe('red'); expect(half.status).toBe('red'); expect(ok.status).toBe('green')
   })
-  it('rows check is skipped when the rule says so (891: two months daily, full year weekly)', () => {
+  it('rows_check=false skips only the "usually N rows" drop check (891: two months daily, full year weekly)', () => {
     const now = at('2026-10-04T10:00:00Z')
-    const res = byKey(evaluate({ rules: [rule({ rows_check: false })], latest: [obs({ rows_loaded: 5289, history: [35107, 35107, 35107] })], syncLogs: okSync, now }))
-    expect(res['rows:x.xls']).toBeUndefined()
-    expect(res['x.xls']).toBeDefined()
+    const drop = byKey(evaluate({ rules: [rule({ rows_check: false })], latest: [obs({ rows_loaded: 5289, history: [35107, 35107, 35107] })], syncLogs: okSync, now }))
+    expect(drop['rows:x.xls'].status).toBe('green')
+    expect(drop['x.xls']).toBeDefined()
+  })
+  it('rows_check=false still alerts when a run loaded 0 rows after a non-zero run (file skipped by the sync)', () => {
+    const now = at('2026-10-04T10:00:00Z')
+    const res = byKey(evaluate({ rules: [rule({ rows_check: false })], latest: [obs({ rows_loaded: 0, history: [5289, 5289] })], syncLogs: okSync, now }))
+    expect(res['rows:x.xls'].status).toBe('red')
   })
   it('sync health: no success in 2 h, stuck running, superseded running ignored', () => {
     const now = at('2026-10-04T10:00:00Z') // Sun 13:00

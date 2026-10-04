@@ -87,13 +87,15 @@ export function evaluate({ rules, latest, syncLogs, now, ignoreCalendar = false 
       out.push({ ...base, ...common, status,
         reason: status === 'green' ? `${fmtAge(age)} old` : `${r.file_name} is ${fmtAge(age)} old (limit ${fmtAge(limit)})` })
     }
-    if (r.rule_kind !== 'frozen' && r.rows_check !== false && l.processed && l.rows_loaded !== null) {
+    if (r.rule_kind !== 'frozen' && l.processed && l.rows_loaded !== null) {
       const hist = l.history ?? []
       const sorted = [...hist].sort((a, b) => a - b)
       const median = sorted.length ? sorted[Math.floor(sorted.length / 2)] : 0
       let bad: string | null = null
-      if (l.rows_loaded === 0 && (hist[0] ?? 0) > 0) bad = `${r.file_name} loaded 0 rows (previous run ${hist[0]})`
-      else if (hist.length >= 3 && l.rows_loaded < 0.7 * median) bad = `${r.file_name} loaded ${l.rows_loaded} rows, usually ${median}`
+      // 0 rows after a non-zero run is always an alarm (the sync skips a file it cannot read safely);
+      // the proportional drop is skipped for files whose row count varies by design (rows_check=false).
+      if (l.rows_loaded === 0 && (hist[0] ?? 0) > 0) bad = `${r.file_name} loaded 0 rows (previous run ${hist[0]}) - file skipped or empty`
+      else if (r.rows_check !== false && hist.length >= 3 && l.rows_loaded < 0.7 * median) bad = `${r.file_name} loaded ${l.rows_loaded} rows, usually ${median}`
       out.push({ ...base, check_key: `rows:${r.file_name}`, status: bad ? 'red' : 'green', reason: bad ?? `${l.rows_loaded} rows`,
         modified_at: l.modified_at, age_hours: null, rows_loaded: l.rows_loaded })
     }
