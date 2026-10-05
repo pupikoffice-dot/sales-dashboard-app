@@ -40,6 +40,7 @@ export const SIDEBAR_HIDE_GROUPS: SidebarHideGroup[] = [
       { id: 'date.months', label: 'Date — Months' },
       { id: 'date.openorders', label: 'Date — Open orders' },
       { id: 'date.stock', label: 'Date — Stock' },
+      { id: 'date.items', label: 'Filter — Items index' },
       { id: 'view.clients', label: 'View — Clients' },
       { id: 'view.items', label: 'View — Items' },
       { id: 'view.suppliers', label: 'View — Suppliers' },
@@ -51,6 +52,13 @@ export const SIDEBAR_HIDE_GROUPS: SidebarHideGroup[] = [
       { id: 'itemMode.items', label: 'Items — Items summary' },
       { id: 'supplierMode.items', label: 'Suppliers — Items breakdown' },
       { id: 'supplierMode.cash', label: 'Suppliers — Cash summary' },
+    ],
+  },
+  {
+    title: 'Items index columns',
+    options: [
+      { id: 'items.col.cost', label: 'Landed cost (REP907 E)' },
+      { id: 'items.col.fob', label: 'FOB price (REP907 K)' },
     ],
   },
 ]

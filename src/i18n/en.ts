@@ -157,7 +157,8 @@ export const messages = {
 
   'filters.global': 'Global Filters',
   'filters.company': 'Company',
-  'filters.dateFilter': 'Date Filter',
+  'filters.dateFilter': 'Filter',
+  'filters.itemsIndex': 'Items',
   'filters.fromTo': 'From / To',
   'filters.months': 'Months',
   'filters.openOrders': 'Open Orders',
@@ -214,6 +215,9 @@ export const messages = {
   'sidebarLegend.dateFilterStockTerm': 'Stock',
   'sidebarLegend.dateFilterStockDesc':
     'Switches away from sales entirely and shows current warehouse stock levels instead.',
+  'sidebarLegend.dateFilterItemsTerm': 'Items',
+  'sidebarLegend.dateFilterItemsDesc':
+    'Opens the items index: every active item (with a value in REP103 column I) with its price-list data and WMS stock.',
   'sidebarLegend.viewTerm': 'View',
   'sidebarLegend.viewDesc':
     'Chooses what the report is organized by — Clients, Items, or Suppliers. This changes which filter panels appear below it.',
