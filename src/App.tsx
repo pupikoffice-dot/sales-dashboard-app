@@ -12,6 +12,7 @@ import { OrdersMtdPage } from './pages/OrdersMtdPage'
 import { PlaceholderModulePage } from './pages/PlaceholderModulePage'
 import { SalesPage } from './pages/SalesPage'
 import { StockPage } from './pages/StockPage'
+import { ItemsIndexPage } from './pages/ItemsIndexPage'
 import { DeliveriesPage } from './pages/operations/DeliveriesPage'
 import { UsersPage } from './pages/admin/UsersPage'
 import { ClassesPage } from './pages/admin/ClassesPage'
@@ -47,6 +48,7 @@ function ProtectedApp() {
         <Route path="debt" element={<RequireModule moduleId="debt"><PlaceholderModulePage title="Open Debt" /></RequireModule>} />
         <Route path="stock-alerts" element={<RequireModule moduleId="stock_alerts"><PlaceholderModulePage title="Stock Alerts" /></RequireModule>} />
         <Route path="stock" element={<RequireModule moduleId="stock"><StockPage /></RequireModule>} />
+        <Route path="items" element={<ItemsIndexPage />} />
         <Route path="export" element={<RequireModule moduleId="export"><PlaceholderModulePage title="Export" /></RequireModule>} />
         <Route path="operations/deliveries" element={<RequireModule moduleId="ops_deliveries"><DeliveriesPage /></RequireModule>} />
         {canManageUsers && <Route path="admin/users" element={<UsersPage />} />}

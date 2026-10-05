@@ -41,6 +41,7 @@ export type SectionId =
   | 'dateFilterMonths'
   | 'dateFilterOpenOrders'
   | 'dateFilterStock'
+  | 'dateFilterItems'
   | 'view'
   | 'itemCategory'
   | 'select'
@@ -70,6 +71,7 @@ function buildLines(currentViewNoun: string): LegendLine[] {
     { id: 'dateFilterMonths', term: 'sidebarLegend.dateFilterMonthsTerm', desc: 'sidebarLegend.dateFilterMonthsDesc' },
     { id: 'dateFilterOpenOrders', term: 'sidebarLegend.dateFilterOpenOrdersTerm', desc: 'sidebarLegend.dateFilterOpenOrdersDesc' },
     { id: 'dateFilterStock', term: 'sidebarLegend.dateFilterStockTerm', desc: 'sidebarLegend.dateFilterStockDesc' },
+    { id: 'dateFilterItems', term: 'sidebarLegend.dateFilterItemsTerm', desc: 'sidebarLegend.dateFilterItemsDesc' },
     { id: 'view', term: 'sidebarLegend.viewTerm', desc: 'sidebarLegend.viewDesc' },
     { id: 'itemCategory', term: 'sidebarLegend.itemCategoryTerm', desc: 'sidebarLegend.itemCategoryDesc' },
     { id: 'select', term: 'sidebarLegend.selectTerm', desc: 'sidebarLegend.selectDesc', values: { noun: currentViewNoun } },

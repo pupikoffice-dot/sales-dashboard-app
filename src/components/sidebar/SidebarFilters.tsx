@@ -171,6 +171,15 @@ export function SidebarFilters() {
               {tab.id === 'openorders' ? `📋 ${t(tab.key)}` : tab.id === 'stock' ? `📦 ${t(tab.key)}` : t(tab.key)}
             </button>
           ))}
+          {!access?.hiddenSidebar?.includes('date.items') && (
+            <button
+              type="button"
+              className={`tab-btn${location.pathname.startsWith('/items') ? ' active' : ''}`}
+              onClick={() => navigate('/items')}
+            >
+              🗂 {t('filters.itemsIndex')}
+            </button>
+          )}
           <button
             type="button"
             className="legend-btn legend-btn-sm"

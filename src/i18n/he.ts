@@ -159,7 +159,8 @@ export const messages: Record<keyof typeof en, string> = {
 
   'filters.global': 'מסננים כלליים',
   'filters.company': 'חברה',
-  'filters.dateFilter': 'סינון תאריך',
+  'filters.dateFilter': 'סינון',
+  'filters.itemsIndex': 'פריטים',
   'filters.fromTo': 'מתאריך / עד תאריך',
   'filters.months': 'חודשים',
   'filters.openOrders': 'הזמנות פתוחות',
@@ -216,6 +217,9 @@ export const messages: Record<keyof typeof en, string> = {
   'sidebarLegend.dateFilterStockTerm': 'מלאי',
   'sidebarLegend.dateFilterStockDesc':
     'עובר לגמרי ממכירות ומציג במקום זאת את רמות המלאי הנוכחיות במחסן.',
+  'sidebarLegend.dateFilterItemsTerm': 'פריטים',
+  'sidebarLegend.dateFilterItemsDesc':
+    'פותח את אינדקס הפריטים: כל פריט פעיל (עם ערך בעמודה I בדוח 103) עם נתוני המחירון ומלאי WMS.',
   'sidebarLegend.viewTerm': 'תצוגה',
   'sidebarLegend.viewDesc':
     'קובע לפי מה הדוח מאורגן — לקוחות, פריטים או ספקים. זה משנה אילו פאנלי סינון מופיעים מתחת.',
