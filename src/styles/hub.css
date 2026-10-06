@@ -1,0 +1,220 @@
+/* ── Oversight "Hub" layout (chart-first) ────────────────────────────────────
+   Theme tokens only, so dark / light / RTL follow. Card look shares bento.css tokens. */
+
+.hub-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 6px;
+}
+
+.hub-span-3 { grid-column: span 3; }
+.hub-span-4 { grid-column: span 4; }
+.hub-span-5 { grid-column: span 5; }
+.hub-span-7 { grid-column: span 7; }
+.hub-span-8 { grid-column: span 8; }
+.hub-span-12 { grid-column: span 12; }
+
+@media (max-width: 1280px) {
+  .hub-span-3 { grid-column: span 6; }
+  .hub-span-4, .hub-span-5, .hub-span-7, .hub-span-8 { grid-column: span 12; }
+}
+
+@media (max-width: 600px) {
+  .hub-grid { gap: 12px; }
+  .hub-span-3 { grid-column: span 12; }
+}
+
+.hub-card {
+  background: var(--bento-bg);
+  border: 1px solid var(--bdr);
+  border-radius: var(--bento-r);
+  padding: 16px 18px;
+  box-shadow: var(--bento-shadow);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  min-width: 0;
+  transition: border-color 0.2s ease;
+}
+
+.hub-card:hover { border-color: var(--bento-hover-bdr); }
+
+.hub-card-hdr {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.hub-card-hdr h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 650;
+  color: var(--txt);
+}
+
+.hub-card-aside {
+  font-size: 0.75rem;
+  color: var(--muted2);
+  white-space: nowrap;
+}
+
+.hub-chart { position: relative; width: 100%; }
+
+/* KPI tiles */
+.hub-tile-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hub-kpi-lbl {
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.hub-kpi-main { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+
+.hub-kpi-val {
+  font-size: 2rem;
+  font-weight: 750;
+  line-height: 1.1;
+  color: var(--txt);
+  font-variant-numeric: tabular-nums;
+}
+
+.hub-kpi-val.grn { color: var(--grn); }
+.hub-kpi-val.amber { color: var(--amber); }
+
+.hub-kpi-sub { font-size: 0.78rem; color: var(--muted2); }
+
+.hub-spark {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 38px;
+  margin-top: 4px;
+}
+
+.hub-spark span {
+  flex: 1;
+  border-radius: 3px 3px 1px 1px;
+  min-width: 3px;
+}
+
+.hub-kpi-foot { font-size: 0.65rem; color: var(--muted); }
+
+/* Leaderboard */
+.hub-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+
+.hub-table th {
+  text-align: end;
+  font-size: 0.66rem;
+  font-weight: 650;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--bdr);
+}
+
+.hub-table th:first-child, .hub-table td:first-child { text-align: start; }
+
+.hub-table td {
+  text-align: end;
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--bdr);
+  font-variant-numeric: tabular-nums;
+  color: var(--txt);
+}
+
+.hub-cash { position: relative; min-width: 110px; }
+
+.hub-bar {
+  position: absolute;
+  inset-inline-end: 0;
+  top: 4px;
+  bottom: 4px;
+  border-radius: 6px;
+}
+
+.hub-cash-val { position: relative; font-weight: 650; }
+
+.hub-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-inline-end: 7px;
+  vertical-align: middle;
+}
+
+/* Treemap */
+.hub-treemap {
+  position: relative;
+  height: 300px;
+  border-radius: var(--bento-r-inner);
+  overflow: hidden;
+}
+
+.hub-tile {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1px solid;
+  border-radius: 6px;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  color: var(--txt);
+}
+
+.hub-tile-name {
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.2;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.hub-tile-val { font-size: 0.78rem; font-weight: 750; font-variant-numeric: tabular-nums; }
+
+/* Heatmap */
+.hub-heat { display: grid; gap: 4px; font-size: 0.74rem; }
+
+.hub-heat-h {
+  text-align: center;
+  font-size: 0.66rem;
+  font-weight: 650;
+  color: var(--muted);
+  text-transform: uppercase;
+  padding-bottom: 2px;
+}
+
+.hub-heat-lbl {
+  color: var(--txt);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  align-self: center;
+}
+
+.hub-heat-cell {
+  text-align: center;
+  padding: 7px 4px;
+  border-radius: 6px;
+  border: 1px solid var(--bdr);
+  font-variant-numeric: tabular-nums;
+  color: var(--txt);
+}
+
+.hub-empty { color: var(--muted); font-size: 0.82rem; margin: 6px 0; }
