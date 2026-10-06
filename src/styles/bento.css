@@ -1,0 +1,198 @@
+/* ── Bento look (Oversight) ─────────────────────────────────────────────────
+   Layered on top of legacy-theme.css. Uses only theme tokens, so the light theme
+   and RTL follow automatically. Company colour comes from --co-accent (set inline
+   per column from COMPANY_ACCENT). Saved "Arrange" looks ([data-ov-card], …) keep
+   priority because their selectors are more specific. */
+
+:root {
+  --bento-r: 16px;
+  --bento-r-inner: 12px;
+  --bento-bg: var(--glass-panel);
+  --bento-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  --bento-hover-bdr: rgba(255, 255, 255, 0.15);
+  --bento-red: #f87171;
+}
+
+[data-theme='light'] {
+  --bento-shadow: 0 6px 24px rgba(44, 44, 46, 0.08);
+  --bento-hover-bdr: #b8b8c0;
+  --bento-red: #b91c1c;
+}
+
+/* Grid: one column per company; more columns on wide screens (4 / 3 / 2 / 1). */
+.ov-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+/* Company column = bento card with a coloured strip on top. */
+.ov-col--accented,
+.ov-col--alt {
+  background: var(--bento-bg);
+  border: 1px solid var(--bdr);
+  border-top: 3px solid var(--ov-accent);
+  border-radius: var(--bento-r);
+  padding: 14px;
+  box-shadow: var(--bento-shadow);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: border-color 0.2s ease;
+}
+
+.ov-col--accented:hover {
+  border-color: var(--bento-hover-bdr);
+  border-top-color: var(--ov-accent);
+}
+
+[data-theme='light'] .ov-col--alt {
+  background: var(--bento-bg);
+}
+
+/* Column header: company name in its colour, no heavy box. */
+.ov-col--accented .ov-col-hdr {
+  background: transparent;
+  border: none;
+  padding: 2px 4px 6px;
+  font-size: 1.02rem;
+  letter-spacing: 0.01em;
+}
+
+[dir='rtl'] .ov-col--accented .ov-col-hdr {
+  border: none;
+}
+
+/* Sections inside a column: softer inner cards. */
+.ov-section {
+  border-radius: var(--bento-r-inner);
+  transition: border-color 0.2s ease;
+}
+
+.ov-col--accented .ov-section {
+  background: var(--sur2);
+  border-top: 1px solid var(--bdr);
+}
+
+.ov-section:hover {
+  border-color: var(--bento-hover-bdr);
+}
+
+.ov-kpi {
+  border-radius: var(--bento-r-inner);
+  background: var(--sur3);
+}
+
+.ov-kpi-val {
+  font-size: 1.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Group totals row ─────────────────────────────────────────────────────── */
+.bento-kpis {
+  margin: 4px 0 20px;
+}
+
+.bento-kpis-scope {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 8px 2px;
+}
+
+.bento-kpis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 158px), 1fr));
+  gap: 12px;
+}
+
+.bento-kpi {
+  background: var(--bento-bg);
+  border: 1px solid var(--bdr);
+  border-radius: var(--bento-r);
+  padding: 14px 16px;
+  box-shadow: var(--bento-shadow);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 6px;
+  min-width: 0;
+  transition: border-color 0.2s ease;
+}
+
+.bento-kpi:hover {
+  border-color: var(--bento-hover-bdr);
+}
+
+.bento-kpi-lbl {
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  color: var(--muted);
+  line-height: 1.3;
+  min-height: 2.6em;            /* two lines reserved, so all numbers stay on one line */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.bento-kpi-main {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bento-kpi-val {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--txt);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+
+.bento-kpi-val.grn { color: var(--grn); }
+.bento-kpi-val.amber { color: var(--amber); }
+
+.bento-kpi-delta {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+  white-space: nowrap;
+}
+
+.bento-kpi-delta.up {
+  color: var(--grn);
+  background: var(--grn-bg);
+}
+
+.bento-kpi-delta.down {
+  color: var(--bento-red);
+  background: color-mix(in srgb, var(--bento-red) 14%, transparent);
+}
+
+.bento-kpi-sub {
+  font-size: 0.72rem;
+  color: var(--muted2);
+  min-height: 1.1em; /* keeps the numbers of all cards on one line */
+}
+
+@media (max-width: 520px) {
+  .bento-kpis-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .bento-kpi {
+    padding: 12px;
+  }
+  .bento-kpi-val {
+    font-size: 1.2rem;
+  }
+}
