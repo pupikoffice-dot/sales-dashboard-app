@@ -6,9 +6,10 @@ import { useDashboardAccess } from '../context/DashboardAccessContext'
 import { useDashboardData } from '../hooks/useDashboardData'
 import { useOversightArrange } from '../hooks/useOversightArrange'
 import { useOversightLayout } from '../hooks/useOversightLayout'
-import { OversightLayoutToggle } from '../components/oversite/OversightLayoutToggle'
+import { OversightLayoutToggle, type OversightLayoutOption } from '../components/oversite/OversightLayoutToggle'
 import { SalesAgentSuite } from '../components/oversite/salesManager/SalesAgentSuite'
 import { SalesManagerSuite } from '../components/oversite/salesManager/SalesManagerSuite'
+import { OversightHub } from '../components/oversite/hub/OversightHub'
 import type { OversightLayoutPreference } from '../lib/oversightLayouts'
 import { computeDebtAgentMatrix, computeDebtSummary, debtRowsForCompany } from '../lib/debtMetrics'
 import { fmt, formatGeneratedDisplay } from '../lib/format'
@@ -83,16 +84,12 @@ export function OversitePage() {
     return <p className="status-msg">{t('common.loadingSalesData')}</p>
   }
   if (layout.display.mode === 'suite') {
+    const toggle = layout.canToggle
+      ? { active: layout.display.suiteId, options: layout.options, onSelect: layout.setPreference }
+      : undefined
+    if (layout.display.suiteId === 'hub') return <OversightHub layoutToggle={toggle} />
     if (layout.display.suiteId === 'sales_manager') {
-      return (
-        <SalesManagerSuite
-          layoutToggle={
-            layout.canToggle
-              ? { active: 'suite', onSelect: layout.setPreference }
-              : undefined
-          }
-        />
-      )
+      return <SalesManagerSuite layoutToggle={toggle} />
     }
     if (layout.display.suiteId === 'sales_agent') return <SalesAgentSuite />
   }
@@ -102,7 +99,7 @@ export function OversitePage() {
       isSuperAdmin={isSuperAdmin}
       layoutToggle={
         layout.canToggle
-          ? { active: 'classic', onSelect: layout.setPreference }
+          ? { active: 'classic', options: layout.options, onSelect: layout.setPreference }
           : undefined
       }
     />
@@ -115,7 +112,7 @@ function ClassicOversitePage({
   layoutToggle,
 }: {
   isSuperAdmin: boolean
-  layoutToggle?: { active: 'classic' | 'suite'; onSelect: (p: OversightLayoutPreference) => void }
+  layoutToggle?: { active: string; options?: OversightLayoutOption[]; onSelect: (p: OversightLayoutPreference) => void }
 }) {
   const { t } = useLocale()
   const { session } = useAuth()
@@ -307,12 +304,7 @@ function ClassicOversitePage({
                 if (userId) writeOversightCompanyFilter(userId, next)
               }}
             />
-            {layoutToggle ? (
-              <OversightLayoutToggle
-                active={layoutToggle.active}
-                onSelect={layoutToggle.onSelect}
-              />
-            ) : null}
+            {layoutToggle ? <OversightLayoutToggle {...layoutToggle} /> : null}
             <OversightArrangeBar arrange={arrange} />
             <OversiteLegend />
           </div>

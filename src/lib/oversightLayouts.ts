@@ -1,7 +1,7 @@
 import type { OversightMode } from '../types/uiModules'
 
 /** Per-user alternate Oversight layouts (stored in `dashboard_user_ui`). */
-export const OVERSIGHT_ALTERNATE_LAYOUT_IDS = ['sales_manager'] as const
+export const OVERSIGHT_ALTERNATE_LAYOUT_IDS = ['sales_manager', 'hub'] as const
 
 export type OversightAlternateLayoutId = (typeof OVERSIGHT_ALTERNATE_LAYOUT_IDS)[number]
 

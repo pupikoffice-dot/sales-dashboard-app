@@ -31,7 +31,7 @@ import { SmOpenOrdersReportModal } from './SmOpenOrdersReportModal'
 import { SmReceiptsReportModal } from './SmReceiptsReportModal'
 import { SmVsCompanyView } from './SmVsCompanyView'
 import type { OversightLayoutPreference } from '../../../lib/oversightLayouts'
-import { OversightLayoutToggle } from '../OversightLayoutToggle'
+import { OversightLayoutToggle, type OversightLayoutOption } from '../OversightLayoutToggle'
 import {
   ArrangeHiddenTray,
   OversightArrangeBar,
@@ -57,7 +57,8 @@ export interface SalesManagerSuiteProps {
   variant?: SmSuiteVariant
   /** Shown when user may switch back to classic Oversight. */
   layoutToggle?: {
-    active: 'classic' | 'suite'
+    active: string
+    options?: OversightLayoutOption[]
     onSelect: (preference: OversightLayoutPreference) => void
   }
 }
@@ -372,6 +373,7 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
             {layoutToggle ? (
               <OversightLayoutToggle
                 active={layoutToggle.active}
+                options={layoutToggle.options}
                 onSelect={layoutToggle.onSelect}
               />
             ) : null}
