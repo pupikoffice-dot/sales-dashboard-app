@@ -63,6 +63,8 @@ import {
   OversightArrangeBar,
 } from '../components/oversite/OversightArrangeBar'
 import { OversiteLegend } from '../components/oversite/OversiteLegend'
+import { OversightGroupKpis } from '../components/oversite/OversightGroupKpis'
+import { computeGroupKpis, salesLyToDate, type GroupKpiId } from '../lib/oversightGroupKpis'
 import { OversightCompanyFilter } from '../components/oversite/OversightCompanyFilter'
 import {
   readOversightCompanyFilter,
@@ -183,6 +185,9 @@ function ClassicOversitePage({
         ctx.todayStr,
       )
       const salesMtd = computeSalesMtd(companyRows, co.id, ctx.curYear, ctx.curMonth)
+      const salesLyToDateCash = salesLyToDate(
+        companyRows, co.id, ctx.curYear, ctx.curMonth, Number(ctx.todayStr.slice(8, 10)),
+      )
       const salesMtdCombinedCash = salesMtd.cash + delivery720Mtd.cash
       const salesMtdCombinedLyPct =
         salesMtd.lyCash > 0 ? ((salesMtdCombinedCash - salesMtd.lyCash) / salesMtd.lyCash) * 100 : null
@@ -219,6 +224,7 @@ function ClassicOversitePage({
         delivery720Mtd,
         delivery720MtdDocs,
         salesMtd,
+        salesLyToDate: salesLyToDateCash,
         salesMtdCombinedLyPct,
         ordersTop10,
         salesTop10,
@@ -275,6 +281,18 @@ function ClassicOversitePage({
   const showModule = (id: OversiteModuleId): boolean =>
     canShowOversiteModule(access, id, isSuperAdmin)
 
+  // Group totals (bento row): same numbers as the columns, summed; a card shows only if its section may be seen.
+  const GROUP_KPI_MODULE: Record<GroupKpiId, OversiteModuleId> = {
+    salesMtd: 'salesMtd', ordersToday: 'ordersToday', ordersMtd: 'ordersMtd',
+    openOrders: 'openOrders', debt: 'debt', returns: 'returns',
+  }
+  const groupKpis = computeGroupKpis(companyColumns, {
+    show: id => showModule(GROUP_KPI_MODULE[id]),
+    includeDeliveryNotes: showModule('deliveryNotes'),
+  })
+  const groupScope =
+    displayedCompanies.length === 1 ? displayedCompanies[0].label : t('oversite.groupScope')
+
   return (
     <>
       <div className="ov-header">
@@ -317,6 +335,8 @@ function ClassicOversitePage({
       ) : displayedCompanies.length === 0 ? (
         <p className="ov-empty">{t('oversite.noCompaniesSelected')}</p>
       ) : (
+        <>
+        <OversightGroupKpis kpis={groupKpis} scopeLabel={groupScope} monthLbl={ctx.monthLbl} />
         <div className={`ov-grid${displayedCompanies.length === 1 ? ' ov-grid--single-co' : ''}`}>
           {companyColumns.map(
             ({
@@ -591,6 +611,7 @@ function ClassicOversitePage({
             )
           })}
         </div>
+        </>
       )}
 
       {debtModalCo && (

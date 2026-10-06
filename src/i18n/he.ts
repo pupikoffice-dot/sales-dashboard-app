@@ -355,6 +355,8 @@ export const messages: Record<keyof typeof en, string> = {
   'suiteUi.bestClients.empty': 'אין מכירות ללקוחות החודש בחלון זה.',
 
   'oversite.title': 'לוח מבט על',
+  'oversite.groupScope': 'החברות שנבחרו — סיכום',
+  'oversite.vsLastYear': 'שינוי לעומת שנה שעברה, אותם ימים בחודש',
   'oversite.companyFilter': 'חברות',
   'oversite.companyFilterSearch': 'חיפוש חברות…',
   'oversite.noCompaniesSelected': 'לא נבחרו חברות — השתמש במסנן החברות למעלה.',

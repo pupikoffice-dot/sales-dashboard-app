@@ -353,6 +353,8 @@ export const messages = {
   'suiteUi.bestClients.empty': 'No MTD client sales in this window.',
 
   'oversite.title': 'Oversight Dashboard',
+  'oversite.groupScope': 'Selected companies — totals',
+  'oversite.vsLastYear': 'Change vs last year, same days of the month',
   'oversite.companyFilter': 'Companies',
   'oversite.companyFilterSearch': 'Search companies…',
   'oversite.noCompaniesSelected': 'No companies selected — use the Companies filter above.',
