@@ -1,8 +1,6 @@
-/* ── Bento look (Oversight) ─────────────────────────────────────────────────
-   Layered on top of legacy-theme.css. Uses only theme tokens, so the light theme
-   and RTL follow automatically. Company colour comes from --co-accent (set inline
-   per column from COMPANY_ACCENT). Saved "Arrange" looks ([data-ov-card], …) keep
-   priority because their selectors are more specific. */
+/* ── Bento tokens + group totals row ─────────────────────────────────────────────────
+   Tokens are shared by the Bento skin (skin-bento.css) and the Hub layout (hub.css).
+   The totals row below is a component and shows in every skin. */
 
 :root {
   --bento-r: 16px;
@@ -17,74 +15,6 @@
   --bento-shadow: 0 6px 24px rgba(44, 44, 46, 0.08);
   --bento-hover-bdr: #b8b8c0;
   --bento-red: #b91c1c;
-}
-
-/* Grid: one column per company; more columns on wide screens (4 / 3 / 2 / 1). */
-.ov-grid {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
-  gap: 20px;
-  align-items: start;
-}
-
-/* Company column = bento card with a coloured strip on top. */
-.ov-col--accented,
-.ov-col--alt {
-  background: var(--bento-bg);
-  border: 1px solid var(--bdr);
-  border-top: 3px solid var(--ov-accent);
-  border-radius: var(--bento-r);
-  padding: 14px;
-  box-shadow: var(--bento-shadow);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  transition: border-color 0.2s ease;
-}
-
-.ov-col--accented:hover {
-  border-color: var(--bento-hover-bdr);
-  border-top-color: var(--ov-accent);
-}
-
-[data-theme='light'] .ov-col--alt {
-  background: var(--bento-bg);
-}
-
-/* Column header: company name in its colour, no heavy box. */
-.ov-col--accented .ov-col-hdr {
-  background: transparent;
-  border: none;
-  padding: 2px 4px 6px;
-  font-size: 1.02rem;
-  letter-spacing: 0.01em;
-}
-
-[dir='rtl'] .ov-col--accented .ov-col-hdr {
-  border: none;
-}
-
-/* Sections inside a column: softer inner cards. */
-.ov-section {
-  border-radius: var(--bento-r-inner);
-  transition: border-color 0.2s ease;
-}
-
-.ov-col--accented .ov-section {
-  background: var(--sur2);
-  border-top: 1px solid var(--bdr);
-}
-
-.ov-section:hover {
-  border-color: var(--bento-hover-bdr);
-}
-
-.ov-kpi {
-  border-radius: var(--bento-r-inner);
-  background: var(--sur3);
-}
-
-.ov-kpi-val {
-  font-size: 1.25rem;
-  font-variant-numeric: tabular-nums;
 }
 
 /* ── Group totals row ─────────────────────────────────────────────────────── */

@@ -1,0 +1,306 @@
+/* ── Skin: Bento ─────────────────────────────────────────────────────────────
+   Active when <html data-skin="bento">. Without it ("Classic") the app looks exactly as before.
+   Only theme tokens are used, so dark / light and RTL follow automatically.
+   Tokens (--bento-*) live in bento.css; page-specific layouts (Hub) are skin-independent. */
+
+html[data-skin='bento'] {
+  --r: 14px;
+  --r-lg: 20px;
+  --bento-soft-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
+}
+
+html[data-skin='bento'][data-theme='light'] {
+  --bento-soft-shadow: 0 4px 16px rgba(44, 44, 46, 0.07);
+}
+
+/* Chrome */
+html[data-skin='bento'] .dashboard-header {
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
+}
+
+html[data-skin='bento'][data-theme='light'] .dashboard-header {
+  box-shadow: 0 4px 16px rgba(44, 44, 46, 0.06);
+}
+
+html[data-skin='bento'] .dashboard-sidebar {
+  background: var(--bento-bg);
+}
+
+/* Cards and panels */
+html[data-skin='bento'] .panel,
+html[data-skin='bento'] .sbar,
+html[data-skin='bento'] .sm-cube,
+html[data-skin='bento'] .login-card {
+  border-radius: var(--bento-r);
+  box-shadow: var(--bento-soft-shadow);
+  transition: border-color 0.2s ease;
+}
+
+html[data-skin='bento'] .panel:hover,
+html[data-skin='bento'] .sbar:hover,
+html[data-skin='bento'] .sm-cube:hover {
+  border-color: var(--bento-hover-bdr);
+}
+
+html[data-skin='bento'] .login-card {
+  box-shadow: var(--bento-shadow);
+}
+
+/* Buttons and tabs */
+html[data-skin='bento'] .btn,
+html[data-skin='bento'] .nav-btn {
+  border-radius: 12px;
+  padding-block: 9px;
+}
+
+html[data-skin='bento'] .tab-btn {
+  border-radius: 10px;
+  padding-block: 7px;
+}
+
+html[data-skin='bento'] .btn.active,
+html[data-skin='bento'] .nav-btn.active,
+html[data-skin='bento'] .tab-btn.active {
+  box-shadow: 0 6px 18px var(--acc-shadow);
+}
+
+/* Tables */
+html[data-skin='bento'] .tw {
+  border-radius: var(--bento-r);
+  box-shadow: var(--bento-soft-shadow);
+}
+
+html[data-skin='bento'] .tw thead th {
+  padding-block: 12px;
+}
+
+html[data-skin='bento'] .tw tbody td {
+  padding-block: 9px;
+}
+
+html[data-skin='bento'] .tw tbody tr:hover {
+  background: var(--acc-row-bg-strong);
+}
+
+/* ── Stronger identity: this is what makes Bento read as a different app ───── */
+
+/* Page: soft coloured glow behind the content instead of a flat background. */
+html[data-skin='bento'] body {
+  background:
+    radial-gradient(900px 420px at 12% -8%, color-mix(in srgb, var(--acc) 16%, transparent), transparent 70%),
+    radial-gradient(700px 380px at 96% 4%, color-mix(in srgb, var(--grn) 10%, transparent), transparent 70%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+html[data-skin='bento'][data-theme='light'] body {
+  background:
+    radial-gradient(900px 420px at 12% -8%, color-mix(in srgb, var(--acc) 7%, transparent), transparent 70%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+/* Navigation: borderless pills instead of boxed buttons. */
+html[data-skin='bento'] .nav-btn {
+  background: transparent;
+  border-color: transparent;
+  border-radius: var(--r-full);
+  padding: 9px 16px;
+  color: var(--muted2);
+}
+
+html[data-skin='bento'] .nav-btn:hover {
+  background: var(--acc-bg);
+  border-color: transparent;
+  color: var(--txt);
+}
+
+html[data-skin='bento'] .nav-btn.active {
+  background: var(--acc);
+  border-color: transparent;
+  color: var(--on-acc);
+  box-shadow: 0 8px 22px var(--acc-shadow);
+}
+
+html[data-skin='bento'] .sidebar-label,
+html[data-skin='bento'] .panel-title {
+  letter-spacing: 1.8px;
+  padding-inline-start: 10px;
+}
+
+/* Filter choices: pill chips. */
+html[data-skin='bento'] .btn {
+  border-radius: var(--r-full);
+  padding: 9px 16px;
+  background: var(--sur2);
+}
+
+html[data-skin='bento'] .btn.active {
+  background: var(--acc);
+}
+
+html[data-skin='bento'] .tab-btn {
+  border-radius: var(--r-full);
+}
+
+html[data-skin='bento'] .mo-btn,
+html[data-skin='bento'] .yr-btn {
+  border-radius: 10px;
+}
+
+html[data-skin='bento'] .apply-btn {
+  box-shadow: 0 10px 26px color-mix(in srgb, var(--grn) 35%, transparent);
+  padding-block: 12px;
+}
+
+/* Status bar: a floating glass strip with larger, brighter figures. */
+html[data-skin='bento'] .sbar {
+  gap: 22px;
+  padding: 14px 20px;
+  border-radius: var(--r-lg);
+  font-size: 0.84rem;
+}
+
+html[data-skin='bento'] .sbar b {
+  font-size: 0.98rem;
+}
+
+/* Tables: no grid lines, zebra rows, banded header, rounded card. */
+html[data-skin='bento'] .tw {
+  border: none;
+  border-radius: var(--r-lg);
+  background: var(--bento-bg);
+  box-shadow: var(--bento-shadow);
+}
+
+html[data-skin='bento'] .tw thead th {
+  background: color-mix(in srgb, var(--acc) 9%, var(--sur2));
+  border-bottom: none;
+  letter-spacing: 0.7px;
+  color: var(--txt);
+}
+
+html[data-skin='bento'] .tw tbody tr {
+  border-bottom: none;
+}
+
+html[data-skin='bento'] .tw tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--acc) 4%, transparent);
+}
+
+html[data-skin='bento'] .tw tbody tr:hover {
+  background: var(--acc-row-bg-strong);
+}
+
+html[data-skin='bento'] .tw tbody td {
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-skin='bento'] .tw tfoot td {
+  background: color-mix(in srgb, var(--acc) 9%, var(--sur2));
+  font-weight: 700;
+}
+
+/* Header pills (user, version, data badge) a little softer. */
+html[data-skin='bento'] .data-badge,
+html[data-skin='bento'] .hdr-user-name {
+  background: color-mix(in srgb, var(--acc) 8%, var(--sur2));
+}
+
+/* ── Oversight (Classic layout): company columns as bento cards ───────────── */
+html[data-skin='bento'] .ov-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+html[data-skin='bento'] .ov-col--accented,
+html[data-skin='bento'] .ov-col--alt {
+  background: var(--bento-bg);
+  border: 1px solid var(--bdr);
+  border-top: 3px solid var(--ov-accent);
+  border-radius: var(--bento-r);
+  padding: 14px;
+  box-shadow: var(--bento-shadow);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: border-color 0.2s ease;
+}
+
+html[data-skin='bento'] .ov-col--accented:hover {
+  border-color: var(--bento-hover-bdr);
+  border-top-color: var(--ov-accent);
+}
+
+html[data-skin='bento'][data-theme='light'] .ov-col--alt {
+  background: var(--bento-bg);
+}
+
+html[data-skin='bento'] .ov-col--accented .ov-col-hdr {
+  background: transparent;
+  border: none;
+  padding: 2px 4px 6px;
+  font-size: 1.02rem;
+  letter-spacing: 0.01em;
+}
+
+html[data-skin='bento'][dir='rtl'] .ov-col--accented .ov-col-hdr {
+  border: none;
+}
+
+html[data-skin='bento'] .ov-section {
+  border-radius: var(--bento-r-inner);
+  transition: border-color 0.2s ease;
+}
+
+html[data-skin='bento'] .ov-col--accented .ov-section {
+  background: var(--sur2);
+  border-top: 1px solid var(--bdr);
+}
+
+html[data-skin='bento'] .ov-section:hover {
+  border-color: var(--bento-hover-bdr);
+}
+
+html[data-skin='bento'] .ov-kpi {
+  border-radius: var(--bento-r-inner);
+  background: var(--sur3);
+}
+
+html[data-skin='bento'] .ov-kpi-val {
+  font-size: 1.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Header skin menu (every skin) ───────────────────────────────────────── */
+.skin-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--sur2);
+  border: 1px solid var(--bdr);
+  border-radius: var(--r-full);
+  padding: 3px 4px 3px 10px;
+  color: var(--muted2);
+  font-size: 0.72rem;
+}
+
+.skin-switch select {
+  background: transparent;
+  border: none;
+  color: var(--txt);
+  font: inherit;
+  font-weight: 600;
+  padding: 4px 6px;
+  cursor: pointer;
+  outline: none;
+}
+
+.skin-switch select option {
+  background: var(--sur);
+  color: var(--txt);
+}
+
+[dir='rtl'] .skin-switch {
+  padding: 3px 10px 3px 4px;
+}
