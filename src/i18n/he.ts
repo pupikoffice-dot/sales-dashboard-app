@@ -402,6 +402,8 @@ export const messages: Record<keyof typeof en, string> = {
   'oversite.ordersLast7DaysEmpty': 'אין הזמנות ב־7 ימי העבודה האחרונים.',
   'oversite.ordersMtd': 'הזמנות חודש (722) — {month}',
   'oversite.openOrders': 'הזמנות פתוחות (721)',
+  'oversite.invoiced': 'חשבוניות (891)',
+  'oversite.barLegend': 'משמעות הצבעים בעמודה',
   'oversite.deliveryNotes': 'תעודות משלוח (720)',
   'oversite.top10DeliveryNotes': '10 פריטי תעודות משלוח מובילים',
   'oversite.noDeliveryNotes': 'אין תעודות משלוח בייצוא',

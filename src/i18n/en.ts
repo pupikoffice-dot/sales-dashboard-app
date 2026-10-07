@@ -401,6 +401,8 @@ export const messages = {
   'oversite.ordersMtd': 'Orders MTD (722) — {month}',
   'oversite.openOrders': 'Open Orders (721)',
   'oversite.deliveryNotes': 'Delivery Notes (720)',
+  'oversite.invoiced': 'Invoiced (891)',
+  'oversite.barLegend': 'What the colours in the bar mean',
   'oversite.top10DeliveryNotes': 'Top 10 Delivery Note Items',
   'oversite.noDeliveryNotes': 'No delivery notes in export',
   'oversite.deliveryDocNumber': 'Delivery note #',

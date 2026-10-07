@@ -985,6 +985,36 @@ body.sales-agent-no-nav .dashboard-main {
   background: var(--muted);
 }
 
+/* Colour key under a stacked sales bar. */
+.ov-bar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 6px 0 2px;
+  font-size: 0.7rem;
+  color: var(--muted2);
+}
+
+.ov-bar-legend b {
+  color: var(--txt);
+  font-variant-numeric: tabular-nums;
+}
+
+.ov-bar-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  margin-inline-end: 5px;
+  vertical-align: middle;
+}
+
+.ov-bar-dot.grn { background: var(--grn); }
+.ov-bar-dot.delivery { background: var(--acc2); }
+.ov-bar-dot.openorders { background: var(--amber); }
+
+.ov-bar-track .ov-bar-fill { cursor: help; }
+
 /* Second Sales MTD sum: billed + shipped + open-order pipeline. */
 .ov-bar-total {
   display: flex;

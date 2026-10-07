@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useLocale } from '../../context/LocaleContext'
 import { fmt } from '../../lib/format'
 
 interface Kpi {
@@ -77,6 +78,13 @@ export function SalesLyBars({
   const totalCash = cash + deliveryCash
   const totalWithOpenCash = totalCash + openOrdersCash
   const barMax = Math.max(totalWithOpenCash, lyCash, forecastCash ?? 0, 1)
+  const { t } = useLocale()
+  const sharePct = (v: number) => (totalWithOpenCash > 0 ? ` · ${((v / totalWithOpenCash) * 100).toFixed(1)}%` : '')
+  const tipInvoiced = `${t('oversite.invoiced')}: ${fmt(cash)}${sharePct(cash)}`
+  const tipDelivery = `${t('oversite.deliveryNotes')}: ${fmt(deliveryCash)}${sharePct(deliveryCash)}`
+  const tipOpen = `${t('oversite.openOrders')}: ${fmt(openOrdersCash)}${sharePct(openOrdersCash)}`
+  const tipTotal = `${monthLbl}: ${fmt(totalCash)}`
+  const stacked = deliveryCash > 0 || openOrdersCash > 0
   const salesPct = (cash / barMax) * 100
   const deliveryPct = (deliveryCash / barMax) * 100
   const openOrdersPct = (openOrdersCash / barMax) * 100
@@ -94,24 +102,37 @@ export function SalesLyBars({
       <div className="ov-bar-row">
         <span className="ov-bar-lbl">{monthLbl}</span>
         <div
-          className={`ov-bar-track${deliveryCash > 0 || openOrdersCash > 0 ? ' ov-bar-track--stacked' : ''}`}
+          className={`ov-bar-track${stacked ? ' ov-bar-track--stacked' : ''}`}
+          title={stacked ? undefined : tipTotal}
         >
           {salesPct > 0 && (
-            <div className="ov-bar-fill grn" style={{ width: `${salesPct.toFixed(1)}%` }} />
+            <div className="ov-bar-fill grn" style={{ width: `${salesPct.toFixed(1)}%` }} title={tipInvoiced} />
           )}
           {deliveryPct > 0 && (
-            <div className="ov-bar-fill delivery" style={{ width: `${deliveryPct.toFixed(1)}%` }} />
+            <div className="ov-bar-fill delivery" style={{ width: `${deliveryPct.toFixed(1)}%` }} title={tipDelivery} />
           )}
           {openOrdersPct > 0 && (
             <div
               className="ov-bar-fill openorders"
               style={{ width: `${openOrdersPct.toFixed(1)}%` }}
+              title={tipOpen}
             />
           )}
         </div>
         <span className="ov-bar-val">{fmt(totalCash)}</span>
         {delta}
       </div>
+      {stacked && (
+        <div className="ov-bar-legend" aria-label={t('oversite.barLegend')}>
+          <span title={tipInvoiced}><i className="ov-bar-dot grn" />{t('oversite.invoiced')} <b>{fmt(cash)}</b></span>
+          {deliveryCash > 0 && (
+            <span title={tipDelivery}><i className="ov-bar-dot delivery" />{t('oversite.deliveryNotes')} <b>{fmt(deliveryCash)}</b></span>
+          )}
+          {openOrdersCash > 0 && (
+            <span title={tipOpen}><i className="ov-bar-dot openorders" />{t('oversite.openOrders')} <b>{fmt(openOrdersCash)}</b></span>
+          )}
+        </div>
+      )}
       {openOrdersCash > 0 && (
         <div className="ov-bar-total">
           <span className="ov-bar-total-lbl">{withOpenOrdersLbl}</span>
@@ -125,6 +146,7 @@ export function SalesLyBars({
             <div
               className="ov-bar-fill forecast"
               style={{ width: `${((forecastCash / barMax) * 100).toFixed(1)}%` }}
+              title={`${forecastLbl || 'Projected'}: ${fmt(forecastCash)}`}
             />
           </div>
           <span className="ov-bar-val">{fmt(forecastCash)}</span>
@@ -158,7 +180,7 @@ function BarRow({
     <div className="ov-bar-row">
       <span className="ov-bar-lbl">{label}</span>
       <div className="ov-bar-track">
-        <div className={`ov-bar-fill ${fillClass}`} style={{ width: `${widthPct.toFixed(1)}%` }} />
+        <div className={`ov-bar-fill ${fillClass}`} style={{ width: `${widthPct.toFixed(1)}%` }} title={`${label}: ${value}`} />
       </div>
       <span className="ov-bar-val">{value}</span>
       {suffix}
