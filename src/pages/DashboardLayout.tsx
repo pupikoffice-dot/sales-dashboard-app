@@ -6,6 +6,7 @@ import { useDashboardAccess } from '../context/DashboardAccessContext'
 import { useDashboardFilters } from '../context/DashboardFiltersContext'
 import { useLocale } from '../context/LocaleContext'
 import { useTheme } from '../context/ThemeContext'
+import { useSkin } from '../context/SkinContext'
 import { usePreview } from '../context/PreviewContext'
 import { useDashboardData } from '../hooks/useDashboardData'
 import { canShowModule } from '../lib/permissions'
@@ -46,6 +47,7 @@ export function DashboardLayout() {
   const { isRendering, showOversiteDashboard } = useDashboardFilters()
   const { locale, setLocale, t, dir } = useLocale()
   const { theme, setTheme } = useTheme()
+  const { skin, available: skins, setSkin } = useSkin()
   const isRtl = dir === 'rtl'
   const { allRows, debtRows, isLoading: dataLoading, dataHealth } = useDashboardData()
   const queryClient = useQueryClient()
@@ -250,6 +252,20 @@ export function DashboardLayout() {
           ) : null}
           <IntercompanySwitcher />
           <ViewAsSwitcher />
+          {skins.length > 1 ? (
+            <label className="skin-switch" title={t('common.skin')}>
+              <span className="skin-switch-ico" aria-hidden="true">🎨</span>
+              <select
+                value={skin}
+                aria-label={t('common.skin')}
+                onChange={e => setSkin(e.target.value as typeof skin)}
+              >
+                {skins.map(id => (
+                  <option key={id} value={id}>{t(`skin.${id}`)}</option>
+                ))}
+              </select>
+            </label>
+          ) : null}
           <div className="theme-switch" role="group" aria-label={t('common.theme')}>
             <button
               type="button"

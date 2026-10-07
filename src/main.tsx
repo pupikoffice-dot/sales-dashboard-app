@@ -6,6 +6,8 @@ import { DashboardAccessProvider } from './context/DashboardAccessContext'
 import { DashboardFiltersProvider } from './context/DashboardFiltersContext'
 import { LocaleProvider } from './context/LocaleContext'
 import { ThemeProvider } from './context/ThemeContext'
+import { SkinProvider } from './context/SkinContext'
+import { applySkin, readStoredSkin } from './lib/skin'
 import { PreviewProvider } from './context/PreviewContext'
 import { queryClient } from './lib/queryClient'
 import { applyTheme, readStoredTheme } from './lib/theme'
@@ -13,6 +15,7 @@ import App from './App'
 import './index.css'
 
 applyTheme(readStoredTheme())
+applySkin(readStoredSkin()) // no flash of the wrong look before React mounts
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -25,9 +28,11 @@ createRoot(document.getElementById('root')!).render(
           <ThemeProvider>
             <LocaleProvider>
             <DashboardAccessProvider>
+              <SkinProvider>
               <DashboardFiltersProvider>
                 <App />
               </DashboardFiltersProvider>
+              </SkinProvider>
             </DashboardAccessProvider>
             </LocaleProvider>
           </ThemeProvider>
