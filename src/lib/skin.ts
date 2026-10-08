@@ -1,5 +1,5 @@
 /** Look skins. Classic = the original look (no overrides); others are CSS layers keyed on <html data-skin>. */
-export const SKIN_IDS = ['classic', 'bento'] as const
+export const SKIN_IDS = ['classic', 'bento', 'solid'] as const
 export type AppSkin = (typeof SKIN_IDS)[number]
 
 export const DEFAULT_SKIN: AppSkin = 'classic'

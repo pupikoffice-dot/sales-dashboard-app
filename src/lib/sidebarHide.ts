@@ -56,7 +56,10 @@ export const SIDEBAR_HIDE_GROUPS: SidebarHideGroup[] = [
   },
   {
     title: 'Skins (look) the user may choose',
-    options: [{ id: 'skin.bento', label: 'Skin — Bento' }],
+    options: [
+      { id: 'skin.bento', label: 'Skin — Bento' },
+      { id: 'skin.solid', label: 'Skin — Solid' },
+    ],
   },
   {
     title: 'Items index columns',
