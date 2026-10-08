@@ -17,7 +17,7 @@ insert into public.supplier_prefix (prefix, supplier_name) values
 ('QPL','Qplay'),('SUP','Local Sup'),('VTH','Vtech ELP'),('LGF','LoungeFly'),('ESK','Eskimos'),
 ('DRB','Dreambaby'),('BBZ','Balibazoo'),('JGL','Jiangmen'),('BBK','BBK'),('MFT','Mcfarlane'),
 ('DBD','Dabada'),('RZR','Razor'),('CYS','CYS'),('NBC','Noble collection'),('GRB','Goldbug'),
-('IRNS','Iron Studio'),('PTS','Pit toys'),('RSK','Raskullz'),('BUZAW','Buzzbee'),('BUZ','Buzzbee'),
+('IRNS','Iron Studio'),('PTS','PT Sinar'),('RSK','Raskullz'),('BUZAW','Buzzbee'),('BUZ','Buzzbee'),
 ('STR','Local Sup'),('PEJ15','Peg Juv'),('HPS','HappyStar'),('DRG','Dreambaby'),('MARKET','marketing'),
 ('NEC','Neca'),('GRP','GrowPro'),('PET','Peg Toys'),('FFK','FunForKids'),('PEJO','Peg Juv'),
 ('KRS','Krash'),('CAR','Pupik'),('FFG','Fantasy Flight Games'),('PEJ13','Peg Juv'),('PEJ12','Peg Juv'),
