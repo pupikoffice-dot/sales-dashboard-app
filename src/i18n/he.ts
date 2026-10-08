@@ -367,6 +367,7 @@ export const messages: Record<keyof typeof en, string> = {
   'common.skin': 'מראה',
   'skin.classic': 'קלאסי',
   'skin.bento': 'בנטו',
+  'skin.solid': 'מוצק',
   'hub.title': 'מרכז ביצועים',
   'hub.scope': 'חברות',
   'hub.salesMtd': 'מכירות מתחילת החודש',
