@@ -18,12 +18,24 @@ function access(modules: string[]): DashboardAccess {
 }
 
 describe('canShowOversiteModule', () => {
-  it('requires salesMtd for deliveryNotes add-on', () => {
-    expect(canShowOversiteModule(access(['deliveryNotes']), 'deliveryNotes')).toBe(false)
-    expect(canShowOversiteModule(access(['salesMtd', 'deliveryNotes']), 'deliveryNotes')).toBe(true)
+  const summary = ['salesMtd', 'ordersToday', 'ordersMtd', 'openOrders', 'debt', 'returns', 'deliveryNotes'] as const
+
+  it('shows summary totals only to the super admin', () => {
+    for (const id of summary) {
+      expect(canShowOversiteModule(access([...summary]), id)).toBe(false)
+      expect(canShowOversiteModule(access([]), id, true)).toBe(true)
+    }
   })
 
-  it('super admin bypasses grants', () => {
-    expect(canShowOversiteModule(access([]), 'deliveryNotes', true)).toBe(true)
+  it('still grants the other Oversight sections per user', () => {
+    expect(canShowOversiteModule(access(['topItems']), 'topItems')).toBe(true)
+    expect(canShowOversiteModule(access([]), 'receipts')).toBe(false)
+    expect(canShowOversiteModule(access([]), 'stockAlerts', true)).toBe(true)
+  })
+
+  it('hides every section when access is inactive', () => {
+    const off = { ...access(['topItems']), active: false }
+    expect(canShowOversiteModule(off, 'topItems', true)).toBe(false)
+    expect(canShowOversiteModule(off, 'salesMtd', true)).toBe(false)
   })
 })
