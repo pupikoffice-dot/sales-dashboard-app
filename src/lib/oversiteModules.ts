@@ -38,4 +38,22 @@ export const OVERSITE_MODULE_REGISTRY: OversiteModuleDef[] = [
   { id: 'stockAlerts', label: 'Stock Alerts' },
 ]
 
+/**
+ * Summary totals. Visible to the super admin only — a user grant cannot turn them on.
+ * Delivery notes sit inside the Sales MTD total, so they follow the same rule.
+ */
+export const SUPER_ADMIN_OVERSITE_MODULE_IDS: readonly OversiteModuleId[] = [
+  'salesMtd',
+  'ordersToday',
+  'ordersMtd',
+  'openOrders',
+  'debt',
+  'returns',
+  'deliveryNotes',
+]
+
+export function isSuperAdminOversiteModule(id: string): boolean {
+  return (SUPER_ADMIN_OVERSITE_MODULE_IDS as readonly string[]).includes(id)
+}
+
 export const ALL_OVERSITE_MODULE_IDS: OversiteModuleId[] = OVERSITE_MODULE_REGISTRY.map(m => m.id)

@@ -5950,3 +5950,52 @@ html[data-theme='light'] .sm-suite-disclaimer {
     font-size: 0.64rem;
   }
 }
+
+/* Summary totals are super-admin only. Close the grid up around the cubes that remain. */
+.sm-cube-grid--no-summary:not(.sm-cube-grid--flow) {
+  grid-template-areas:
+    'orders orders orders receipts'
+    'yearsales yearsales yearsales yearsales';
+}
+.sm-cube-grid--tsomet.sm-cube-grid--no-summary:not(.sm-cube-grid--flow) {
+  grid-template-areas:
+    'tsomet tsomet orders orders receipts'
+    'yearsales yearsales yearsales yearsales yearsales';
+}
+.sm-cube-grid--no-summary.sm-cube-grid--no-year-sales:not(.sm-cube-grid--flow) {
+  grid-template-areas:
+    'orders orders orders receipts';
+}
+.sm-cube-grid--tsomet.sm-cube-grid--no-summary.sm-cube-grid--no-year-sales:not(.sm-cube-grid--flow) {
+  grid-template-areas:
+    'tsomet tsomet orders orders receipts';
+}
+
+@media (max-width: 899px) {
+  .sm-cube-grid--no-summary:not(.sm-cube-grid--flow) {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'orders'
+      'receipts'
+      'yearsales';
+  }
+  .sm-cube-grid--no-summary.sm-cube-grid--no-year-sales:not(.sm-cube-grid--flow) {
+    grid-template-areas:
+      'orders'
+      'receipts';
+  }
+  .sm-cube-grid--tsomet.sm-cube-grid--no-summary:not(.sm-cube-grid--flow) {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'tsomet'
+      'orders'
+      'receipts'
+      'yearsales';
+  }
+  .sm-cube-grid--tsomet.sm-cube-grid--no-summary.sm-cube-grid--no-year-sales:not(.sm-cube-grid--flow) {
+    grid-template-areas:
+      'tsomet'
+      'orders'
+      'receipts';
+  }
+}

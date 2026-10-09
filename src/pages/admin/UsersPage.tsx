@@ -7,7 +7,7 @@ import { supabase } from '../../lib/supabase'
 import { callUserManagement } from '../../lib/userManagement'
 import { displayLoginId, isEmailLogin, isInternalAuthEmail } from '../../lib/loginIdentifier'
 import { MODULE_REGISTRY } from '../../modules/registry'
-import { OVERSITE_MODULE_REGISTRY, type OversiteModuleId } from '../../lib/oversiteModules'
+import { isSuperAdminOversiteModule, OVERSITE_MODULE_REGISTRY, type OversiteModuleId } from '../../lib/oversiteModules'
 import type { AppLocale } from '../../i18n/types'
 import type { DashboardModuleId, LogicalCompany } from '../../types/dashboard'
 import { UserPermissionsEditor } from './UserPermissionsEditor'
@@ -695,10 +695,10 @@ function EditAccessModal({
             {modules.includes('oversite') && (
               <EditorGroup
                 title="Oversight Modules"
-                hint="Which sections this user sees inside Oversight. Unchecked sections are hidden entirely."
+                hint="Which sections this user sees inside Oversight. Unchecked sections are hidden. Sales MTD, Orders Today, Orders MTD, Open Orders, Open Debt, and Returns MTD stay with the super admin."
               >
                 <div className="admin-form-checklist">
-                  {OVERSITE_MODULE_REGISTRY.map(m => (
+                  {OVERSITE_MODULE_REGISTRY.filter(m => !isSuperAdminOversiteModule(m.id)).map(m => (
                     <label key={m.id} className="admin-form-check">
                       <input
                         type="checkbox"
