@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computeGroupKpis, salesLyToDate, type GroupKpiInput } from './oversightGroupKpis'
+import { computeGroupKpis, salesLyToDate, showGroupTotalsStrip, type GroupKpiInput } from './oversightGroupKpis'
 import type { SalesRow } from '../types/dashboard'
 
 const col = (o: Partial<{ sales: number; ly: number; d720: number; debt: number | null }>): GroupKpiInput => ({
@@ -54,6 +54,11 @@ describe('computeGroupKpis', () => {
       { company: 'mt', year: 2025, month: 10, date: '2025-10-01', cash: 999 },
     ] as unknown as SalesRow[]
     expect(salesLyToDate(rows, 'pupik', 2026, 10, 6)).toBe(150)
+  })
+
+  it('the totals strip is for the super admin only, whatever number of companies another user can see', () => {
+    expect(showGroupTotalsStrip(true)).toBe(true)
+    expect(showGroupTotalsStrip(false)).toBe(false)
   })
 
   it('returns nothing without companies', () => {
