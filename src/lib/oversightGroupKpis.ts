@@ -36,6 +36,14 @@ export interface GroupKpiOptions {
   includeDeliveryNotes: boolean
 }
 
+/**
+ * The totals strip is for the super admin only, whatever number of companies another user can see.
+ * (The real sections below it stay governed by each user's Oversight grants.)
+ */
+export function showGroupTotalsStrip(isSuperAdmin: boolean): boolean {
+  return isSuperAdmin === true
+}
+
 export function computeGroupKpis(cols: GroupKpiInput[], opts: GroupKpiOptions): GroupKpi[] {
   if (!cols.length) return []
   const sum = (f: (c: GroupKpiInput) => number) => cols.reduce((a, c) => a + (f(c) || 0), 0)

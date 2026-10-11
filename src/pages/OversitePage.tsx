@@ -65,7 +65,7 @@ import {
 } from '../components/oversite/OversightArrangeBar'
 import { OversiteLegend } from '../components/oversite/OversiteLegend'
 import { OversightGroupKpis } from '../components/oversite/OversightGroupKpis'
-import { computeGroupKpis, salesLyToDate, type GroupKpiId } from '../lib/oversightGroupKpis'
+import { computeGroupKpis, salesLyToDate, showGroupTotalsStrip, type GroupKpiId } from '../lib/oversightGroupKpis'
 import { OversightCompanyFilter } from '../components/oversite/OversightCompanyFilter'
 import {
   readOversightCompanyFilter,
@@ -328,7 +328,9 @@ function ClassicOversitePage({
         <p className="ov-empty">{t('oversite.noCompaniesSelected')}</p>
       ) : (
         <>
-        <OversightGroupKpis kpis={groupKpis} scopeLabel={groupScope} monthLbl={ctx.monthLbl} />
+        {showGroupTotalsStrip(isSuperAdmin) ? (
+          <OversightGroupKpis kpis={groupKpis} scopeLabel={groupScope} monthLbl={ctx.monthLbl} />
+        ) : null}
         <div className={`ov-grid${displayedCompanies.length === 1 ? ' ov-grid--single-co' : ''}`}>
           {companyColumns.map(
             ({
