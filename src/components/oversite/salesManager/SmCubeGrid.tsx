@@ -1,9 +1,6 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import type { LogicalCompany } from '../../../types/dashboard'
-import { useDashboardAccess } from '../../../context/DashboardAccessContext'
 import { useLocale } from '../../../context/LocaleContext'
-import { usePreview } from '../../../context/PreviewContext'
-import { canShowOversiteModule } from '../../../lib/oversiteModuleGate'
 import { fmt } from '../../../lib/format'
 import { getOversiteDateContext } from '../../../lib/oversiteMetrics'
 import { DeliveryNotesModal } from '../DeliveryNotesModal'
@@ -91,10 +88,6 @@ export function SmCubeGrid({
   deliveryContextLabel,
 }: SmCubeGridProps) {
   const { t } = useLocale()
-  const { access } = useDashboardAccess()
-  const { effectiveIsSuperAdmin } = usePreview()
-  const showSummary = (id: 'salesMtd' | 'openOrders' | 'returns' | 'debt') =>
-    canShowOversiteModule(access, id, effectiveIsSuperAdmin)
   const dateCtx = useMemo(() => getOversiteDateContext(), [])
   const [deliveryOpen, setDeliveryOpen] = useState(false)
   const closeDelivery = useCallback(() => setDeliveryOpen(false), [])
@@ -126,7 +119,7 @@ export function SmCubeGrid({
   const useSavedLook = suiteBoard != null
 
   const cubeNodes: Record<string, ReactNode> = {
-    salesMtd: showSummary('salesMtd') ? (
+    salesMtd: (
       <div className="sm-cube sm-cube--mtd">
         <div className="sm-cube-title">{t('sm.cube.salesMtdGoal', { month: monthLbl })}</div>
         <div className="sm-cube-val grn">{fmt(salesMtd.cash)}</div>
@@ -203,8 +196,8 @@ export function SmCubeGrid({
           </div>
         ) : null}
       </div>
-    ) : null,
-    openOrders: showSummary('openOrders') ? (
+    ),
+    openOrders: (
       <div className="sm-cube sm-cube--open">
         <div className="sm-cube-title">{t('sm.cube.openOrders')}</div>
         <div className="sm-cube-val grn">{fmt(openOrders.cash)}</div>
@@ -217,8 +210,8 @@ export function SmCubeGrid({
           </button>
         ) : null}
       </div>
-    ) : null,
-    returns: showSummary('returns') ? (
+    ),
+    returns: (
       <div className="sm-cube sm-cube--returns">
         <div className="sm-cube-title">{t('sm.cube.returns')}</div>
         <div className="sm-cube-val amber">{fmt(returnsMtd.cash)}</div>
@@ -231,8 +224,8 @@ export function SmCubeGrid({
           </button>
         ) : null}
       </div>
-    ) : null,
-    openDebt: showSummary('debt') ? (
+    ),
+    openDebt: (
       <div className="sm-cube sm-cube--debt">
         <div className="sm-cube-title">{t('sm.cube.openDebt')}</div>
         <div className="sm-cube-val">{debtDisplay}</div>
@@ -242,7 +235,7 @@ export function SmCubeGrid({
           </button>
         ) : null}
       </div>
-    ) : null,
+    ),
     ordersLast7: (
       <div
         className={`sm-cube sm-cube--orders${biSlot ? ' sm-cube--orders-with-bi' : ''}${hideChart ? ' sm-cube--orders-no-chart' : ''}`}
@@ -306,7 +299,7 @@ export function SmCubeGrid({
 
   return (
     <div
-      className={`sm-cube-grid${useSavedLook ? ' sm-cube-grid--flow' : ''}${showTsomet ? ' sm-cube-grid--tsomet' : ''}${showYearNetSales ? '' : ' sm-cube-grid--no-year-sales'}${!useSavedLook && !showSummary('salesMtd') ? ' sm-cube-grid--no-summary' : ''}`}
+      className={`sm-cube-grid${useSavedLook ? ' sm-cube-grid--flow' : ''}${showTsomet ? ' sm-cube-grid--tsomet' : ''}${showYearNetSales ? '' : ' sm-cube-grid--no-year-sales'}`}
       {...(useSavedLook ? boardStyleAttrs(suiteBoard.style) : {})}
     >
       {useSavedLook ? (
