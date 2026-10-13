@@ -1,3 +1,4 @@
+import { lazy } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import { useDashboardAccess } from './context/DashboardAccessContext'
@@ -7,17 +8,19 @@ import { pathForModule } from './modules/registry'
 import { LoginPage } from './pages/LoginPage'
 import { DashboardLayout, RequireModule } from './pages/DashboardLayout'
 import { OversitePage } from './pages/OversitePage'
-import { OpenOrdersPage } from './pages/OpenOrdersPage'
-import { OrdersMtdPage } from './pages/OrdersMtdPage'
 import { PlaceholderModulePage } from './pages/PlaceholderModulePage'
-import { SalesPage } from './pages/SalesPage'
-import { StockPage } from './pages/StockPage'
-import { ItemsIndexPage } from './pages/ItemsIndexPage'
-import { DeliveriesPage } from './pages/operations/DeliveriesPage'
-import { UsersPage } from './pages/admin/UsersPage'
-import { ClassesPage } from './pages/admin/ClassesPage'
-import { ModulesPage } from './pages/admin/ModulesPage'
-import { DataHealthPage } from './pages/admin/DataHealthPage'
+
+// Oversight (the start page) stays in the main bundle; other pages load when opened.
+const OpenOrdersPage = lazy(() => import('./pages/OpenOrdersPage').then(m => ({ default: m.OpenOrdersPage })))
+const OrdersMtdPage = lazy(() => import('./pages/OrdersMtdPage').then(m => ({ default: m.OrdersMtdPage })))
+const SalesPage = lazy(() => import('./pages/SalesPage').then(m => ({ default: m.SalesPage })))
+const StockPage = lazy(() => import('./pages/StockPage').then(m => ({ default: m.StockPage })))
+const ItemsIndexPage = lazy(() => import('./pages/ItemsIndexPage').then(m => ({ default: m.ItemsIndexPage })))
+const DeliveriesPage = lazy(() => import('./pages/operations/DeliveriesPage').then(m => ({ default: m.DeliveriesPage })))
+const UsersPage = lazy(() => import('./pages/admin/UsersPage').then(m => ({ default: m.UsersPage })))
+const ClassesPage = lazy(() => import('./pages/admin/ClassesPage').then(m => ({ default: m.ClassesPage })))
+const ModulesPage = lazy(() => import('./pages/admin/ModulesPage').then(m => ({ default: m.ModulesPage })))
+const DataHealthPage = lazy(() => import('./pages/admin/DataHealthPage').then(m => ({ default: m.DataHealthPage })))
 
 function HomeRedirect() {
   const { access, loading } = useDashboardAccess()

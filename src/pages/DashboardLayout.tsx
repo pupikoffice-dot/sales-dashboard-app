@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { Suspense, useEffect, useState, type ReactNode } from 'react'
 import { NavLink, Outlet, Navigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
@@ -49,7 +49,7 @@ export function DashboardLayout() {
   const { theme, setTheme } = useTheme()
   const { skin, available: skins, setSkin } = useSkin()
   const isRtl = dir === 'rtl'
-  const { allRows, debtRows, isLoading: dataLoading, dataHealth } = useDashboardData()
+  const { allRows, debtRows, isLoading: dataLoading, dataHealth, isRefreshing, dataSavedAt } = useDashboardData()
   const queryClient = useQueryClient()
   const location = useLocation()
   const hideNavigation = useSalesAgentNavHide()
@@ -217,7 +217,9 @@ export function DashboardLayout() {
           <p>{t('common.renderingReport')}</p>
         </div>
       )}
-      <Outlet />
+      <Suspense fallback={<p className="status-msg">{t('common.loading')}</p>}>
+        <Outlet />
+      </Suspense>
     </main>
   )
 
@@ -318,6 +320,16 @@ export function DashboardLayout() {
                 ) : (
                   <> {t('header.noDebtRows')}</>
                 )}
+                {isRefreshing ? (
+                  <span
+                    className="data-badge-updating"
+                    title={t('header.updatingTitle', {
+                      time: new Date(dataSavedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    })}
+                  >
+                    {' '}· {t('header.updating')}
+                  </span>
+                ) : null}
               </>
             )}
           </div>

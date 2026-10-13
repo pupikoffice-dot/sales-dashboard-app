@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { normalizeSalesDate } from './salesDate'
+import { decodeSalesPage, encodeSalesRows, type CompactSalesPage } from './salesCompact'
 import type {
   CostRow,
   DashboardData,
@@ -17,7 +18,8 @@ import type {
  * Sales rows are fetched in ~25k-row chunks: get_dashboard_sales_boundaries
  * returns the exact id at every 25k-th accessible row (ids are sparse, so
  * equal id spans would give wildly uneven pages), then each [from,to] range is
- * fetched via get_dashboard_sales_range. Chunks are ~8 MB each — a single
+ * fetched via get_dashboard_sales_range_v2 (compact columns + string dictionary,
+ * ~2 MB a chunk; falls back to v1 objects, ~8 MB, if v2 is missing). Chunks were ~8 MB each — a single
  * all-rows response (~72 MB) crashes PostgREST and 521s the whole API, so DO
  * NOT consolidate this back into one query. Parallelism is kept modest (3) and
  * each chunk retries up to CHUNK_RETRIES times (3 attempts total) to ride out
@@ -53,21 +55,52 @@ interface SalesRangePage {
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
-async function fetchSalesRange(fromId: number, toId: number): Promise<SalesRow[]> {
+/** Everything one download brings, before decoding. This is what the device cache keeps. */
+export interface DashboardWire {
+  pages: CompactSalesPage[]
+  aux: AuxPayload
+}
+
+/** PostgREST "function not found": the database has no v2 yet, so use v1. */
+let v2Missing = false
+
+async function fetchSalesRange(fromId: number, toId: number): Promise<CompactSalesPage> {
   let lastError: Error | null = null
   for (let attempt = 0; attempt <= CHUNK_RETRIES; attempt++) {
     if (attempt > 0) await sleep(1500 * attempt)
+    if (!v2Missing) {
+      const { data, error } = await supabase.rpc('get_dashboard_sales_range_v2', {
+        p_from_id: fromId,
+        p_to_id: toId,
+      })
+      if (!error) return data as CompactSalesPage
+      if (error.code === 'PGRST202') v2Missing = true
+      else {
+        lastError = new Error(`get_dashboard_sales_range_v2 failed: ${error.message}`)
+        continue
+      }
+    }
     const { data, error } = await supabase.rpc('get_dashboard_sales_range', {
       p_from_id: fromId,
       p_to_id: toId,
     })
-    if (!error) return ((data ?? {}) as SalesRangePage).rows ?? []
+    if (!error) return encodeSalesRows(((data ?? {}) as SalesRangePage).rows ?? [])
     lastError = new Error(`get_dashboard_sales_range failed: ${error.message}`)
   }
   throw lastError
 }
 
-export async function loadDashboardDataFromSupabase(): Promise<DashboardData> {
+async function fetchAux(): Promise<AuxPayload> {
+  const { data: auxData, error: auxError } = await supabase.rpc('get_dashboard_aux')
+  if (auxError) throw new Error(`get_dashboard_aux failed: ${auxError.message}`)
+  return (auxData ?? {}) as AuxPayload
+}
+
+/** Downloads the payload in compact form. Aux runs alongside the sales pages. */
+export async function fetchDashboardWire(): Promise<DashboardWire> {
+  const auxPromise = fetchAux()
+  auxPromise.catch(() => {}) // awaited below; avoids an unhandled rejection if sales fail first
+
   const { data: boundsData, error: boundsError } = await supabase.rpc(
     'get_dashboard_sales_boundaries',
     { p_page_rows: PAGE_ROWS },
@@ -76,12 +109,12 @@ export async function loadDashboardDataFromSupabase(): Promise<DashboardData> {
   const bounds = (boundsData ?? {}) as SalesBoundaries
   const starts = bounds.boundaries ?? []
 
-  let rows: SalesRow[] = []
+  let pages: CompactSalesPage[] = []
   if (starts.length > 0 && bounds.max_id != null) {
     const ranges: Array<[number, number]> = starts.map((from, i) =>
       i + 1 < starts.length ? [from, starts[i + 1] - 1] : [from, bounds.max_id as number],
     )
-    const results: SalesRow[][] = new Array(ranges.length)
+    const results: CompactSalesPage[] = new Array(ranges.length)
     let next = 0
     const workers = Array.from({ length: Math.min(MAX_PARALLEL, ranges.length) }, async () => {
       while (next < ranges.length) {
@@ -91,12 +124,16 @@ export async function loadDashboardDataFromSupabase(): Promise<DashboardData> {
       }
     })
     await Promise.all(workers)
-    rows = results.flat().map(normalizeSalesRowDates)
+    pages = results
   }
 
-  const { data: auxData, error: auxError } = await supabase.rpc('get_dashboard_aux')
-  if (auxError) throw new Error(`get_dashboard_aux failed: ${auxError.message}`)
-  const aux = (auxData ?? {}) as AuxPayload
+  return { pages, aux: await auxPromise }
+}
+
+/** Compact download (fresh or from the device cache) to the shape every page uses. */
+export function dashboardDataFromWire(wire: DashboardWire): DashboardData {
+  const rows = wire.pages.flatMap(decodeSalesPage).map(normalizeSalesRowDates)
+  const aux = wire.aux ?? {}
 
   // generated should be the max sync time across all segments, not the browser's current time
   let generatedTs = new Date().toISOString()
@@ -124,6 +161,10 @@ export async function loadDashboardDataFromSupabase(): Promise<DashboardData> {
     receiptsMonthlyByAgent: aux.receiptsMonthlyByAgent ?? {},
     syncTimes: aux.syncTimes ?? {},
   }
+}
+
+export async function loadDashboardDataFromSupabase(): Promise<DashboardData> {
+  return dashboardDataFromWire(await fetchDashboardWire())
 }
 
 /** Force every sales row date to YYYY-MM-DD so day charts/KPIs never miss rows. */

@@ -295,6 +295,11 @@ html[data-theme='light'] .dashboard-suite-disclaimer {
   color: var(--muted);
 }
 
+.data-badge-updating {
+  color: var(--acc);
+  font-weight: 600;
+}
+
 .data-badge b {
   color: var(--acc);
 }

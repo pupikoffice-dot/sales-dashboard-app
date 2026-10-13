@@ -1,4 +1,15 @@
-import * as XLSX from 'xlsx'
+// The spreadsheet library is big; it loads on first export (and is fetched quietly
+// after start-up) instead of being part of the first download every phone makes.
+let xlsxPromise: Promise<typeof import('xlsx')> | null = null
+function loadXlsx(): Promise<typeof import('xlsx')> {
+  xlsxPromise ??= import('xlsx')
+  return xlsxPromise
+}
+if (typeof window !== 'undefined') {
+  const warm = () => void loadXlsx().catch(() => { xlsxPromise = null })
+  if ('requestIdleCallback' in window) window.requestIdleCallback(warm, { timeout: 15000 })
+  else setTimeout(warm, 8000)
+}
 import { isMonthlyDualTable } from './tablePieExtract'
 
 function cleanCellText(el: Element): string {
@@ -136,13 +147,16 @@ export function downloadWorkbook(
   sheets: Array<{ name: string; rows: string[][] }>,
   filename: string,
 ): void {
-  const wb = XLSX.utils.book_new()
-  for (const sheet of sheets) {
-    if (!sheet.rows.length) continue
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sheet.rows), sheet.name.slice(0, 31))
-  }
-  if (!wb.SheetNames.length) return
-  XLSX.writeFile(wb, filename)
+  if (!sheets.some(sheet => sheet.rows.length)) return
+  void loadXlsx().then(XLSX => {
+    const wb = XLSX.utils.book_new()
+    for (const sheet of sheets) {
+      if (!sheet.rows.length) continue
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sheet.rows), sheet.name.slice(0, 31))
+    }
+    if (!wb.SheetNames.length) return
+    XLSX.writeFile(wb, filename)
+  })
 }
 
 export function downloadSplitCashQtyTable(
