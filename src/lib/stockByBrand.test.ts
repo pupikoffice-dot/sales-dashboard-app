@@ -4,6 +4,7 @@ import {
   brandTotals,
   companiesWithStock,
   filterBrandRows,
+  maskBrandPayloadForPreview,
   sortBrandRows,
   type BrandStockRow,
 } from './stockByBrand'
@@ -39,5 +40,16 @@ describe('stock by brand helpers', () => {
     expect(sortBrandRows(p, 'value', 'desc', 450).map(r => r.brand)).toEqual(['Funko', 'Pathfinder', 'Alpha'])
     expect(filterBrandRows(p, ' path ').map(r => r.brand)).toEqual(['Pathfinder'])
     expect(filterBrandRows(p, '')).toHaveLength(3)
+  })
+
+  it('preview: keeps only the companies of the previewed user and drops value without cost permission', () => {
+    const p = { rows, showValue: true }
+    const masked = maskBrandPayloadForPreview(p, { companies: ['pupik'], showItemCost: false })
+    expect(masked.rows.every(r => r.co === 'pupik')).toBe(true)
+    expect(masked.showValue).toBe(false)
+    expect(masked.rows.every(r => r.value === null && r.noCost === null)).toBe(true)
+    const kept = maskBrandPayloadForPreview(p, { companies: ['pupik', 'mt'], showItemCost: true })
+    expect(kept.rows).toHaveLength(4)
+    expect(kept.showValue).toBe(true)
   })
 })

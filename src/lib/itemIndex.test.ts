@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('./supabase', () => ({ supabase: { rpc: vi.fn() } }))
 
-import { filterItemIndex, parseItemIndex } from './itemIndex'
+import { filterItemIndex, maskItemIndexForPreview, parseItemIndex } from './itemIndex'
 import { SIDEBAR_HIDE_OPTIONS } from './sidebarHide'
 
 const payload = {
@@ -46,5 +46,20 @@ describe('hide keys', () => {
   it('registers the Items tab and the cost / FOB column keys', () => {
     const ids = SIDEBAR_HIDE_OPTIONS.map(o => o.id)
     expect(ids).toEqual(expect.arrayContaining(['date.items', 'items.col.cost', 'items.col.fob']))
+  })
+
+  it('preview masking: only the companies and cost columns the previewed user has', () => {
+    const idx = parseItemIndex({ ...payload, showFob: true, rows: payload.rows.map(r => ({ ...r, fob: 9, cost: 5 })) })
+    const noCost = maskItemIndexForPreview(idx, { companies: ['pupik'], showItemCost: false })
+    expect(noCost.rows.every(r => r.co === 'pupik')).toBe(true)
+    expect(noCost.showCost).toBe(false)
+    expect(noCost.showFob).toBe(false)
+    expect(noCost.rows.every(r => r.cost === null && r.fob === null)).toBe(true)
+    const costNoFob = maskItemIndexForPreview(idx, { companies: ['pupik', 'mt'], showItemCost: true, hiddenSidebar: ['items.col.fob'] })
+    expect(costNoFob.rows.length).toBe(idx.rows.length)
+    expect(costNoFob.showCost).toBe(true)
+    expect(costNoFob.showFob).toBe(false)
+    expect(costNoFob.rows.every(r => r.fob === null)).toBe(true)
+    expect(maskItemIndexForPreview(idx, { companies: ['pupik'], showItemCost: true, hiddenSidebar: ['date.items'] }).rows).toEqual([])
   })
 })

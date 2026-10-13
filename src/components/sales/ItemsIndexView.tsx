@@ -4,7 +4,9 @@ import { SortableTh } from './SortableTh'
 import { SalesReportUiProvider, useSalesReportUi } from '../../context/SalesReportUiContext'
 import { fmt0, fmt2 } from '../../lib/format'
 import { companyLabel } from '../../lib/salesMetrics'
-import { fetchItemIndex, filterItemIndex } from '../../lib/itemIndex'
+import { fetchItemIndex, filterItemIndex, maskItemIndexForPreview } from '../../lib/itemIndex'
+import { useDashboardAccess } from '../../context/DashboardAccessContext'
+import { usePreview } from '../../context/PreviewContext'
 import { SalesReportStickySetup } from './SalesReportStickySetup'
 import { TableWithExport } from './TableWithExport'
 import type { LogicalCompany } from '../../types/dashboard'
@@ -16,7 +18,15 @@ interface ItemsIndexViewProps {
 
 function ItemsIndexContent({ initialCompany }: ItemsIndexViewProps) {
   const { searchQuery, setSearchQuery } = useSalesReportUi()
-  const q = useQuery({ queryKey: ['item-index'], queryFn: fetchItemIndex, staleTime: 30 * 60 * 1000 })
+  const raw = useQuery({ queryKey: ['item-index'], queryFn: fetchItemIndex, staleTime: 30 * 60 * 1000 })
+  const { access } = useDashboardAccess()
+  const { isPreviewing, effectiveIsSuperAdmin } = usePreview()
+  // "View as user": the fetch used the admin's session, so cut it down to the previewed user's access.
+  const data = useMemo(
+    () => (raw.data && isPreviewing && !effectiveIsSuperAdmin && access ? maskItemIndexForPreview(raw.data, access) : raw.data),
+    [raw.data, isPreviewing, effectiveIsSuperAdmin, access],
+  )
+  const q = { isLoading: raw.isLoading, error: raw.error, data }
   const [company, setCompany] = useState<LogicalCompany | 'all'>(initialCompany ?? 'all')
 
   const companies = useMemo(
