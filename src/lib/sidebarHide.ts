@@ -27,7 +27,11 @@ export const SIDEBAR_HIDE_GROUPS: SidebarHideGroup[] = [
   },
   {
     title: 'Operations',
-    options: [{ id: 'nav.ops_deliveries', label: 'Deliveries' }],
+    options: [
+      { id: 'nav.ops_deliveries', label: 'Deliveries' },
+      { id: 'nav.stock_brand', label: 'Stock by brand' },
+      { id: 'nav.items_index', label: 'Items' },
+    ],
   },
   {
     title: 'Filters',

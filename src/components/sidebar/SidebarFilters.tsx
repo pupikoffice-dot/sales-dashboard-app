@@ -24,11 +24,11 @@ const COMPANY_BUTTONS: { id: LogicalCompany; label: string }[] = [
   { id: 'gold', label: '🥇 Goldbug' },
 ]
 
-const DATE_TAB_KEYS: { id: DateMode; key: 'filters.fromTo' | 'filters.months' | 'filters.openOrders' | 'filters.stock' }[] = [
+// Stock and Items now live under Operations in the sidebar, not here.
+const DATE_TAB_KEYS: { id: DateMode; key: 'filters.fromTo' | 'filters.months' | 'filters.openOrders' }[] = [
   { id: 'range', key: 'filters.fromTo' },
   { id: 'months', key: 'filters.months' },
   { id: 'openorders', key: 'filters.openOrders' },
-  { id: 'stock', key: 'filters.stock' },
 ]
 
 const MONTH_YEARS = [2025, 2026]
@@ -168,18 +168,9 @@ export function SidebarFilters() {
               }}
               disabled={!f.company}
             >
-              {tab.id === 'openorders' ? `📋 ${t(tab.key)}` : tab.id === 'stock' ? `📦 ${t(tab.key)}` : t(tab.key)}
+              {tab.id === 'openorders' ? `📋 ${t(tab.key)}` : t(tab.key)}
             </button>
           ))}
-          {!access?.hiddenSidebar?.includes('date.items') && (
-            <button
-              type="button"
-              className={`tab-btn${location.pathname.startsWith('/items') ? ' active' : ''}`}
-              onClick={() => navigate('/items')}
-            >
-              🗂 {t('filters.itemsIndex')}
-            </button>
-          )}
           <button
             type="button"
             className="legend-btn legend-btn-sm"

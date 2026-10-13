@@ -15,6 +15,8 @@ const OpenOrdersPage = lazy(() => import('./pages/OpenOrdersPage').then(m => ({ 
 const OrdersMtdPage = lazy(() => import('./pages/OrdersMtdPage').then(m => ({ default: m.OrdersMtdPage })))
 const SalesPage = lazy(() => import('./pages/SalesPage').then(m => ({ default: m.SalesPage })))
 const StockPage = lazy(() => import('./pages/StockPage').then(m => ({ default: m.StockPage })))
+const StockBrandPage = lazy(() => import('./pages/StockBrandPage').then(m => ({ default: m.StockBrandPage })))
+const MonthlyDataPage = lazy(() => import('./pages/rnd/MonthlyDataPage').then(m => ({ default: m.MonthlyDataPage })))
 const ItemsIndexPage = lazy(() => import('./pages/ItemsIndexPage').then(m => ({ default: m.ItemsIndexPage })))
 const DeliveriesPage = lazy(() => import('./pages/operations/DeliveriesPage').then(m => ({ default: m.DeliveriesPage })))
 const UsersPage = lazy(() => import('./pages/admin/UsersPage').then(m => ({ default: m.UsersPage })))
@@ -52,6 +54,8 @@ function ProtectedApp() {
         <Route path="stock-alerts" element={<RequireModule moduleId="stock_alerts"><PlaceholderModulePage title="Stock Alerts" /></RequireModule>} />
         <Route path="stock" element={<RequireModule moduleId="stock"><StockPage /></RequireModule>} />
         <Route path="items" element={<ItemsIndexPage />} />
+        <Route path="stock-brand" element={<RequireModule moduleId="stock"><StockBrandPage /></RequireModule>} />
+        {isSuperAdmin && <Route path="rnd/monthly" element={<MonthlyDataPage />} />}
         <Route path="export" element={<RequireModule moduleId="export"><PlaceholderModulePage title="Export" /></RequireModule>} />
         <Route path="operations/deliveries" element={<RequireModule moduleId="ops_deliveries"><DeliveriesPage /></RequireModule>} />
         {canManageUsers && <Route path="admin/users" element={<UsersPage />} />}
