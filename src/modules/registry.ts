@@ -1,6 +1,7 @@
 import type { DashboardModuleId } from '../types/dashboard'
 
 export type ModuleSection = 'main' | 'operations'
+export type NavSection = ModuleSection | 'rnd'
 
 export interface ModuleDef {
   id: DashboardModuleId
@@ -17,9 +18,31 @@ export const MODULE_REGISTRY: ModuleDef[] = [
   { id: 'returns', label: 'Returns', path: '/returns', section: 'main' },
   { id: 'debt', label: 'Debt', path: '/debt', section: 'main' },
   { id: 'stock_alerts', label: 'Stock Alerts', path: '/stock-alerts', section: 'main' },
-  { id: 'stock', label: 'Stock', path: '/stock', section: 'main' },
   { id: 'export', label: 'Export', path: '/export', section: 'main' },
   { id: 'ops_deliveries', label: 'Deliveries', path: '/operations/deliveries', section: 'operations' },
+  { id: 'stock', label: 'Stock', path: '/stock', section: 'operations' },
+]
+
+/**
+ * Sidebar buttons that are not grantable modules (they do not appear as permission checkboxes).
+ *  - follows: shown to anyone who has that module
+ *  - hideKey: legacy Filter-panel hide key that still hides it (kept so existing per-user settings keep working)
+ *  - superAdminOnly: super admin only (honours "View as")
+ */
+export interface NavExtra {
+  id: string
+  label: string
+  path: string
+  section: NavSection
+  follows?: DashboardModuleId
+  hideKey?: string
+  superAdminOnly?: boolean
+}
+
+export const NAV_EXTRAS: NavExtra[] = [
+  { id: 'stock_brand', label: 'Stock by brand', path: '/stock-brand', section: 'operations', follows: 'stock' },
+  { id: 'items_index', label: 'Items', path: '/items', section: 'operations', hideKey: 'date.items' },
+  { id: 'rnd_monthly', label: 'Monthly data', path: '/rnd/monthly', section: 'rnd', superAdminOnly: true },
 ]
 
 export function pathForModule(id: DashboardModuleId): string {

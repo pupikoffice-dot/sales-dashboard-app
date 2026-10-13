@@ -15,7 +15,7 @@ import { PreviewBanner } from '../components/admin/PreviewBanner'
 import { ViewAsSwitcher } from '../components/admin/ViewAsSwitcher'
 import { IntercompanySwitcher } from '../components/IntercompanySwitcher'
 import { SidebarFilters } from '../components/sidebar/SidebarFilters'
-import { MODULE_REGISTRY } from '../modules/registry'
+import { MODULE_REGISTRY, NAV_EXTRAS } from '../modules/registry'
 import { sidebarNavHideId } from '../lib/sidebarHide'
 import { useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
@@ -109,7 +109,27 @@ export function DashboardLayout() {
   const visible = MODULE_REGISTRY.filter(m => canShowModule(access, m.id, effectiveIsSuperAdmin))
   const hiddenNav = new Set(access.hiddenSidebar ?? [])
   const visibleMain = visible.filter(m => m.section === 'main' && !hiddenNav.has(sidebarNavHideId(m.id)))
-  const visibleOps = visible.filter(m => m.section === 'operations' && !hiddenNav.has(sidebarNavHideId(m.id)))
+  // Stock used to be a Filter-panel tab; its old hide key keeps hiding it.
+  const visibleOps = visible.filter(
+    m => m.section === 'operations' && !hiddenNav.has(sidebarNavHideId(m.id)) && !(m.id === 'stock' && hiddenNav.has('date.stock')),
+  )
+  const extraVisible = (section: 'operations' | 'rnd') =>
+    NAV_EXTRAS.filter(
+      x =>
+        x.section === section &&
+        !hiddenNav.has(sidebarNavHideId(x.id)) &&
+        !(x.hideKey && hiddenNav.has(x.hideKey)) &&
+        (x.superAdminOnly
+          ? effectiveIsSuperAdmin
+          : x.follows
+            ? canShowModule(access, x.follows, effectiveIsSuperAdmin)
+            : true),
+    )
+  const opsItems = [
+    ...visibleOps.map(m => ({ id: m.id as string, path: m.path })),
+    ...extraVisible('operations').map(x => ({ id: x.id, path: x.path })),
+  ]
+  const rndItems = extraVisible('rnd').map(x => ({ id: x.id, path: x.path }))
   const rowCount = allRows.length
   const debtCount = debtRows.length
 
@@ -137,12 +157,29 @@ export function DashboardLayout() {
             {navLabel(locale, m.id)}
           </NavLink>
         ))}
-        {visibleOps.length > 0 && (
+        {rndItems.length > 0 && (
+          <>
+            <div className="sidebar-label" style={{ marginTop: 8 }}>
+              {t('nav.rnd')}
+            </div>
+            {rndItems.map(m => (
+              <NavLink
+                key={m.id}
+                to={m.path}
+                onClick={() => setSidebarOpen(false)}
+                className={({ isActive }) => `nav-btn${isActive ? ' active' : ''}`}
+              >
+                {navLabel(locale, m.id)}
+              </NavLink>
+            ))}
+          </>
+        )}
+        {opsItems.length > 0 && (
           <>
             <div className="sidebar-label" style={{ marginTop: 8 }}>
               {t('nav.operations')}
             </div>
-            {visibleOps.map(m => (
+            {opsItems.map(m => (
               <NavLink
                 key={m.id}
                 to={m.path}
