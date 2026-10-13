@@ -242,6 +242,7 @@ export const messages = {
 
   'sales.title': 'Sales Performance',
   'sales.openOrdersTitle': 'Open Orders',
+  'stock.pickCompanyHere': 'Choose a company above.',
   'sales.pickCompany': 'Select a company in the sidebar, set view options, then click Apply & Render.',
   'sales.clickApply': 'Filters are set — click Apply & Render in the sidebar to load the report.',
   'sales.buildingStock': 'Building stock report…',

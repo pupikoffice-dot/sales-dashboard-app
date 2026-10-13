@@ -61,7 +61,9 @@ export function DashboardLayout() {
     oversightLayout.display.mode === 'suite' &&
     (oversightLayout.display.suiteId === 'sales_manager' ||
       oversightLayout.display.suiteId === 'sales_agent')
-  const showFilters = !location.pathname.startsWith('/admin') && !hideNavigation
+  // Stock, Stock by brand, Items and R&D choose their company inside the page, so the Filter panel stays out of the way.
+  const ownFilters = ['/stock', '/stock-brand', '/items', '/rnd'].some(p => location.pathname === p || location.pathname.startsWith(`${p}/`))
+  const showFilters = !location.pathname.startsWith('/admin') && !hideNavigation && !ownFilters
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { data: liveActiveVersion = '1.0' } = useQuery({
     queryKey: ['app-active-version'],

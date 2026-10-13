@@ -244,6 +244,7 @@ export const messages: Record<keyof typeof en, string> = {
 
   'sales.title': 'ביצועי מכירות',
   'sales.openOrdersTitle': 'הזמנות פתוחות',
+  'stock.pickCompanyHere': 'בחר חברה למעלה.',
   'sales.pickCompany': 'בחר חברה בסרגל הצד, הגדר אפשרויות תצוגה, ואז לחץ החל ורנדר.',
   'sales.clickApply': 'המסננים מוגדרים — לחץ החל ורנדר בסרגל הצד כדי לטעון את הדוח.',
   'sales.buildingStock': 'מכין דוח מלאי…',
