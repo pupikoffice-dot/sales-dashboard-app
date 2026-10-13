@@ -66,6 +66,32 @@ export async function fetchItemIndex(): Promise<ItemIndex> {
   return parseItemIndex(data)
 }
 
+/** What a previewed user may see (the preview target's access, not the signed-in admin's). */
+export interface PreviewScope {
+  companies: readonly string[]
+  showItemCost: boolean
+  hiddenSidebar?: readonly string[] | null
+}
+
+/**
+ * "View as user": the data was fetched with the admin's own session, so it holds every company and all cost
+ * columns. Cut it down to what the previewed user would get from the database itself.
+ */
+export function maskItemIndexForPreview(idx: ItemIndex, scope: PreviewScope): ItemIndex {
+  const hidden = new Set(scope.hiddenSidebar ?? [])
+  if (hidden.has('date.items')) return EMPTY
+  const co = new Set(scope.companies)
+  const showCost = idx.showCost && scope.showItemCost && !hidden.has('items.col.cost')
+  const showFob = idx.showFob && scope.showItemCost && !hidden.has('items.col.fob')
+  return {
+    showCost,
+    showFob,
+    rows: idx.rows
+      .filter(r => co.has(r.co))
+      .map(r => ({ ...r, cost: showCost ? r.cost : null, fob: showFob ? r.fob : null })),
+  }
+}
+
 /** Rows of one company ('all' = every company), matching the search on SKU, name, alternate no., barcode, category. */
 export function filterItemIndex(rows: ItemIndexRow[], company: LogicalCompany | 'all', query: string): ItemIndexRow[] {
   return rows.filter(

@@ -5,11 +5,14 @@ import { SalesReportUiProvider, useSalesReportUi } from '../../context/SalesRepo
 import { fmt0 } from '../../lib/format'
 import { companyLabel } from '../../lib/salesMetrics'
 import { supabase } from '../../lib/supabase'
+import { useDashboardAccess } from '../../context/DashboardAccessContext'
+import { usePreview } from '../../context/PreviewContext'
 import {
   brandsForCompany,
   brandTotals,
   companiesWithStock,
   filterBrandRows,
+  maskBrandPayloadForPreview,
   type BrandStockPayload,
 } from '../../lib/stockByBrand'
 import { SalesReportStickySetup } from './SalesReportStickySetup'
@@ -27,7 +30,15 @@ async function fetchStockByBrand(): Promise<BrandStockPayload> {
 
 function StockBrandContent({ initialCompany }: { initialCompany: LogicalCompany | null }) {
   const { searchQuery, setSearchQuery } = useSalesReportUi()
-  const q = useQuery({ queryKey: ['stock-by-brand'], queryFn: fetchStockByBrand, staleTime: 5 * 60 * 1000 })
+  const raw = useQuery({ queryKey: ['stock-by-brand'], queryFn: fetchStockByBrand, staleTime: 5 * 60 * 1000 })
+  const { access } = useDashboardAccess()
+  const { isPreviewing, effectiveIsSuperAdmin } = usePreview()
+  // "View as user": the fetch used the admin's session, so cut it down to the previewed user's access.
+  const data = useMemo(
+    () => (raw.data && isPreviewing && !effectiveIsSuperAdmin && access ? maskBrandPayloadForPreview(raw.data, access) : raw.data),
+    [raw.data, isPreviewing, effectiveIsSuperAdmin, access],
+  )
+  const q = { isLoading: raw.isLoading, error: raw.error, data }
   const [picked, setPicked] = useState<string | null>(initialCompany)
 
   const companies = useMemo(() => companiesWithStock(q.data?.rows ?? [], COMPANY_ORDER), [q.data])

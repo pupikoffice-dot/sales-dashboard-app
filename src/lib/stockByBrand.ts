@@ -16,6 +16,21 @@ export interface BrandStockPayload {
   showValue: boolean
 }
 
+/** "View as user": cut the admin's own payload down to the previewed user's companies and cost permission. */
+export function maskBrandPayloadForPreview(
+  p: BrandStockPayload,
+  scope: { companies: readonly string[]; showItemCost: boolean },
+): BrandStockPayload {
+  const co = new Set(scope.companies)
+  const showValue = p.showValue && scope.showItemCost
+  return {
+    showValue,
+    rows: p.rows
+      .filter(r => co.has(r.co))
+      .map(r => (showValue ? r : { ...r, value: null, noCost: null })),
+  }
+}
+
 export type BrandSortKey = 'brand' | 'items' | 'inStock' | 'units' | 'value' | 'share'
 
 export interface BrandStockTotals {
