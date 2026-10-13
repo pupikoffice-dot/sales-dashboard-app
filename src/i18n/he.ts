@@ -3,6 +3,8 @@ import type { messages as en } from './en'
 export const messages: Record<keyof typeof en, string> = {
   'common.loading': 'טוען…',
   'common.loadingData': 'טוען נתונים…',
+  'header.updating': 'מתעדכן…',
+  'header.updatingTitle': 'מוצגים נתונים מ-{time}; נתונים עדכניים בטעינה',
   'common.loadingSalesData': 'טוען נתוני מכירות…',
   'common.loadingUsers': 'טוען משתמשים…',
   'common.loadingPermissions': 'טוען הרשאות…',

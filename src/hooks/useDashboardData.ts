@@ -1,5 +1,5 @@
-import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useEffect, useMemo } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { useDashboardAccess } from '../context/DashboardAccessContext'
 import { usePreview } from '../context/PreviewContext'
@@ -8,7 +8,9 @@ import { filterDebtRows, normalizeDebtRows } from '../lib/debtMetrics'
 import { buildItemCostMap, buildItemPriceMap } from '../lib/itemPricing'
 import { checkOrdersDataHealth } from '../lib/dataHealth'
 import { fetchDashboardLoader } from '../lib/parseDashboardLoader'
-import { loadDashboardDataFromSupabase } from '../lib/loadFromSupabase'
+import { dashboardDataFromWire, fetchDashboardWire, type DashboardWire } from '../lib/loadFromSupabase'
+import { readDashboardCache, writeDashboardCache } from '../lib/dashboardCache'
+import { supabase } from '../lib/supabase'
 import { normalizeSalesDate } from '../lib/salesDate'
 import { buildSalesFilterIndex, type SalesFilterIndex } from '../lib/salesFilterIndex'
 import { augmentWmsMapsForGold } from '../lib/goldPupikWms'
@@ -56,24 +58,37 @@ async function loadFromBlob(): Promise<DashboardData> {
   return (await res.json()) as DashboardData
 }
 
-async function loadDashboardData(): Promise<LoadedDashboardPayload> {
+const useSupabaseData = (import.meta.env.VITE_USE_SUPABASE_DATA ?? 'true') !== 'false'
+
+function withFilterIndex(data: DashboardData): LoadedDashboardPayload {
+  if (!data?.rows) throw new Error('Dashboard data missing rows')
+  return { ...data, filterIndex: buildSalesFilterIndex(data.rows) }
+}
+
+async function loadDashboardData(userId: string | null): Promise<LoadedDashboardPayload> {
   // Default to the Supabase data path; set VITE_USE_SUPABASE_DATA=false to fall
   // back to the legacy data_loader.js blob during parallel parity testing.
-  const useSupabase = (import.meta.env.VITE_USE_SUPABASE_DATA ?? 'true') !== 'false'
-  const data = useSupabase ? await loadDashboardDataFromSupabase() : await loadFromBlob()
-
-  if (!data?.rows) throw new Error('Dashboard data missing rows')
-
-  // Blob path may still carry ISO/datetime/dd-mm dates — normalize once for all KPIs.
-  if (!useSupabase) {
+  if (!useSupabaseData) {
+    const data = await loadFromBlob()
+    if (!data?.rows) throw new Error('Dashboard data missing rows')
+    // Blob path may still carry ISO/datetime/dd-mm dates — normalize once for all KPIs.
     data.rows = data.rows.map(r => {
       const date = normalizeSalesDate(r.date)
       return date && date !== r.date ? { ...r, date } : r
     })
+    return withFilterIndex(data)
   }
 
-  const filterIndex = buildSalesFilterIndex(data.rows)
-  return { ...data, filterIndex }
+  const wire = await fetchDashboardWire()
+  if (userId) void saveWire(userId, wire)
+  return withFilterIndex(dashboardDataFromWire(wire))
+}
+
+/** Keep the download on this device, but only while the same user is still signed in. */
+async function saveWire(userId: string, wire: DashboardWire): Promise<void> {
+  const { data } = await supabase.auth.getSession()
+  if (data.session?.user.id !== userId) return
+  await writeDashboardCache(userId, wire)
 }
 
 export function useDashboardData() {
@@ -81,17 +96,45 @@ export function useDashboardData() {
   const { session } = useAuth()
   const { isPreviewing, effectiveIsSuperAdmin } = usePreview()
 
+  const queryClient = useQueryClient()
+  const userId = session?.user.id ?? null
+  const enabled = !!access && !!session
+  const queryKey = useMemo(() => ['dashboard-data', userId] as const, [userId])
+
   const q = useQuery({
     // Keyed by user id (not just a static string) so cached data from one
     // user's session is never served to a different user in the same tab —
     // AuthContext also clears the whole cache on any user change as a
     // second layer, but a distinct key is the safer primary guard.
-    queryKey: ['dashboard-data', session?.user.id ?? null],
-    queryFn: loadDashboardData,
+    queryKey,
+    queryFn: () => loadDashboardData(userId),
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
-    enabled: !!access && !!session,
+    enabled,
   })
+
+  // Reopening the app: show the last download kept on this device at once; the
+  // query above keeps loading fresh data and replaces it when it arrives.
+  useEffect(() => {
+    if (!enabled || !userId || !useSupabaseData) return
+    if (queryClient.getQueryData(queryKey)) return
+    let cancelled = false
+    readDashboardCache<DashboardWire>(userId).then(hit => {
+      if (cancelled || !hit || queryClient.getQueryData(queryKey)) return
+      try {
+        const payload = withFilterIndex(dashboardDataFromWire(hit.value))
+        // Still missing? (the fresh download may have landed while decoding)
+        if (!queryClient.getQueryData(queryKey)) {
+          queryClient.setQueryData(queryKey, payload, { updatedAt: hit.savedAt })
+        }
+      } catch {
+        /* unreadable cache: just wait for the download */
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [enabled, userId, queryKey, queryClient])
 
   // The payload was fetched under the REAL session, so while previewing a
   // non-super-admin it can contain things that user could never receive. Mask
@@ -188,5 +231,9 @@ export function useDashboardData() {
     itemCost,
     itemPrice,
     debtLastUpdate: q.data?.debtLastUpdate ?? window.__DEBT_LAST_UPDATE__,
+    /** Showing earlier data (e.g. the copy kept on this device) while a fresh download runs. */
+    isRefreshing: !!q.data && q.isFetching,
+    /** When the data on screen was downloaded (ms). */
+    dataSavedAt: q.dataUpdatedAt,
   }
 }

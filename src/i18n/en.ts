@@ -1,6 +1,8 @@
 export const messages = {
   'common.loading': 'Loading…',
   'common.loadingData': 'Loading data…',
+  'header.updating': 'Updating…',
+  'header.updatingTitle': 'Showing data from {time}; fresh data is loading',
   'common.loadingSalesData': 'Loading sales data…',
   'common.loadingUsers': 'Loading users…',
   'common.loadingPermissions': 'Loading permissions…',

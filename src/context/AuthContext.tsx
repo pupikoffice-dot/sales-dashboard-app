@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { queryClient } from '../lib/queryClient'
+import { clearDashboardCache } from '../lib/dashboardCache'
 
 interface AuthContextValue {
   session: Session | null
@@ -26,6 +27,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       lastUserId.current = data.session?.user.id ?? null
+      // Nobody signed in: drop any dashboard copy kept on this device.
+      if (!data.session) void clearDashboardCache()
       setSession(data.session)
       setLoading(false)
     })
@@ -36,6 +39,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const newUserId = s?.user.id ?? null
       if (newUserId !== lastUserId.current) {
         queryClient.clear()
+        // Real switch or sign-out only: the first event of a page load (unknown -> user) keeps the device copy.
+        if (lastUserId.current !== null || newUserId === null) void clearDashboardCache()
         lastUserId.current = newUserId
       }
       setSession(s)
