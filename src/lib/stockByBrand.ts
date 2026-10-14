@@ -31,6 +31,23 @@ export function maskBrandPayloadForPreview(
   }
 }
 
+export interface PieSlice {
+  label: string
+  units: number
+}
+
+/** Brands by units for the pie: the biggest `top` brands, everything else together as one slice. Stock-less brands are left out. */
+export function pieSlices(rows: BrandStockRow[], top = 9, otherLabel = 'Other'): PieSlice[] {
+  const sorted = rows
+    .map(r => ({ label: r.brand, units: Number(r.units) || 0 }))
+    .filter(r => r.units > 0)
+    .sort((a, b) => b.units - a.units)
+  if (sorted.length <= top + 1) return sorted
+  const head = sorted.slice(0, top)
+  const rest = sorted.slice(top).reduce((s, r) => s + r.units, 0)
+  return [...head, { label: otherLabel, units: rest }]
+}
+
 export type BrandSortKey = 'brand' | 'items' | 'inStock' | 'units' | 'value' | 'share'
 
 export interface BrandStockTotals {

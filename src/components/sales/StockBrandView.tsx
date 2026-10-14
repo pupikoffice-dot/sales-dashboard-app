@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import type { ChartConfiguration } from 'chart.js'
+import { HubChart, cssVar } from '../oversite/hub/HubChart'
 import { SortableTh } from './SortableTh'
 import { SalesReportUiProvider, useSalesReportUi } from '../../context/SalesReportUiContext'
 import { fmt0 } from '../../lib/format'
@@ -13,6 +15,7 @@ import {
   companiesWithStock,
   filterBrandRows,
   maskBrandPayloadForPreview,
+  pieSlices,
   type BrandStockPayload,
 } from '../../lib/stockByBrand'
 import { SalesReportStickySetup } from './SalesReportStickySetup'
@@ -48,6 +51,42 @@ function StockBrandContent({ initialCompany }: { initialCompany: LogicalCompany 
   const companyRows = useMemo(() => brandsForCompany(q.data?.rows ?? [], company ?? ''), [q.data, company])
   const visible = useMemo(() => filterBrandRows(companyRows, searchQuery), [companyRows, searchQuery])
   const totals = useMemo(() => brandTotals(visible, q.data?.showValue === true), [visible, q.data])
+
+  const pie = useMemo<ChartConfiguration | null>(() => {
+    const slices = pieSlices(visible)
+    if (!slices.length) return null
+    const total = slices.reduce((s, x) => s + x.units, 0) || 1
+    const base = [0, 1, 2, 3, 4, 5].map(i => cssVar(`--chart-c${i}`))
+    const colour = (i: number) => (i < base.length ? base[i] : `hsl(${(i * 47) % 360} 55% 58%)`)
+    const narrow = typeof window !== 'undefined' && window.innerWidth < 700
+    return {
+      type: 'doughnut',
+      data: {
+        labels: slices.map(s => s.label),
+        datasets: [
+          {
+            data: slices.map(s => s.units),
+            backgroundColor: slices.map((_, i) => colour(i)),
+            borderColor: cssVar('--sur', '#1b2236'),
+            borderWidth: 2,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: 0,
+        plugins: {
+          legend: { position: narrow ? 'bottom' : 'right', labels: { color: cssVar('--txt'), boxWidth: 12 } },
+          tooltip: {
+            callbacks: {
+              label: c => `${c.label}: ${fmt0(Number(c.parsed))} units (${((Number(c.parsed) / total) * 100).toFixed(1)}%)`,
+            },
+          },
+        },
+      },
+    } as ChartConfiguration
+  }, [visible])
 
   if (q.isLoading) {
     return (
@@ -111,6 +150,15 @@ function StockBrandContent({ initialCompany }: { initialCompany: LogicalCompany 
       {!visible.length ? (
         <div className="err">No brands match.</div>
       ) : (
+        <>
+          {pie ? (
+            <div className="panel" style={{ padding: 12, marginTop: 12 }}>
+              <HubChart config={pie} height={340} label="Units in stock by brand" />
+            </div>
+          ) : null}
+          <details className="sb-table-toggle">
+            <summary>Table by brand</summary>
+            <div>
         <TableWithExport exportName="Stock by brand">
           <div className="tw tw-sticky">
             <table>
@@ -168,6 +216,9 @@ function StockBrandContent({ initialCompany }: { initialCompany: LogicalCompany 
             </p>
           ) : null}
         </TableWithExport>
+            </div>
+          </details>
+        </>
       )}
     </div>
   )

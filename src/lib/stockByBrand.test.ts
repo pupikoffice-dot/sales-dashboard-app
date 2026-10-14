@@ -5,6 +5,7 @@ import {
   companiesWithStock,
   filterBrandRows,
   maskBrandPayloadForPreview,
+  pieSlices,
   sortBrandRows,
   type BrandStockRow,
 } from './stockByBrand'
@@ -51,5 +52,16 @@ describe('stock by brand helpers', () => {
     const kept = maskBrandPayloadForPreview(p, { companies: ['pupik', 'mt'], showItemCost: true })
     expect(kept.rows).toHaveLength(4)
     expect(kept.showValue).toBe(true)
+  })
+
+  it('pie: biggest brands plus one Other slice, empty brands left out', () => {
+    const many = Array.from({ length: 12 }, (_, i) => row({ brand: `B${i}`, units: 100 - i * 5 }))
+    many.push(row({ brand: 'Empty', units: 0 }))
+    const s = pieSlices(many, 9)
+    expect(s).toHaveLength(10)
+    expect(s[0]).toEqual({ label: 'B0', units: 100 })
+    expect(s[9]).toEqual({ label: 'Other', units: 100 - 9 * 5 + (100 - 10 * 5) + (100 - 11 * 5) })
+    expect(s.some(x => x.label === 'Empty')).toBe(false)
+    expect(pieSlices(many.slice(0, 5), 9)).toHaveLength(5)
   })
 })

@@ -295,6 +295,85 @@ html[data-theme='light'] .dashboard-suite-disclaimer {
   color: var(--muted);
 }
 
+/* Compact choice chips (R&D pages): fit their text, wrap in a row. */
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 0;
+  padding: 4px 12px;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  border-radius: var(--r-full, 999px);
+  border: 1px solid var(--bdr);
+  background: var(--sur2);
+  color: var(--muted2, var(--txt));
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.chip:hover {
+  background: var(--acc-bg);
+  color: var(--txt);
+}
+
+.chip.active {
+  background: var(--acc);
+  border-color: var(--acc);
+  color: var(--on-acc, #fff);
+  font-weight: 600;
+}
+
+.chip-link {
+  background: transparent;
+  border-style: dashed;
+}
+
+.sb-table-toggle {
+  margin-top: 14px;
+}
+
+.sb-table-toggle > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  list-style: none;
+  padding: 6px 14px;
+  border-radius: var(--r-full, 999px);
+  border: 1px solid var(--bdr);
+  background: var(--sur2);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--txt);
+}
+
+.sb-table-toggle > summary::-webkit-details-marker {
+  display: none;
+}
+
+.sb-table-toggle > summary::before {
+  content: '▸';
+  font-size: 0.75rem;
+}
+
+.sb-table-toggle[open] > summary::before {
+  content: '▾';
+}
+
+.sb-table-toggle > div {
+  margin-top: 10px;
+}
+
 .data-badge-updating {
   color: var(--acc);
   font-weight: 600;
