@@ -46,6 +46,74 @@ export function fmtK(n: number): string {
   return `${sign}${text}K`
 }
 
+/** One stocked item (get_stock_items). `cost` is the unit cost, null when the user may not see cost or none is on file. */
+export interface StockItemRow {
+  co: string
+  brand: string
+  sku: string
+  name: string
+  qty: number
+  cost: number | null
+}
+
+export interface StockItemsPayload {
+  rows: StockItemRow[]
+  showValue: boolean
+}
+
+export function parseStockItems(data: unknown): StockItemsPayload {
+  const d = (data ?? {}) as { rows?: unknown; showValue?: unknown }
+  const rows = Array.isArray(d.rows) ? d.rows : []
+  return {
+    showValue: d.showValue === true,
+    rows: rows.map(r => {
+      const x = r as Record<string, unknown>
+      const cost = x.cost == null || x.cost === '' ? null : Number(x.cost)
+      return {
+        co: String(x.co ?? ''),
+        brand: String(x.brand ?? ''),
+        sku: String(x.sku ?? ''),
+        name: String(x.name ?? ''),
+        qty: Number(x.qty) || 0,
+        cost: cost != null && Number.isFinite(cost) ? cost : null,
+      }
+    }),
+  }
+}
+
+/** "View as user": cut the admin's own item list down to the previewed user's companies and cost permission. */
+export function maskStockItemsForPreview(
+  p: StockItemsPayload,
+  scope: { companies: readonly string[]; showItemCost: boolean },
+): StockItemsPayload {
+  const co = new Set(scope.companies)
+  const showValue = p.showValue && scope.showItemCost
+  return {
+    showValue,
+    rows: p.rows.filter(r => co.has(r.co)).map(r => (showValue ? r : { ...r, cost: null })),
+  }
+}
+
+export interface BrandItem extends StockItemRow {
+  /** Stock value at cost (qty x cost); null when there is no cost to use. */
+  value: number | null
+}
+
+/** The items of one brand, biggest value first (items without a value after them, biggest quantity first). Without cost permission: biggest quantity first. */
+export function itemsForBrand(items: StockItemRow[], company: string, brand: string, showValue: boolean): BrandItem[] {
+  return items
+    .filter(r => r.co === company && r.brand === brand)
+    .map(r => ({ ...r, value: showValue && r.cost != null ? r.qty * r.cost : null }))
+    .sort((a, b) => {
+      if (showValue) {
+        const av = a.value ?? -Infinity
+        const bv = b.value ?? -Infinity
+        if (av !== bv) return bv - av
+      }
+      return b.qty - a.qty || a.sku.localeCompare(b.sku)
+    })
+}
+
 export type PieMetric = 'units' | 'value'
 
 /**

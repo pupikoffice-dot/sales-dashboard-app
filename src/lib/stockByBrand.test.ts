@@ -5,7 +5,10 @@ import {
   companiesWithStock,
   filterBrandRows,
   fmtK,
+  itemsForBrand,
   maskBrandPayloadForPreview,
+  maskStockItemsForPreview,
+  parseStockItems,
   pieSlices,
   sortBrandRows,
   type BrandStockRow,
@@ -84,5 +87,36 @@ describe('stock by brand helpers', () => {
     expect(fmtK(56700)).toBe('56.7K')
     expect(fmtK(1410132)).toBe('1,410K')
     expect(fmtK(-2500)).toBe('-2.5K')
+  })
+
+  it('items of a brand: biggest value first, no-cost items after, zero stock last', () => {
+    const items = parseStockItems({
+      showValue: true,
+      rows: [
+        { co: 'pupik', brand: 'Funko', sku: 'F-1', name: 'a', qty: 10, cost: '5' }, // 50
+        { co: 'pupik', brand: 'Funko', sku: 'F-2', name: 'b', qty: 2, cost: 100 }, // 200
+        { co: 'pupik', brand: 'Funko', sku: 'F-3', name: 'c', qty: 40, cost: null }, // no cost
+        { co: 'pupik', brand: 'Funko', sku: 'F-4', name: 'd', qty: 0, cost: 9 }, // 0
+        { co: 'pupik', brand: 'Other', sku: 'O-1', name: 'e', qty: 1, cost: 1 },
+        { co: 'mt', brand: 'Funko', sku: 'M-1', name: 'f', qty: 99, cost: 99 },
+      ],
+    }).rows
+    expect(itemsForBrand(items, 'pupik', 'Funko', true).map(r => r.sku)).toEqual(['F-2', 'F-1', 'F-4', 'F-3'])
+    expect(itemsForBrand(items, 'pupik', 'Funko', false).map(r => r.sku)).toEqual(['F-3', 'F-1', 'F-2', 'F-4'])
+    expect(itemsForBrand(items, 'pupik', 'Funko', true)[0].value).toBe(200)
+  })
+
+  it('preview: item list keeps allowed companies and hides cost without permission', () => {
+    const p = parseStockItems({
+      showValue: true,
+      rows: [
+        { co: 'pupik', brand: 'A', sku: 'A-1', name: 'x', qty: 1, cost: 4 },
+        { co: 'mt', brand: 'A', sku: 'A-2', name: 'y', qty: 1, cost: 4 },
+      ],
+    })
+    const m = maskStockItemsForPreview(p, { companies: ['pupik'], showItemCost: false })
+    expect(m.rows).toHaveLength(1)
+    expect(m.showValue).toBe(false)
+    expect(m.rows[0].cost).toBeNull()
   })
 })

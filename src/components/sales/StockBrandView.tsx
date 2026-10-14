@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { Chart as ChartJS, ChartConfiguration } from 'chart.js'
 import { HubChart, cssVar } from '../oversite/hub/HubChart'
-import { SortableTh } from './SortableTh'
 import { SalesReportUiProvider, useSalesReportUi } from '../../context/SalesReportUiContext'
 import { fmt0 } from '../../lib/format'
 import { companyLabel } from '../../lib/salesMetrics'
@@ -15,9 +14,15 @@ import {
   companiesWithStock,
   filterBrandRows,
   fmtK,
+  itemsForBrand,
   maskBrandPayloadForPreview,
+  maskStockItemsForPreview,
+  parseStockItems,
   pieSlices,
+  sortBrandRows,
+  type BrandSortKey,
   type BrandStockPayload,
+  type StockItemsPayload,
 } from '../../lib/stockByBrand'
 import { SalesReportStickySetup } from './SalesReportStickySetup'
 import { TableWithExport } from './TableWithExport'
@@ -30,6 +35,12 @@ async function fetchStockByBrand(): Promise<BrandStockPayload> {
   if (error) throw error
   const d = (data ?? {}) as Partial<BrandStockPayload>
   return { rows: d.rows ?? [], showValue: d.showValue === true }
+}
+
+async function fetchStockItems(): Promise<StockItemsPayload> {
+  const { data, error } = await supabase.rpc('get_stock_items')
+  if (error) throw error
+  return parseStockItems(data)
 }
 
 function StockBrandContent({ initialCompany }: { initialCompany: LogicalCompany | null }) {
@@ -52,6 +63,38 @@ function StockBrandContent({ initialCompany }: { initialCompany: LogicalCompany 
   const companyRows = useMemo(() => brandsForCompany(q.data?.rows ?? [], company ?? ''), [q.data, company])
   const visible = useMemo(() => filterBrandRows(companyRows, searchQuery), [companyRows, searchQuery])
   const totals = useMemo(() => brandTotals(visible, q.data?.showValue === true), [visible, q.data])
+
+  // Clicking a brand opens its items (loaded once, on the first click).
+  const [open, setOpen] = useState<Set<string>>(() => new Set())
+  const toggleBrand = (key: string) =>
+    setOpen(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  const rawItems = useQuery({
+    queryKey: ['stock-items'],
+    queryFn: fetchStockItems,
+    enabled: open.size > 0,
+    staleTime: 5 * 60 * 1000,
+  })
+  const itemsData = useMemo(
+    () =>
+      rawItems.data && isPreviewing && !effectiveIsSuperAdmin && access
+        ? maskStockItemsForPreview(rawItems.data, access)
+        : rawItems.data,
+    [rawItems.data, isPreviewing, effectiveIsSuperAdmin, access],
+  )
+
+  const [sort, setSort] = useState<{ key: BrandSortKey; dir: 'asc' | 'desc' }>({ key: 'units', dir: 'desc' })
+  const sorted = useMemo(
+    () => sortBrandRows(visible, sort.key, sort.dir, totals.units || 1),
+    [visible, sort, totals.units],
+  )
+  const clickSort = (key: BrandSortKey) =>
+    setSort(prev => (prev.key === key ? { key, dir: prev.dir === 'desc' ? 'asc' : 'desc' } : { key, dir: key === 'brand' ? 'asc' : 'desc' }))
+  const arrow = (key: BrandSortKey) => (sort.key === key ? (sort.dir === 'desc' ? ' ↓' : ' ↑') : ' ↕')
 
   const showValueAll = q.data?.showValue === true
   // Horizontal bars: brand name on the left of each bar, the amount (in K) at its end.
@@ -196,45 +239,86 @@ function StockBrandContent({ initialCompany }: { initialCompany: LogicalCompany 
             <table>
               <thead>
                 <tr>
-                  <SortableTh style={{ textAlign: 'left' }}>Brand</SortableTh>
-                  <SortableTh>Items</SortableTh>
-                  <SortableTh>In stock</SortableTh>
-                  <SortableTh className="accent2">Units</SortableTh>
-                  <SortableTh>% of units</SortableTh>
-                  {showValue && <SortableTh>Value at cost</SortableTh>}
-                  {showValue && <SortableTh>% of total cost</SortableTh>}
+                  <th style={{ textAlign: 'left', cursor: 'pointer' }} onClick={() => clickSort('brand')}>
+                    Brand{arrow('brand')}
+                  </th>
+                  <th style={{ cursor: 'pointer' }} onClick={() => clickSort('items')}>Items{arrow('items')}</th>
+                  <th style={{ cursor: 'pointer' }} onClick={() => clickSort('inStock')}>In stock{arrow('inStock')}</th>
+                  <th className="accent2" style={{ cursor: 'pointer' }} onClick={() => clickSort('units')}>Units{arrow('units')}</th>
+                  <th style={{ cursor: 'pointer' }} onClick={() => clickSort('units')}>% of units</th>
+                  {showValue && (
+                    <th style={{ cursor: 'pointer' }} onClick={() => clickSort('value')}>Value at cost{arrow('value')}</th>
+                  )}
+                  {showValue && (
+                    <th style={{ cursor: 'pointer' }} onClick={() => clickSort('value')}>% of total cost</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
-                {[...visible]
-                  .sort((a, b) => (Number(b.units) || 0) - (Number(a.units) || 0))
-                  .map(r => (
-                    <tr key={`${r.co}|${r.brand}`}>
-                      <td>{r.brand}</td>
-                      <td data-sv={r.items}>{fmt0(r.items)}</td>
-                      <td data-sv={r.inStock}>{fmt0(r.inStock)}</td>
-                      <td data-sv={Number(r.units) || 0} className="accent2">
-                        {fmt0(Number(r.units) || 0)}
+                {sorted.map(r => {
+                  const key = `${r.co}|${r.brand}`
+                  const isOpen = open.has(key)
+                  const items = isOpen && itemsData ? itemsForBrand(itemsData.rows, r.co, r.brand, showValue) : []
+                  return [
+                    <tr
+                      key={key}
+                      className="sb-brand-row"
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => toggleBrand(key)}
+                      title="Click to show or hide the items of this brand"
+                    >
+                      <td>
+                        <span className="sb-chevron">{isOpen ? '▾' : '▸'}</span> {r.brand}
                       </td>
-                      <td data-sv={(Number(r.units) || 0) / totalUnits}>
-                        {(((Number(r.units) || 0) / totalUnits) * 100).toFixed(1)}%
-                      </td>
+                      <td>{fmt0(r.items)}</td>
+                      <td>{fmt0(r.inStock)}</td>
+                      <td className="accent2">{fmt0(Number(r.units) || 0)}</td>
+                      <td>{(((Number(r.units) || 0) / totalUnits) * 100).toFixed(1)}%</td>
                       {showValue && (
-                        <td
-                          data-sv={r.value ?? ''}
-                          title={r.noCost ? `${r.noCost} stocked item(s) without a cost are not counted` : undefined}
-                        >
+                        <td title={r.noCost ? `${r.noCost} stocked item(s) without a cost are not counted` : undefined}>
                           {r.value != null ? fmt0(Number(r.value)) : '—'}
                           {r.noCost ? ' *' : ''}
                         </td>
                       )}
                       {showValue && (
-                        <td data-sv={totalValue > 0 && r.value != null ? Number(r.value) / totalValue : ''}>
+                        <td>
                           {totalValue > 0 && r.value != null ? `${((Number(r.value) / totalValue) * 100).toFixed(1)}%` : '—'}
                         </td>
                       )}
-                    </tr>
-                  ))}
+                    </tr>,
+                    ...(isOpen && rawItems.isLoading
+                      ? [
+                          <tr key={`${key}|loading`} className="sb-item-row">
+                            <td colSpan={showValue ? 7 : 5} className="sb-item-name">Loading items…</td>
+                          </tr>,
+                        ]
+                      : []),
+                    ...(isOpen && rawItems.error
+                      ? [
+                          <tr key={`${key}|err`} className="sb-item-row">
+                            <td colSpan={showValue ? 7 : 5} className="sb-item-name">
+                              Could not load the items: {(rawItems.error as Error).message}
+                            </td>
+                          </tr>,
+                        ]
+                      : []),
+                    ...items.map(it => (
+                      <tr key={`${key}|${it.sku}`} className="sb-item-row">
+                        <td className="sb-item-name" title={`${it.sku} ${it.name}`}>
+                          {it.sku} · {it.name}
+                        </td>
+                        <td></td>
+                        <td></td>
+                        <td className="accent2">{fmt0(it.qty)}</td>
+                        <td>{((it.qty / totalUnits) * 100).toFixed(1)}%</td>
+                        {showValue && <td>{it.value != null ? fmt0(it.value) : '—'}</td>}
+                        {showValue && (
+                          <td>{totalValue > 0 && it.value != null ? `${((it.value / totalValue) * 100).toFixed(1)}%` : '—'}</td>
+                        )}
+                      </tr>
+                    )),
+                  ]
+                })}
               </tbody>
               <tfoot>
                 <tr>
