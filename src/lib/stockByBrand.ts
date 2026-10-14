@@ -36,10 +36,15 @@ export interface PieSlice {
   units: number
 }
 
-/** Brands by units for the pie: the biggest `top` brands, everything else together as one slice. Stock-less brands are left out. */
-export function pieSlices(rows: BrandStockRow[], top = 9, otherLabel = 'Other'): PieSlice[] {
+export type PieMetric = 'units' | 'value'
+
+/**
+ * Brands for a pie by quantity (units) or by cash (value at cost): the biggest `top` brands, everything else together
+ * as one slice. Brands with nothing to show (no stock, or no value) are left out. `units` in a slice is the metric's amount.
+ */
+export function pieSlices(rows: BrandStockRow[], top = 9, otherLabel = 'Other', metric: PieMetric = 'units'): PieSlice[] {
   const sorted = rows
-    .map(r => ({ label: r.brand, units: Number(r.units) || 0 }))
+    .map(r => ({ label: r.brand, units: Number(metric === 'value' ? r.value : r.units) || 0 }))
     .filter(r => r.units > 0)
     .sort((a, b) => b.units - a.units)
   if (sorted.length <= top + 1) return sorted

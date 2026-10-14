@@ -64,4 +64,14 @@ describe('stock by brand helpers', () => {
     expect(s.some(x => x.label === 'Empty')).toBe(false)
     expect(pieSlices(many.slice(0, 5), 9)).toHaveLength(5)
   })
+
+  it('pie by cash: uses value at cost and skips brands without a value', () => {
+    const r = [
+      row({ brand: 'A', units: 10, value: 500 }),
+      row({ brand: 'B', units: 900, value: 100 }),
+      row({ brand: 'C', units: 50, value: null }),
+    ]
+    expect(pieSlices(r, 9, 'Other', 'value')).toEqual([{ label: 'A', units: 500 }, { label: 'B', units: 100 }])
+    expect(pieSlices(r, 9, 'Other', 'units').map(x => x.label)).toEqual(['B', 'C', 'A'])
+  })
 })

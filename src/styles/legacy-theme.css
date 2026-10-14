@@ -338,6 +338,20 @@ html[data-theme='light'] .dashboard-suite-disclaimer {
   border-style: dashed;
 }
 
+.sb-pies {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.sb-pie-title {
+  margin: 0 0 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted2, var(--txt));
+}
+
 .sb-table-toggle {
   margin-top: 14px;
 }
