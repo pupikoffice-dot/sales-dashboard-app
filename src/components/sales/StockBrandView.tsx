@@ -124,6 +124,7 @@ function StockBrandContent({ initialCompany }: { initialCompany: LogicalCompany 
 
   const showValue = q.data.showValue
   const totalUnits = totals.units || 1
+  const totalValue = totals.value ?? 0
 
   return (
     <div>
@@ -201,6 +202,7 @@ function StockBrandContent({ initialCompany }: { initialCompany: LogicalCompany 
                   <SortableTh className="accent2">Units</SortableTh>
                   <SortableTh>% of units</SortableTh>
                   {showValue && <SortableTh>Value at cost</SortableTh>}
+                  {showValue && <SortableTh>% of total cost</SortableTh>}
                 </tr>
               </thead>
               <tbody>
@@ -226,6 +228,11 @@ function StockBrandContent({ initialCompany }: { initialCompany: LogicalCompany 
                           {r.noCost ? ' *' : ''}
                         </td>
                       )}
+                      {showValue && (
+                        <td data-sv={totalValue > 0 && r.value != null ? Number(r.value) / totalValue : ''}>
+                          {totalValue > 0 && r.value != null ? `${((Number(r.value) / totalValue) * 100).toFixed(1)}%` : '—'}
+                        </td>
+                      )}
                     </tr>
                   ))}
               </tbody>
@@ -237,6 +244,7 @@ function StockBrandContent({ initialCompany }: { initialCompany: LogicalCompany 
                   <td className="accent2">{fmt0(totals.units)}</td>
                   <td>100%</td>
                   {showValue && <td>{totals.value != null ? fmt0(totals.value) : '—'}</td>}
+                  {showValue && <td>{totalValue > 0 ? '100%' : '—'}</td>}
                 </tr>
               </tfoot>
             </table>
