@@ -352,6 +352,31 @@ html[data-theme='light'] .dashboard-suite-disclaimer {
   color: var(--muted2, var(--txt));
 }
 
+.sb-brand-row:hover td {
+  background: var(--acc-row-bg-strong, var(--acc-bg));
+}
+
+.sb-chevron {
+  display: inline-block;
+  width: 1em;
+  color: var(--acc);
+}
+
+.sb-item-row td {
+  background: color-mix(in srgb, var(--acc) 5%, transparent);
+  font-size: 0.78rem;
+  color: var(--muted2, var(--txt));
+}
+
+.sb-item-name {
+  padding-inline-start: 28px !important;
+  max-width: 360px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
 .sb-table-toggle {
   margin-top: 14px;
 }
