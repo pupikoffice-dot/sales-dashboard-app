@@ -52,8 +52,9 @@ function StockBrandContent({ initialCompany }: { initialCompany: LogicalCompany 
   const visible = useMemo(() => filterBrandRows(companyRows, searchQuery), [companyRows, searchQuery])
   const totals = useMemo(() => brandTotals(visible, q.data?.showValue === true), [visible, q.data])
 
-  const pie = useMemo<ChartConfiguration | null>(() => {
-    const slices = pieSlices(visible)
+  const showValueAll = q.data?.showValue === true
+  const buildPie = (metric: 'units' | 'value'): ChartConfiguration | null => {
+    const slices = pieSlices(visible, 9, 'Other', metric)
     if (!slices.length) return null
     const total = slices.reduce((s, x) => s + x.units, 0) || 1
     const base = [0, 1, 2, 3, 4, 5].map(i => cssVar(`--chart-c${i}`))
@@ -80,13 +81,16 @@ function StockBrandContent({ initialCompany }: { initialCompany: LogicalCompany 
           legend: { position: narrow ? 'bottom' : 'right', labels: { color: cssVar('--txt'), boxWidth: 12 } },
           tooltip: {
             callbacks: {
-              label: c => `${c.label}: ${fmt0(Number(c.parsed))} units (${((Number(c.parsed) / total) * 100).toFixed(1)}%)`,
+              label: c =>
+                `${c.label}: ${fmt0(Number(c.parsed))}${metric === 'units' ? ' units' : ''} (${((Number(c.parsed) / total) * 100).toFixed(1)}%)`,
             },
           },
         },
       },
     } as ChartConfiguration
-  }, [visible])
+  }
+  const pieUnits = useMemo(() => buildPie('units'), [visible])
+  const pieValue = useMemo(() => (showValueAll ? buildPie('value') : null), [visible, showValueAll])
 
   if (q.isLoading) {
     return (
@@ -151,11 +155,20 @@ function StockBrandContent({ initialCompany }: { initialCompany: LogicalCompany 
         <div className="err">No brands match.</div>
       ) : (
         <>
-          {pie ? (
-            <div className="panel" style={{ padding: 12, marginTop: 12 }}>
-              <HubChart config={pie} height={340} label="Units in stock by brand" />
-            </div>
-          ) : null}
+          <div className="sb-pies">
+            {pieUnits ? (
+              <div className="panel" style={{ padding: 12 }}>
+                <h3 className="sb-pie-title">Quantity (units)</h3>
+                <HubChart config={pieUnits} height={320} label="Units in stock by brand" />
+              </div>
+            ) : null}
+            {pieValue ? (
+              <div className="panel" style={{ padding: 12 }}>
+                <h3 className="sb-pie-title">Cash (value at cost)</h3>
+                <HubChart config={pieValue} height={320} label="Stock value at cost by brand" />
+              </div>
+            ) : null}
+          </div>
           <details className="sb-table-toggle">
             <summary>Table by brand</summary>
             <div>
