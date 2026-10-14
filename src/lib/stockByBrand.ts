@@ -36,6 +36,16 @@ export interface PieSlice {
   units: number
 }
 
+/** Thousands as K: 950 -> "950", 1,234 -> "1.2K", 56,700 -> "56.7K", 1,410,132 -> "1,410K". */
+export function fmtK(n: number): string {
+  const sign = n < 0 ? '-' : ''
+  const abs = Math.abs(n)
+  if (abs < 1000) return `${sign}${Math.round(abs)}`
+  const k = abs / 1000
+  const text = k >= 100 ? Math.round(k).toLocaleString('en-US') : k.toFixed(1).replace(/\.0$/, '')
+  return `${sign}${text}K`
+}
+
 export type PieMetric = 'units' | 'value'
 
 /**

@@ -4,6 +4,7 @@ import {
   brandTotals,
   companiesWithStock,
   filterBrandRows,
+  fmtK,
   maskBrandPayloadForPreview,
   pieSlices,
   sortBrandRows,
@@ -73,5 +74,15 @@ describe('stock by brand helpers', () => {
     ]
     expect(pieSlices(r, 9, 'Other', 'value')).toEqual([{ label: 'A', units: 500 }, { label: 'B', units: 100 }])
     expect(pieSlices(r, 9, 'Other', 'units').map(x => x.label)).toEqual(['B', 'C', 'A'])
+  })
+
+  it('formats thousands as K', () => {
+    expect(fmtK(0)).toBe('0')
+    expect(fmtK(950)).toBe('950')
+    expect(fmtK(1000)).toBe('1K')
+    expect(fmtK(1234)).toBe('1.2K')
+    expect(fmtK(56700)).toBe('56.7K')
+    expect(fmtK(1410132)).toBe('1,410K')
+    expect(fmtK(-2500)).toBe('-2.5K')
   })
 })
