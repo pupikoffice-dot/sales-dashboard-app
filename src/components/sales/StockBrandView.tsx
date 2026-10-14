@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import type { ChartConfiguration } from 'chart.js'
+import type { Chart as ChartJS, ChartConfiguration } from 'chart.js'
 import { HubChart, cssVar } from '../oversite/hub/HubChart'
 import { SortableTh } from './SortableTh'
 import { SalesReportUiProvider, useSalesReportUi } from '../../context/SalesReportUiContext'
@@ -14,6 +14,7 @@ import {
   brandTotals,
   companiesWithStock,
   filterBrandRows,
+  fmtK,
   maskBrandPayloadForPreview,
   pieSlices,
   type BrandStockPayload,
@@ -53,44 +54,61 @@ function StockBrandContent({ initialCompany }: { initialCompany: LogicalCompany 
   const totals = useMemo(() => brandTotals(visible, q.data?.showValue === true), [visible, q.data])
 
   const showValueAll = q.data?.showValue === true
-  const buildPie = (metric: 'units' | 'value'): ChartConfiguration | null => {
-    const slices = pieSlices(visible, 9, 'Other', metric)
+  // Horizontal bars: brand name on the left of each bar, the amount (in K) at its end.
+  const buildBars = (metric: 'units' | 'value'): { config: ChartConfiguration; height: number } | null => {
+    const slices = pieSlices(visible, 14, 'Other', metric)
     if (!slices.length) return null
     const total = slices.reduce((s, x) => s + x.units, 0) || 1
-    const base = [0, 1, 2, 3, 4, 5].map(i => cssVar(`--chart-c${i}`))
-    const colour = (i: number) => (i < base.length ? base[i] : `hsl(${(i * 47) % 360} 55% 58%)`)
-    const narrow = typeof window !== 'undefined' && window.innerWidth < 700
-    return {
-      type: 'doughnut',
+    const txt = cssVar('--txt')
+    const muted = cssVar('--muted')
+    const grid = cssVar('--bdr-s', '#2d3449')
+    const colour = metric === 'units' ? cssVar('--chart-c0') : cssVar('--chart-c1')
+    const valueLabels = {
+      id: 'barValueLabels',
+      afterDatasetsDraw(chart: ChartJS) {
+        const { ctx } = chart
+        const meta = chart.getDatasetMeta(0)
+        ctx.save()
+        ctx.fillStyle = txt
+        ctx.font = '600 11px sans-serif'
+        ctx.textBaseline = 'middle'
+        meta.data.forEach((bar, i) => {
+          ctx.fillText(fmtK(slices[i].units), (bar as unknown as { x: number }).x + 6, (bar as unknown as { y: number }).y)
+        })
+        ctx.restore()
+      },
+    }
+    const config = {
+      type: 'bar',
       data: {
         labels: slices.map(s => s.label),
-        datasets: [
-          {
-            data: slices.map(s => s.units),
-            backgroundColor: slices.map((_, i) => colour(i)),
-            borderColor: cssVar('--sur', '#1b2236'),
-            borderWidth: 2,
-          },
-        ],
+        datasets: [{ data: slices.map(s => s.units), backgroundColor: colour, borderRadius: 3, barPercentage: 0.78 }],
       },
       options: {
+        indexAxis: 'y',
         responsive: true,
         maintainAspectRatio: false,
-        cutout: 0,
+        layout: { padding: { right: 56 } },
         plugins: {
-          legend: { position: narrow ? 'bottom' : 'right', labels: { color: cssVar('--txt'), boxWidth: 12 } },
+          legend: { display: false },
           tooltip: {
             callbacks: {
               label: c =>
-                `${c.label}: ${fmt0(Number(c.parsed))}${metric === 'units' ? ' units' : ''} (${((Number(c.parsed) / total) * 100).toFixed(1)}%)`,
+                `${fmt0(Number(c.parsed.x))}${metric === 'units' ? ' units' : ''} (${((Number(c.parsed.x) / total) * 100).toFixed(1)}%)`,
             },
           },
         },
+        scales: {
+          x: { beginAtZero: true, ticks: { color: muted, callback: v => fmtK(Number(v)) }, grid: { color: grid } },
+          y: { ticks: { color: txt, autoSkip: false }, grid: { display: false } },
+        },
       },
+      plugins: [valueLabels],
     } as ChartConfiguration
+    return { config, height: slices.length * 26 + 44 }
   }
-  const pieUnits = useMemo(() => buildPie('units'), [visible])
-  const pieValue = useMemo(() => (showValueAll ? buildPie('value') : null), [visible, showValueAll])
+  const barsUnits = useMemo(() => buildBars('units'), [visible])
+  const barsValue = useMemo(() => (showValueAll ? buildBars('value') : null), [visible, showValueAll])
 
   if (q.isLoading) {
     return (
@@ -156,16 +174,16 @@ function StockBrandContent({ initialCompany }: { initialCompany: LogicalCompany 
       ) : (
         <>
           <div className="sb-pies">
-            {pieUnits ? (
+            {barsUnits ? (
               <div className="panel" style={{ padding: 12 }}>
                 <h3 className="sb-pie-title">Quantity (units)</h3>
-                <HubChart config={pieUnits} height={320} label="Units in stock by brand" />
+                <HubChart config={barsUnits.config} height={barsUnits.height} label="Units in stock by brand" />
               </div>
             ) : null}
-            {pieValue ? (
+            {barsValue ? (
               <div className="panel" style={{ padding: 12 }}>
                 <h3 className="sb-pie-title">Cash (value at cost)</h3>
-                <HubChart config={pieValue} height={320} label="Stock value at cost by brand" />
+                <HubChart config={barsValue.config} height={barsValue.height} label="Stock value at cost by brand" />
               </div>
             ) : null}
           </div>
