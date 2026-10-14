@@ -87,13 +87,16 @@ function StockBrandContent({ initialCompany }: { initialCompany: LogicalCompany 
     [rawItems.data, isPreviewing, effectiveIsSuperAdmin, access],
   )
 
-  const [sort, setSort] = useState<{ key: BrandSortKey; dir: 'asc' | 'desc' }>({ key: 'units', dir: 'desc' })
+  // Until a heading is clicked: biggest cash (value at cost) first, or biggest quantity for users who cannot see cost.
+  const [pickedSort, setPickedSort] = useState<{ key: BrandSortKey; dir: 'asc' | 'desc' } | null>(null)
+  const sort: { key: BrandSortKey; dir: 'asc' | 'desc' } =
+    pickedSort ?? { key: q.data?.showValue ? 'value' : 'units', dir: 'desc' }
   const sorted = useMemo(
     () => sortBrandRows(visible, sort.key, sort.dir, totals.units || 1),
-    [visible, sort, totals.units],
+    [visible, sort.key, sort.dir, totals.units],
   )
   const clickSort = (key: BrandSortKey) =>
-    setSort(prev => (prev.key === key ? { key, dir: prev.dir === 'desc' ? 'asc' : 'desc' } : { key, dir: key === 'brand' ? 'asc' : 'desc' }))
+    setPickedSort(sort.key === key ? { key, dir: sort.dir === 'desc' ? 'asc' : 'desc' } : { key, dir: key === 'brand' ? 'asc' : 'desc' })
   const arrow = (key: BrandSortKey) => (sort.key === key ? (sort.dir === 'desc' ? ' ↓' : ' ↑') : ' ↕')
 
   const showValueAll = q.data?.showValue === true
