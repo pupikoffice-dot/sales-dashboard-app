@@ -136,12 +136,12 @@ export function MonthlyDataPage() {
           {companies.length === 1 ? (
             <b>{companyLabel(activeCompany)}</b>
           ) : (
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <div className="chip-row">
               {companies.map(c => (
                 <button
                   key={c}
                   type="button"
-                  className={`btn${c === activeCompany ? ' active' : ''}`}
+                  className={`chip${c === activeCompany ? ' active' : ''}`}
                   onClick={() => setCompany(c)}
                 >
                   {companyLabel(c)}
@@ -153,13 +153,13 @@ export function MonthlyDataPage() {
 
         <div>
           <div className="sidebar-label">Year (one or more)</div>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <div className="chip-row">
             {years.length === 0 ? <span>No data for this company.</span> : null}
             {years.map(y => (
               <button
                 key={y}
                 type="button"
-                className={`btn${yearsSel.includes(y) ? ' active' : ''}`}
+                className={`chip${yearsSel.includes(y) ? ' active' : ''}`}
                 onClick={() => setPickedYears(toggle(yearsSel, y))}
               >
                 {y}
@@ -171,19 +171,19 @@ export function MonthlyDataPage() {
         <div>
           <div className="sidebar-label">
             Month (as many as you like){' '}
-            <button type="button" className="tab-btn" onClick={() => setPickedMonths(MONTH_SHORT.map((_, i) => i + 1))}>
+            <button type="button" className="chip chip-link" onClick={() => setPickedMonths(MONTH_SHORT.map((_, i) => i + 1))}>
               All
             </button>{' '}
-            <button type="button" className="tab-btn" onClick={() => setPickedMonths([])}>
+            <button type="button" className="chip chip-link" onClick={() => setPickedMonths([])}>
               None
             </button>
           </div>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <div className="chip-row">
             {MONTH_SHORT.map((label, i) => (
               <button
                 key={label}
                 type="button"
-                className={`btn${monthsSel.includes(i + 1) ? ' active' : ''}`}
+                className={`chip${monthsSel.includes(i + 1) ? ' active' : ''}`}
                 onClick={() => setPickedMonths(toggle(monthsSel, i + 1))}
               >
                 {label}
