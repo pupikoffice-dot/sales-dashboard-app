@@ -8,6 +8,7 @@ import { companyLabel } from '../../lib/salesMetrics'
 import {
   availableYears,
   combinePicks,
+  linearTrend,
   receiptsByMonth,
   salesByDay,
   salesByMonth,
@@ -60,6 +61,7 @@ export function MonthlyDataPage() {
   )
   const rec = useMemo(() => receiptsByMonth(receipts, picks), [receipts, picks])
   const summary = useMemo(() => summarize(picks, sales, rec), [picks, sales, rec])
+  const salesTotal = summary.reduce((sum, row) => sum + row.sales, 0)
   const hasReceipts = rec.size > 0
 
   const charts = useMemo(() => {
@@ -88,16 +90,45 @@ export function MonthlyDataPage() {
       ...extra,
     })
     const k = (y: number, m: number) => y * 12 + (m - 1)
+    const monthValues = (src: Map<number, number>, y: number) => ms.map(m => src.get(k(y, m)) ?? 0)
     const barsOf = (src: Map<number, number>): ChartConfiguration => ({
       type: 'bar',
       data: {
         labels: labelsM,
         datasets: ys.map((y, i) => ({
           label: String(y),
-          data: ms.map(m => src.get(k(y, m)) ?? 0),
+          data: monthValues(src, y),
           backgroundColor: colour(i),
           borderRadius: 3,
         })),
+      },
+      options: base(),
+    })
+    const salesWithTrend = (): ChartConfiguration => ({
+      type: 'bar',
+      data: {
+        labels: labelsM,
+        datasets: [
+          ...ys.map((y, i) => ({
+            type: 'bar' as const,
+            label: String(y),
+            data: monthValues(sales, y),
+            backgroundColor: colour(i),
+            borderRadius: 3,
+            order: 2,
+          })),
+          ...ys.map((y, i) => ({
+            type: 'line' as const,
+            label: ys.length === 1 ? 'Trend' : `${y} trend`,
+            data: linearTrend(monthValues(sales, y)),
+            borderColor: colour(i),
+            borderDash: [6, 4],
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0,
+            order: 1,
+          })),
+        ],
       },
       options: base(),
     })
@@ -112,7 +143,7 @@ export function MonthlyDataPage() {
       tension: 0.25,
     }))
     return {
-      salesMonthly: barsOf(sales),
+      salesMonthly: salesWithTrend(),
       receiptsMonthly: barsOf(rec),
       salesDaily: {
         type: 'line',
@@ -198,7 +229,10 @@ export function MonthlyDataPage() {
       ) : (
         <div style={{ display: 'grid', gap: 18 }}>
           <section>
-            <h3>Sales by month</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+              <h3 style={{ marginBottom: 8 }}>Sales by month</h3>
+              <div>Total <b>{fmt0(salesTotal)}</b></div>
+            </div>
             <HubChart config={charts.salesMonthly} height={260} label="Sales by month" />
           </section>
           <section>

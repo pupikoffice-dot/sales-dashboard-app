@@ -64,6 +64,29 @@ export function salesByDay(rows: SalesRow[], company: string, year: number, mont
   return out
 }
 
+/** Least-squares straight line through `values`, in the same order. */
+export function linearTrend(values: number[]): number[] {
+  const n = values.length
+  if (n === 0) return []
+  if (n === 1) return [values[0]]
+  let sumX = 0
+  let sumY = 0
+  let sumXY = 0
+  let sumXX = 0
+  for (let i = 0; i < n; i++) {
+    const y = values[i]
+    sumX += i
+    sumY += y
+    sumXY += i * y
+    sumXX += i * i
+  }
+  const denom = n * sumXX - sumX * sumX
+  if (denom === 0) return values.map(() => sumY / n)
+  const slope = (n * sumXY - sumX * sumY) / denom
+  const intercept = (sumY - slope * sumX) / n
+  return values.map((_, i) => intercept + slope * i)
+}
+
 /** Every (year, month) combination of the chosen years and months, oldest first. */
 export function combinePicks(years: number[], months: number[]): YearMonth[] {
   const out: YearMonth[] = []
