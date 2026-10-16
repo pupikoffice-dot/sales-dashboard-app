@@ -64,27 +64,44 @@ export function salesByDay(rows: SalesRow[], company: string, year: number, mont
   return out
 }
 
-/** Least-squares straight line through `values`, in the same order. */
-export function linearTrend(values: number[]): number[] {
-  const n = values.length
-  if (n === 0) return []
-  if (n === 1) return [values[0]]
+/** True when the month has started. Later months have no sales yet and must not be treated as zero. */
+export function monthHasArrived(year: number, month: number, today = new Date()): boolean {
+  const y = today.getFullYear()
+  const m = today.getMonth() + 1
+  return year < y || (year === y && month <= m)
+}
+
+/**
+ * Least-squares straight line through the available points, in the same order.
+ * `null` marks a month that has not happened: it is left out of the fit and stays empty on the line.
+ * A real zero (a month that happened and had no sales) is kept.
+ */
+export function linearTrend(values: readonly (number | null)[]): (number | null)[] {
+  const pts: { i: number; y: number }[] = []
+  values.forEach((y, i) => {
+    if (y != null && Number.isFinite(y)) pts.push({ i, y })
+  })
+  if (pts.length === 0) return values.map(() => null)
+  if (pts.length === 1) return values.map((_, i) => (i === pts[0].i ? pts[0].y : null))
   let sumX = 0
   let sumY = 0
   let sumXY = 0
   let sumXX = 0
-  for (let i = 0; i < n; i++) {
-    const y = values[i]
-    sumX += i
-    sumY += y
-    sumXY += i * y
-    sumXX += i * i
+  for (const p of pts) {
+    sumX += p.i
+    sumY += p.y
+    sumXY += p.i * p.y
+    sumXX += p.i * p.i
   }
+  const n = pts.length
   const denom = n * sumXX - sumX * sumX
-  if (denom === 0) return values.map(() => sumY / n)
+  if (denom === 0) {
+    const avg = sumY / n
+    return values.map(y => (y == null ? null : avg))
+  }
   const slope = (n * sumXY - sumX * sumY) / denom
   const intercept = (sumY - slope * sumX) / n
-  return values.map((_, i) => intercept + slope * i)
+  return values.map((y, i) => (y == null ? null : intercept + slope * i))
 }
 
 /** Every (year, month) combination of the chosen years and months, oldest first. */

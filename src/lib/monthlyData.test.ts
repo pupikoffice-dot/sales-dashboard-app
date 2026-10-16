@@ -6,6 +6,7 @@ import {
   salesByDay,
   salesByMonth,
   linearTrend,
+  monthHasArrived,
   summarize,
   RECEIPTS_VAT_RATE,
 } from './monthlyData'
@@ -64,9 +65,24 @@ describe('monthly data', () => {
     expect(linearTrend([10, 20, 30])).toEqual([10, 20, 30])
     expect(linearTrend([8, 8, 8])).toEqual([8, 8, 8])
     const fitted = linearTrend([0, 0, 6])
-    expect(fitted[0]).toBeLessThan(fitted[1])
-    expect(fitted[1]).toBeLessThan(fitted[2])
-    expect(fitted[0] + fitted[1] + fitted[2]).toBeCloseTo(6)
+    expect(fitted[0]).toBeLessThan(fitted[1] as number)
+    expect(fitted[1]).toBeLessThan(fitted[2] as number)
+    expect((fitted[0] as number) + (fitted[1] as number) + (fitted[2] as number)).toBeCloseTo(6)
+  })
+
+  it('leaves months that have not happened out of the trend', () => {
+    const today = new Date(2026, 9, 16) // 16 Oct 2026
+    expect(monthHasArrived(2026, 10, today)).toBe(true)
+    expect(monthHasArrived(2026, 11, today)).toBe(false)
+    expect(monthHasArrived(2026, 12, today)).toBe(false)
+    expect(monthHasArrived(2025, 12, today)).toBe(true)
+    // Rising sales, then two future months. Counting those as zero bends the line down.
+    const withFutureZeros = linearTrend([10, 20, 30, 0, 0])
+    expect(withFutureZeros[4]).toBeLessThan(withFutureZeros[0] as number)
+    const availableOnly = linearTrend([10, 20, 30, null, null])
+    expect(availableOnly.slice(0, 3)).toEqual([10, 20, 30])
+    expect(availableOnly[3]).toBeNull()
+    expect(availableOnly[4]).toBeNull()
   })
 
   it('turns gross receipts into net and builds the summary with a receipts/sales ratio', () => {
