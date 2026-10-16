@@ -5,6 +5,7 @@ import {
   receiptsByMonth,
   salesByDay,
   salesByMonth,
+  linearTrend,
   summarize,
   RECEIPTS_VAT_RATE,
 } from './monthlyData'
@@ -55,6 +56,17 @@ describe('monthly data', () => {
     expect(d[4]).toBe(100)
     expect(d[19]).toBe(50)
     expect(d.reduce((a, b) => a + b, 0)).toBe(150)
+  })
+
+  it('fits a straight trend through the monthly sales', () => {
+    expect(linearTrend([])).toEqual([])
+    expect(linearTrend([40])).toEqual([40])
+    expect(linearTrend([10, 20, 30])).toEqual([10, 20, 30])
+    expect(linearTrend([8, 8, 8])).toEqual([8, 8, 8])
+    const fitted = linearTrend([0, 0, 6])
+    expect(fitted[0]).toBeLessThan(fitted[1])
+    expect(fitted[1]).toBeLessThan(fitted[2])
+    expect(fitted[0] + fitted[1] + fitted[2]).toBeCloseTo(6)
   })
 
   it('turns gross receipts into net and builds the summary with a receipts/sales ratio', () => {
