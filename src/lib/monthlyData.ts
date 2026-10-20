@@ -122,6 +122,15 @@ export interface MonthlySummaryRow {
   ratio: number | null
 }
 
+/** Sales total for each year in the summary, oldest year first. */
+export function totalsByYear(summary: readonly MonthlySummaryRow[]): { year: number; sales: number }[] {
+  const totals = new Map<number, number>()
+  for (const row of summary) totals.set(row.year, (totals.get(row.year) ?? 0) + row.sales)
+  return [...totals.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([year, sales]) => ({ year, sales }))
+}
+
 export function summarize(
   picks: YearMonth[],
   sales: Map<number, number>,

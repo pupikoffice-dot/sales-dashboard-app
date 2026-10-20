@@ -6,6 +6,7 @@ import { useDashboardFilters, type DateMode } from '../../context/DashboardFilte
 import { useLocale } from '../../context/LocaleContext'
 import { useDashboardData } from '../../hooks/useDashboardData'
 import { effectiveCompany } from '../../lib/salesFilterLists'
+import { yearsInCompanySales } from '../../lib/salesDateFilter'
 import { canShowModule } from '../../lib/permissions'
 import {
   getIndexedCategoryOptions,
@@ -31,15 +32,13 @@ const DATE_TAB_KEYS: { id: DateMode; key: 'filters.fromTo' | 'filters.months' | 
   { id: 'openorders', key: 'filters.openOrders' },
 ]
 
-const MONTH_YEARS = [2025, 2026]
-
 export function SidebarFilters() {
   // Honours the super-admin "View as user" preview.
   const { effectiveIsSuperAdmin: isSuperAdmin } = usePreview()
   const { access } = useDashboardAccess()
   const f = useDashboardFilters()
   const { t, monthNames } = useLocale()
-  const { filterIndex, isLoading, isFetching } = useDashboardData()
+  const { filterIndex, isLoading, isFetching, rows } = useDashboardData()
   const dataBusy = isLoading || isFetching
   const navigate = useNavigate()
   const location = useLocation()
@@ -50,6 +49,12 @@ export function SidebarFilters() {
     () => effectiveCompany(f.company, f.dateMode),
     [f.company, f.dateMode],
   )
+  const monthYears = useMemo(
+    () => yearsInCompanySales(rows, f.dateMode === 'openorders' ? f.company : companyTag),
+    [rows, f.dateMode, f.company, companyTag],
+  )
+  const earliest = `${monthYears[0]}-01-01`
+  const latest = `${monthYears[monthYears.length - 1]}-12-31`
 
   useLayoutEffect(() => {
     if (!f.company && allowedCompanies.length === 1) {
@@ -187,8 +192,8 @@ export function SidebarFilters() {
             <label>{t('filters.from')}</label>
             <input
               type="date"
-              min="2025-01-01"
-              max="2026-12-31"
+              min={earliest}
+              max={latest}
               value={f.dateFrom}
               onChange={e => f.setDateFrom(e.target.value)}
               disabled={!f.company}
@@ -196,8 +201,8 @@ export function SidebarFilters() {
             <label>{t('filters.to')}</label>
             <input
               type="date"
-              min="2025-01-01"
-              max="2026-12-31"
+              min={earliest}
+              max={latest}
               value={f.dateTo}
               onChange={e => f.setDateTo(e.target.value)}
               disabled={!f.company}
@@ -208,7 +213,7 @@ export function SidebarFilters() {
         {f.dateMode === 'months' && (
           <div className="months-picker active">
             <div className="yr-row">
-              {MONTH_YEARS.map(yr => (
+              {monthYears.map(yr => (
                 <button
                   key={yr}
                   type="button"
@@ -228,8 +233,8 @@ export function SidebarFilters() {
                 {t('common.clear')}
               </button>
             </div>
-            {MONTH_YEARS.map(yr => (
-              <div key={yr} style={yr === 2025 ? { marginTop: 6 } : undefined}>
+            {monthYears.map((yr, index) => (
+              <div key={yr} style={index > 0 ? { marginTop: 6 } : undefined}>
                 <div style={{ fontSize: '.67rem', color: 'var(--muted)', marginBottom: 4, letterSpacing: '.8px' }}>
                   {yr}
                 </div>
