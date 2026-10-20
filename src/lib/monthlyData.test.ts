@@ -8,6 +8,7 @@ import {
   linearTrend,
   monthHasArrived,
   summarize,
+  totalsByYear,
   RECEIPTS_VAT_RATE,
 } from './monthlyData'
 import type { SalesRow } from '../types/dashboard'
@@ -93,5 +94,14 @@ describe('monthly data', () => {
     expect(s[0]).toMatchObject({ year: 2026, month: 3, sales: 400, receipts: 500 })
     expect(s[0].ratio).toBeCloseTo(125)
     expect(s[1]).toMatchObject({ month: 4, sales: 70, receipts: null, ratio: null })
+  })
+
+  it('sums each year on its own', () => {
+    const picks = combinePicks([2025, 2026], [3])
+    const s = summarize(picks, salesByMonth(rows, 'pupik', picks), new Map())
+    expect(totalsByYear(s)).toEqual([
+      { year: 2025, sales: 150 },
+      { year: 2026, sales: 400 },
+    ])
   })
 })

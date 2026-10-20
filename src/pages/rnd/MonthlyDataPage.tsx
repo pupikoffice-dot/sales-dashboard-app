@@ -14,6 +14,7 @@ import {
   salesByDay,
   salesByMonth,
   summarize,
+  totalsByYear,
 } from '../../lib/monthlyData'
 import type { LogicalCompany } from '../../types/dashboard'
 
@@ -44,13 +45,13 @@ export function MonthlyDataPage() {
 
   const [pickedYears, setPickedYears] = useState<number[] | null>(null)
   const [pickedMonths, setPickedMonths] = useState<number[] | null>(null)
-  // Start on the latest year, all months; changing company starts over.
+  // Start with every year the company has, all months; changing company starts over.
   useEffect(() => {
     setPickedYears(null)
     setPickedMonths(null)
   }, [activeCompany])
   const yearsSel = useMemo(
-    () => (pickedYears ?? (years.length ? [years[years.length - 1]] : [])).filter(y => years.includes(y)),
+    () => (pickedYears ?? years).filter(y => years.includes(y)),
     [pickedYears, years],
   )
   const monthsSel = useMemo(() => pickedMonths ?? MONTH_SHORT.map((_, i) => i + 1), [pickedMonths])
@@ -62,8 +63,11 @@ export function MonthlyDataPage() {
   )
   const rec = useMemo(() => receiptsByMonth(receipts, picks), [receipts, picks])
   const summary = useMemo(() => summarize(picks, sales, rec), [picks, sales, rec])
-  const salesTotal = summary.reduce((sum, row) => sum + row.sales, 0)
+  const yearTotals = useMemo(() => totalsByYear(summary), [summary])
   const hasReceipts = rec.size > 0
+  const yearCols = useMemo(() => [...yearsSel].sort((a, b) => a - b), [yearsSel])
+  const monthRows = useMemo(() => [...monthsSel].sort((a, b) => a - b), [monthsSel])
+  const dailyYear = yearCols[yearCols.length - 1]
 
   const charts = useMemo(() => {
     if (!picks.length || !activeCompany) return null
@@ -135,7 +139,8 @@ export function MonthlyDataPage() {
       options: base(),
     })
     const days = Array.from({ length: 31 }, (_, i) => String(i + 1))
-    const dailyDatasets = picks.map((p, i) => ({
+    const dailyYear = ys[ys.length - 1]
+    const dailyDatasets = picks.filter(p => p.year === dailyYear).map((p, i) => ({
       label: `${MONTH_SHORT[p.month - 1]} ${p.year}`,
       data: salesByDay(allRows, activeCompany, p.year, p.month),
       borderColor: colour(i),
@@ -231,14 +236,20 @@ export function MonthlyDataPage() {
       ) : (
         <div style={{ display: 'grid', gap: 18 }}>
           <section>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
               <h3 style={{ marginBottom: 8 }}>Sales by month</h3>
-              <div>Total <b>{fmt0(salesTotal)}</b></div>
+              <div>
+                {yearTotals.map(t => (
+                  <span key={t.year} style={{ marginLeft: 12 }}>
+                    {t.year} <b>{fmt0(t.sales)}</b>
+                  </span>
+                ))}
+              </div>
             </div>
             <HubChart config={charts.salesMonthly} height={260} label="Sales by month" />
           </section>
           <section>
-            <h3>Sales by day</h3>
+            <h3>Sales by day{yearCols.length > 1 && dailyYear ? ` — ${dailyYear}` : ''}</h3>
             <HubChart config={charts.salesDaily} height={260} label="Sales by day" />
           </section>
           <section>
@@ -256,22 +267,48 @@ export function MonthlyDataPage() {
                 <thead>
                   <tr>
                     <th style={{ textAlign: 'left' }}>Month</th>
-                    <th>Sales</th>
-                    <th>Receipts (net)</th>
-                    <th>Receipts / sales</th>
+                    {yearCols.map(y => (
+                      <th key={y}>{y}</th>
+                    ))}
+                    {hasReceipts
+                      ? yearCols.map(y => (
+                          <th key={`r${y}`}>{y} receipts</th>
+                        ))
+                      : null}
                   </tr>
                 </thead>
                 <tbody>
-                  {summary.map(s => (
-                    <tr key={`${s.year}-${s.month}`}>
-                      <td>
-                        {MONTH_SHORT[s.month - 1]} {s.year}
-                      </td>
-                      <td>{fmt0(s.sales)}</td>
-                      <td>{s.receipts != null ? fmt0(s.receipts) : '—'}</td>
-                      <td>{s.ratio != null ? `${s.ratio.toFixed(0)}%` : '—'}</td>
+                  {monthRows.map(m => (
+                    <tr key={m}>
+                      <td>{MONTH_SHORT[m - 1]}</td>
+                      {yearCols.map(y => {
+                        const row = summary.find(s => s.year === y && s.month === m)
+                        return <td key={y}>{fmt0(row?.sales ?? 0)}</td>
+                      })}
+                      {hasReceipts
+                        ? yearCols.map(y => {
+                            const row = summary.find(s => s.year === y && s.month === m)
+                            return <td key={`r${y}`}>{row?.receipts != null ? fmt0(row.receipts) : '—'}</td>
+                          })
+                        : null}
                     </tr>
                   ))}
+                  <tr>
+                    <td>Total</td>
+                    {yearTotals.map(t => (
+                      <td key={t.year}>
+                        <b>{fmt0(t.sales)}</b>
+                      </td>
+                    ))}
+                    {hasReceipts
+                      ? yearCols.map(y => {
+                          const amounts = monthRows.map(m => summary.find(s => s.year === y && s.month === m)?.receipts)
+                          const any = amounts.some(v => v != null)
+                          const total = amounts.reduce<number>((sum, v) => sum + (v ?? 0), 0)
+                          return <td key={`rt${y}`}>{any ? <b>{fmt0(total)}</b> : '—'}</td>
+                        })
+                      : null}
+                  </tr>
                 </tbody>
               </table>
             </div>
