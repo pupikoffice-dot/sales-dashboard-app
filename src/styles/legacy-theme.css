@@ -2752,8 +2752,61 @@ body.preview-mode .dashboard-shell {
 
 .yr-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
   margin-bottom: 4px;
+}
+
+.yr-row > .yr-btn {
+  flex: 0 0 auto;
+}
+
+/* A scroll container (overflow hidden) stops position: sticky from sticking to the window, so the page that has the
+   jump bar clips sideways overflow instead of scrolling it. */
+.dashboard-main:has(.ov-jump) {
+  overflow-x: clip;
+}
+
+/* Jump bar on the Oversight page: one button per company, sticks under the header. */
+.ov-jump {
+  position: sticky;
+  z-index: 90;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  margin: 0 0 12px;
+  padding: 8px 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--bdr);
+}
+
+.ov-jump-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border: 1px solid var(--bdr-s);
+  border-radius: 999px;
+  background: var(--sur2);
+  color: var(--muted2);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.ov-jump-btn:hover {
+  border-color: var(--acc);
+  color: var(--txt);
+}
+
+.ov-jump-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
 }
 
 .yr-btn {

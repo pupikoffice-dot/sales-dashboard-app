@@ -359,6 +359,7 @@ export const messages = {
   'suiteUi.bestClients.title': 'Best clients',
   'suiteUi.bestClients.empty': 'No MTD client sales in this window.',
 
+  'oversite.jumpTo': 'Jump to company',
   'oversite.title': 'Oversight Dashboard',
   'oversite.groupScope': 'Selected companies — totals',
   'oversite.vsLastYear': 'Change vs last year, same days of the month',

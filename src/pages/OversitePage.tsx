@@ -67,6 +67,7 @@ import { OversiteLegend } from '../components/oversite/OversiteLegend'
 import { OversightGroupKpis } from '../components/oversite/OversightGroupKpis'
 import { computeGroupKpis, salesLyToDate, showGroupTotalsStrip, type GroupKpiId } from '../lib/oversightGroupKpis'
 import { OversightCompanyFilter } from '../components/oversite/OversightCompanyFilter'
+import { OversightCompanyJump, companyAnchorId } from '../components/oversite/OversightCompanyJump'
 import {
   readOversightCompanyFilter,
   writeOversightCompanyFilter,
@@ -322,6 +323,8 @@ function ClassicOversitePage({
         {arrange.arranging ? <ArrangeHiddenTray arrange={arrange} surface="classic" /> : null}
       </div>
 
+      <OversightCompanyJump companies={displayedCompanies} />
+
       {visibleCompanies.length === 0 ? (
         <p className="ov-empty">{t('oversite.noCompanies')}</p>
       ) : displayedCompanies.length === 0 ? (
@@ -566,6 +569,7 @@ function ClassicOversitePage({
             return (
               <div
                 key={co.id}
+                id={companyAnchorId(co.id)}
                 className={`ov-col${useSavedLook ? ' ov-col--flow' : displayedCompanies.length === 1 ? ' ov-col--sections-grid' : ''}${multiCo ? ' ov-col--accented' : ''}${secondCo ? ' ov-col--alt' : ''}`}
                 style={multiCo ? ({ ['--co-accent' as string]: co.accentColor } as CSSProperties) : undefined}
                 {...(useSavedLook ? boardStyleAttrs(classicBoard.style) : {})}

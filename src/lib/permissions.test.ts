@@ -29,6 +29,7 @@ function access(over: Partial<DashboardAccess> = {}): DashboardAccess {
     showItemCost: false,
     showClientProfit: false,
     hiddenSidebar: [],
+    hiddenYears: [],
     oversiteModules: [],
     ...over,
   }
@@ -166,5 +167,27 @@ describe('module visibility', () => {
 
   it('denies when there is no access row', () => {
     expect(canShowModule(null, 'oversite')).toBe(false)
+  })
+})
+
+describe('filterRows — years a user may not see', () => {
+  const y = (year: number, date?: string): SalesRow => ({ company: 'pupik', year, date, cash: 1 })
+
+  it('drops rows of hidden years and keeps the rest', () => {
+    const rows = [y(2024), y(2025), y(2026)]
+    expect(filterRows(access({ hiddenYears: [2025] }), rows).map(r => r.year)).toEqual([2024, 2026])
+    expect(filterRows(access({ hiddenYears: [2024, 2026] }), rows).map(r => r.year)).toEqual([2025])
+    expect(filterRows(access({ hiddenYears: [] }), rows)).toHaveLength(3)
+  })
+
+  it('reads the year from the date when a row has no year', () => {
+    const noYear = { company: 'pupik', date: '2025-03-04', cash: 1 } as SalesRow
+    expect(filterRows(access({ hiddenYears: [2025] }), [noYear])).toHaveLength(0)
+    expect(filterRows(access({ hiddenYears: [2024] }), [noYear])).toHaveLength(1)
+  })
+
+  it('keeps a row whose year cannot be read', () => {
+    const odd = { company: 'pupik', cash: 1 } as SalesRow
+    expect(filterRows(access({ hiddenYears: [2025] }), [odd])).toHaveLength(1)
   })
 })

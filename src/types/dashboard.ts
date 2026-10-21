@@ -23,6 +23,8 @@ export interface DashboardAccess {
   showClientProfit: boolean
   /** Sidebar button ids to hide for this user. Empty = show everything they otherwise have. */
   hiddenSidebar: string[]
+  /** Years of data this user may not see. The database leaves them out; the browser filters too (View as). */
+  hiddenYears: number[]
   /** Which individual Oversight sections this user can see. Empty = none (opt-in). */
   oversiteModules: string[]
 }

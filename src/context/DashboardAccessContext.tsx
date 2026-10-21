@@ -29,6 +29,11 @@ function normalizeCompanies(raw: unknown): LogicalCompany[] {
     .filter((c): c is LogicalCompany => LOGICAL_COMPANIES.includes(c as LogicalCompany))
 }
 
+function normalizeYears(raw: unknown): number[] {
+  if (!Array.isArray(raw)) return []
+  return raw.map(Number).filter(y => Number.isInteger(y) && y > 1999 && y < 2200)
+}
+
 function normalizeAccess(row: Record<string, unknown>, userId: string): DashboardAccess {
   return {
     userId,
@@ -40,6 +45,7 @@ function normalizeAccess(row: Record<string, unknown>, userId: string): Dashboar
     showItemCost: row.show_item_cost === true,
     showClientProfit: row.show_client_profit === true,
     hiddenSidebar: Array.isArray(row.hidden_sidebar) ? (row.hidden_sidebar as string[]) : [],
+    hiddenYears: normalizeYears(row.hidden_years),
     oversiteModules: Array.isArray(row.oversite_modules) ? (row.oversite_modules as string[]) : [],
   }
 }
@@ -100,6 +106,7 @@ export function DashboardAccessProvider({ children }: { children: ReactNode }) {
           showItemCost: true,
           showClientProfit: true,
           hiddenSidebar: [],
+          hiddenYears: [],
           oversiteModules: ALL_OVERSITE_MODULE_IDS,
         })
       } else {
