@@ -32,6 +32,8 @@ import { SmReceiptsReportModal } from './SmReceiptsReportModal'
 import { SmVsCompanyView } from './SmVsCompanyView'
 import type { OversightLayoutPreference } from '../../../lib/oversightLayouts'
 import { OversightLayoutToggle, type OversightLayoutOption } from '../OversightLayoutToggle'
+import { OversightCompanyJump, companyAnchorId } from '../OversightCompanyJump'
+import { COMPANY_ACCENT } from '../../../lib/oversiteMetrics'
 import {
   ArrangeHiddenTray,
   OversightArrangeBar,
@@ -419,6 +421,12 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
         {arrange.arranging ? <ArrangeHiddenTray arrange={arrange} surface="suite" /> : null}
       </div>
 
+      {!isAgentSuite ? (
+        <OversightCompanyJump
+          companies={companyBlocks.map(b => ({ id: b.company, label: b.label, accentColor: COMPANY_ACCENT[b.company] }))}
+        />
+      ) : null}
+
       {companies.length === 0 ? (
         <p className="ov-empty">{t('oversite.noCompanies')}</p>
       ) : isAgentSuite && scopedAgents.length === 0 ? (
@@ -430,7 +438,7 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
               const allTitle = t('sm.window.allAgents')
               const showTsomet = company === 'mt' && visibleBiIds.includes('tsomet_budget')
               return (
-                <section key={company} className="sm-company-block">
+                <section key={company} id={companyAnchorId(company)} className="sm-company-block">
                   <h3 className="sm-company-title">{label}</h3>
                   {isAgentSuite ? (
                     <div className="sm-suite-windows">
