@@ -10,8 +10,6 @@ export interface GroupKpiInput {
   salesMtd: { cash: number; lyCash: number }
   /** Last year's sales for the same month up to the same day (fair month-to-date comparison). */
   salesLyToDate: number
-  /** Delivery notes (720) dated in the same month last year up to the same day; counted on the last-year side too. */
-  delivery720LyToDate: number
   delivery720Mtd: { cash: number }
   ordersToday: { clients: number; cash: number }
   ordersMtd: { clients: number; cash: number }
@@ -51,8 +49,7 @@ export function computeGroupKpis(cols: GroupKpiInput[], opts: GroupKpiOptions): 
   const sum = (f: (c: GroupKpiInput) => number) => cols.reduce((a, c) => a + (f(c) || 0), 0)
 
   const sales = sum(c => c.salesMtd.cash + (opts.includeDeliveryNotes ? c.delivery720Mtd.cash : 0))
-  // Delivery notes count on both sides of the comparison, or on neither.
-  const ly = sum(c => c.salesLyToDate + (opts.includeDeliveryNotes ? c.delivery720LyToDate || 0 : 0))
+  const ly = sum(c => c.salesLyToDate)
   const out: GroupKpi[] = [
     { id: 'salesMtd', value: sales, sub: null, lyPct: ly > 0 ? ((sales - ly) / ly) * 100 : null },
     { id: 'ordersToday', value: sum(c => c.ordersToday.cash), sub: sum(c => c.ordersToday.clients), lyPct: null },

@@ -79,15 +79,7 @@ export function OversightHub({
       ? cos.reduce((s, c) => s + computeDelivery720Mtd(rows, c.delivery720Tag, ctx.monthStart, today).cash, 0)
       : 0
     const salesMtd = invoicesMtd + notesMtd
-    const lyDay = Number(today.slice(8, 10))
-    const lyToDate = cos.reduce(
-      (s, c) =>
-        s +
-        salesLyToDate(rows, c.id, ctx.curYear, ctx.curMonth, lyDay) +
-        // delivery notes count on both sides of the comparison, or on neither
-        (includeNotes ? salesLyToDate(rows, c.delivery720Tag, ctx.curYear, ctx.curMonth, lyDay) : 0),
-      0,
-    )
+    const lyToDate = cos.reduce((s, c) => s + salesLyToDate(rows, c.id, ctx.curYear, ctx.curMonth, Number(today.slice(8, 10))), 0)
     const open = openTags.reduce((acc, tag) => {
       const o = computeOpenOrders(rows, tag)
       return { cash: acc.cash + o.cash, qty: acc.qty + o.qty }
