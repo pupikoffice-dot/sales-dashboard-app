@@ -86,7 +86,11 @@ export function MonthlyDataPage() {
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { labels: { color: txt, boxWidth: 12 } },
-        tooltip: { callbacks: { label: c => `${c.dataset.label}: ${num(c.parsed.y ?? 0)}` } },
+        tooltip: {
+          // the trend lines are in the legend; the tooltip lists the real values only
+          filter: item => !/trend$/i.test(String(item.dataset.label ?? '')),
+          callbacks: { label: c => `${c.dataset.label}: ${num(c.parsed.y ?? 0)}` },
+        },
       },
       scales: {
         x: { ticks: { color: muted }, grid: { color: grid } },
@@ -149,7 +153,12 @@ export function MonthlyDataPage() {
       pointRadius: 0,
       tension: 0.25,
     }))
+    // Width the data needs: grouped bars per month, or one point per day. On a phone the chart scrolls sideways.
+    const monthlyMin = Math.min(2600, 90 + ms.length * Math.max(60, ys.length * 15 + 24))
+    const dailyMin = 90 + 31 * 24
     return {
+      monthlyMin,
+      dailyMin,
       salesMonthly: salesWithTrend(),
       receiptsMonthly: barsOf(rec),
       salesDaily: {
@@ -246,16 +255,16 @@ export function MonthlyDataPage() {
                 ))}
               </div>
             </div>
-            <HubChart config={charts.salesMonthly} height={260} label="Sales by month" />
+            <HubChart config={charts.salesMonthly} height={260} label="Sales by month" minWidth={charts.monthlyMin} />
           </section>
           <section style={{ minWidth: 0 }}>
             <h3>Sales by day{yearCols.length > 1 && dailyYear ? ` — ${dailyYear}` : ''}</h3>
-            <HubChart config={charts.salesDaily} height={260} label="Sales by day" />
+            <HubChart config={charts.salesDaily} height={260} label="Sales by day" minWidth={charts.dailyMin} />
           </section>
           <section style={{ minWidth: 0 }}>
             <h3>Receivables — receipts by month (net of VAT)</h3>
             {hasReceipts ? (
-              <HubChart config={charts.receiptsMonthly} height={260} label="Receipts by month" />
+              <HubChart config={charts.receiptsMonthly} height={260} label="Receipts by month" minWidth={charts.monthlyMin} />
             ) : (
               <p className="status-msg">No receipts recorded for the chosen months.</p>
             )}

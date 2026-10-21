@@ -39,17 +39,69 @@ export function withAlpha(color: string, alpha: number): string {
   return c
 }
 
-/** A Chart.js canvas that rebuilds when `config` or `deps` change. */
-export function HubChart({ config, height = 220, label }: { config: ChartConfiguration; height?: number; label: string }) {
+/** Close any open tooltip and highlight on a chart. */
+export function clearChartTooltip(chart: ChartJS): void {
+  try {
+    chart.tooltip?.setActiveElements([], { x: 0, y: 0 })
+    chart.setActiveElements([])
+    chart.update('none')
+  } catch {
+    /* chart already destroyed */
+  }
+}
+
+/** How long a tooltip stays after a finger lifts off the chart (touch screens have no mouse-out). */
+export const TOUCH_TOOLTIP_MS = 2500
+
+/**
+ * A Chart.js canvas that rebuilds when `config` changes.
+ *
+ * `minWidth` (px): a chart with many points keeps at least that width inside a box that scrolls sideways, instead
+ * of being squeezed to the screen. A tooltip never sticks: it closes when the user touches or clicks anywhere
+ * else, scrolls, or (on touch) a moment after the finger lifts.
+ */
+export function HubChart({
+  config,
+  height = 220,
+  label,
+  minWidth,
+}: {
+  config: ChartConfiguration
+  height?: number
+  label: string
+  minWidth?: number
+}) {
   const ref = useRef<HTMLCanvasElement | null>(null)
   useEffect(() => {
-    if (!ref.current) return
-    const chart = new ChartJS(ref.current, config)
-    return () => chart.destroy()
+    const canvas = ref.current
+    if (!canvas) return
+    const chart = new ChartJS(canvas, config)
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const clear = () => clearChartTooltip(chart)
+    const onOutside = (e: Event) => {
+      if (!canvas.contains(e.target as Node)) clear()
+    }
+    const onTouchEnd = () => {
+      clearTimeout(timer)
+      timer = setTimeout(clear, TOUCH_TOOLTIP_MS)
+    }
+    document.addEventListener('pointerdown', onOutside, true)
+    window.addEventListener('scroll', clear, true)
+    canvas.addEventListener('touchend', onTouchEnd, { passive: true })
+    return () => {
+      clearTimeout(timer)
+      document.removeEventListener('pointerdown', onOutside, true)
+      window.removeEventListener('scroll', clear, true)
+      canvas.removeEventListener('touchend', onTouchEnd)
+      chart.destroy()
+    }
   }, [config])
   return (
-    <div className="hub-chart" style={{ height }}>
-      <canvas ref={ref} role="img" aria-label={label} />
+    <div className="hub-chart-scroll">
+      <div className="hub-chart" style={{ height, minWidth: minWidth ? `${minWidth}px` : undefined }}>
+        <canvas ref={ref} role="img" aria-label={label} />
+      </div>
+      {minWidth ? <p className="hub-chart-hint">Swipe sideways to see the whole chart</p> : null}
     </div>
   )
 }
