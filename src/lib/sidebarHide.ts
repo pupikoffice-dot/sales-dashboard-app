@@ -63,6 +63,7 @@ export const SIDEBAR_HIDE_GROUPS: SidebarHideGroup[] = [
     options: [
       { id: 'skin.bento', label: 'Skin — Bento' },
       { id: 'skin.solid', label: 'Skin — Solid' },
+      { id: 'skin.glass', label: 'Skin — Glass' },
     ],
   },
   {
