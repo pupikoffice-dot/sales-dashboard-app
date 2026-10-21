@@ -442,6 +442,12 @@ html[data-skin='glass'] .ov-bar-fill {
   border-radius: 5px;
 }
 
+/* Signed percentages keep their sign on the left of the number in right-to-left too. */
+html[data-skin='glass'] .ov-bar-delta {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
 html[data-skin='glass'] .ov-agent-breakdown th {
   color: var(--muted);
   letter-spacing: 0.12em;
