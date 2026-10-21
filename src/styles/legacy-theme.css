@@ -2767,10 +2767,11 @@ body.preview-mode .dashboard-shell {
   overflow-x: clip;
 }
 
-/* Jump bar on the Oversight page: one button per company, sticks under the header. */
+/* Jump bar on the Oversight page: one button per company, sticks under the header.
+   Below the phone menu drawer (z-index 90) and its backdrop (85), so it never cuts the open menu. */
 .ov-jump {
   position: sticky;
-  z-index: 90;
+  z-index: 80;
   display: flex;
   gap: 8px;
   overflow-x: auto;
@@ -3748,7 +3749,7 @@ label.ck .ck-label {
     display: block;
     position: fixed;
     inset: 0;
-    top: var(--header-h);
+    top: var(--header-live-h, var(--header-h));
     z-index: 85;
     border: none;
     padding: 0;
@@ -3760,7 +3761,7 @@ label.ck .ck-label {
   .dashboard-sidebar {
     position: fixed;
     left: 0;
-    top: var(--header-h);
+    top: var(--header-live-h, var(--header-h));
     bottom: 0;
     width: min(320px, 88vw);
     max-width: 100%;
@@ -3768,7 +3769,7 @@ label.ck .ck-label {
     transform: translateX(-105%);
     transition: transform 0.22s ease;
     box-shadow: none;
-    height: calc(100dvh - var(--header-h));
+    height: calc(100dvh - var(--header-live-h, var(--header-h)));
     -webkit-overflow-scrolling: touch;
     padding-bottom: max(20px, env(safe-area-inset-bottom));
   }

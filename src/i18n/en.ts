@@ -145,7 +145,7 @@ export const messages = {
   'nav.adminModules': 'Admin — Modules',
   'nav.adminDataHealth': 'Admin — Data health',
 
-  'header.title': 'Sales Dashboard',
+  'header.title': 'Management Dashboard',
   'header.versionLabel': 'App version {version}',
   'header.channelBeta': 'beta',
   'header.subtitle': 'Pupik · Monkeytime · Grow · Goldbug',
@@ -154,7 +154,7 @@ export const messages = {
   'header.noDebtRows': '· 0 debt rows',
   'header.signedInAs': 'Signed in as {name}',
 
-  'login.title': 'Sales Dashboard',
+  'login.title': 'Management Dashboard',
   'login.subtitle': 'Sign in to view your sales data',
   'login.emailOrUsername': 'Email or username',
   'login.password': 'Password',

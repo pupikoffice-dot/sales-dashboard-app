@@ -60,7 +60,7 @@
   white-space: nowrap;
 }
 
-.hub-chart { position: relative; width: 100%; }
+.hub-chart { position: relative; width: 100%; min-width: 0; max-width: 100%; }
 
 /* KPI tiles */
 .hub-tile-kpi {
