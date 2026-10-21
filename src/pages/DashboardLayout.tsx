@@ -76,6 +76,24 @@ export function DashboardLayout() {
     setSidebarOpen(false)
   }, [location.pathname])
 
+  // The header wraps onto several rows on phones, so its real height is bigger than --header-h. The phone menu
+  // drawer and its backdrop start below it, so the header never hides the first menu items.
+  useEffect(() => {
+    const header = document.querySelector<HTMLElement>('.dashboard-header')
+    if (!header) return
+    const root = document.documentElement
+    const publish = () => root.style.setProperty('--header-live-h', `${Math.round(header.getBoundingClientRect().height)}px`)
+    publish()
+    window.addEventListener('resize', publish)
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(publish) : null
+    ro?.observe(header)
+    return () => {
+      window.removeEventListener('resize', publish)
+      ro?.disconnect()
+      root.style.removeProperty('--header-live-h')
+    }
+  }, [loading, access?.active])
+
   useEffect(() => {
     document.body.classList.toggle('sales-agent-no-nav', hideNavigation)
     return () => document.body.classList.remove('sales-agent-no-nav')

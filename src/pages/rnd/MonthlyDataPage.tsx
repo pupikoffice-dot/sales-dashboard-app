@@ -168,7 +168,7 @@ export function MonthlyDataPage() {
     <div className="panel" style={{ padding: 16 }}>
       <h2 style={{ marginTop: 0 }}>R&amp;D — Monthly data</h2>
 
-      <div style={{ display: 'grid', gap: 12, marginBottom: 16 }}>
+      <div style={{ display: 'grid', gap: 12, marginBottom: 16, gridTemplateColumns: 'minmax(0, 1fr)' }}>
         <div>
           <div className="sidebar-label">Company</div>
           {companies.length === 1 ? (
@@ -234,8 +234,8 @@ export function MonthlyDataPage() {
       {!charts ? (
         <p className="status-msg">Choose at least one year and one month.</p>
       ) : (
-        <div style={{ display: 'grid', gap: 18 }}>
-          <section>
+        <div style={{ display: 'grid', gap: 18, gridTemplateColumns: 'minmax(0, 1fr)' }}>
+          <section style={{ minWidth: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
               <h3 style={{ marginBottom: 8 }}>Sales by month</h3>
               <div>
@@ -248,11 +248,11 @@ export function MonthlyDataPage() {
             </div>
             <HubChart config={charts.salesMonthly} height={260} label="Sales by month" />
           </section>
-          <section>
+          <section style={{ minWidth: 0 }}>
             <h3>Sales by day{yearCols.length > 1 && dailyYear ? ` — ${dailyYear}` : ''}</h3>
             <HubChart config={charts.salesDaily} height={260} label="Sales by day" />
           </section>
-          <section>
+          <section style={{ minWidth: 0 }}>
             <h3>Receivables — receipts by month (net of VAT)</h3>
             {hasReceipts ? (
               <HubChart config={charts.receiptsMonthly} height={260} label="Receipts by month" />
@@ -260,7 +260,7 @@ export function MonthlyDataPage() {
               <p className="status-msg">No receipts recorded for the chosen months.</p>
             )}
           </section>
-          <section>
+          <section style={{ minWidth: 0 }}>
             <h3>Numbers</h3>
             <div className="tw">
               <table>

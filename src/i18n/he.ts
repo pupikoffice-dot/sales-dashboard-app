@@ -147,7 +147,7 @@ export const messages: Record<keyof typeof en, string> = {
   'nav.adminModules': 'ניהול — מודולים',
   'nav.adminDataHealth': 'ניהול — תקינות נתונים',
 
-  'header.title': 'לוח מכירות',
+  'header.title': 'לוח ניהול',
   'header.versionLabel': 'גרסת אפליקציה {version}',
   'header.channelBeta': 'בטה',
   'header.subtitle': 'Pupik · Monkeytime · Grow · Goldbug',
@@ -156,7 +156,7 @@ export const messages: Record<keyof typeof en, string> = {
   'header.noDebtRows': '· 0 שורות חוב',
   'header.signedInAs': 'מחובר כ{name}',
 
-  'login.title': 'לוח מכירות',
+  'login.title': 'לוח ניהול',
   'login.subtitle': 'התחבר כדי לצפות בנתוני המכירות שלך',
   'login.emailOrUsername': 'אימייל או שם משתמש',
   'login.password': 'סיסמה',
