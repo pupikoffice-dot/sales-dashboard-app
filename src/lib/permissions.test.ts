@@ -30,6 +30,7 @@ function access(over: Partial<DashboardAccess> = {}): DashboardAccess {
     showClientProfit: false,
     hiddenSidebar: [],
     hiddenYears: [],
+    thisYearOnly: false,
     oversiteModules: [],
     ...over,
   }

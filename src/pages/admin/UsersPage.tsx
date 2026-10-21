@@ -50,6 +50,7 @@ interface AccessRow {
   show_client_profit?: boolean
   hidden_sidebar?: string[] | null
   hidden_years?: number[] | null
+  this_year_only?: boolean | null
   oversite_modules?: string[] | null
 }
 
@@ -470,6 +471,7 @@ function EditAccessModal({
   const [showClientProfit, setShowClientProfit] = useState(false)
   const [hiddenSidebar, setHiddenSidebar] = useState<string[]>([])
   const [hiddenYears, setHiddenYears] = useState<number[]>([])
+  const [thisYearOnly, setThisYearOnly] = useState(false)
   const { allRows: dataRows } = useDashboardData()
   const [agentErpId, setAgentErpId] = useState('')
   const [parentId, setParentId] = useState('')
@@ -514,6 +516,7 @@ function EditAccessModal({
           setShowClientProfit(row.show_client_profit === true)
           setHiddenSidebar(Array.isArray(row.hidden_sidebar) ? row.hidden_sidebar : [])
           setHiddenYears(Array.isArray(row.hidden_years) ? row.hidden_years.map(Number) : [])
+          setThisYearOnly(row.this_year_only === true)
         } else {
           setModules(['oversite'])
           setOversiteModules(OVERSITE_MODULE_REGISTRY.map(m => m.id))
@@ -601,6 +604,7 @@ function EditAccessModal({
       show_client_profit: showClientProfit,
       hidden_sidebar: hiddenSidebar,
       hidden_years: hiddenYears,
+      this_year_only: thisYearOnly,
       updated_at: new Date().toISOString(),
     })
     if (err) {
@@ -806,12 +810,22 @@ function EditAccessModal({
               title="Years of data"
               hint="Checked years are shown to this user. Unchecked years are hidden, and that data is not sent to the user at all. Debt, stock and item prices have no year, so they are not affected."
             >
+              <label className="admin-form-check">
+                <input type="checkbox" checked={thisYearOnly} onChange={e => setThisYearOnly(e.target.checked)} />
+                This year only
+              </label>
+              <p className="admin-form-hint">
+                {thisYearOnly
+                  ? 'This user sees the current year only. Next year it moves on by itself on 1 January. The year boxes below are ignored while this is on.'
+                  : 'Tick to show this user the current year only, whatever the year boxes below say.'}
+              </p>
               <div className="admin-form-checkrow">
                 {yearChoices(dataRows, hiddenYears).map(y => (
                   <label key={y} className="admin-form-check">
                     <input
                       type="checkbox"
-                      checked={!hiddenYears.includes(y)}
+                      disabled={thisYearOnly}
+                      checked={thisYearOnly ? y === new Date().getFullYear() : !hiddenYears.includes(y)}
                       onChange={() => setHiddenYears(prev => toggleHiddenYear(prev, y))}
                     />
                     {y}

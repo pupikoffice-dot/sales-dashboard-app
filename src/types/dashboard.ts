@@ -25,6 +25,8 @@ export interface DashboardAccess {
   hiddenSidebar: string[]
   /** Years of data this user may not see. The database leaves them out; the browser filters too (View as). */
   hiddenYears: number[]
+  /** Admin ticked "This year only": every year except the current one is in hiddenYears. */
+  thisYearOnly: boolean
   /** Which individual Oversight sections this user can see. Empty = none (opt-in). */
   oversiteModules: string[]
 }
