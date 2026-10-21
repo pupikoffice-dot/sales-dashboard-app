@@ -13,6 +13,7 @@ function access(modules: string[]): DashboardAccess {
     showItemCost: false,
     showClientProfit: false,
     hiddenSidebar: [],
+    hiddenYears: [],
     oversiteModules: modules,
   }
 }

@@ -361,6 +361,7 @@ export const messages: Record<keyof typeof en, string> = {
   'suiteUi.bestClients.title': 'הלקוחות הטובים ביותר',
   'suiteUi.bestClients.empty': 'אין מכירות ללקוחות החודש בחלון זה.',
 
+  'oversite.jumpTo': 'קפוץ לחברה',
   'oversite.title': 'לוח מבט על',
   'oversite.groupScope': 'החברות שנבחרו — סיכום',
   'oversite.vsLastYear': 'שינוי לעומת שנה שעברה, אותם ימים בחודש',

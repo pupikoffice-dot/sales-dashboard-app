@@ -23,6 +23,8 @@ import {
 import { SUITE_MOUNTABLE_UI_MODULE_IDS } from '../../lib/suiteUiModules'
 import { OVERSIGHT_ALTERNATE_LAYOUT_IDS } from '../../lib/oversightLayouts'
 import { SIDEBAR_HIDE_GROUPS } from '../../lib/sidebarHide'
+import { useDashboardData } from '../../hooks/useDashboardData'
+import { toggleHiddenYear, yearChoices } from '../../lib/yearChoices'
 
 interface UserRow {
   id: string
@@ -47,6 +49,7 @@ interface AccessRow {
   show_item_cost?: boolean
   show_client_profit?: boolean
   hidden_sidebar?: string[] | null
+  hidden_years?: number[] | null
   oversite_modules?: string[] | null
 }
 
@@ -466,6 +469,8 @@ function EditAccessModal({
   const [showItemCost, setShowItemCost] = useState(false)
   const [showClientProfit, setShowClientProfit] = useState(false)
   const [hiddenSidebar, setHiddenSidebar] = useState<string[]>([])
+  const [hiddenYears, setHiddenYears] = useState<number[]>([])
+  const { allRows: dataRows } = useDashboardData()
   const [agentErpId, setAgentErpId] = useState('')
   const [parentId, setParentId] = useState('')
   const [linkedUserId, setLinkedUserId] = useState('')
@@ -508,11 +513,13 @@ function EditAccessModal({
           setShowItemCost(row.show_item_cost === true)
           setShowClientProfit(row.show_client_profit === true)
           setHiddenSidebar(Array.isArray(row.hidden_sidebar) ? row.hidden_sidebar : [])
+          setHiddenYears(Array.isArray(row.hidden_years) ? row.hidden_years.map(Number) : [])
         } else {
           setModules(['oversite'])
           setOversiteModules(OVERSITE_MODULE_REGISTRY.map(m => m.id))
           setCompanies(['pupik'])
           setHiddenSidebar([])
+          setHiddenYears([])
         }
       })
     fetchUserBiGrants(userId)
@@ -593,6 +600,7 @@ function EditAccessModal({
       show_item_cost: showItemCost,
       show_client_profit: showClientProfit,
       hidden_sidebar: hiddenSidebar,
+      hidden_years: hiddenYears,
       updated_at: new Date().toISOString(),
     })
     if (err) {
@@ -789,6 +797,24 @@ function EditAccessModal({
                   <label key={c} className="admin-form-check capitalize">
                     <input type="checkbox" checked={companies.includes(c)} onChange={() => toggleCompany(c)} />
                     {c}
+                  </label>
+                ))}
+              </div>
+            </EditorGroup>
+
+            <EditorGroup
+              title="Years of data"
+              hint="Checked years are shown to this user. Unchecked years are hidden, and that data is not sent to the user at all. Debt, stock and item prices have no year, so they are not affected."
+            >
+              <div className="admin-form-checkrow">
+                {yearChoices(dataRows, hiddenYears).map(y => (
+                  <label key={y} className="admin-form-check">
+                    <input
+                      type="checkbox"
+                      checked={!hiddenYears.includes(y)}
+                      onChange={() => setHiddenYears(prev => toggleHiddenYear(prev, y))}
+                    />
+                    {y}
                   </label>
                 ))}
               </div>

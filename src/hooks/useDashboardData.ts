@@ -148,6 +148,7 @@ export function useDashboardData() {
   const data = useMemo(() => {
     if (!maskPreview || !q.data || !access) return q.data
     const allowedCo = new Set(access.companies.map(String))
+    const hiddenYears = new Set((access.hiddenYears ?? []).map(Number))
     const agentSet =
       Array.isArray(access.agents) && access.agents.length > 0
         ? new Set(access.agents.map(String))
@@ -159,7 +160,9 @@ export function useDashboardData() {
       const nextAgents: Record<string, Record<string, number>> = {}
       for (const [agent, months] of Object.entries(agents || {})) {
         if (agentSet && !agentSet.has(agent)) continue
-        nextAgents[agent] = months
+        nextAgents[agent] = hiddenYears.size
+          ? Object.fromEntries(Object.entries(months || {}).filter(([ym]) => !hiddenYears.has(Number(ym.slice(0, 4)))))
+          : months
       }
       if (Object.keys(nextAgents).length) filtered[co] = nextAgents
     }
