@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { computeGroupKpis, salesLyToDate, showGroupTotalsStrip, type GroupKpiInput } from './oversightGroupKpis'
 import type { SalesRow } from '../types/dashboard'
 
-const col = (o: Partial<{ sales: number; ly: number; d720: number; debt: number | null }>): GroupKpiInput => ({
+const col = (o: Partial<{ sales: number; ly: number; d720: number; dly: number; debt: number | null }>): GroupKpiInput => ({
   salesMtd: { cash: o.sales ?? 0, lyCash: 999999 },
   salesLyToDate: o.ly ?? 0,
+  delivery720LyToDate: o.dly ?? 0,
   delivery720Mtd: { cash: o.d720 ?? 0 },
   ordersToday: { clients: 2, cash: 100 },
   ordersMtd: { clients: 5, cash: 1000 },
@@ -16,6 +17,16 @@ const col = (o: Partial<{ sales: number; ly: number; d720: number; debt: number 
 const all = { show: () => true, includeDeliveryNotes: false }
 
 describe('computeGroupKpis', () => {
+  it('counts delivery notes on both sides of the last-year comparison, or on neither', () => {
+    const cols = [col({ sales: 800, d720: 200, ly: 500, dly: 100 })]
+    const on = computeGroupKpis(cols, { show: () => true, includeDeliveryNotes: true }).find(k => k.id === 'salesMtd')!
+    const off = computeGroupKpis(cols, { show: () => true, includeDeliveryNotes: false }).find(k => k.id === 'salesMtd')!
+    expect(on.value).toBe(1000)
+    expect(on.lyPct).toBeCloseTo(((1000 - 600) / 600) * 100)
+    expect(off.value).toBe(800)
+    expect(off.lyPct).toBeCloseTo(((800 - 500) / 500) * 100)
+  })
+
   it('sums the companies on screen', () => {
     const k = computeGroupKpis([col({ sales: 600, ly: 500, debt: 10 }), col({ sales: 400, ly: 500, debt: null })], all)
     const by = Object.fromEntries(k.map(x => [x.id, x]))

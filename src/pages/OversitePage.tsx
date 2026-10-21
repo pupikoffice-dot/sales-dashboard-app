@@ -186,6 +186,9 @@ function ClassicOversitePage({
       const salesLyToDateCash = salesLyToDate(
         companyRows, co.id, ctx.curYear, ctx.curMonth, Number(ctx.todayStr.slice(8, 10)),
       )
+      const delivery720LyToDateCash = salesLyToDate(
+        companyRows, co.delivery720Tag, ctx.curYear, ctx.curMonth, Number(ctx.todayStr.slice(8, 10)),
+      )
       const salesMtdCombinedCash = salesMtd.cash + delivery720Mtd.cash
       const salesMtdCombinedLyPct =
         salesMtd.lyCash > 0 ? ((salesMtdCombinedCash - salesMtd.lyCash) / salesMtd.lyCash) * 100 : null
@@ -223,6 +226,7 @@ function ClassicOversitePage({
         delivery720MtdDocs,
         salesMtd,
         salesLyToDate: salesLyToDateCash,
+        delivery720LyToDate: delivery720LyToDateCash,
         salesMtdCombinedLyPct,
         ordersTop10,
         salesTop10,
