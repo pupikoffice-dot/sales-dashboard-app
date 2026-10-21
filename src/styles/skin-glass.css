@@ -99,7 +99,7 @@ html[data-skin='glass'][data-theme='light'] {
   --chart-c3: #c0392b;
   --chart-c4: #0b7a71;
   --chart-c5: #8e44ad;
-  --edge-mix: 11%;
+  --edge-mix: 7%;
 }
 
 /* ── Type and browser surfaces ────────────────────────────────────────────── */
@@ -107,6 +107,14 @@ html[data-skin='glass'] body {
   font-family: 'Hanken Grotesk', 'Rubik', 'Segoe UI', system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
   background: var(--bg);
+}
+
+html[data-skin='glass'] .ov-header h2,
+html[data-skin='glass'] .ov-col-hdr,
+html[data-skin='glass'] .nav-btn,
+html[data-skin='glass'] .ov-section-title,
+html[data-skin='glass'] .panel-title {
+  font-variant-emoji: text;
 }
 
 html[data-skin='glass'] ::selection {
@@ -228,9 +236,17 @@ html[data-skin='glass'] .lang-btn.active {
   box-shadow: none;
 }
 
+html[data-skin='glass'] .btn,
+html[data-skin='glass'] .tab-btn {
+  min-height: 32px;
+  padding: 6px 16px;
+  line-height: 1.2;
+}
+
 html[data-skin='glass'] .mo-btn,
 html[data-skin='glass'] .yr-btn {
   border-radius: 8px;
+  min-height: 30px;
 }
 
 html[data-skin='glass'] .apply-btn {
@@ -309,6 +325,20 @@ html[data-skin='glass'] .tw tfoot td {
 }
 
 /* ── Oversight: the edge-lit shelf ────────────────────────────────────────── */
+/* The panel is the only box: a table inside it keeps its row hairlines and nothing else. */
+html[data-skin='glass'] .ov-section .tw {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+html[data-skin='glass'] .ov-header h2,
+html[data-skin='glass'] .ov-header-row h2 {
+  font-size: 1.9rem;
+  font-weight: 300;
+  letter-spacing: -0.01em;
+}
+
 html[data-skin='glass'] .ov-grid {
   gap: 22px;
   align-items: start;
@@ -388,7 +418,7 @@ html[data-skin='glass'] .ov-kpi + .ov-kpi {
 
 html[data-skin='glass'] .ov-kpi-val {
   font-size: clamp(1.2rem, 5.4vw, 1.7rem);
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1.1;
   letter-spacing: -0.02em;
 }
@@ -421,4 +451,14 @@ html[data-skin='glass'] .ov-agent-breakdown th {
 html[data-skin='glass'] .skin-switch {
   background: transparent;
   border-color: var(--bdr-s);
+}
+
+html[data-skin='glass'] .skin-switch select {
+  background: transparent;
+  border: none;
+  color: var(--txt);
+}
+
+html[data-skin='glass'] .skin-switch-ico {
+  font-variant-emoji: text;
 }
