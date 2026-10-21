@@ -2,6 +2,7 @@
 @import './styles/bento.css';
 @import './styles/skin-bento.css';
 @import './styles/skin-solid.css';
+@import './styles/skin-glass.css';
 @import './styles/hub.css';
 
 @tailwind base;

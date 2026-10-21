@@ -1,0 +1,424 @@
+/* ── Skin: Glass ─────────────────────────────────────────────────────────────
+   Active when <html data-skin="glass">. Dark first, with a light scheme.
+   Smoked-glass panels divided by 1px seams; every section is lit from its top edge by one thin line of its
+   company's colour. No blur, no heavy fills, no boxes on boxes. Everything is driven by theme tokens, so
+   dark / light / right-to-left follow. Classic (no data-skin override) is untouched. */
+
+/* ── Tokens: dark ─────────────────────────────────────────────────────────── */
+html[data-skin='glass']:not([data-theme='light']) {
+  color-scheme: dark;
+  --bg: #07090d;
+  --sur: #0e131b;
+  --sur2: #0a0e14;
+  --sur3: #161d28;
+  --bdr: rgba(255, 255, 255, 0.07);
+  --bdr-s: #232c3a;
+  --acc: #7aa2ff;
+  --acc2: #5b86f0;
+  --acc-bg: rgba(122, 162, 255, 0.12);
+  --acc-row-bg: rgba(122, 162, 255, 0.05);
+  --acc-row-bg-strong: rgba(122, 162, 255, 0.09);
+  --acc-shadow: rgba(0, 0, 0, 0.5);
+  --on-acc: #06080c;
+  --grn: #5fd38d;
+  --grn-bg: rgba(95, 211, 141, 0.12);
+  --amber: #f0b04a;
+  --red: #ff7b7b;
+  --txt: #f2f5fa;
+  --muted: #8d97ab;
+  --muted2: #c4ccd9;
+  --glass-header: #07090d;
+  --glass-sidebar: #07090d;
+  --glass-panel: #0e131b;
+  --glass-weak: #0b1017;
+  --glass-badge: #0e131b;
+  --glass-overlay: rgba(7, 9, 13, 0.92);
+  --panel-bg: #0e131b;
+  --panel-bg-strong: #121924;
+  --panel-bg-hdr: #0e131b;
+  --panel-bg-subtle: #0e131b;
+  --panel-bg-faint: #0b1017;
+  --panel-bg-heavy: #121924;
+  --elev-shadow: 0 14px 40px rgba(0, 0, 0, 0.6);
+  --co-pupik: #7aa2ff;
+  --co-mt: #4fd1c5;
+  --co-grow: #f0b04a;
+  --co-gold: #e3c85c;
+  --chart-c0: #7aa2ff;
+  --chart-c1: #5fd38d;
+  --chart-c2: #f0b04a;
+  --chart-c3: #ff7b7b;
+  --chart-c4: #4fd1c5;
+  --chart-c5: #c792ea;
+  --edge-mix: 15%;
+}
+
+/* ── Tokens: light ────────────────────────────────────────────────────────── */
+html[data-skin='glass'][data-theme='light'] {
+  color-scheme: light;
+  --bg: #eef1f5;
+  --sur: #ffffff;
+  --sur2: #f6f8fb;
+  --sur3: #e8ecf2;
+  --bdr: rgba(15, 23, 42, 0.09);
+  --bdr-s: #d3dae4;
+  --acc: #3a5fd0;
+  --acc2: #2c4cb4;
+  --acc-bg: rgba(58, 95, 208, 0.1);
+  --acc-row-bg: rgba(58, 95, 208, 0.05);
+  --acc-row-bg-strong: rgba(58, 95, 208, 0.08);
+  --acc-shadow: rgba(15, 23, 42, 0.14);
+  --on-acc: #ffffff;
+  --grn: #0f7a52;
+  --grn-bg: rgba(15, 122, 82, 0.1);
+  --amber: #a15c00;
+  --red: #c0392b;
+  --txt: #0f172a;
+  --muted: #5b6678;
+  --muted2: #334155;
+  --glass-header: #ffffff;
+  --glass-sidebar: #eef1f5;
+  --glass-panel: #ffffff;
+  --glass-weak: #f6f8fb;
+  --glass-badge: #ffffff;
+  --glass-overlay: rgba(238, 241, 245, 0.94);
+  --panel-bg: #ffffff;
+  --panel-bg-strong: #f6f8fb;
+  --panel-bg-hdr: #ffffff;
+  --panel-bg-subtle: #ffffff;
+  --panel-bg-faint: #f6f8fb;
+  --panel-bg-heavy: #e8ecf2;
+  --elev-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+  --co-pupik: #3a5fd0;
+  --co-mt: #0b7a71;
+  --co-grow: #a35f00;
+  --co-gold: #8a6d00;
+  --chart-c0: #3a5fd0;
+  --chart-c1: #0f7a52;
+  --chart-c2: #a15c00;
+  --chart-c3: #c0392b;
+  --chart-c4: #0b7a71;
+  --chart-c5: #8e44ad;
+  --edge-mix: 11%;
+}
+
+/* ── Type and browser surfaces ────────────────────────────────────────────── */
+html[data-skin='glass'] body {
+  font-family: 'Hanken Grotesk', 'Rubik', 'Segoe UI', system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  background: var(--bg);
+}
+
+html[data-skin='glass'] ::selection {
+  background: color-mix(in srgb, var(--acc) 38%, transparent);
+  color: var(--txt);
+}
+
+html[data-skin='glass'] * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--bdr-s) transparent;
+}
+
+html[data-skin='glass'] :focus-visible {
+  outline: 2px solid var(--acc);
+  outline-offset: 2px;
+}
+
+/* ── Chrome: header and sidebar are flat, seamed, never blurred ───────────── */
+html[data-skin='glass'] .dashboard-header {
+  background: var(--glass-header);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-bottom: 1px solid var(--bdr);
+  box-shadow: none;
+}
+
+html[data-skin='glass'] .dashboard-header h1 {
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+html[data-skin='glass'] .dashboard-sidebar {
+  background: var(--glass-sidebar);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-inline-end: 1px solid var(--bdr);
+  border-right-color: var(--bdr);
+  gap: 12px;
+}
+
+html[data-skin='glass'] .sidebar-label,
+html[data-skin='glass'] .panel-title {
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+
+html[data-skin='glass'] .nav-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--muted2);
+  padding: 8px 12px;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+
+html[data-skin='glass'] .nav-btn:hover {
+  background: var(--sur3);
+  border-color: transparent;
+  color: var(--txt);
+}
+
+html[data-skin='glass'] .nav-btn.active,
+html[data-skin='glass'] .nav-btn.oversite-nav.active {
+  background: var(--sur3);
+  border-color: var(--bdr-s);
+  color: var(--txt);
+  font-weight: 600;
+  box-shadow: none;
+}
+
+html[data-skin='glass'] .nav-btn.active::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--acc);
+  margin-inline-end: 8px;
+  vertical-align: middle;
+}
+
+html[data-skin='glass'] .dashboard-sidebar .panel {
+  background: transparent;
+  box-shadow: none;
+}
+
+/* ── Controls: hairline pills; the selected one inverts ───────────────────── */
+html[data-skin='glass'] .btn,
+html[data-skin='glass'] .tab-btn,
+html[data-skin='glass'] .lang-btn,
+html[data-skin='glass'] .refresh-btn,
+html[data-skin='glass'] .sign-out-btn,
+html[data-skin='glass'] .data-badge,
+html[data-skin='glass'] .hdr-user-name {
+  background: transparent;
+  border: 1px solid var(--bdr-s);
+  border-radius: 999px;
+  color: var(--muted2);
+  box-shadow: none;
+}
+
+html[data-skin='glass'] .btn:hover,
+html[data-skin='glass'] .tab-btn:hover,
+html[data-skin='glass'] .refresh-btn:hover,
+html[data-skin='glass'] .sign-out-btn:hover {
+  background: var(--sur3);
+  border-color: var(--muted);
+  color: var(--txt);
+}
+
+html[data-skin='glass'] .btn.active,
+html[data-skin='glass'] .tab-btn.active,
+html[data-skin='glass'] .lang-btn.active {
+  background: var(--txt);
+  border-color: var(--txt);
+  color: var(--bg);
+  font-weight: 600;
+  box-shadow: none;
+}
+
+html[data-skin='glass'] .mo-btn,
+html[data-skin='glass'] .yr-btn {
+  border-radius: 8px;
+}
+
+html[data-skin='glass'] .apply-btn {
+  background: var(--acc);
+  border-color: var(--acc);
+  color: var(--on-acc);
+  box-shadow: none;
+  font-weight: 600;
+}
+
+html[data-skin='glass'] input,
+html[data-skin='glass'] select,
+html[data-skin='glass'] .sbar-search {
+  background: var(--sur2);
+  border: 1px solid var(--bdr-s);
+  color: var(--txt);
+  box-shadow: none;
+}
+
+/* ── Panels, status bar, cubes: seamed glass, no shadow, no blur ──────────── */
+html[data-skin='glass'] .panel,
+html[data-skin='glass'] .sbar,
+html[data-skin='glass'] .sm-cube,
+html[data-skin='glass'] .login-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--bdr);
+  border-radius: var(--r-lg);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html[data-skin='glass'] .login-card {
+  box-shadow: var(--elev-shadow);
+}
+
+/* ── Tables: hairlines only ───────────────────────────────────────────────── */
+html[data-skin='glass'] .tw {
+  background: var(--panel-bg);
+  border: 1px solid var(--bdr);
+  border-radius: var(--r-lg);
+  box-shadow: none;
+}
+
+html[data-skin='glass'] .tw thead th {
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--bdr-s);
+}
+
+html[data-skin='glass'] .tw tbody tr {
+  border-bottom: 1px solid var(--bdr);
+  background: transparent;
+}
+
+html[data-skin='glass'] .tw tbody tr:nth-child(even) {
+  background: transparent;
+}
+
+html[data-skin='glass'] .tw tbody tr:hover {
+  background: var(--acc-row-bg-strong);
+}
+
+html[data-skin='glass'] .tw tbody td {
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-skin='glass'] .tw tfoot td {
+  background: transparent;
+  border-top: 1px solid var(--bdr-s);
+  font-weight: 600;
+}
+
+/* ── Oversight: the edge-lit shelf ────────────────────────────────────────── */
+html[data-skin='glass'] .ov-grid {
+  gap: 22px;
+  align-items: start;
+}
+
+html[data-skin='glass'] .ov-col--alt {
+  background: transparent;
+  padding: 0;
+}
+
+html[data-skin='glass'] .ov-col-hdr,
+html[data-skin='glass'] .ov-col--accented .ov-col-hdr {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 2px 4px 2px;
+  font-size: 1.05rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--txt);
+}
+
+html[data-skin='glass'] .ov-col--accented .ov-col-hdr::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ov-accent);
+  margin-inline-end: 10px;
+  vertical-align: middle;
+}
+
+/* The edge light: a thin company-colour line along the top, fading down into the glass. */
+html[data-skin='glass'] .ov-section,
+html[data-skin='glass'] .ov-col--accented .ov-section {
+  background-color: var(--panel-bg);
+  background-image: linear-gradient(180deg, color-mix(in srgb, var(--ov-accent, var(--acc)) var(--edge-mix), transparent) 0, transparent 72px);
+  border: 1px solid var(--bdr);
+  border-top: 2px solid var(--ov-accent, var(--acc));
+  border-radius: var(--r-lg);
+  padding: 16px 20px 14px;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+
+html[data-skin='glass'] .ov-section-title {
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+
+html[data-skin='glass'] .ov-section-synced {
+  color: var(--muted);
+  opacity: 1;
+}
+
+html[data-skin='glass'] .ov-kpi-row {
+  gap: 0;
+  border-top: 1px solid var(--bdr);
+  border-bottom: 1px solid var(--bdr);
+}
+
+html[data-skin='glass'] .ov-kpi {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 12px 14px 10px;
+  min-width: 0;
+  text-align: start;
+}
+
+html[data-skin='glass'] .ov-kpi + .ov-kpi {
+  border-inline-start: 1px solid var(--bdr);
+}
+
+html[data-skin='glass'] .ov-kpi-val {
+  font-size: clamp(1.2rem, 5.4vw, 1.7rem);
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+html[data-skin='glass'] .ov-kpi-val.grn {
+  color: var(--ov-accent, var(--grn));
+}
+
+html[data-skin='glass'] .ov-kpi-lbl {
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+
+html[data-skin='glass'] .ov-bar-track {
+  height: 10px;
+  background: var(--sur3);
+  border-radius: 5px;
+}
+
+html[data-skin='glass'] .ov-bar-fill {
+  border-radius: 5px;
+}
+
+html[data-skin='glass'] .ov-agent-breakdown th {
+  color: var(--muted);
+  letter-spacing: 0.12em;
+}
+
+/* ── Header skin menu keeps its place ─────────────────────────────────────── */
+html[data-skin='glass'] .skin-switch {
+  background: transparent;
+  border-color: var(--bdr-s);
+}

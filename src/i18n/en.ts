@@ -373,6 +373,7 @@ export const messages = {
   'skin.classic': 'Classic',
   'skin.bento': 'Bento',
   'skin.solid': 'Solid',
+  'skin.glass': 'Glass',
   'hub.title': 'Performance Hub',
   'hub.scope': 'Companies',
   'hub.salesMtd': 'Sales MTD',
