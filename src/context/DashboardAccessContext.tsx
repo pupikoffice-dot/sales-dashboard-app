@@ -34,7 +34,15 @@ function normalizeYears(raw: unknown): number[] {
   return raw.map(Number).filter(y => Number.isInteger(y) && y > 1999 && y < 2200)
 }
 
+/** Every year except `current`, mirroring what get_dashboard_access() returns for a "this year only" user. */
+export function allYearsExcept(current: number): number[] {
+  const out: number[] = []
+  for (let y = 2000; y <= 2100; y++) if (y !== current) out.push(y)
+  return out
+}
+
 function normalizeAccess(row: Record<string, unknown>, userId: string): DashboardAccess {
+  const thisYearOnly = row.this_year_only === true
   return {
     userId,
     modules: (row.modules as DashboardModuleId[]) ?? [],
@@ -45,7 +53,8 @@ function normalizeAccess(row: Record<string, unknown>, userId: string): Dashboar
     showItemCost: row.show_item_cost === true,
     showClientProfit: row.show_client_profit === true,
     hiddenSidebar: Array.isArray(row.hidden_sidebar) ? (row.hidden_sidebar as string[]) : [],
-    hiddenYears: normalizeYears(row.hidden_years),
+    hiddenYears: thisYearOnly ? allYearsExcept(new Date().getFullYear()) : normalizeYears(row.hidden_years),
+    thisYearOnly,
     oversiteModules: Array.isArray(row.oversite_modules) ? (row.oversite_modules as string[]) : [],
   }
 }
@@ -107,6 +116,7 @@ export function DashboardAccessProvider({ children }: { children: ReactNode }) {
           showClientProfit: true,
           hiddenSidebar: [],
           hiddenYears: [],
+          thisYearOnly: false,
           oversiteModules: ALL_OVERSITE_MODULE_IDS,
         })
       } else {
