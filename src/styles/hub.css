@@ -60,7 +60,31 @@
   white-space: nowrap;
 }
 
-.hub-chart { position: relative; width: 100%; min-width: 0; max-width: 100%; }
+.hub-chart { position: relative; width: 100%; }
+
+/* Wide charts keep their width and scroll sideways inside this box; the page itself never scrolls sideways. */
+.hub-chart-scroll {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.hub-chart-hint {
+  display: none;
+  margin: 4px 0 0;
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+@media (max-width: 700px) {
+  .hub-chart-hint {
+    display: block;
+  }
+}
 
 /* KPI tiles */
 .hub-tile-kpi {
