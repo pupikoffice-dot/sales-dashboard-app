@@ -30,6 +30,7 @@ export const SIDEBAR_HIDE_GROUPS: SidebarHideGroup[] = [
     options: [
       { id: 'nav.ops_deliveries', label: 'Deliveries' },
       { id: 'nav.stock_brand', label: 'Stock by brand' },
+      { id: 'nav.stock_history', label: 'Stock history' },
       { id: 'nav.items_index', label: 'Items' },
     ],
   },

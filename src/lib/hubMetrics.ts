@@ -143,13 +143,29 @@ export function topItems(rows: SalesRow[], companies: Set<string>, year: number,
 
 /** Sales cash per category (tablet category) per month; the top `limit` categories, the rest as "Other". */
 export function categoryByMonth(rows: SalesRow[], companies: Set<string>, months: MonthPoint[], otherLabel: string, limit = 6): CategorySeries {
+  return seriesByMonth(rows, companies, months, otherLabel, limit, r => String(r.tabletCat ?? ''))
+}
+
+/** Sales cash per brand (the supplier name the Sales page uses) per month; the top `limit` brands, the rest as "Other". */
+export function brandByMonth(rows: SalesRow[], companies: Set<string>, months: MonthPoint[], otherLabel: string, limit = 8): CategorySeries {
+  return seriesByMonth(rows, companies, months, otherLabel, limit, r => String(r.supplier ?? ''))
+}
+
+function seriesByMonth(
+  rows: SalesRow[],
+  companies: Set<string>,
+  months: MonthPoint[],
+  otherLabel: string,
+  limit: number,
+  keyOf: (r: SalesRow) => string,
+): CategorySeries {
   const idx = new Map(months.map((p, i) => [p.year * 12 + p.month, i]))
   const m = new Map<string, number[]>()
   for (const r of rows) {
     if (!companies.has(r.company)) continue
     const i = idx.get(n(r.year) * 12 + n(r.month))
     if (i === undefined) continue
-    const cat = String(r.tabletCat ?? '').trim() || otherLabel
+    const cat = keyOf(r).trim() || otherLabel
     let v = m.get(cat)
     if (!v) m.set(cat, (v = months.map(() => 0)))
     v[i] += n(r.cash)

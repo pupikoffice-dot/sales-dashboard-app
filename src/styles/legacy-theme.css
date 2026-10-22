@@ -6130,3 +6130,84 @@ html[data-theme='light'] .sm-suite-disclaimer {
 
 /* an older year that downloads when picked (Years of data loading) */
 .yr-btn--later { border-style: dashed; }
+
+/* ── Sidebar as a narrow icon rail (desktop only; the phone keeps its drawer) ───────────────────────────── */
+.rail-toggle {
+  display: none;
+}
+
+.nav-ico {
+  display: none;
+}
+
+@media (min-width: 901px) {
+  .rail-toggle {
+    display: inline-flex;
+    align-self: flex-end;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid var(--bdr);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted2);
+    font-size: 0.9rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .rail-toggle:hover {
+    color: var(--acc);
+    border-color: var(--acc);
+  }
+
+  .dashboard-sidebar.is-rail {
+    width: 64px;
+    padding: 12px 8px 16px;
+    align-items: stretch;
+  }
+
+  .dashboard-sidebar.is-rail .rail-toggle {
+    align-self: center;
+  }
+
+  .dashboard-sidebar.is-rail .sidebar-label,
+  .dashboard-sidebar.is-rail .sidebar-filters-wrap,
+  .dashboard-sidebar.is-rail .nav-txt {
+    display: none;
+  }
+
+  .dashboard-sidebar.is-rail .nav-ico {
+    display: inline;
+    font-size: 1.05rem;
+    line-height: 1;
+  }
+
+  .dashboard-sidebar.is-rail .nav-btn {
+    text-align: center;
+    padding: 9px 0;
+  }
+}
+
+.nav-ico {
+  margin-inline-end: 8px;
+}
+
+@media (min-width: 901px) {
+  .dashboard-sidebar:not(.is-rail) .nav-ico {
+    display: inline-block;
+    width: 1.3em;
+    text-align: center;
+    margin-inline-end: 8px;
+  }
+}
+
+@media (max-width: 900px) {
+  .nav-ico {
+    display: inline-block;
+    width: 1.3em;
+    text-align: center;
+  }
+}

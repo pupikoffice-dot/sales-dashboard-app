@@ -62,9 +62,27 @@ export function DashboardLayout() {
     (oversightLayout.display.suiteId === 'sales_manager' ||
       oversightLayout.display.suiteId === 'sales_agent')
   // Stock, Stock by brand, Items and R&D choose their company inside the page, so the Filter panel stays out of the way.
-  const ownFilters = ['/stock', '/stock-brand', '/items', '/rnd'].some(p => location.pathname === p || location.pathname.startsWith(`${p}/`))
+  const ownFilters = ['/stock', '/stock-brand', '/stock-history', '/items', '/rnd'].some(p => location.pathname === p || location.pathname.startsWith(`${p}/`))
   const showFilters = !location.pathname.startsWith('/admin') && !hideNavigation && !ownFilters
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  // Desktop: the sidebar can shrink to a narrow rail of icons (remembered on this device).
+  const [rail, setRail] = useState(() => {
+    try {
+      return localStorage.getItem(SIDEBAR_RAIL_KEY) === '1'
+    } catch {
+      return false
+    }
+  })
+  const toggleRail = () =>
+    setRail(prev => {
+      const next = !prev
+      try {
+        localStorage.setItem(SIDEBAR_RAIL_KEY, next ? '1' : '0')
+      } catch {
+        /* storage blocked: the choice just is not remembered */
+      }
+      return next
+    })
   const { data: liveActiveVersion = '1.0' } = useQuery({
     queryKey: ['app-active-version'],
     queryFn: fetchActiveAppVersion,
@@ -158,7 +176,17 @@ export function DashboardLayout() {
   }
 
   const sidebar = (
-    <aside className={`dashboard-sidebar${sidebarOpen ? ' is-open' : ''}`}>
+    <aside className={`dashboard-sidebar${sidebarOpen ? ' is-open' : ''}${rail ? ' is-rail' : ''}`}>
+      <button
+        type="button"
+        className="rail-toggle"
+        onClick={toggleRail}
+        aria-pressed={rail}
+        aria-label={rail ? t('nav.expandSidebar') : t('nav.collapseSidebar')}
+        title={rail ? t('nav.expandSidebar') : t('nav.collapseSidebar')}
+      >
+        {(rail ? !isRtl : isRtl) ? '»' : '«'}
+      </button>
       <div className="sidebar-label">{t('nav.navigation')}</div>
       <nav>
         {visibleMain.map(m => (
@@ -169,12 +197,13 @@ export function DashboardLayout() {
               setSidebarOpen(false)
               if (m.id === 'oversite') showOversiteDashboard()
             }}
+            title={rail ? navLabel(locale, m.id) : undefined}
             className={({ isActive }) =>
               `nav-btn${m.id === 'oversite' ? ' oversite-nav' : ''}${isActive ? ' active' : ''}`
             }
           >
-            {m.id === 'oversite' ? '🏠 ' : ''}
-            {navLabel(locale, m.id)}
+            <NavIcon id={m.id} />
+            <span className="nav-txt">{navLabel(locale, m.id)}</span>
           </NavLink>
         ))}
         {rndItems.length > 0 && (
@@ -187,9 +216,11 @@ export function DashboardLayout() {
                 key={m.id}
                 to={m.path}
                 onClick={() => setSidebarOpen(false)}
+                title={rail ? navLabel(locale, m.id) : undefined}
                 className={({ isActive }) => `nav-btn${isActive ? ' active' : ''}`}
               >
-                {navLabel(locale, m.id)}
+                <NavIcon id={m.id} />
+                <span className="nav-txt">{navLabel(locale, m.id)}</span>
               </NavLink>
             ))}
           </>
@@ -204,9 +235,11 @@ export function DashboardLayout() {
                 key={m.id}
                 to={m.path}
                 onClick={() => setSidebarOpen(false)}
+                title={rail ? navLabel(locale, m.id) : undefined}
                 className={({ isActive }) => `nav-btn${isActive ? ' active' : ''}`}
               >
-                {navLabel(locale, m.id)}
+                <NavIcon id={m.id} />
+                <span className="nav-txt">{navLabel(locale, m.id)}</span>
               </NavLink>
             ))}
           </>
@@ -222,7 +255,8 @@ export function DashboardLayout() {
                 onClick={() => setSidebarOpen(false)}
                 className={({ isActive }) => `nav-btn${isActive ? ' active' : ''}`}
               >
-                {t('nav.adminUsers')}
+                <NavIcon id="nav.adminUsers" />
+                <span className="nav-txt">{t('nav.adminUsers')}</span>
               </NavLink>
             )}
             {isSuperAdmin && (
@@ -231,7 +265,8 @@ export function DashboardLayout() {
               onClick={() => setSidebarOpen(false)}
               className={({ isActive }) => `nav-btn${isActive ? ' active' : ''}`}
             >
-              {t('nav.adminClasses')}
+              <NavIcon id="nav.adminClasses" />
+                <span className="nav-txt">{t('nav.adminClasses')}</span>
             </NavLink>
             )}
             {isSuperAdmin && (
@@ -240,7 +275,8 @@ export function DashboardLayout() {
               onClick={() => setSidebarOpen(false)}
               className={({ isActive }) => `nav-btn${isActive ? ' active' : ''}`}
             >
-              {t('nav.adminModules')}
+              <NavIcon id="nav.adminModules" />
+                <span className="nav-txt">{t('nav.adminModules')}</span>
             </NavLink>
             )}
             {isSuperAdmin && (
@@ -249,13 +285,18 @@ export function DashboardLayout() {
               onClick={() => setSidebarOpen(false)}
               className={({ isActive }) => `nav-btn${isActive ? ' active' : ''}`}
             >
-              {t('nav.adminDataHealth')}
+              <NavIcon id="nav.adminDataHealth" />
+                <span className="nav-txt">{t('nav.adminDataHealth')}</span>
             </NavLink>
             )}
           </>
         )}
       </nav>
-      {showFilters && <SidebarFilters />}
+      {showFilters && (
+        <div className="sidebar-filters-wrap">
+          <SidebarFilters />
+        </div>
+      )}
     </aside>
   )
 
@@ -429,6 +470,38 @@ export function DashboardLayout() {
         )}
       </div>
     </>
+  )
+}
+
+const SIDEBAR_RAIL_KEY = 'sidebar.rail'
+
+/** One small symbol per sidebar button, so the narrow rail still says what each button is. */
+const NAV_ICONS: Record<string, string> = {
+  oversite: '🏠',
+  sales_performance: '📈',
+  orders_mtd: '🧾',
+  open_orders: '📬',
+  returns: '↩',
+  debt: '💳',
+  stock_alerts: '🔔',
+  export: '⬇',
+  ops_deliveries: '🚚',
+  stock: '📦',
+  stock_brand: '🏷',
+  stock_history: '🕘',
+  items_index: '🗂',
+  rnd_monthly: '🔬',
+  'nav.adminUsers': '👤',
+  'nav.adminClasses': '🔑',
+  'nav.adminModules': '🧩',
+  'nav.adminDataHealth': '🩺',
+}
+
+function NavIcon({ id }: { id: string }) {
+  return (
+    <span className="nav-ico" aria-hidden="true">
+      {NAV_ICONS[id] ?? '•'}
+    </span>
   )
 }
 

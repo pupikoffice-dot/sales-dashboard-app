@@ -879,7 +879,7 @@ function EditAccessModal({
                   value={defaultModule}
                   onChange={e => setDefaultModule(e.target.value as DashboardModuleId)}
                 >
-                  {MODULE_REGISTRY.map(m => (
+                  {MODULE_REGISTRY.filter(m => m.section !== 'rnd').map(m => (
                     <option key={m.id} value={m.id}>{m.label}</option>
                   ))}
                 </select>

@@ -1,7 +1,7 @@
 import type { DashboardModuleId } from '../types/dashboard'
 
-export type ModuleSection = 'main' | 'operations'
-export type NavSection = ModuleSection | 'rnd'
+export type ModuleSection = 'main' | 'operations' | 'rnd'
+export type NavSection = ModuleSection
 
 export interface ModuleDef {
   id: DashboardModuleId
@@ -21,6 +21,8 @@ export const MODULE_REGISTRY: ModuleDef[] = [
   { id: 'export', label: 'Export', path: '/export', section: 'main' },
   { id: 'ops_deliveries', label: 'Deliveries', path: '/operations/deliveries', section: 'operations' },
   { id: 'stock', label: 'Stock', path: '/stock', section: 'operations' },
+  // grants the whole R&D section (its pages are NAV_EXTRAS that follow this module); nothing is stored for it in dashboard_modules
+  { id: 'rnd', label: 'R&D section', path: '/rnd/monthly', section: 'rnd' },
 ]
 
 /**
@@ -41,8 +43,9 @@ export interface NavExtra {
 
 export const NAV_EXTRAS: NavExtra[] = [
   { id: 'stock_brand', label: 'Stock by brand', path: '/stock-brand', section: 'operations', follows: 'stock' },
+  { id: 'stock_history', label: 'Stock history', path: '/stock-history', section: 'operations', follows: 'stock' },
   { id: 'items_index', label: 'Items', path: '/items', section: 'operations', hideKey: 'date.items' },
-  { id: 'rnd_monthly', label: 'Monthly data', path: '/rnd/monthly', section: 'rnd', superAdminOnly: true },
+  { id: 'rnd_monthly', label: 'Monthly data', path: '/rnd/monthly', section: 'rnd', follows: 'rnd' },
 ]
 
 export function pathForModule(id: DashboardModuleId): string {
