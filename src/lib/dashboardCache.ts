@@ -6,7 +6,8 @@
  *   base       the current + previous year (and the other tables), shown at once on reopen; ignored after 48 h
  *   year:<y>   one older year; kept while its fingerprint (row count + last sync time from the database) is unchanged
  *
- * Everything is wiped when the signed-in user changes or signs out (AuthContext). Every call is best-effort:
+ * Sign-out does NOT wipe it: the copy is encrypted with a key only that user's signed-in session can get, so it
+ * stays for next time; another user's entries are removed the next time anyone saves. Every call is best-effort:
  * private windows, blocked storage, no key or quota errors just mean no cache.
  */
 import { forgetCacheKey, getCacheKey, open, seal, type Sealed } from './cacheCrypto'

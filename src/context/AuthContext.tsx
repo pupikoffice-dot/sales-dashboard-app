@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { queryClient } from '../lib/queryClient'
-import { clearDashboardCache } from '../lib/dashboardCache'
+import { forgetCacheKey } from '../lib/cacheCrypto'
 
 interface AuthContextValue {
   session: Session | null
@@ -27,20 +27,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       lastUserId.current = data.session?.user.id ?? null
-      // Nobody signed in: drop any dashboard copy kept on this device.
-      if (!data.session) void clearDashboardCache()
       setSession(data.session)
       setLoading(false)
     })
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
       // Any change of user (sign-out, sign-in as someone else, token swap in
-      // the same tab) must drop cached dashboard data — it was fetched under
+      // the same tab) must drop the in-memory dashboard data — it was fetched under
       // the previous user's access grant and must never be shown to the next.
+      // The copy kept on the device stays: it is encrypted with a per-user key the database only hands to that
+      // user's signed-in session (see cacheCrypto.ts), so nobody else can read it, and it is replaced when
+      // another user saves theirs.
       const newUserId = s?.user.id ?? null
       if (newUserId !== lastUserId.current) {
         queryClient.clear()
-        // Real switch or sign-out only: the first event of a page load (unknown -> user) keeps the device copy.
-        if (lastUserId.current !== null || newUserId === null) void clearDashboardCache()
+        forgetCacheKey()
         lastUserId.current = newUserId
       }
       setSession(s)
