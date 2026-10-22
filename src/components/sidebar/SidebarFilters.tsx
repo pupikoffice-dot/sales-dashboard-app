@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { usePreview } from '../../context/PreviewContext'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
@@ -38,7 +38,7 @@ export function SidebarFilters() {
   const { access } = useDashboardAccess()
   const f = useDashboardFilters()
   const { t, monthNames } = useLocale()
-  const { filterIndex, isLoading, isFetching, rows } = useDashboardData()
+  const { filterIndex, isLoading, isFetching, rows, yearInfos, loadedYears, loadYear, loadingYears } = useDashboardData()
   const dataBusy = isLoading || isFetching
   const navigate = useNavigate()
   const location = useLocation()
@@ -49,10 +49,32 @@ export function SidebarFilters() {
     () => effectiveCompany(f.company, f.dateMode),
     [f.company, f.dateMode],
   )
-  const monthYears = useMemo(
-    () => yearsInCompanySales(rows, f.dateMode === 'openorders' ? f.company : companyTag),
-    [rows, f.dateMode, f.company, companyTag],
-  )
+  const monthYears = useMemo(() => {
+    const loaded = yearsInCompanySales(rows, f.dateMode === 'openorders' ? f.company : companyTag)
+    if (!f.company) return loaded
+    // older years the database has for this company, not downloaded yet: listed so they can be picked (they load then)
+    const all = new Set<number>(loaded)
+    for (const i of yearInfos) if (i.company === f.company) all.add(i.year)
+    return [...all].sort((a, b) => a - b)
+  }, [rows, yearInfos, f.dateMode, f.company, companyTag])
+  const isUnloaded = (yr: number) => loadedYears !== null && !loadedYears.includes(yr)
+
+  // Years the current date choice needs: months picked, or the span of the date range.
+  const neededYears = useMemo(() => {
+    const years = new Set<number>()
+    if (f.dateMode === 'months') {
+      for (const key of f.selectedMonths) years.add(Number(key.split('-')[0]))
+    } else if (f.dateMode === 'range') {
+      const a = Number(f.dateFrom.slice(0, 4))
+      const b = Number(f.dateTo.slice(0, 4))
+      if (a > 1999) for (let y = a; y <= (b > 1999 ? b : a); y++) years.add(y)
+    }
+    return [...years].filter(y => Number.isInteger(y) && isUnloaded(y))
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- isUnloaded reads loadedYears
+  }, [f.dateMode, f.selectedMonths, f.dateFrom, f.dateTo, loadedYears])
+  useEffect(() => {
+    for (const y of neededYears) void loadYear(y)
+  }, [neededYears, loadYear])
   const earliest = `${monthYears[0]}-01-01`
   const latest = `${monthYears[monthYears.length - 1]}-12-31`
 
@@ -114,8 +136,10 @@ export function SidebarFilters() {
 
   const hasCats = categoryOptions.length > 0
 
-  function handleApply() {
+  async function handleApply() {
     if (!f.canApply || f.isRendering) return
+    // Older years are downloaded only when asked for: make sure the chosen ones are in before rendering.
+    if (neededYears.length) await Promise.all(neededYears.map(loadYear))
 
     window.setTimeout(() => {
       f.apply()
@@ -207,6 +231,11 @@ export function SidebarFilters() {
               onChange={e => f.setDateTo(e.target.value)}
               disabled={!f.company}
             />
+            {loadingYears.length ? (
+              <p className="sel-months-list" role="status">
+                {t('filters.loadingYears')} {loadingYears.join(', ')}…
+              </p>
+            ) : null}
           </div>
         )}
 
@@ -217,7 +246,8 @@ export function SidebarFilters() {
                 <button
                   key={yr}
                   type="button"
-                  className="yr-btn"
+                  className={`yr-btn${isUnloaded(yr) ? ' yr-btn--later' : ''}`}
+                  title={isUnloaded(yr) ? t('filters.yearLoadsOnPick') : undefined}
                   onClick={() => f.toggleYearMonths(yr)}
                   disabled={!f.company}
                 >
@@ -257,6 +287,11 @@ export function SidebarFilters() {
                 </div>
               </div>
             ))}
+            {loadingYears.length ? (
+              <p className="sel-months-list" role="status">
+                {t('filters.loadingYears')} {loadingYears.join(', ')}…
+              </p>
+            ) : null}
             <div className="sel-months-list">
               {f.selectedMonths.size
                 ? [...f.selectedMonths].sort().join(', ')

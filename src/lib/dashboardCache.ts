@@ -1,23 +1,29 @@
 /**
- * Last dashboard download kept on this device (IndexedDB), so reopening the app
- * shows numbers at once while fresh data loads in the background.
+ * Dashboard downloads kept on this device (IndexedDB), encrypted (see cacheCrypto.ts), so reopening the app shows
+ * numbers at once while fresh data loads in the background, and older years are not downloaded twice.
  *
- * Keyed by user id. Everything is wiped when the signed-in user changes or
- * signs out (AuthContext). Every call is best-effort: private windows, blocked
- * storage or quota errors just mean no cache.
+ * Two kinds of entry, both keyed by user id:
+ *   base       the current + previous year (and the other tables), shown at once on reopen; ignored after 48 h
+ *   year:<y>   one older year; kept while its fingerprint (row count + last sync time from the database) is unchanged
+ *
+ * Everything is wiped when the signed-in user changes or signs out (AuthContext). Every call is best-effort:
+ * private windows, blocked storage, no key or quota errors just mean no cache.
  */
+import { forgetCacheKey, getCacheKey, open, seal, type Sealed } from './cacheCrypto'
+
 const DB_NAME = 'dashboard-cache'
 const STORE = 'kv'
-/** Bump when the stored shape changes; older entries are then ignored. */
-const SCHEMA = 1
-/** Older than this, the saved copy is not shown at all. */
+/** Bump when the stored shape changes; older entries (plain text in v1) are then ignored and removed. */
+const SCHEMA = 2
+/** Older than this, the saved base copy is not shown at all. */
 export const CACHE_MAX_AGE_MS = 48 * 60 * 60 * 1000
 
-interface Envelope<T> {
+interface Envelope {
   schema: number
   userId: string
   savedAt: number
-  value: T
+  fingerprint?: string
+  sealed: Sealed
 }
 
 function openDb(): Promise<IDBDatabase | null> {
@@ -61,23 +67,77 @@ function run<R>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest<
   )
 }
 
-const keyFor = (userId: string) => `dashboard:${userId}`
+const baseKey = (userId: string) => `dashboard:${userId}`
+const yearKey = (userId: string, year: number) => `year:${userId}:${year}`
 
-export async function readDashboardCache<T>(userId: string): Promise<{ value: T; savedAt: number } | null> {
-  const env = await run<Envelope<T> | undefined>('readonly', s => s.get(keyFor(userId)))
-  if (!env || env.schema !== SCHEMA || env.userId !== userId) return null
-  if (Date.now() - env.savedAt > CACHE_MAX_AGE_MS) return null
-  return { value: env.value, savedAt: env.savedAt }
+async function readEntry<T>(userId: string, key: string): Promise<{ value: T; savedAt: number; fingerprint?: string } | null> {
+  const env = await run<Envelope | undefined>('readonly', s => s.get(key))
+  if (!env || env.schema !== SCHEMA || env.userId !== userId || !env.sealed) return null
+  const k = await getCacheKey(userId)
+  if (!k) return null
+  try {
+    return { value: await open<T>(k, env.sealed), savedAt: env.savedAt, fingerprint: env.fingerprint }
+  } catch {
+    return null // wrong key or damaged entry
+  }
 }
 
-export async function writeDashboardCache<T>(userId: string, value: T, savedAt = Date.now()): Promise<void> {
-  const env: Envelope<T> = { schema: SCHEMA, userId, savedAt, value }
+let askedToPersist = false
+
+async function writeEntry(userId: string, key: string, value: unknown, fingerprint?: string): Promise<void> {
+  const k = await getCacheKey(userId)
+  if (!k) return
+  let sealed: Sealed
+  try {
+    sealed = await seal(k, value)
+  } catch {
+    return
+  }
+  const env: Envelope = { schema: SCHEMA, userId, savedAt: Date.now(), fingerprint, sealed }
   await run('readwrite', s => {
-    s.clear() // one user per device at a time
-    s.put(env, keyFor(userId))
+    // one user per device at a time: drop another user's entries and any old plain-text (schema 1) entry
+    const cursorReq = s.openCursor()
+    cursorReq.onsuccess = () => {
+      const cur = cursorReq.result
+      if (!cur) return
+      const v = cur.value as Partial<Envelope> | undefined
+      if (!v || v.schema !== SCHEMA || v.userId !== userId) cur.delete()
+      cur.continue()
+    }
+    s.put(env, key)
   })
+  if (!askedToPersist) {
+    askedToPersist = true
+    try {
+      // ask the browser not to evict the history under storage pressure (no-op where unsupported)
+      void navigator.storage?.persist?.()
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+export async function readDashboardCache<T>(userId: string): Promise<{ value: T; savedAt: number } | null> {
+  const hit = await readEntry<T>(userId, baseKey(userId))
+  if (!hit || Date.now() - hit.savedAt > CACHE_MAX_AGE_MS) return null
+  return { value: hit.value, savedAt: hit.savedAt }
+}
+
+export async function writeDashboardCache<T>(userId: string, value: T): Promise<void> {
+  await writeEntry(userId, baseKey(userId), value)
+}
+
+/** An older year kept on this device, or null when it is missing or its fingerprint no longer matches. */
+export async function readYearCache<T>(userId: string, year: number, fingerprint: string): Promise<T | null> {
+  const hit = await readEntry<T>(userId, yearKey(userId, year))
+  return hit && hit.fingerprint === fingerprint ? hit.value : null
+}
+
+export async function writeYearCache(userId: string, year: number, value: unknown, fingerprint: string): Promise<void> {
+  await writeEntry(userId, yearKey(userId, year), value, fingerprint)
 }
 
 export async function clearDashboardCache(): Promise<void> {
+  forgetCacheKey()
   await run('readwrite', s => s.clear())
 }

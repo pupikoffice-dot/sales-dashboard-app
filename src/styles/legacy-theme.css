@@ -6127,3 +6127,6 @@ html[data-theme='light'] .sm-suite-disclaimer {
     font-size: 0.64rem;
   }
 }
+
+/* an older year that downloads when picked (Years of data loading) */
+.yr-btn--later { border-style: dashed; }
