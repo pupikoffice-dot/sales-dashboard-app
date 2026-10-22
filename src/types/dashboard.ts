@@ -11,6 +11,7 @@ export type DashboardModuleId =
   | 'stock'
   | 'export'
   | 'ops_deliveries'
+  | 'rnd'
 
 export interface DashboardAccess {
   userId: string

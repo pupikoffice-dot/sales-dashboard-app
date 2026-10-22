@@ -8,6 +8,14 @@ export interface JumpCompany {
   accentColor: string
 }
 
+/** One button of a jump bar: where it goes (`anchor` = element id) and what it says. */
+export interface JumpTarget {
+  anchor: string
+  label: string
+  /** dot colour; no dot when missing */
+  color?: string
+}
+
 /** Element id of one company's column on the Oversight page (the jump bar scrolls to it). */
 export function companyAnchorId(id: string): string {
   return `ov-co-${id}`
@@ -20,6 +28,16 @@ export function companyAnchorId(id: string): string {
  */
 export function OversightCompanyJump({ companies }: { companies: JumpCompany[] }) {
   const { t } = useLocale()
+  return (
+    <JumpBar
+      ariaLabel={t('oversite.jumpTo')}
+      targets={companies.map(c => ({ anchor: companyAnchorId(c.id), label: c.label, color: c.accentColor }))}
+    />
+  )
+}
+
+/** The same sticky bar for any set of anchors (the Hub uses it to jump between its charts). Needs two or more targets. */
+export function JumpBar({ targets, ariaLabel }: { targets: JumpTarget[]; ariaLabel: string }) {
   const barRef = useRef<HTMLElement | null>(null)
   const [top, setTop] = useState(0)
 
@@ -37,10 +55,10 @@ export function OversightCompanyJump({ companies }: { companies: JumpCompany[] }
     }
   }, [])
 
-  if (companies.length < 2) return null
+  if (targets.length < 2) return null
 
-  function jump(id: string) {
-    const el = document.getElementById(companyAnchorId(id))
+  function jump(anchor: string) {
+    const el = document.getElementById(anchor)
     if (!el) return
     const barH = barRef.current?.getBoundingClientRect().height ?? 0
     const y = el.getBoundingClientRect().top + window.scrollY - top - barH - 8
@@ -49,10 +67,10 @@ export function OversightCompanyJump({ companies }: { companies: JumpCompany[] }
   }
 
   return (
-    <nav ref={barRef} className="ov-jump" style={{ top }} aria-label={t('oversite.jumpTo')}>
-      {companies.map(c => (
-        <button key={c.id} type="button" className="ov-jump-btn" onClick={() => jump(c.id)}>
-          <i className="ov-jump-dot" style={{ background: c.accentColor }} aria-hidden="true" />
+    <nav ref={barRef} className="ov-jump" style={{ top }} aria-label={ariaLabel}>
+      {targets.map(c => (
+        <button key={c.anchor} type="button" className="ov-jump-btn" onClick={() => jump(c.anchor)}>
+          {c.color ? <i className="ov-jump-dot" style={{ background: c.color }} aria-hidden="true" /> : null}
           {c.label}
         </button>
       ))}

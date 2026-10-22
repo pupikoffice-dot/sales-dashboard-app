@@ -48,6 +48,7 @@ const NAV_KEYS: Record<string, MessageKey> = {
   export: 'nav.export',
   ops_deliveries: 'nav.opsDeliveries',
   stock_brand: 'nav.stockBrand',
+  stock_history: 'nav.stockHistory',
   items_index: 'nav.itemsIndex',
   rnd_monthly: 'nav.rndMonthly',
 }

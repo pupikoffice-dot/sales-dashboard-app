@@ -140,7 +140,7 @@ function StockBrandContent({ initialCompany }: { initialCompany: LogicalCompany 
           tooltip: {
             callbacks: {
               label: c =>
-                `${fmt0(Number(c.parsed.x))}${metric === 'units' ? ' units' : ''} (${((Number(c.parsed.x) / total) * 100).toFixed(1)}%)`,
+                `${fmt0(Number(c.parsed.x))}${metric === 'units' ? ' pieces' : ''} (${((Number(c.parsed.x) / total) * 100).toFixed(1)}%)`,
             },
           },
         },
@@ -182,7 +182,7 @@ function StockBrandContent({ initialCompany }: { initialCompany: LogicalCompany 
           Brands: <b className="accent2">{fmt0(visible.length)}</b>
         </span>
         <span>
-          Units: <b className="accent2">{fmt0(totals.units)}</b>
+          Pieces in stock: <b className="accent2">{fmt0(totals.units)}</b>
         </span>
         {showValue && totals.value != null ? (
           <span>
@@ -223,8 +223,8 @@ function StockBrandContent({ initialCompany }: { initialCompany: LogicalCompany 
           <div className="sb-pies">
             {barsUnits ? (
               <div className="panel" style={{ padding: 12 }}>
-                <h3 className="sb-pie-title">Quantity (units)</h3>
-                <HubChart config={barsUnits.config} height={barsUnits.height} label="Units in stock by brand" />
+                <h3 className="sb-pie-title">Pieces in stock</h3>
+                <HubChart config={barsUnits.config} height={barsUnits.height} label="Pieces in stock by brand" />
               </div>
             ) : null}
             {barsValue ? (
@@ -245,15 +245,15 @@ function StockBrandContent({ initialCompany }: { initialCompany: LogicalCompany 
                   <th style={{ textAlign: 'left', cursor: 'pointer' }} onClick={() => clickSort('brand')}>
                     Brand{arrow('brand')}
                   </th>
-                  <th style={{ cursor: 'pointer' }} onClick={() => clickSort('items')}>Items{arrow('items')}</th>
-                  <th style={{ cursor: 'pointer' }} onClick={() => clickSort('inStock')}>In stock{arrow('inStock')}</th>
-                  <th className="accent2" style={{ cursor: 'pointer' }} onClick={() => clickSort('units')}>Units{arrow('units')}</th>
-                  <th style={{ cursor: 'pointer' }} onClick={() => clickSort('units')}>% of units</th>
+                  <th style={{ cursor: 'pointer' }} title="How many different products (SKUs) this brand has in the item list" onClick={() => clickSort('items')}>Products{arrow('items')}</th>
+                  <th style={{ cursor: 'pointer' }} title="How many of those products have at least one piece in stock" onClick={() => clickSort('inStock')}>Products in stock{arrow('inStock')}</th>
+                  <th className="accent2" style={{ cursor: 'pointer' }} title="Total pieces in stock across all of the brand's products" onClick={() => clickSort('units')}>Pieces in stock{arrow('units')}</th>
+                  <th style={{ cursor: 'pointer' }} title="This brand's pieces as a share of all pieces in stock" onClick={() => clickSort('units')}>% of pieces</th>
                   {showValue && (
-                    <th style={{ cursor: 'pointer' }} onClick={() => clickSort('value')}>Value at cost{arrow('value')}</th>
+                    <th style={{ cursor: 'pointer' }} title="Pieces in stock multiplied by each product's cost" onClick={() => clickSort('value')}>Value at cost{arrow('value')}</th>
                   )}
                   {showValue && (
-                    <th style={{ cursor: 'pointer' }} onClick={() => clickSort('value')}>% of total cost</th>
+                    <th style={{ cursor: 'pointer' }} title="This brand's value at cost as a share of all stock value" onClick={() => clickSort('value')}>% of total cost</th>
                   )}
                 </tr>
               </thead>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  addDays, agentLeaderboard, agentMonthHeatmap, categoryByMonth, dailySeries, lastMonths, monthlySales, squarify, topItems,
+  addDays, agentLeaderboard, agentMonthHeatmap, brandByMonth, categoryByMonth, dailySeries, lastMonths, monthlySales, squarify, topItems,
 } from './hubMetrics'
 import type { SalesRow } from '../types/dashboard'
 
@@ -71,5 +71,18 @@ describe('hub metrics', () => {
       expect(q.y + q.h).toBeLessThanOrEqual(1 + 1e-9)
     }
     expect(squarify([0, 0]).every(q => q.w === 0)).toBe(true)
+  })
+})
+
+describe('brandByMonth', () => {
+  it('groups cash by supplier (brand) and folds the smallest into Other', () => {
+    const months = [{ year: 2026, month: 9 }, { year: 2026, month: 10 }]
+    const mk = (supplier: string | undefined, month: number, cash: number) =>
+      ({ company: 'pupik', year: 2026, month, cash, supplier }) as never
+    const rows = [mk('Funko', 9, 100), mk('Funko', 10, 50), mk('Bandai', 10, 30), mk('Tiny', 10, 1), mk(undefined, 9, 5)]
+    const out = brandByMonth(rows, new Set(['pupik']), months as never, 'Other', 2)
+    expect(out.series.map(s => s.label)).toEqual(['Funko', 'Bandai', 'Other'])
+    expect(out.series[0].values).toEqual([100, 50])
+    expect(out.series[2].values).toEqual([5, 1])
   })
 })

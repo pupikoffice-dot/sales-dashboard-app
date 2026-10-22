@@ -10,7 +10,7 @@ import { useOpsDeliveries } from '../../../hooks/useOpsDeliveries'
 import { computeDebtSummary, debtRowsForCompany } from '../../../lib/debtMetrics'
 import { fmt, MONTH_NAMES } from '../../../lib/format'
 import {
-  addDays, agentLeaderboard, agentMonthHeatmap, categoryByMonth, dailySeries, lastMonths, monthlySales, squarify, topItems,
+  addDays, agentLeaderboard, agentMonthHeatmap, brandByMonth, dailySeries, lastMonths, monthlySales, squarify, topItems,
 } from '../../../lib/hubMetrics'
 import { salesLyToDate } from '../../../lib/oversightGroupKpis'
 import { readOversightCompanyFilter, writeOversightCompanyFilter } from '../../../lib/oversightCompanyFilter'
@@ -25,6 +25,7 @@ import type { OversightLayoutPreference } from '../../../lib/oversightLayouts'
 import type { LogicalCompany } from '../../../types/dashboard'
 import { OversightCompanyFilter } from '../OversightCompanyFilter'
 import { OversightLayoutToggle, type OversightLayoutOption } from '../OversightLayoutToggle'
+import { JumpBar, type JumpTarget } from '../OversightCompanyJump'
 import { HubChart, cssVar, withAlpha } from './HubChart'
 
 const shortName = (label: string) => label.replace(/^[^\p{L}\p{N}]+/u, '').trim()
@@ -98,7 +99,7 @@ export function OversightHub({
       sales14, orders30, salesMtd, lyToDate, open, debt, ordersMtdByCo, leaders, months12, projected,
       heat: agentMonthHeatmap(rows, salesSet, months6, shortOf, 12),
       items: topItems(rows, salesSet, ctx.curYear, ctx.curMonth, 16),
-      cats: categoryByMonth(rows, salesSet, months6, t('hub.other'), 6),
+      cats: brandByMonth(rows, salesSet, months6, t('hub.other'), 8),
       ordersToday: orders30[orders30.length - 1],
       shortOf,
     }
@@ -209,6 +210,19 @@ export function OversightHub({
   const leaderMax = Math.max(1, ...data.leaders.map(a => a.cash))
   const rects = squarify(data.items.map(i => i.cash))
 
+  // Buttons of the jump bar: the charts this user actually sees, in page order.
+  const jumpTargets: JumpTarget[] = []
+  const addJump = (on: boolean, anchor: string, label: string) => {
+    if (on) jumpTargets.push({ anchor, label })
+  }
+  addJump(show('ordersToday') || show('ordersMtd'), 'hub-sec-orders', t('hub.jump.orders'))
+  addJump(show('ordersMtd'), 'hub-sec-leaders', t('hub.jump.agents'))
+  addJump(show('salesMtd'), 'hub-sec-forecast', t('hub.jump.forecast'))
+  addJump(show('topItems'), 'hub-sec-products', t('hub.jump.products'))
+  addJump(show('topItems'), 'hub-sec-brands', t('hub.jump.brands'))
+  addJump(show('salesMtd'), 'hub-sec-heatmap', t('hub.jump.heatmap'))
+  addJump(showDeliveries && !!deliveriesChart, 'hub-sec-deliveries', t('hub.jump.deliveries'))
+
   return (
     <div className="hub">
       <div className="ov-header">
@@ -230,6 +244,8 @@ export function OversightHub({
       </div>
 
       {cos.length === 0 ? <p className="ov-empty">{t('oversite.noCompaniesSelected')}</p> : (
+        <>
+        <JumpBar ariaLabel={t('hub.jumpTo')} targets={jumpTargets} />
         <div className="hub-grid">
           {/* KPI tiles */}
           {show('salesMtd') ? (
@@ -251,7 +267,7 @@ export function OversightHub({
 
           {/* Orders last 30 days + donut */}
           {show('ordersToday') || show('ordersMtd') ? (
-            <Card cls="hub-span-8" title={t('hub.orders30')} aside={`${t('hub.avgOrder')}: ${fmt(avgOrder)}`}>
+            <Card id="hub-sec-orders" cls="hub-span-8" title={t('hub.orders30')} aside={`${t('hub.avgOrder')}: ${fmt(avgOrder)}`}>
               <HubChart config={ordersChart} height={250} label={t('hub.orders30')} />
             </Card>
           ) : null}
@@ -264,7 +280,7 @@ export function OversightHub({
 
           {/* Leaderboard + forecast */}
           {show('ordersMtd') ? (
-            <Card cls="hub-span-5" title={t('hub.leaderboard')}>
+            <Card id="hub-sec-leaders" cls="hub-span-5" title={t('hub.leaderboard')}>
               {data.leaders.length ? (
                 <table className="hub-table">
                   <thead><tr><th>{t('hub.agent')}</th><th>{t('oversite.clients')}</th><th>{t('oversite.qty')}</th><th>{t('oversite.cash')}</th></tr></thead>
@@ -286,14 +302,14 @@ export function OversightHub({
             </Card>
           ) : null}
           {show('salesMtd') ? (
-            <Card cls="hub-span-7" title={t('hub.forecast')} aside={data.projected ? `${t('hub.projected')}: ${fmt(data.projected)}` : undefined}>
+            <Card id="hub-sec-forecast" cls="hub-span-7" title={t('hub.forecast')} aside={data.projected ? `${t('hub.projected')}: ${fmt(data.projected)}` : undefined}>
               <HubChart config={forecastChart} height={260} label={t('hub.forecast')} />
             </Card>
           ) : null}
 
           {/* Treemap + categories */}
           {show('topItems') ? (
-            <Card cls="hub-span-7" title={t('hub.topProducts')}>
+            <Card id="hub-sec-products" cls="hub-span-7" title={t('hub.topProducts')}>
               {data.items.length ? (
                 <div className="hub-treemap" role="img" aria-label={t('hub.topProducts')}>
                   {data.items.map((it, i) => {
@@ -313,14 +329,14 @@ export function OversightHub({
             </Card>
           ) : null}
           {show('topItems') ? (
-            <Card cls="hub-span-5" title={t('hub.categories')}>
+            <Card id="hub-sec-brands" cls="hub-span-5" title={t('hub.categories')}>
               <HubChart config={catChart} height={300} label={t('hub.categories')} />
             </Card>
           ) : null}
 
           {/* Heatmap + deliveries */}
           {show('salesMtd') ? (
-            <Card cls={showDeliveries && deliveriesChart ? 'hub-span-8' : 'hub-span-12'} title={t('hub.heatmap')}>
+            <Card id="hub-sec-heatmap" cls={showDeliveries && deliveriesChart ? 'hub-span-8' : 'hub-span-12'} title={t('hub.heatmap')}>
               {data.heat.rows.length ? (
                 <div className="hub-heat" style={{ gridTemplateColumns: `minmax(110px, 1.3fr) repeat(${data.heat.months.length}, minmax(52px, 1fr))` }}>
                   <div />
@@ -344,19 +360,20 @@ export function OversightHub({
             </Card>
           ) : null}
           {showDeliveries && deliveriesChart ? (
-            <Card cls="hub-span-4" title={t('hub.deliveries')}>
+            <Card id="hub-sec-deliveries" cls="hub-span-4" title={t('hub.deliveries')}>
               <HubChart config={deliveriesChart} height={280} label={t('hub.deliveries')} />
             </Card>
           ) : null}
         </div>
+        </>
       )}
     </div>
   )
 }
 
-function Card({ cls, title, aside, children }: { cls: string; title: string; aside?: string; children: React.ReactNode }) {
+function Card({ cls, title, aside, children, id }: { cls: string; title: string; aside?: string; children: React.ReactNode; id?: string }) {
   return (
-    <section className={`hub-card ${cls}`}>
+    <section id={id} className={`hub-card ${cls}`}>
       <div className="hub-card-hdr">
         <h3>{title}</h3>
         {aside ? <span className="hub-card-aside">{aside}</span> : null}
