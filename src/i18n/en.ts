@@ -172,6 +172,8 @@ export const messages = {
   'filters.from': 'From',
   'filters.to': 'To',
   'filters.selectMonths': 'Select one or more months',
+  'filters.loadingYears': 'Loading',
+  'filters.yearLoadsOnPick': 'Older year: it downloads when you pick it',
   'filters.openOrdersHint': 'Shows undelivered orders (721).',
   'filters.stockHint': 'Shows warehouse stock view.',
   'filters.view': 'View',

@@ -28,7 +28,7 @@ function toggle<T>(list: T[], v: T): T[] {
 /** R&D → Monthly data: pick a company, years and months; see sales and receipts as graphs. Super admin only. */
 export function MonthlyDataPage() {
   const { access } = useDashboardAccess()
-  const { allRows, data, isLoading, error } = useDashboardData()
+  const { allRows, data, isLoading, error, loadedYears, loadYear, loadingYears } = useDashboardData()
 
   const companies = useMemo(
     () => COMPANY_ORDER.filter(c => access?.companies.includes(c)),
@@ -50,10 +50,19 @@ export function MonthlyDataPage() {
     setPickedYears(null)
     setPickedMonths(null)
   }, [activeCompany])
-  const yearsSel = useMemo(
-    () => (pickedYears ?? years).filter(y => years.includes(y)),
-    [pickedYears, years],
+  // Starts with every year that is already downloaded (this and last year); older years load when picked.
+  const startYears = useMemo(
+    () => years.filter(y => loadedYears === null || loadedYears.includes(y)),
+    [years, loadedYears],
   )
+  const yearsSel = useMemo(
+    () => (pickedYears ?? startYears).filter(y => years.includes(y)),
+    [pickedYears, startYears, years],
+  )
+  useEffect(() => {
+    if (loadedYears === null) return
+    for (const y of yearsSel) if (!loadedYears.includes(y)) void loadYear(y)
+  }, [yearsSel, loadedYears, loadYear])
   const monthsSel = useMemo(() => pickedMonths ?? MONTH_SHORT.map((_, i) => i + 1), [pickedMonths])
 
   const picks = useMemo(() => combinePicks(yearsSel, monthsSel), [yearsSel, monthsSel])
@@ -214,6 +223,12 @@ export function MonthlyDataPage() {
             ))}
           </div>
         </div>
+
+        {loadingYears.length ? (
+          <p className="status-msg" role="status">
+            Loading {loadingYears.join(', ')}…
+          </p>
+        ) : null}
 
         <div>
           <div className="sidebar-label">

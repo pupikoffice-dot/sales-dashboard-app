@@ -174,6 +174,8 @@ export const messages: Record<keyof typeof en, string> = {
   'filters.from': 'מ',
   'filters.to': 'עד',
   'filters.selectMonths': 'בחר חודש אחד או יותר',
+  'filters.loadingYears': 'טוען',
+  'filters.yearLoadsOnPick': 'שנה ישנה: היא נטענת כשבוחרים אותה',
   'filters.openOrdersHint': 'מציג הזמנות שלא סופקו (721).',
   'filters.stockHint': 'מציג תצוגת מלאי במחסן.',
   'filters.view': 'תצוגה',

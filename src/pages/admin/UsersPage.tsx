@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../context/AuthContext'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
@@ -472,7 +472,9 @@ function EditAccessModal({
   const [hiddenSidebar, setHiddenSidebar] = useState<string[]>([])
   const [hiddenYears, setHiddenYears] = useState<number[]>([])
   const [thisYearOnly, setThisYearOnly] = useState(false)
-  const { allRows: dataRows } = useDashboardData()
+  // every year the data has (older years are not downloaded until asked for, so list them from the database)
+  const { availableYears } = useDashboardData()
+  const dataRows = useMemo(() => availableYears.map(year => ({ year })), [availableYears])
   const [agentErpId, setAgentErpId] = useState('')
   const [parentId, setParentId] = useState('')
   const [linkedUserId, setLinkedUserId] = useState('')

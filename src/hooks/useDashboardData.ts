@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { useDashboardAccess } from '../context/DashboardAccessContext'
@@ -8,8 +8,25 @@ import { filterDebtRows, normalizeDebtRows } from '../lib/debtMetrics'
 import { buildItemCostMap, buildItemPriceMap } from '../lib/itemPricing'
 import { checkOrdersDataHealth } from '../lib/dataHealth'
 import { fetchDashboardLoader } from '../lib/parseDashboardLoader'
-import { dashboardDataFromWire, fetchDashboardWire, type DashboardWire } from '../lib/loadFromSupabase'
-import { readDashboardCache, writeDashboardCache } from '../lib/dashboardCache'
+import {
+  dashboardDataFromWire,
+  defaultYears,
+  fetchDashboardWire,
+  fetchYearInfos,
+  fetchYearWire,
+  rowsFromYearWire,
+  yearFingerprint,
+  type DashboardWire,
+  type YearInfo,
+  type YearWire,
+} from '../lib/loadFromSupabase'
+import {
+  readDashboardCache,
+  readYearCache,
+  writeDashboardCache,
+  writeYearCache,
+} from '../lib/dashboardCache'
+import { yearLoadStore, useYearLoadState } from '../lib/yearLoadStore'
 import { supabase } from '../lib/supabase'
 import { normalizeSalesDate } from '../lib/salesDate'
 import { buildSalesFilterIndex, type SalesFilterIndex } from '../lib/salesFilterIndex'
@@ -19,6 +36,7 @@ import type { DashboardData, DebtRow, SalesRow } from '../types/dashboard'
 
 const EMPTY_SALES_ROWS: SalesRow[] = []
 const EMPTY_DEBT_ROWS: DebtRow[] = []
+const EMPTY_YEAR_INFOS: YearInfo[] = []
 
 declare global {
   interface Window {
@@ -29,7 +47,12 @@ declare global {
 
 interface LoadedDashboardPayload extends DashboardData {
   filterIndex: SalesFilterIndex
+  /** Years whose sales rows are in `rows`. null = every year the user may see. */
+  loadedYears: number[] | null
 }
+
+/** Older years being downloaded right now, shared so two pickers never fetch the same year twice. */
+const inflightYears = new Map<number, Promise<void>>()
 
 function resolveDataUrl(base: string, bustCache = false): string {
   if (!bustCache) return base
@@ -60,12 +83,21 @@ async function loadFromBlob(): Promise<DashboardData> {
 
 const useSupabaseData = (import.meta.env.VITE_USE_SUPABASE_DATA ?? 'true') !== 'false'
 
-function withFilterIndex(data: DashboardData): LoadedDashboardPayload {
+function withFilterIndex(data: DashboardData, loadedYears: number[] | null = null): LoadedDashboardPayload {
   if (!data?.rows) throw new Error('Dashboard data missing rows')
-  return { ...data, filterIndex: buildSalesFilterIndex(data.rows) }
+  return { ...data, filterIndex: buildSalesFilterIndex(data.rows), loadedYears }
 }
 
-async function loadDashboardData(userId: string | null): Promise<LoadedDashboardPayload> {
+/** The year a row belongs to (rows carry `year`, else the first four characters of `date`). */
+function yearOfRow(r: SalesRow): number {
+  const y = Number(r.year)
+  return Number.isInteger(y) && y > 1999 ? y : Number(String(r.date ?? '').slice(0, 4))
+}
+
+async function loadDashboardData(
+  userId: string | null,
+  prev: LoadedDashboardPayload | undefined,
+): Promise<LoadedDashboardPayload> {
   // Default to the Supabase data path; set VITE_USE_SUPABASE_DATA=false to fall
   // back to the legacy data_loader.js blob during parallel parity testing.
   if (!useSupabaseData) {
@@ -81,7 +113,14 @@ async function loadDashboardData(userId: string | null): Promise<LoadedDashboard
 
   const wire = await fetchDashboardWire()
   if (userId) void saveWire(userId, wire)
-  return withFilterIndex(dashboardDataFromWire(wire))
+  const fresh = dashboardDataFromWire(wire)
+  const covered = wire.years ?? null
+  // Older years the user already opened this session stay in place while the newest two refresh.
+  const keepYears = covered && prev?.loadedYears ? prev.loadedYears.filter(y => !covered.includes(y)) : []
+  if (!keepYears.length || !prev) return withFilterIndex(fresh, covered)
+  const kept = prev.rows.filter(r => keepYears.includes(yearOfRow(r)))
+  const rows = fresh.rows.concat(kept)
+  return withFilterIndex({ ...fresh, rows, totalRows: rows.length }, [...covered!, ...keepYears].sort((a, b) => a - b))
 }
 
 /** Keep the download on this device, but only while the same user is still signed in. */
@@ -107,7 +146,7 @@ export function useDashboardData() {
     // AuthContext also clears the whole cache on any user change as a
     // second layer, but a distinct key is the safer primary guard.
     queryKey,
-    queryFn: () => loadDashboardData(userId),
+    queryFn: () => loadDashboardData(userId, queryClient.getQueryData<LoadedDashboardPayload>(queryKey)),
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
     enabled,
@@ -122,7 +161,7 @@ export function useDashboardData() {
     readDashboardCache<DashboardWire>(userId).then(hit => {
       if (cancelled || !hit || queryClient.getQueryData(queryKey)) return
       try {
-        const payload = withFilterIndex(dashboardDataFromWire(hit.value))
+        const payload = withFilterIndex(dashboardDataFromWire(hit.value), hit.value.years ?? null)
         // Still missing? (the fresh download may have landed while decoding)
         if (!queryClient.getQueryData(queryKey)) {
           queryClient.setQueryData(queryKey, payload, { updatedAt: hit.savedAt })
@@ -135,6 +174,57 @@ export function useDashboardData() {
       cancelled = true
     }
   }, [enabled, userId, queryKey, queryClient])
+
+  // The years this user may open (with a fingerprint of each), and the loader for the ones not downloaded yet.
+  const infosKey = useMemo(() => ['dashboard-year-infos', userId] as const, [userId])
+  const infosQ = useQuery({
+    queryKey: infosKey,
+    queryFn: fetchYearInfos,
+    staleTime: 5 * 60 * 1000,
+    enabled: enabled && useSupabaseData,
+  })
+  const loadedYears = q.data?.loadedYears ?? null
+
+  const loadYear = useCallback(
+    (year: number): Promise<void> => {
+      const cur = queryClient.getQueryData<LoadedDashboardPayload>(queryKey)
+      if (!userId || !cur || cur.loadedYears === null || cur.loadedYears.includes(year)) return Promise.resolve()
+      const running = inflightYears.get(year)
+      if (running) return running
+      const job = (async () => {
+        yearLoadStore.start(year)
+        try {
+          const infos = await queryClient.fetchQuery({ queryKey: infosKey, queryFn: fetchYearInfos, staleTime: 5 * 60 * 1000 })
+          const fingerprint = yearFingerprint(infos, year)
+          let wire = fingerprint ? await readYearCache<YearWire>(userId, year, fingerprint) : null
+          if (!wire) {
+            wire = await fetchYearWire(year)
+            if (fingerprint) void writeYearCache(userId, year, wire, fingerprint)
+          }
+          const rows = rowsFromYearWire(wire)
+          queryClient.setQueryData<LoadedDashboardPayload>(queryKey, prev => {
+            if (!prev || prev.loadedYears === null || prev.loadedYears.includes(year)) return prev
+            const merged = prev.rows.concat(rows)
+            return {
+              ...prev,
+              rows: merged,
+              totalRows: merged.length,
+              filterIndex: buildSalesFilterIndex(merged),
+              loadedYears: [...prev.loadedYears, year].sort((a, b) => a - b),
+            }
+          })
+        } catch (e) {
+          yearLoadStore.fail(year, e instanceof Error ? e.message : 'Could not load this year')
+        } finally {
+          yearLoadStore.end(year)
+          inflightYears.delete(year)
+        }
+      })()
+      inflightYears.set(year, job)
+      return job
+    },
+    [queryClient, queryKey, infosKey, userId],
+  )
 
   // The payload was fetched under the REAL session, so while previewing a
   // non-super-admin it can contain things that user could never receive. Mask
@@ -173,6 +263,17 @@ export function useDashboardData() {
     }
   }, [q.data, maskPreview, access])
 
+  const yearState = useYearLoadState()
+  const hiddenKey = (access?.hiddenYears ?? []).join(',')
+  /** Every year this user may open: downloaded ones plus those the database lists (older years load on demand). */
+  const availableYears = useMemo(() => {
+    const hidden = new Set((access?.hiddenYears ?? []).map(Number))
+    const years = new Set<number>(defaultYears())
+    for (const i of infosQ.data ?? []) years.add(i.year)
+    for (const y of loadedYears ?? []) years.add(y)
+    return [...years].filter(y => !hidden.has(y)).sort((a, b) => a - b)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the hidden-years list contents
+  }, [infosQ.data, loadedYears, hiddenKey])
   const allRows: SalesRow[] = data?.rows ?? EMPTY_SALES_ROWS
   const filterIndex = data?.filterIndex
   // Access-scoped slices MUST be memoised — suite/BI memos and classic metrics
@@ -236,6 +337,16 @@ export function useDashboardData() {
     debtLastUpdate: q.data?.debtLastUpdate ?? window.__DEBT_LAST_UPDATE__,
     /** Showing earlier data (e.g. the copy kept on this device) while a fresh download runs. */
     isRefreshing: !!q.data && q.isFetching,
+    /** Years the user may open; the ones not in `loadedYears` are downloaded by `loadYear` when asked for. */
+    availableYears,
+    /** The database's (company, year) list behind `availableYears`. */
+    yearInfos: infosQ.data ?? EMPTY_YEAR_INFOS,
+    /** Years whose rows are on screen. null = all of them. */
+    loadedYears,
+    loadYear,
+    /** Older years being downloaded right now, and any that failed. */
+    loadingYears: yearState.loading,
+    failedYears: yearState.failed,
     /** When the data on screen was downloaded (ms). */
     dataSavedAt: q.dataUpdatedAt,
   }
