@@ -5,6 +5,7 @@ import type { ChartConfiguration } from 'chart.js'
 import { HubChart, cssVar } from '../../components/oversite/hub/HubChart'
 import { Kpi, PurchaseSearchBar, useDebounced } from '../../components/rnd/PurchaseSearch'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
+import { usePreview } from '../../context/PreviewContext'
 import { fmt0 } from '../../lib/format'
 import { fmtK } from '../../lib/stockByBrand'
 import {
@@ -55,6 +56,8 @@ function ItemRows({ rows, company, empty }: { rows: ClientCardItem[]; company: s
 /** R&D → Client card: what one client buys, how often, what they stopped buying. Needs the Purchase insights module. */
 export function ClientCardPage() {
   const { access } = useDashboardAccess()
+  const { isPreviewing, previewUser } = usePreview()
+  const asUser = isPreviewing ? (previewUser?.id ?? null) : null
   const [params, setParams] = useSearchParams()
   const companies = useMemo(() => COMPANY_ORDER.filter(c => access?.companies.includes(c)), [access?.companies])
   const paramCo = params.get('co') as LogicalCompany | null
@@ -64,14 +67,14 @@ export function ClientCardPage() {
   const q = useDebounced(query)
 
   const hits = useQuery({
-    queryKey: ['pc-clients', company, q],
-    queryFn: () => searchClients(company as string, q),
+    queryKey: ['pc-clients', company, q, asUser],
+    queryFn: () => searchClients(company as string, q, asUser),
     enabled: !!company,
     staleTime: 5 * 60 * 1000,
   })
   const card = useQuery({
-    queryKey: ['client-card', company, clientId],
-    queryFn: () => fetchClientCard(company as string, clientId as string),
+    queryKey: ['client-card', company, clientId, asUser],
+    queryFn: () => fetchClientCard(company as string, clientId as string, asUser),
     enabled: !!company && !!clientId,
     staleTime: 5 * 60 * 1000,
   })
@@ -152,6 +155,7 @@ export function ClientCardPage() {
                   <tr>
                     <th style={{ textAlign: 'left' }}>Client</th>
                     <th style={{ textAlign: 'left' }}>City</th>
+                    <th>Agent</th>
                     <th>Net cash, last 12 months</th>
                     <th>Last bought</th>
                   </tr>
@@ -172,6 +176,7 @@ export function ClientCardPage() {
                         <small>{h.id}</small>
                       </td>
                       <td style={{ textAlign: 'left' }}>{h.city ?? ''}</td>
+                      <td>{h.agent ?? '—'}</td>
                       <td>{h.cash12 != null ? fmt0(h.cash12) : '—'}</td>
                       <td>{h.last ?? '—'}</td>
                     </tr>

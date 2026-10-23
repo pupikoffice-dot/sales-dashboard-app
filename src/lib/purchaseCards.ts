@@ -5,6 +5,8 @@ export interface ClientHit {
   id: string
   name: string | null
   city: string | null
+  /** the agent who owns the client now */
+  agent: string | null
   cash12: number | null
   last: string | null
 }
@@ -66,6 +68,8 @@ export interface ItemCardClient {
 }
 
 export interface ItemCard {
+  /** true when the figures cover only the user's own clients (agent-limited user) */
+  scoped: boolean
   item: { sku: string; name: string; barcode: string | null; brand: string }
   stock: number
   sold12: number
@@ -87,20 +91,24 @@ async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T | nu
   return (data ?? null) as T | null
 }
 
-export async function searchClients(company: string, query: string): Promise<ClientHit[]> {
-  return (await rpc<ClientHit[]>('search_purchase_clients', { p_company: company, p_query: query })) ?? []
+/**
+ * `asUser` is the user being previewed ("View as"): the database honours it only for a super admin, so the owner sees
+ * exactly what that user (an agent, a sales manager) would get.
+ */
+export async function searchClients(company: string, query: string, asUser?: string | null): Promise<ClientHit[]> {
+  return (await rpc<ClientHit[]>('search_purchase_clients', { p_company: company, p_query: query, p_as: asUser ?? null })) ?? []
 }
 
-export async function searchItems(company: string, query: string): Promise<ItemHit[]> {
-  return (await rpc<ItemHit[]>('search_purchase_items', { p_company: company, p_query: query })) ?? []
+export async function searchItems(company: string, query: string, asUser?: string | null): Promise<ItemHit[]> {
+  return (await rpc<ItemHit[]>('search_purchase_items', { p_company: company, p_query: query, p_as: asUser ?? null })) ?? []
 }
 
-export function fetchClientCard(company: string, clientId: string): Promise<ClientCard | null> {
-  return rpc<ClientCard>('get_client_card', { p_company: company, p_client_id: clientId })
+export function fetchClientCard(company: string, clientId: string, asUser?: string | null): Promise<ClientCard | null> {
+  return rpc<ClientCard>('get_client_card', { p_company: company, p_client_id: clientId, p_as: asUser ?? null })
 }
 
-export function fetchItemCard(company: string, sku: string): Promise<ItemCard | null> {
-  return rpc<ItemCard>('get_item_card', { p_company: company, p_sku: sku })
+export function fetchItemCard(company: string, sku: string, asUser?: string | null): Promise<ItemCard | null> {
+  return rpc<ItemCard>('get_item_card', { p_company: company, p_sku: sku, p_as: asUser ?? null })
 }
 
 /** Returned goods as a share of sold, 0-1 (null when nothing was sold). */
