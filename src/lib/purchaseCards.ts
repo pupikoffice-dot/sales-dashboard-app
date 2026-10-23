@@ -116,9 +116,11 @@ export interface CreditCheck {
   /** the rest: partial quantity, an older invoice, or a price credit */
   other12: number
   creditLines12: number
+  /** credit cash left out because its reason says it is not a real return (damaged, not supplied...) */
+  excluded12: number
   /** credit cash whose return reason is known (from the 855 returns report) */
   withReason12: number
-  reasons: Array<{ code: string; text: string; cash: number; lines: number }>
+  reasons: Array<{ code: string; text: string; counts: boolean; cash: number; lines: number }>
 }
 
 /** Return invoices (document 14) of the last 12 months, sorted by what the same client did with the same item (see get_client_credit_check). */

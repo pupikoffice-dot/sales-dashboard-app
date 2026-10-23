@@ -222,7 +222,7 @@ export function ClientCardPage() {
                       const c = credit.data
                       const pct = (v: number) => `${Math.round((v / c.credits12) * 100)}%`
                       const clean = rateWithoutReissue(data.sold12, data.returned12, c.reissued12)
-                      return `of the credits: ${pct(c.reverses12)} reverse a whole earlier invoice line, ${pct(c.reissued12)} were invoiced again (cancel and reissue), ${pct(c.other12)} other (partial or price)${clean == null ? '' : `. Without the reissued: ${(clean * 100).toFixed(1)}%`}`
+                      return `of the returns: ${pct(c.reverses12)} reverse a whole earlier invoice line, ${pct(c.reissued12)} were invoiced again (cancel and reissue), ${pct(c.other12)} other (partial or price)${clean == null ? '' : `. Without the reissued: ${(clean * 100).toFixed(1)}%`}${c.excluded12 > 0 ? `. Not counted as returns: ${fmt0(c.excluded12)} (damaged / not supplied)` : ''}`
                     })()
                   : 'credit notes ÷ invoiced cash, last 12 months'
               }
@@ -273,6 +273,7 @@ export function ClientCardPage() {
                           <th>Cash</th>
                           <th>Lines</th>
                           <th>Share of known</th>
+                          <th>Counts as a return</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -284,6 +285,7 @@ export function ClientCardPage() {
                             <td>{fmt0(r.cash)}</td>
                             <td>{r.lines}</td>
                             <td>{Math.round((r.cash / Math.max(1, credit.data!.withReason12)) * 100)}%</td>
+                            <td>{r.counts ? 'yes' : 'no'}</td>
                           </tr>
                         ))}
                       </tbody>
