@@ -13,6 +13,7 @@ import {
   fetchClientCard,
   fetchCreditCheck,
   lastMonthKeys,
+  rateWithoutReissue,
   returnRate,
   searchClients,
   type ClientCardItem,
@@ -217,7 +218,12 @@ export function ClientCardPage() {
               hint="Credit-note cash (credit invoices and the credit-notes report) divided by invoiced cash, last 12 months. A credit note can be goods returned, a price correction, or an invoice cancelled and issued again; the reports do not say which."
               note={
                 credit.data && credit.data.credits12 > 0
-                  ? `${Math.round((credit.data.matched12 / credit.data.credits12) * 100)}% of the credits match an invoice for the same item and quantity (possible cancel and reissue)`
+                  ? (() => {
+                      const c = credit.data
+                      const pct = (v: number) => `${Math.round((v / c.credits12) * 100)}%`
+                      const clean = rateWithoutReissue(data.sold12, data.returned12, c.reissued12)
+                      return `of the credits: ${pct(c.reverses12)} reverse a whole earlier invoice line, ${pct(c.reissued12)} were invoiced again (cancel and reissue), ${pct(c.other12)} other (partial or price)${clean == null ? '' : `. Without the reissued: ${(clean * 100).toFixed(1)}%`}`
+                    })()
                   : 'credit notes ÷ invoiced cash, last 12 months'
               }
               tone={rate != null && rate > 0.15 ? 'amber' : undefined}

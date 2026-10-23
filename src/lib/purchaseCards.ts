@@ -109,12 +109,16 @@ export function fetchClientCard(company: string, clientId: string, asUser?: stri
 
 export interface CreditCheck {
   credits12: number
-  matched12: number
+  /** credit lines followed within 30 days by an invoice line of the same item and quantity (cancelled and invoiced again) */
+  reissued12: number
+  /** credit lines reversing a whole invoice line (same item and quantity) from the 90 days before, not reissued */
+  reverses12: number
+  /** the rest: partial quantity, an older invoice, or a price credit */
+  other12: number
   creditLines12: number
-  matchedLines12: number
 }
 
-/** Credit notes of the last 12 months, and how much of them matches an invoice line of the same item and quantity. */
+/** Credit notes of the last 12 months, sorted by what the same client did with the same item (see get_client_credit_check). */
 export function fetchCreditCheck(company: string, clientId: string, asUser?: string | null): Promise<CreditCheck | null> {
   return rpc<CreditCheck>('get_client_credit_check', { p_company: company, p_client_id: clientId, p_as: asUser ?? null })
 }
@@ -126,6 +130,15 @@ export function fetchItemCard(company: string, sku: string, asUser?: string | nu
 /** Credit notes as a share of what was invoiced, 0-1 (null when nothing was invoiced). */
 export function returnRate(sold: number, returned: number): number | null {
   return sold > 0 ? returned / sold : null
+}
+
+/**
+ * Credit-note rate without the cancel-and-reissue pairs: the reissued credits come off the credits, and the same amount
+ * off the invoiced cash (the new invoice that replaced them). Null when nothing is left to divide.
+ */
+export function rateWithoutReissue(sold: number, credits: number, reissued: number): number | null {
+  const base = sold - reissued
+  return base > 0 ? Math.max(0, credits - reissued) / base : null
 }
 
 /** Whole days between an ISO date and `today` (null when the date is missing). */
