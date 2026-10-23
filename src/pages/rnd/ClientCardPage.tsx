@@ -11,6 +11,7 @@ import { fmtK } from '../../lib/stockByBrand'
 import {
   daysSince,
   fetchClientCard,
+  fetchCreditCheck,
   lastMonthKeys,
   returnRate,
   searchClients,
@@ -79,6 +80,12 @@ export function ClientCardPage() {
     staleTime: 5 * 60 * 1000,
   })
 
+  const credit = useQuery({
+    queryKey: ['client-credit', company, clientId, asUser],
+    queryFn: () => fetchCreditCheck(company as string, clientId as string, asUser),
+    enabled: !!company && !!clientId,
+    staleTime: 5 * 60 * 1000,
+  })
   const data = card.data
   const charts = useMemo(() => {
     if (!data) return null
@@ -204,7 +211,17 @@ export function ClientCardPage() {
 
           <div className="hub-grid">
             <Kpi label="Net cash, last 12 months" value={fmt0(data.sold12 - data.returned12)} note={`${fmt0(data.sold12)} sold · ${fmt0(data.returned12)} returned`} tone="grn" />
-            <Kpi label="Return rate" value={rate == null ? '—' : `${(rate * 100).toFixed(1)}%`} note="returned cash ÷ sold cash, last 12 months" tone={rate != null && rate > 0.15 ? 'amber' : undefined} />
+            <Kpi
+              label="Credit notes ÷ invoiced"
+              value={rate == null ? '—' : `${(rate * 100).toFixed(1)}%`}
+              hint="Credit-note cash (credit invoices and the credit-notes report) divided by invoiced cash, last 12 months. A credit note can be goods returned, a price correction, or an invoice cancelled and issued again; the reports do not say which."
+              note={
+                credit.data && credit.data.credits12 > 0
+                  ? `${Math.round((credit.data.matched12 / credit.data.credits12) * 100)}% of the credits match an invoice for the same item and quantity (possible cancel and reissue)`
+                  : 'credit notes ÷ invoiced cash, last 12 months'
+              }
+              tone={rate != null && rate > 0.15 ? 'amber' : undefined}
+            />
             <Kpi label="Documents, last 12 months" value={fmt0(data.docs12)} note={data.first ? `first purchase ${data.first}` : undefined} />
             <Kpi label="Last purchase" value={since == null ? '—' : `${since} days ago`} note={data.last ?? undefined} tone={since != null && since > 90 ? 'amber' : undefined} />
 
@@ -240,8 +257,8 @@ export function ClientCardPage() {
                     <tr>
                       <th style={{ textAlign: 'left' }}>Year</th>
                       <th>Sold</th>
-                      <th>Returned</th>
-                      <th>Return rate</th>
+                      <th>Credit notes</th>
+                      <th>Credit notes ÷ invoiced</th>
                       <th>Net pieces</th>
                     </tr>
                   </thead>
