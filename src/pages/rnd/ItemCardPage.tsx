@@ -5,6 +5,7 @@ import type { ChartConfiguration } from 'chart.js'
 import { HubChart, cssVar } from '../../components/oversite/hub/HubChart'
 import { Kpi, PurchaseSearchBar, useDebounced } from '../../components/rnd/PurchaseSearch'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
+import { usePreview } from '../../context/PreviewContext'
 import { fmt0 } from '../../lib/format'
 import {
   daysSince,
@@ -56,6 +57,8 @@ function ClientRows({ rows, company, empty }: { rows: ItemCardClient[]; company:
 /** R&D → Item card: who buys one item, how fast it sells, how long the stock lasts. Needs the Purchase insights module. */
 export function ItemCardPage() {
   const { access } = useDashboardAccess()
+  const { isPreviewing, previewUser } = usePreview()
+  const asUser = isPreviewing ? (previewUser?.id ?? null) : null
   const [params, setParams] = useSearchParams()
   const companies = useMemo(() => COMPANY_ORDER.filter(c => access?.companies.includes(c)), [access?.companies])
   const paramCo = params.get('co') as LogicalCompany | null
@@ -65,14 +68,14 @@ export function ItemCardPage() {
   const q = useDebounced(query)
 
   const hits = useQuery({
-    queryKey: ['pc-items', company, q],
-    queryFn: () => searchItems(company as string, q),
+    queryKey: ['pc-items', company, q, asUser],
+    queryFn: () => searchItems(company as string, q, asUser),
     enabled: !!company,
     staleTime: 5 * 60 * 1000,
   })
   const card = useQuery({
-    queryKey: ['item-card', company, sku],
-    queryFn: () => fetchItemCard(company as string, sku as string),
+    queryKey: ['item-card', company, sku, asUser],
+    queryFn: () => fetchItemCard(company as string, sku as string, asUser),
     enabled: !!company && !!sku,
     staleTime: 5 * 60 * 1000,
   })
@@ -208,6 +211,11 @@ export function ItemCardPage() {
             </button>
           </div>
 
+          {data.scoped ? (
+            <p className="sel-months-list" style={{ margin: '0 0 8px' }}>
+              Your clients only: sales, returns and clients count the clients you look after. Stock and arrivals are the whole warehouse.
+            </p>
+          ) : null}
           <div className="hub-grid">
             <Kpi label="In stock now" value={fmt0(data.stock)} note={cover == null ? 'no sales in the last 3 months' : `about ${cover.toFixed(1)} months at the last 3 months pace`} tone={cover != null && cover < 1 ? 'amber' : undefined} />
             <Kpi label="Sold, last 12 months" value={fmt0(data.sold12)} note={`${fmt0(data.sold3)} net in the last 3 months`} tone="grn" />
