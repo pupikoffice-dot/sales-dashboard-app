@@ -116,6 +116,8 @@ export const messages = {
   'nav.itemsIndex': 'Items',
   'nav.rnd': 'R&D',
   'nav.rndMonthly': 'Monthly data',
+  'nav.rndClientCard': 'Client card',
+  'nav.rndItemCard': 'Item card',
   'ops.deliveries.title': 'Deliveries',
   'ops.deliveries.subtitle': 'Cartons and pallets delivered per month — last {months} months',
   'ops.cartons': 'Cartons',

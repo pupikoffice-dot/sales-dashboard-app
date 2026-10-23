@@ -23,6 +23,8 @@ export const MODULE_REGISTRY: ModuleDef[] = [
   { id: 'stock', label: 'Stock', path: '/stock', section: 'operations' },
   // grants the whole R&D section (its pages are NAV_EXTRAS that follow this module); nothing is stored for it in dashboard_modules
   { id: 'rnd', label: 'R&D section', path: '/rnd/monthly', section: 'rnd' },
+  // client card and item card (R&D); also nothing in dashboard_modules
+  { id: 'purchase_insights', label: 'Purchase insights (client + item cards)', path: '/rnd/client', section: 'rnd' },
 ]
 
 /**
@@ -46,6 +48,8 @@ export const NAV_EXTRAS: NavExtra[] = [
   { id: 'stock_history', label: 'Stock history', path: '/stock-history', section: 'operations', follows: 'stock' },
   { id: 'items_index', label: 'Items', path: '/items', section: 'operations', hideKey: 'date.items' },
   { id: 'rnd_monthly', label: 'Monthly data', path: '/rnd/monthly', section: 'rnd', follows: 'rnd' },
+  { id: 'rnd_client_card', label: 'Client card', path: '/rnd/client', section: 'rnd', follows: 'purchase_insights' },
+  { id: 'rnd_item_card', label: 'Item card', path: '/rnd/item', section: 'rnd', follows: 'purchase_insights' },
 ]
 
 export function pathForModule(id: DashboardModuleId): string {

@@ -51,6 +51,8 @@ const NAV_KEYS: Record<string, MessageKey> = {
   stock_history: 'nav.stockHistory',
   items_index: 'nav.itemsIndex',
   rnd_monthly: 'nav.rndMonthly',
+  rnd_client_card: 'nav.rndClientCard',
+  rnd_item_card: 'nav.rndItemCard',
 }
 
 export function navLabel(locale: AppLocale, moduleId: string): string {
