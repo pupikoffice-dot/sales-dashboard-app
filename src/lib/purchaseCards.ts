@@ -116,9 +116,12 @@ export interface CreditCheck {
   /** the rest: partial quantity, an older invoice, or a price credit */
   other12: number
   creditLines12: number
+  /** credit cash whose return reason is known (from the 855 returns report) */
+  withReason12: number
+  reasons: Array<{ code: string; text: string; cash: number; lines: number }>
 }
 
-/** Credit notes of the last 12 months, sorted by what the same client did with the same item (see get_client_credit_check). */
+/** Return invoices (document 14) of the last 12 months, sorted by what the same client did with the same item (see get_client_credit_check). */
 export function fetchCreditCheck(company: string, clientId: string, asUser?: string | null): Promise<CreditCheck | null> {
   return rpc<CreditCheck>('get_client_credit_check', { p_company: company, p_client_id: clientId, p_as: asUser ?? null })
 }

@@ -213,9 +213,9 @@ export function ClientCardPage() {
           <div className="hub-grid">
             <Kpi label="Net cash, last 12 months" value={fmt0(data.sold12 - data.returned12)} note={`${fmt0(data.sold12)} sold · ${fmt0(data.returned12)} returned`} tone="grn" />
             <Kpi
-              label="Credit notes ÷ invoiced"
+              label="Return rate"
               value={rate == null ? '—' : `${(rate * 100).toFixed(1)}%`}
-              hint="Credit-note cash (credit invoices and the credit-notes report) divided by invoiced cash, last 12 months. A credit note can be goods returned, a price correction, or an invoice cancelled and issued again; the reports do not say which."
+              hint="Return invoices (document 14) divided by revenue including them, last 12 months: 200K of returns on 400K net revenue is 200K ÷ 600K = 33%. A return invoice can also be an invoice cancelled and issued again; the breakdown below the number shows how much looks like that."
               note={
                 credit.data && credit.data.credits12 > 0
                   ? (() => {
@@ -256,6 +256,45 @@ export function ClientCardPage() {
               <ItemRows rows={data.stopped} company={company} empty="Nothing the client used to buy regularly has stopped." />
             </section>
             <section className="hub-card hub-span-12">
+              <div className="hub-card-hdr">
+                <h3>Why they return</h3>
+                <span className="hub-card-aside">from the returns report (855); only the periods exported so far</span>
+              </div>
+              {credit.data && credit.data.reasons.length ? (
+                <>
+                  <p className="sel-months-list" style={{ margin: '0 0 8px' }}>
+                    Reason known for {Math.round((credit.data.withReason12 / Math.max(1, credit.data.credits12)) * 100)}% of the return cash in the last 12 months.
+                  </p>
+                  <div className="tw">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th style={{ textAlign: 'left' }}>Reason</th>
+                          <th>Cash</th>
+                          <th>Lines</th>
+                          <th>Share of known</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {credit.data.reasons.map(r => (
+                          <tr key={r.code}>
+                            <td style={{ textAlign: 'left' }}>
+                              {r.code} · {r.text}
+                            </td>
+                            <td>{fmt0(r.cash)}</td>
+                            <td>{r.lines}</td>
+                            <td>{Math.round((r.cash / Math.max(1, credit.data!.withReason12)) * 100)}%</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              ) : (
+                <p className="status-msg">No return reasons recorded for this client yet. Reasons come from the Pupik returns report (855); Monkeytime has none.</p>
+              )}
+            </section>
+            <section className="hub-card hub-span-12">
               <div className="hub-card-hdr"><h3>By year</h3></div>
               <div className="tw">
                 <table>
@@ -263,8 +302,8 @@ export function ClientCardPage() {
                     <tr>
                       <th style={{ textAlign: 'left' }}>Year</th>
                       <th>Sold</th>
-                      <th>Credit notes</th>
-                      <th>Credit notes ÷ invoiced</th>
+                      <th>Returned</th>
+                      <th>Return rate</th>
                       <th>Net pieces</th>
                     </tr>
                   </thead>
