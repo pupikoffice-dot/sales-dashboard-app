@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { daysSince, lastMonthKeys, monthsOfCover, returnRate } from './purchaseCards'
+import { daysSince, lastMonthKeys, monthsOfCover, rateWithoutReissue, returnRate } from './purchaseCards'
 
 describe('purchase card helpers', () => {
   it('return rate is returned over sold, null when nothing sold', () => {
@@ -23,5 +23,10 @@ describe('purchase card helpers', () => {
       { y: 2026, m: 1 },
       { y: 2026, m: 2 },
     ])
+  })
+  it('rate without cancel-and-reissue removes the reissued amount from both sides', () => {
+    expect(rateWithoutReissue(1000, 400, 100)).toBeCloseTo(300 / 900)
+    expect(rateWithoutReissue(100, 50, 100)).toBeNull()
+    expect(rateWithoutReissue(1000, 50, 80)).toBe(0)
   })
 })
