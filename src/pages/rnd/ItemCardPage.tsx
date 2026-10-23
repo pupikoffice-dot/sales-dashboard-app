@@ -219,7 +219,7 @@ export function ItemCardPage() {
           <div className="hub-grid">
             <Kpi label="In stock now" value={fmt0(data.stock)} note={cover == null ? 'no sales in the last 3 months' : `about ${cover.toFixed(1)} months at the last 3 months pace`} tone={cover != null && cover < 1 ? 'amber' : undefined} />
             <Kpi label="Sold, last 12 months" value={fmt0(data.sold12)} note={`${fmt0(data.sold3)} net in the last 3 months`} tone="grn" />
-            <Kpi label="Return rate" value={rate == null ? '—' : `${(rate * 100).toFixed(1)}%`} note={`${fmt0(data.returned12)} pieces came back`} tone={rate != null && rate > 0.15 ? 'amber' : undefined} />
+            <Kpi label="Credit notes ÷ sold" value={rate == null ? '—' : `${(rate * 100).toFixed(1)}%`} hint="Pieces on credit notes divided by pieces invoiced, last 12 months. A credit note can be goods returned, a correction, or an invoice cancelled and issued again." note={`${fmt0(data.returned12)} pieces credited`} tone={rate != null && rate > 0.15 ? 'amber' : undefined} />
             <Kpi label="Clients, last 12 months" value={fmt0(data.clients12)} note={since == null ? undefined : `last sale ${since} days ago (${data.last})`} />
 
             <section className="hub-card hub-span-8">

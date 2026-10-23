@@ -54,9 +54,9 @@ export function PurchaseSearchBar({
 }
 
 /** One KPI tile (label, value, optional small note). */
-export function Kpi({ label, value, note, tone }: { label: string; value: ReactNode; note?: ReactNode; tone?: 'grn' | 'amber' }) {
+export function Kpi({ label, value, note, tone, hint }: { label: string; value: ReactNode; note?: ReactNode; tone?: 'grn' | 'amber'; hint?: string }) {
   return (
-    <section className="hub-card hub-tile-kpi hub-span-3">
+    <section className="hub-card hub-tile-kpi hub-span-3" title={hint}>
       <div className="hub-kpi-lbl">{label}</div>
       <div className="hub-kpi-main">
         <span className={`hub-kpi-val${tone ? ` ${tone}` : ''}`}>{value}</span>

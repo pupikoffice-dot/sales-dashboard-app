@@ -107,11 +107,23 @@ export function fetchClientCard(company: string, clientId: string, asUser?: stri
   return rpc<ClientCard>('get_client_card', { p_company: company, p_client_id: clientId, p_as: asUser ?? null })
 }
 
+export interface CreditCheck {
+  credits12: number
+  matched12: number
+  creditLines12: number
+  matchedLines12: number
+}
+
+/** Credit notes of the last 12 months, and how much of them matches an invoice line of the same item and quantity. */
+export function fetchCreditCheck(company: string, clientId: string, asUser?: string | null): Promise<CreditCheck | null> {
+  return rpc<CreditCheck>('get_client_credit_check', { p_company: company, p_client_id: clientId, p_as: asUser ?? null })
+}
+
 export function fetchItemCard(company: string, sku: string, asUser?: string | null): Promise<ItemCard | null> {
   return rpc<ItemCard>('get_item_card', { p_company: company, p_sku: sku, p_as: asUser ?? null })
 }
 
-/** Returned goods as a share of sold, 0-1 (null when nothing was sold). */
+/** Credit notes as a share of what was invoiced, 0-1 (null when nothing was invoiced). */
 export function returnRate(sold: number, returned: number): number | null {
   return sold > 0 ? returned / sold : null
 }
