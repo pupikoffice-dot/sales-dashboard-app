@@ -118,6 +118,8 @@ export const messages: Record<keyof typeof en, string> = {
   'nav.itemsIndex': 'פריטים',
   'nav.rnd': 'מחקר ופיתוח',
   'nav.rndMonthly': 'נתונים חודשיים',
+  'nav.rndClientCard': 'כרטיס לקוח',
+  'nav.rndItemCard': 'כרטיס פריט',
   'ops.deliveries.title': 'משלוחים',
   'ops.deliveries.subtitle': 'קרטונים ומשטחים שנשלחו בכל חודש — {months} החודשים האחרונים',
   'ops.cartons': 'קרטונים',
