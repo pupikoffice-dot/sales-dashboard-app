@@ -3,8 +3,7 @@
 -- revenue (as a negative line) and is not counted as a return. A reason that is not listed here, and a credit line with no
 -- known reason, DOES count as a return (the safe default until the 855 history is exported).
 --
--- Pupik reasons seen so far: 1 damaged, 6 not sold - no demand, 8 not supplied - client did not accept, 10 manager initiative.
--- Owner decision 2026-10-23: damaged (1) and not supplied / client did not accept (8) are not returns.
+-- Pupik reasons seen so far (September 2026): 1 damaged, 6 not sold - no demand, 8 not supplied - client did not accept, 10 manager initiative.
 
 create table if not exists public.return_reason_rules (
   company          text not null,
@@ -18,10 +17,8 @@ alter table public.return_reason_rules enable row level security;
 drop policy if exists return_reason_rules_read on public.return_reason_rules;
 create policy return_reason_rules_read on public.return_reason_rules for select to authenticated using (true);
 
-insert into public.return_reason_rules (company, code, counts_as_return, note) values
-  ('pupik', '1', false, 'damaged'),
-  ('pupik', '8', false, 'not supplied - client did not accept')
-on conflict (company, code) do update set counts_as_return = excluded.counts_as_return, note = excluded.note, updated_at = now();
+-- No rules yet (owner, 2026-10-23: forget the reasons for now; map what appears after the full-year 855 exports).
+-- A rule is one row: insert into return_reason_rules (company, code, counts_as_return, note) values ('pupik', '<reason number>', false, '<text>');
 
 create or replace function public.refresh_purchase_facts(p_company text)
 returns integer
