@@ -127,20 +127,16 @@ export function ClientCardPage() {
     staleTime: 5 * 60 * 1000,
   })
   const data = card.data
-  // chains first, then clients; a chain opens the same card, summed over its stores
-  const allHits = useMemo(
-    () => [
-      ...(chains.data ?? []).map(c => ({
-        id: c.id,
-        name: `${c.name} (chain)`,
-        city: `${c.stores} stores`,
-        agent: null as string | null,
-        cash12: c.cash12,
-        last: c.last,
-      })),
-      ...(hits.data ?? []),
-    ],
-    [chains.data, hits.data],
+  const chainRows = useMemo(
+    () => (chains.data ?? []).map(c => ({ id: c.id, name: c.name, stores: c.stores, cash12: c.cash12, last: c.last })),
+    [chains.data],
+  )
+  const allHits = hits.data ?? []
+  const chainSort = useSortedRows(
+    chainRows,
+    { chain: c => c.name, stores: c => c.stores, cash12: c => c.cash12, last: c => c.last },
+    null,
+    ['chain'],
   )
   const storeSort = useSortedRows(
     stores.data,
@@ -236,9 +232,47 @@ export function ClientCardPage() {
         <>
           {hits.isLoading ? <p className="status-msg">Searching…</p> : null}
           {hits.error ? <p className="status-msg error">{(hits.error as Error).message}</p> : null}
-          {hits.data && !allHits.length ? <p className="status-msg">No clients match.</p> : null}
+          {hits.data && !allHits.length && !chainRows.length ? <p className="status-msg">No clients match.</p> : null}
           {card.isLoading ? <p className="status-msg">Loading the client…</p> : null}
           {card.error ? <p className="status-msg error">{(card.error as Error).message}</p> : null}
+          {chainRows.length ? (
+            <>
+              <h3 style={{ margin: '4px 0 8px' }}>Chains</h3>
+              <div className="tw" style={{ marginBottom: 16 }}>
+                <table>
+                  <thead>
+                    <tr>
+                      <SortTh label="Chain" k="chain" left sort={chainSort.sort} onSort={chainSort.onSort} />
+                      <SortTh label="Stores" k="stores" sort={chainSort.sort} onSort={chainSort.onSort} />
+                      <SortTh label="Net cash, last 12 months" k="cash12" sort={chainSort.sort} onSort={chainSort.onSort} />
+                      <SortTh label="Last bought" k="last" sort={chainSort.sort} onSort={chainSort.onSort} />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {chainSort.sorted.map(c => (
+                      <tr key={c.id} style={{ cursor: 'pointer' }} onClick={() => pick(c.id)}>
+                        <td style={{ textAlign: 'left' }}>
+                          <a
+                            href={`?co=${company}&id=${encodeURIComponent(c.id)}`}
+                            onClick={e => {
+                              e.preventDefault()
+                              pick(c.id)
+                            }}
+                          >
+                            {c.name}
+                          </a>
+                        </td>
+                        <td>{c.stores}</td>
+                        <td>{c.cash12 != null ? fmt0(c.cash12) : '—'}</td>
+                        <td>{c.last ?? '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {allHits.length ? <h3 style={{ margin: '4px 0 8px' }}>Clients</h3> : null}
+            </>
+          ) : null}
           {allHits.length ? (
             <div className="tw">
               <table>
