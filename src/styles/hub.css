@@ -11,13 +11,14 @@
 .hub-span-3 { grid-column: span 3; }
 .hub-span-4 { grid-column: span 4; }
 .hub-span-5 { grid-column: span 5; }
+.hub-span-6 { grid-column: span 6; }
 .hub-span-7 { grid-column: span 7; }
 .hub-span-8 { grid-column: span 8; }
 .hub-span-12 { grid-column: span 12; }
 
 @media (max-width: 1280px) {
   .hub-span-3 { grid-column: span 6; }
-  .hub-span-4, .hub-span-5, .hub-span-7, .hub-span-8 { grid-column: span 12; }
+  .hub-span-4, .hub-span-5, .hub-span-6, .hub-span-7, .hub-span-8 { grid-column: span 12; }
 }
 
 @media (max-width: 600px) {

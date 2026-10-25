@@ -5,12 +5,16 @@ import type { ChartConfiguration } from 'chart.js'
 import { HubChart, cssVar } from '../../components/oversite/hub/HubChart'
 import { Kpi, PurchaseSearchBar, useDebounced } from '../../components/rnd/PurchaseSearch'
 import { SortTh, useSortedRows } from '../../components/rnd/sortRows'
+import { ComparisonTable } from '../../components/rnd/ComparisonTable'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { usePreview } from '../../context/PreviewContext'
 import { fmt0 } from '../../lib/format'
 import {
   daysSince,
   fetchItemCard,
+  fetchItemVsLastYear,
+  changeLabel,
+  throughLabel,
   lastMonthKeys,
   monthsOfCover,
   MOVE_LABEL,
@@ -87,6 +91,12 @@ export function ItemCardPage() {
     staleTime: 5 * 60 * 1000,
   })
 
+  const vs = useQuery({
+    queryKey: ['item-vs-ly', company, sku, asUser],
+    queryFn: () => fetchItemVsLastYear(company as string, sku as string, asUser),
+    enabled: !!company && !!sku,
+    staleTime: 5 * 60 * 1000,
+  })
   const data = card.data
   const hitSort = useSortedRows(
     hits.data,
@@ -241,6 +251,23 @@ export function ItemCardPage() {
             <Kpi label="Return rate" value={rate == null ? '—' : `${(rate * 100).toFixed(1)}%`} hint="Pieces on return invoices (document 14) divided by pieces sold including them, last 12 months." note={`${fmt0(data.returned12)} pieces returned`} tone={rate != null && rate > 0.15 ? 'amber' : undefined} />
             <Kpi label="Clients, last 12 months" value={fmt0(data.clients12)} note={since == null ? undefined : `last sale ${since} days ago (${data.last})`} />
 
+            {vs.data ? (
+              <>
+                <Kpi
+                  label={`Pieces ${throughLabel(vs.data.throughMonth)}, this year`}
+                  value={fmt0(vs.data.cy.qty)}
+                  note={`last year ${fmt0(vs.data.ly.qty)} · ${changeLabel(vs.data.cy.qty, vs.data.ly.qty)}`}
+                  tone={vs.data.cy.qty >= vs.data.ly.qty ? 'grn' : 'amber'}
+                  hint={`Net pieces (sold less returned), January to the last full month of ${vs.data.year}, against the same months of ${vs.data.prevYear}.`}
+                />
+                <Kpi
+                  label={`Clients ${throughLabel(vs.data.throughMonth)}`}
+                  value={fmt0(vs.data.cy.clients ?? 0)}
+                  note={`last year ${fmt0(vs.data.ly.clients ?? 0)} · ${changeLabel(vs.data.cy.clients ?? 0, vs.data.ly.clients ?? 0)}`}
+                />
+              </>
+            ) : null}
+
             <section className="hub-card hub-span-8">
               <div className="hub-card-hdr"><h3>Pieces sold and returned — 24 months</h3></div>
               {charts ? <HubChart config={charts.monthly} height={240} label="Sold and returned by month" minWidth={560} /> : null}
@@ -253,6 +280,34 @@ export function ItemCardPage() {
                 <p className="status-msg">No stock history for this item.</p>
               )}
             </section>
+
+            {vs.data ? (
+              <section className="hub-card hub-span-12">
+                <div className="hub-card-hdr">
+                  <h3>Clients vs last year</h3>
+                  <span className="hub-card-aside">
+                    {throughLabel(vs.data.throughMonth)} {vs.data.year} against {vs.data.prevYear}, net pieces; the 20 biggest movers
+                  </span>
+                </div>
+                <ComparisonTable
+                  head="Client"
+                  cyLabel={String(vs.data.year)}
+                  lyLabel={String(vs.data.prevYear)}
+                  empty="Nobody bought it in either period."
+                  rows={vs.data.clients.map(c => ({
+                    key: c.id,
+                    label: (
+                      <span title={c.name}>
+                        <Link to={`/rnd/client?co=${company}&id=${encodeURIComponent(c.id)}`}>{c.name || c.id}</Link> <small>{c.id}</small>
+                      </span>
+                    ),
+                    text: c.name || c.id,
+                    cy: c.cyQty,
+                    ly: c.lyQty,
+                  }))}
+                />
+              </section>
+            ) : null}
 
             <section className="hub-card hub-span-12">
               <div className="hub-card-hdr"><h3>Top clients — last 12 months</h3></div>

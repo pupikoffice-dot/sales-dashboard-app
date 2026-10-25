@@ -5,6 +5,7 @@ import type { ChartConfiguration } from 'chart.js'
 import { HubChart, cssVar } from '../../components/oversite/hub/HubChart'
 import { Kpi, PurchaseSearchBar, useDebounced } from '../../components/rnd/PurchaseSearch'
 import { SortTh, useSortedRows } from '../../components/rnd/sortRows'
+import { ComparisonTable } from '../../components/rnd/ComparisonTable'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { usePreview } from '../../context/PreviewContext'
 import { fmt0 } from '../../lib/format'
@@ -12,7 +13,13 @@ import { fmtK } from '../../lib/stockByBrand'
 import {
   daysSince,
   fetchClientCard,
+  fetchChainStores,
+  fetchClientChain,
+  fetchClientVsLastYear,
+  searchChains,
   fetchCreditCheck,
+  changeLabel,
+  throughLabel,
   lastMonthKeys,
   rateWithoutReissue,
   returnRate,
@@ -81,6 +88,25 @@ export function ClientCardPage() {
     enabled: !!company,
     staleTime: 5 * 60 * 1000,
   })
+  const chains = useQuery({
+    queryKey: ['pc-chains', company, q, asUser],
+    queryFn: () => searchChains(company as string, q, asUser),
+    enabled: !!company,
+    staleTime: 5 * 60 * 1000,
+  })
+  const isChainId = !!clientId && clientId.startsWith('chain:')
+  const stores = useQuery({
+    queryKey: ['chain-stores', company, clientId, asUser],
+    queryFn: () => fetchChainStores(company as string, (clientId as string).slice(6), asUser),
+    enabled: !!company && isChainId,
+    staleTime: 5 * 60 * 1000,
+  })
+  const ownChain = useQuery({
+    queryKey: ['client-chain', company, clientId, asUser],
+    queryFn: () => fetchClientChain(company as string, clientId as string, asUser),
+    enabled: !!company && !!clientId && !isChainId,
+    staleTime: 5 * 60 * 1000,
+  })
   const card = useQuery({
     queryKey: ['client-card', company, clientId, asUser],
     queryFn: () => fetchClientCard(company as string, clientId as string, asUser),
@@ -94,9 +120,36 @@ export function ClientCardPage() {
     enabled: !!company && !!clientId,
     staleTime: 5 * 60 * 1000,
   })
+  const vs = useQuery({
+    queryKey: ['client-vs-ly', company, clientId, asUser],
+    queryFn: () => fetchClientVsLastYear(company as string, clientId as string, asUser),
+    enabled: !!company && !!clientId,
+    staleTime: 5 * 60 * 1000,
+  })
   const data = card.data
+  // chains first, then clients; a chain opens the same card, summed over its stores
+  const allHits = useMemo(
+    () => [
+      ...(chains.data ?? []).map(c => ({
+        id: c.id,
+        name: `${c.name} (chain)`,
+        city: `${c.stores} stores`,
+        agent: null as string | null,
+        cash12: c.cash12,
+        last: c.last,
+      })),
+      ...(hits.data ?? []),
+    ],
+    [chains.data, hits.data],
+  )
+  const storeSort = useSortedRows(
+    stores.data,
+    { store: s => s.name || s.id, city: s => s.city, agent: s => s.agent, cash12: s => s.cash12, last: s => s.last },
+    { key: 'cash12', dir: 'desc' },
+    ['store', 'city', 'agent'],
+  )
   const hitSort = useSortedRows(
-    hits.data,
+    allHits,
     { client: h => h.name || h.id, city: h => h.city, agent: h => h.agent, cash12: h => h.cash12, last: h => h.last },
     null,
     ['client', 'city', 'agent'],
@@ -183,10 +236,10 @@ export function ClientCardPage() {
         <>
           {hits.isLoading ? <p className="status-msg">Searching…</p> : null}
           {hits.error ? <p className="status-msg error">{(hits.error as Error).message}</p> : null}
-          {hits.data && !hits.data.length ? <p className="status-msg">No clients match.</p> : null}
+          {hits.data && !allHits.length ? <p className="status-msg">No clients match.</p> : null}
           {card.isLoading ? <p className="status-msg">Loading the client…</p> : null}
           {card.error ? <p className="status-msg error">{(card.error as Error).message}</p> : null}
-          {hits.data?.length ? (
+          {allHits.length ? (
             <div className="tw">
               <table>
                 <thead>
@@ -229,7 +282,7 @@ export function ClientCardPage() {
           <div style={{ display: 'flex', gap: 12, alignItems: 'baseline', flexWrap: 'wrap', marginBottom: 12 }}>
             <h3 style={{ margin: 0 }}>{data.client.name || data.client.id}</h3>
             <small>
-              {data.client.id}
+              {data.client.isChain ? `chain · ${data.client.stores ?? 0} stores` : data.client.id}
               {data.client.city ? ` · ${data.client.city}` : ''}
               {data.client.agent ? ` · agent ${data.client.agent}` : ''}
               {data.client.chain ? ` · chain ${data.client.chain}` : ''}
@@ -238,6 +291,14 @@ export function ClientCardPage() {
             <button type="button" className="chip" onClick={() => setParams({ co: company })}>
               ← Other client
             </button>
+            {!data.client.isChain && ownChain.data ? (
+              <button type="button" className="chip" onClick={() => setParams({ co: company, id: ownChain.data!.id })}>
+                View the whole chain: {ownChain.data.name} ({ownChain.data.stores} stores)
+              </button>
+            ) : null}
+            {data.client.isChain ? (
+              <small>Every figure on this card is the total of the chain's stores.</small>
+            ) : null}
           </div>
 
           <div className="hub-grid">
@@ -261,6 +322,29 @@ export function ClientCardPage() {
             <Kpi label="Documents, last 12 months" value={fmt0(data.docs12)} note={data.first ? `first purchase ${data.first}` : undefined} />
             <Kpi label="Last purchase" value={since == null ? '—' : `${since} days ago`} note={data.last ?? undefined} tone={since != null && since > 90 ? 'amber' : undefined} />
 
+            {vs.data ? (
+              <>
+                <Kpi
+                  label={`Net cash ${throughLabel(vs.data.throughMonth)}, this year`}
+                  value={fmt0(vs.data.cy.sold - vs.data.cy.returned)}
+                  note={`last year ${fmt0(vs.data.ly.sold - vs.data.ly.returned)} · ${changeLabel(vs.data.cy.sold - vs.data.cy.returned, vs.data.ly.sold - vs.data.ly.returned)}`}
+                  tone={vs.data.cy.sold - vs.data.cy.returned >= vs.data.ly.sold - vs.data.ly.returned ? 'grn' : 'amber'}
+                  hint={`Net cash (invoiced less returns), January to the last full month of ${vs.data.year}, against the same months of ${vs.data.prevYear}.`}
+                />
+                <Kpi
+                  label={`Return rate ${throughLabel(vs.data.throughMonth)}`}
+                  value={(() => {
+                    const r = returnRate(vs.data.cy.sold, vs.data.cy.returned)
+                    return r == null ? '—' : `${(r * 100).toFixed(1)}%`
+                  })()}
+                  note={(() => {
+                    const r = returnRate(vs.data.ly.sold, vs.data.ly.returned)
+                    return `last year ${r == null ? '—' : `${(r * 100).toFixed(1)}%`}`
+                  })()}
+                />
+              </>
+            ) : null}
+
             <section className="hub-card hub-span-8">
               <div className="hub-card-hdr"><h3>Net cash by month — 24 months</h3></div>
               {charts ? <HubChart config={charts.monthly} height={240} label="Net cash by month" minWidth={560} /> : null}
@@ -273,6 +357,95 @@ export function ClientCardPage() {
                 <p className="status-msg">No purchases in the last 12 months.</p>
               )}
             </section>
+
+            {vs.data ? (
+              <>
+                <section className="hub-card hub-span-6">
+                  <div className="hub-card-hdr">
+                    <h3>Brands vs last year</h3>
+                    <span className="hub-card-aside">{throughLabel(vs.data.throughMonth)} {vs.data.year} against {vs.data.prevYear}, net cash</span>
+                  </div>
+                  <ComparisonTable
+                    head="Brand"
+                    cyLabel={String(vs.data.year)}
+                    lyLabel={String(vs.data.prevYear)}
+                    empty="No purchases in either period."
+                    rows={vs.data.brands.map(b => ({ key: b.brand, label: b.brand, text: b.brand, cy: b.cy, ly: b.ly }))}
+                  />
+                </section>
+                <section className="hub-card hub-span-6">
+                  <div className="hub-card-hdr">
+                    <h3>Items vs last year</h3>
+                    <span className="hub-card-aside">the 20 biggest movers, net cash</span>
+                  </div>
+                  <ComparisonTable
+                    head="Item"
+                    cyLabel={String(vs.data.year)}
+                    lyLabel={String(vs.data.prevYear)}
+                    empty="No purchases in either period."
+                    rows={vs.data.items.map(i => ({
+                      key: i.sku,
+                      label: (
+                        <span title={i.name}>
+                          <Link to={`/rnd/item?co=${company}&sku=${encodeURIComponent(i.sku)}`}>{i.sku}</Link> · {i.name}
+                        </span>
+                      ),
+                      text: `${i.sku} ${i.name}`,
+                      cy: i.cy,
+                      ly: i.ly,
+                    }))}
+                  />
+                </section>
+              </>
+            ) : null}
+
+            {data.client.isChain ? (
+              <section className="hub-card hub-span-12">
+                <div className="hub-card-hdr">
+                  <h3>Stores in this chain</h3>
+                  <span className="hub-card-aside">net cash, last 12 months; click a store for its own card</span>
+                </div>
+                {stores.data && stores.data.length ? (
+                  <div className="tw">
+                    <table>
+                      <thead>
+                        <tr>
+                          <SortTh label="Store" k="store" left sort={storeSort.sort} onSort={storeSort.onSort} />
+                          <SortTh label="City" k="city" left sort={storeSort.sort} onSort={storeSort.onSort} />
+                          <SortTh label="Agent" k="agent" sort={storeSort.sort} onSort={storeSort.onSort} />
+                          <SortTh label="Net cash, last 12 months" k="cash12" sort={storeSort.sort} onSort={storeSort.onSort} />
+                          <SortTh label="Last bought" k="last" sort={storeSort.sort} onSort={storeSort.onSort} />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {storeSort.sorted.map(s => (
+                          <tr key={s.id}>
+                            <td style={{ textAlign: 'left' }}>
+                              <a
+                                href={`?co=${company}&id=${encodeURIComponent(s.id)}`}
+                                onClick={e => {
+                                  e.preventDefault()
+                                  pick(s.id)
+                                }}
+                              >
+                                {s.name || s.id}
+                              </a>{' '}
+                              <small>{s.id}</small>
+                            </td>
+                            <td style={{ textAlign: 'left' }}>{s.city ?? ''}</td>
+                            <td>{s.agent ?? '—'}</td>
+                            <td>{s.cash12 != null ? fmt0(s.cash12) : '—'}</td>
+                            <td>{s.last ?? '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="status-msg">{stores.isLoading ? 'Loading the stores…' : 'No stores to show.'}</p>
+                )}
+              </section>
+            ) : null}
 
             <section className="hub-card hub-span-12">
               <div className="hub-card-hdr"><h3>Top items — last 12 months</h3></div>

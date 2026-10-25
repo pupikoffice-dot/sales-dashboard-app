@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { daysSince, lastMonthKeys, monthsOfCover, rateWithoutReissue, returnRate } from './purchaseCards'
+import { changeLabel, changePct, daysSince, lastMonthKeys, monthsOfCover, rateWithoutReissue, returnRate, throughLabel } from './purchaseCards'
 
 describe('purchase card helpers', () => {
   it('return rate is returned over sold, null when nothing sold', () => {
@@ -28,5 +28,18 @@ describe('purchase card helpers', () => {
     expect(rateWithoutReissue(1000, 400, 100)).toBeCloseTo(300 / 900)
     expect(rateWithoutReissue(100, 50, 100)).toBeNull()
     expect(rateWithoutReissue(1000, 50, 80)).toBe(0)
+  })
+  it('change against last year', () => {
+    expect(changePct(150, 100)).toBeCloseTo(0.5)
+    expect(changePct(5, 0)).toBeNull()
+    expect(changeLabel(150, 100)).toBe('+50%')
+    expect(changeLabel(70, 100)).toBe('-30%')
+    expect(changeLabel(5, 0)).toBe('new')
+    expect(changeLabel(0, 0)).toBe('–')
+    expect(changeLabel(0, 40)).toBe('-100%')
+  })
+  it('period label', () => {
+    expect(throughLabel(9)).toBe('Jan–Sep')
+    expect(throughLabel(1)).toBe('Jan')
   })
 })
