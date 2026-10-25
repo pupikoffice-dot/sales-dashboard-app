@@ -26,6 +26,30 @@ export interface MonthCash {
   qty: number
 }
 
+export interface ChainHit {
+  /** 'chain:<chain id>', usable as a client id on the client card */
+  id: string
+  name: string
+  stores: number
+  cash12: number | null
+  last: string | null
+}
+
+export interface ChainStore {
+  id: string
+  name: string | null
+  city: string | null
+  agent: string | null
+  cash12: number | null
+  last: string | null
+}
+
+export interface ClientChain {
+  id: string
+  name: string
+  stores: number
+}
+
 export interface ClientCardItem {
   sku: string
   name: string
@@ -45,6 +69,9 @@ export interface ClientCard {
     active: boolean | null
     chain: string | null
     intergroup: boolean
+    /** the card is a whole chain (id 'chain:<id>'): figures are summed over its stores */
+    isChain?: boolean
+    stores?: number
   }
   first: string | null
   last: string | null
@@ -99,6 +126,18 @@ export async function searchClients(company: string, query: string, asUser?: str
   return (await rpc<ClientHit[]>('search_purchase_clients', { p_company: company, p_query: query, p_as: asUser ?? null })) ?? []
 }
 
+export async function searchChains(company: string, query: string, asUser?: string | null): Promise<ChainHit[]> {
+  return (await rpc<ChainHit[]>('search_purchase_chains', { p_company: company, p_query: query, p_as: asUser ?? null })) ?? []
+}
+
+export async function fetchChainStores(company: string, chainId: string, asUser?: string | null): Promise<ChainStore[]> {
+  return (await rpc<ChainStore[]>('get_chain_stores', { p_company: company, p_chain_id: chainId, p_as: asUser ?? null })) ?? []
+}
+
+export function fetchClientChain(company: string, clientId: string, asUser?: string | null): Promise<ClientChain | null> {
+  return rpc<ClientChain>('get_client_chain', { p_company: company, p_client_id: clientId, p_as: asUser ?? null })
+}
+
 export async function searchItems(company: string, query: string, asUser?: string | null): Promise<ItemHit[]> {
   return (await rpc<ItemHit[]>('search_purchase_items', { p_company: company, p_query: query, p_as: asUser ?? null })) ?? []
 }
@@ -126,6 +165,63 @@ export interface CreditCheck {
 /** Return invoices (document 14) of the last 12 months, sorted by what the same client did with the same item (see get_client_credit_check). */
 export function fetchCreditCheck(company: string, clientId: string, asUser?: string | null): Promise<CreditCheck | null> {
   return rpc<CreditCheck>('get_client_credit_check', { p_company: company, p_client_id: clientId, p_as: asUser ?? null })
+}
+
+export interface VsPeriod {
+  sold: number
+  returned: number
+  qty: number
+  docs?: number
+  qtySold?: number
+  qtyReturned?: number
+  clients?: number
+}
+
+export interface ClientVsLastYear {
+  year: number
+  prevYear: number
+  /** January up to this month (the last full month of this year) is compared with the same months of last year */
+  throughMonth: number
+  cy: VsPeriod
+  ly: VsPeriod
+  items: Array<{ sku: string; name: string; cy: number; ly: number; cyQty: number; lyQty: number }>
+  brands: Array<{ brand: string; cy: number; ly: number }>
+}
+
+export interface ItemVsLastYear {
+  scoped: boolean
+  year: number
+  prevYear: number
+  throughMonth: number
+  cy: VsPeriod
+  ly: VsPeriod
+  clients: Array<{ id: string; name: string; cy: number; ly: number; cyQty: number; lyQty: number }>
+}
+
+export function fetchClientVsLastYear(company: string, clientId: string, asUser?: string | null): Promise<ClientVsLastYear | null> {
+  return rpc<ClientVsLastYear>('get_client_vs_last_year', { p_company: company, p_client_id: clientId, p_as: asUser ?? null })
+}
+
+export function fetchItemVsLastYear(company: string, sku: string, asUser?: string | null): Promise<ItemVsLastYear | null> {
+  return rpc<ItemVsLastYear>('get_item_vs_last_year', { p_company: company, p_sku: sku, p_as: asUser ?? null })
+}
+
+/** Change from last year to this year as a share of last year (null when last year was zero). */
+export function changePct(cy: number, ly: number): number | null {
+  return ly === 0 ? null : (cy - ly) / Math.abs(ly)
+}
+
+/** "+12%", "-30%", "new" (nothing last year) or "–" (nothing either year). */
+export function changeLabel(cy: number, ly: number): string {
+  if (ly === 0) return cy === 0 ? '–' : 'new'
+  const p = Math.round(((cy - ly) / Math.abs(ly)) * 100)
+  return `${p > 0 ? '+' : ''}${p}%`
+}
+
+/** The period in words: 'Jan–Sep' (or just 'Jan'). */
+export function throughLabel(throughMonth: number): string {
+  const m = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  return throughMonth <= 1 ? m[0] : `${m[0]}–${m[Math.min(12, throughMonth) - 1]}`
 }
 
 export function fetchItemCard(company: string, sku: string, asUser?: string | null): Promise<ItemCard | null> {
