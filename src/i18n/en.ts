@@ -116,6 +116,7 @@ export const messages = {
   'nav.itemsIndex': 'Items',
   'nav.rnd': 'R&D',
   'nav.rndMonthly': 'Monthly data',
+  'nav.rndYearly': 'Yearly data',
   'nav.rndClientCard': 'Client card',
   'nav.rndItemCard': 'Item card',
   'ops.deliveries.title': 'Deliveries',
