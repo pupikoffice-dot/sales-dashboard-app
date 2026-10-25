@@ -48,6 +48,7 @@ export const NAV_EXTRAS: NavExtra[] = [
   { id: 'stock_history', label: 'Stock history', path: '/stock-history', section: 'operations', follows: 'stock' },
   { id: 'items_index', label: 'Items', path: '/items', section: 'operations', hideKey: 'date.items' },
   { id: 'rnd_monthly', label: 'Monthly data', path: '/rnd/monthly', section: 'rnd', follows: 'rnd' },
+  { id: 'rnd_yearly', label: 'Yearly data', path: '/rnd/yearly', section: 'rnd', follows: 'rnd' },
   { id: 'rnd_client_card', label: 'Client card', path: '/rnd/client', section: 'rnd', follows: 'purchase_insights' },
   { id: 'rnd_item_card', label: 'Item card', path: '/rnd/item', section: 'rnd', follows: 'purchase_insights' },
 ]

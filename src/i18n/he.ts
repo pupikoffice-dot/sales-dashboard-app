@@ -118,6 +118,7 @@ export const messages: Record<keyof typeof en, string> = {
   'nav.itemsIndex': 'פריטים',
   'nav.rnd': 'מחקר ופיתוח',
   'nav.rndMonthly': 'נתונים חודשיים',
+  'nav.rndYearly': 'נתונים שנתיים',
   'nav.rndClientCard': 'כרטיס לקוח',
   'nav.rndItemCard': 'כרטיס פריט',
   'ops.deliveries.title': 'משלוחים',
