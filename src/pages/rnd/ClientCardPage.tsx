@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import type { ChartConfiguration } from 'chart.js'
 import { HubChart, cssVar } from '../../components/oversite/hub/HubChart'
 import { Kpi, PurchaseSearchBar, useDebounced } from '../../components/rnd/PurchaseSearch'
+import { SortTh, useSortedRows } from '../../components/rnd/sortRows'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { usePreview } from '../../context/PreviewContext'
 import { fmt0 } from '../../lib/format'
@@ -24,21 +25,27 @@ const COMPANY_ORDER: LogicalCompany[] = ['pupik', 'mt', 'grow', 'gold']
 const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 function ItemRows({ rows, company, empty }: { rows: ClientCardItem[]; company: string; empty: string }) {
+  const { sorted, sort, onSort } = useSortedRows(
+    rows,
+    { item: r => `${r.sku} ${r.name}`, qty: r => r.qty, cash: r => r.cash, months: r => r.months, last: r => r.last },
+    { key: 'cash', dir: 'desc' },
+    ['item'],
+  )
   if (!rows.length) return <p className="status-msg">{empty}</p>
   return (
     <div className="tw">
       <table>
         <thead>
           <tr>
-            <th style={{ textAlign: 'left' }}>Item</th>
-            <th>Pieces</th>
-            <th>Cash</th>
-            <th>Months bought</th>
-            <th>Last bought</th>
+            <SortTh label="Item" k="item" left sort={sort} onSort={onSort} />
+            <SortTh label="Pieces" k="qty" sort={sort} onSort={onSort} />
+            <SortTh label="Cash" k="cash" sort={sort} onSort={onSort} />
+            <SortTh label="Months bought" k="months" sort={sort} onSort={onSort} />
+            <SortTh label="Last bought" k="last" sort={sort} onSort={onSort} />
           </tr>
         </thead>
         <tbody>
-          {rows.map(r => (
+          {sorted.map(r => (
             <tr key={r.sku}>
               <td style={{ textAlign: 'left' }} title={r.name}>
                 <Link to={`/rnd/item?co=${company}&sku=${encodeURIComponent(r.sku)}`}>{r.sku}</Link> · {r.name}
@@ -88,6 +95,29 @@ export function ClientCardPage() {
     staleTime: 5 * 60 * 1000,
   })
   const data = card.data
+  const hitSort = useSortedRows(
+    hits.data,
+    { client: h => h.name || h.id, city: h => h.city, agent: h => h.agent, cash12: h => h.cash12, last: h => h.last },
+    null,
+    ['client', 'city', 'agent'],
+  )
+  const reasonSort = useSortedRows(
+    credit.data?.reasons,
+    { reason: r => `${r.code} ${r.text}`, cash: r => r.cash, lines: r => r.lines, share: r => r.cash, counts: r => r.counts },
+    { key: 'cash', dir: 'desc' },
+    ['reason'],
+  )
+  const yearSort = useSortedRows(
+    data?.years,
+    {
+      year: y => y.y,
+      sold: y => y.sold,
+      returned: y => y.returned,
+      rate: y => returnRate(y.sold, y.returned),
+      qty: y => y.qty,
+    },
+    { key: 'year', dir: 'desc' },
+  )
   const charts = useMemo(() => {
     if (!data) return null
     const muted = cssVar('--muted')
@@ -161,15 +191,15 @@ export function ClientCardPage() {
               <table>
                 <thead>
                   <tr>
-                    <th style={{ textAlign: 'left' }}>Client</th>
-                    <th style={{ textAlign: 'left' }}>City</th>
-                    <th>Agent</th>
-                    <th>Net cash, last 12 months</th>
-                    <th>Last bought</th>
+                    <SortTh label="Client" k="client" left sort={hitSort.sort} onSort={hitSort.onSort} />
+                    <SortTh label="City" k="city" left sort={hitSort.sort} onSort={hitSort.onSort} />
+                    <SortTh label="Agent" k="agent" sort={hitSort.sort} onSort={hitSort.onSort} />
+                    <SortTh label="Net cash, last 12 months" k="cash12" sort={hitSort.sort} onSort={hitSort.onSort} />
+                    <SortTh label="Last bought" k="last" sort={hitSort.sort} onSort={hitSort.onSort} />
                   </tr>
                 </thead>
                 <tbody>
-                  {hits.data.map(h => (
+                  {hitSort.sorted.map(h => (
                     <tr key={h.id} style={{ cursor: 'pointer' }} onClick={() => pick(h.id)}>
                       <td style={{ textAlign: 'left' }}>
                         <a
@@ -269,15 +299,15 @@ export function ClientCardPage() {
                     <table>
                       <thead>
                         <tr>
-                          <th style={{ textAlign: 'left' }}>Reason</th>
-                          <th>Cash</th>
-                          <th>Lines</th>
-                          <th>Share of known</th>
-                          <th>Counts as a return</th>
+                          <SortTh label="Reason" k="reason" left sort={reasonSort.sort} onSort={reasonSort.onSort} />
+                          <SortTh label="Cash" k="cash" sort={reasonSort.sort} onSort={reasonSort.onSort} />
+                          <SortTh label="Lines" k="lines" sort={reasonSort.sort} onSort={reasonSort.onSort} />
+                          <SortTh label="Share of known" k="share" sort={reasonSort.sort} onSort={reasonSort.onSort} />
+                          <SortTh label="Counts as a return" k="counts" sort={reasonSort.sort} onSort={reasonSort.onSort} />
                         </tr>
                       </thead>
                       <tbody>
-                        {credit.data.reasons.map(r => (
+                        {reasonSort.sorted.map(r => (
                           <tr key={r.code}>
                             <td style={{ textAlign: 'left' }}>
                               {r.code} · {r.text}
@@ -302,15 +332,15 @@ export function ClientCardPage() {
                 <table>
                   <thead>
                     <tr>
-                      <th style={{ textAlign: 'left' }}>Year</th>
-                      <th>Sold</th>
-                      <th>Returned</th>
-                      <th>Return rate</th>
-                      <th>Net pieces</th>
+                      <SortTh label="Year" k="year" left sort={yearSort.sort} onSort={yearSort.onSort} />
+                      <SortTh label="Sold" k="sold" sort={yearSort.sort} onSort={yearSort.onSort} />
+                      <SortTh label="Returned" k="returned" sort={yearSort.sort} onSort={yearSort.onSort} />
+                      <SortTh label="Return rate" k="rate" sort={yearSort.sort} onSort={yearSort.onSort} />
+                      <SortTh label="Net pieces" k="qty" sort={yearSort.sort} onSort={yearSort.onSort} />
                     </tr>
                   </thead>
                   <tbody>
-                    {[...data.years].reverse().map(y => {
+                    {yearSort.sorted.map(y => {
                       const r = returnRate(y.sold, y.returned)
                       return (
                         <tr key={y.y}>
