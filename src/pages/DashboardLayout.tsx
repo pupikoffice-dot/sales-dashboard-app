@@ -281,6 +281,16 @@ export function DashboardLayout() {
             )}
             {isSuperAdmin && (
             <NavLink
+              to="/admin/chains"
+              onClick={() => setSidebarOpen(false)}
+              className={({ isActive }) => `nav-btn${isActive ? ' active' : ''}`}
+            >
+              <NavIcon id="nav.adminChains" />
+                <span className="nav-txt">{t('nav.adminChains')}</span>
+            </NavLink>
+            )}
+            {isSuperAdmin && (
+            <NavLink
               to="/admin/data-health"
               onClick={() => setSidebarOpen(false)}
               className={({ isActive }) => `nav-btn${isActive ? ' active' : ''}`}
@@ -495,6 +505,7 @@ const NAV_ICONS: Record<string, string> = {
   'nav.adminClasses': '🔑',
   'nav.adminModules': '🧩',
   'nav.adminDataHealth': '🩺',
+  'nav.adminChains': '🔗',
 }
 
 function NavIcon({ id }: { id: string }) {
