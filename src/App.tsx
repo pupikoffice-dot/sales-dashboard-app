@@ -26,6 +26,7 @@ const DeliveriesPage = lazy(() => import('./pages/operations/DeliveriesPage').th
 const UsersPage = lazy(() => import('./pages/admin/UsersPage').then(m => ({ default: m.UsersPage })))
 const ClassesPage = lazy(() => import('./pages/admin/ClassesPage').then(m => ({ default: m.ClassesPage })))
 const ModulesPage = lazy(() => import('./pages/admin/ModulesPage').then(m => ({ default: m.ModulesPage })))
+const ChainsPage = lazy(() => import('./pages/admin/ChainsPage').then(m => ({ default: m.ChainsPage })))
 const DataHealthPage = lazy(() => import('./pages/admin/DataHealthPage').then(m => ({ default: m.DataHealthPage })))
 
 function HomeRedirect() {
@@ -69,6 +70,7 @@ function ProtectedApp() {
         {canManageUsers && <Route path="admin/users" element={<UsersPage />} />}
         {isSuperAdmin && <Route path="admin/classes" element={<ClassesPage />} />}
         {isSuperAdmin && <Route path="admin/modules" element={<ModulesPage />} />}
+        {isSuperAdmin && <Route path="admin/chains" element={<ChainsPage />} />}
         {isSuperAdmin && <Route path="admin/data-health" element={<DataHealthPage />} />}
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -149,6 +149,7 @@ export const messages = {
   'nav.adminUsers': 'Admin — Users',
   'nav.adminClasses': 'Admin — Classes',
   'nav.adminModules': 'Admin — Modules',
+  'nav.adminChains': 'Admin — Chains',
   'nav.adminDataHealth': 'Admin — Data health',
 
   'header.title': 'Management Dashboard',

@@ -151,6 +151,7 @@ export const messages: Record<keyof typeof en, string> = {
   'nav.adminUsers': 'ניהול — משתמשים',
   'nav.adminClasses': 'ניהול — תפקידים',
   'nav.adminModules': 'ניהול — מודולים',
+  'nav.adminChains': 'ניהול — רשתות',
   'nav.adminDataHealth': 'ניהול — תקינות נתונים',
 
   'header.title': 'לוח ניהול',
