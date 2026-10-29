@@ -80,6 +80,34 @@ export function removeAllResultText(t: Translate, company: string, count: number
   return t('chains.removeAllDone', { count, company })
 }
 
+/** Typed confirmation: the typed text must equal the chain's displayed name (trimmed, case-insensitive, inner whitespace collapsed). */
+export function typedConfirmMatches(typed: string, chainName: string): boolean {
+  const norm = (x: string) => x.normalize('NFC').replace(/\s+/g, ' ').trim().toLocaleLowerCase()
+  const want = norm(chainName)
+  return want !== '' && norm(typed) === want
+}
+
+export interface RemovalLogRow {
+  id: string
+  chain_id: string
+  chain_name: string | null
+  company: string
+  removed_count: number
+  removed_by_email: string | null
+  removed_at: string
+}
+
+/** Last 50 bulk removals (RLS: super admin only; anyone else gets no rows). */
+export async function listRemovalLog(): Promise<RemovalLogRow[]> {
+  const { data, error } = await supabase
+    .from('chain_removal_log')
+    .select('id,chain_id,chain_name,company,removed_count,removed_by_email,removed_at')
+    .order('removed_at', { ascending: false })
+    .limit(50)
+  if (error) throw error
+  return (data ?? []) as RemovalLogRow[]
+}
+
 export async function searchStores(company: string, query: string): Promise<StoreHit[]> {
   return (await call<StoreHit[] | null>('admin_search_stores', { p_company: company, p_query: query })) ?? []
 }

@@ -6,7 +6,7 @@ import { createTranslator } from '../i18n'
 const rpc = vi.hoisted(() => vi.fn())
 vi.mock('./supabase', () => ({ supabase: { rpc } }))
 
-import { addSummary, parseClientNumbers, removeAllChainStores, removeAllConfirmText, removeAllResultText } from './chainAdmin'
+import { addSummary, parseClientNumbers, removeAllChainStores, removeAllConfirmText, removeAllResultText, typedConfirmMatches } from './chainAdmin'
 
 describe('chain admin helpers', () => {
   it('reads client numbers from pasted text and drops duplicates', () => {
@@ -53,7 +53,26 @@ describe('remove all stores of a chain from one company', () => {
   it('page wires the button to confirm, count and the selected company', () => {
     const src = readFileSync(resolve(__dirname, '../pages/admin/ChainsPage.tsx'), 'utf8')
     expect(src).toContain("t('chains.removeAll'")
-    expect(src).toContain('window.confirm(removeAllConfirmText(t, chain.name, companyLabel(company), companyCount))')
+    expect(src).toContain('removeAllConfirmText(t, chain.name, companyLabel(company), companyCount)')
+    expect(src).toContain('typedConfirmMatches(typed, chain.name)')
+    expect(src).toContain('disabled={!typedConfirmMatches(typed, chain.name)')
     expect(src).toContain('removeAllChainStores(chainId as string, company)')
+  })
+
+  it('typed confirmation: exact, case, whitespace, empty, wrong chain', () => {
+    expect(typedConfirmMatches('Tsomet', 'Tsomet')).toBe(true)
+    expect(typedConfirmMatches('  tsomet ', 'Tsomet')).toBe(true)
+    expect(typedConfirmMatches('TSOMET', 'Tsomet')).toBe(true)
+    expect(typedConfirmMatches('Super  Pharm', 'Super Pharm')).toBe(true)
+    expect(typedConfirmMatches('', 'Tsomet')).toBe(false)
+    expect(typedConfirmMatches('   ', 'Tsomet')).toBe(false)
+    expect(typedConfirmMatches('Tsome', 'Tsomet')).toBe(false)
+    expect(typedConfirmMatches('MYST', 'Tsomet')).toBe(false)
+    expect(typedConfirmMatches('anything', '')).toBe(false)
+  })
+  it('typed confirmation is Hebrew-safe', () => {
+    expect(typedConfirmMatches(' צומת ', 'צומת')).toBe(true)
+    expect(typedConfirmMatches('צומ', 'צומת')).toBe(false)
+    expect(typedConfirmMatches('סופר פארם', 'סופר  פארם')).toBe(true)
   })
 })
