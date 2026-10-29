@@ -24,6 +24,9 @@ import { useSalesAgentNavHide } from '../hooks/useSalesAgentNavHide'
 import { useSignedInProfileRole } from '../hooks/useCanArrangeOversight'
 import { useUserProfile } from '../hooks/useUserProfile'
 import { useOversightLayout } from '../hooks/useOversightLayout'
+import { useDataHealthNotices } from '../hooks/useDataHealth'
+import { DataHealthBanner } from '../components/DataHealthBanner'
+import { unacknowledgedRed } from '../lib/dataHealth/notices'
 
 async function fetchActiveAppVersion(): Promise<string> {
   const { data, error } = await supabase
@@ -55,6 +58,9 @@ export function DashboardLayout() {
   const hideNavigation = useSalesAgentNavHide()
   const { name: userName } = useUserProfile()
   const oversightLayout = useOversightLayout()
+  // Admins and super admins: how many sources are late right now (badge on the Data health menu item, banner below).
+  const healthNotices = useDataHealthNotices()
+  const healthRed = unacknowledgedRed(healthNotices.data?.items ?? []).length
   const showSuiteDisclaimer =
     location.pathname.startsWith('/oversite') &&
     !oversightLayout.isLoading &&
@@ -289,7 +295,7 @@ export function DashboardLayout() {
                 <span className="nav-txt">{t('nav.adminChains')}</span>
             </NavLink>
             )}
-            {isSuperAdmin && (
+            {canManageUsers && (
             <NavLink
               to="/admin/data-health"
               onClick={() => setSidebarOpen(false)}
@@ -297,6 +303,12 @@ export function DashboardLayout() {
             >
               <NavIcon id="nav.adminDataHealth" />
                 <span className="nav-txt">{t('nav.adminDataHealth')}</span>
+              {healthRed > 0 && (
+                <span aria-label={`${healthRed} data sources out of date`}
+                  style={{ marginInlineStart: 'auto', background: '#c62828', color: '#fff', borderRadius: 999, padding: '0 7px', fontSize: 12, fontWeight: 700, lineHeight: '18px' }}>
+                  {healthRed}
+                </span>
+              )}
             </NavLink>
             )}
           </>
@@ -312,6 +324,7 @@ export function DashboardLayout() {
 
   const main = (
     <main className="dashboard-main">
+      <DataHealthBanner canManage={canManageUsers && !isPreviewing} />
       {!dataHealth.ok && dataHealth.messageKey && (
         <div className="status-msg error" style={{ margin: '0 0 12px' }}>
           {t(dataHealth.messageKey)}

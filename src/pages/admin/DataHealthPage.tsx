@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useDataHealthIncidents, useDataHealthRules, useDataHealthStatuses } from '../../hooks/useDataHealth'
+import { useDataHealthIncidents, useDataHealthRules, useDataHealthSendState, useDataHealthStatuses } from '../../hooks/useDataHealth'
 import { acknowledgeIncident, type StatusRow } from '../../lib/dataHealth/api'
 import { monthlyStats, redSegments } from '../../lib/dataHealth/timeline'
 
-// Data health monitor page (super-admin). Spec: docs/superpowers/specs/2026-10-03-data-health-monitor-design.md
+// Data health monitor page (admin and super-admin). Spec: docs/superpowers/specs/2026-10-03-data-health-monitor-design.md
 const COLOUR: Record<StatusRow['status'], string> = { green: '#2e7d32', amber: '#ed8c00', red: '#c62828', grey: '#9e9e9e' }
 const age = (h: number | null) => (h === null ? '-' : h < 48 ? `${Math.round(h)} h` : `${Math.round(h / 24)} d`)
 
@@ -13,6 +13,7 @@ export function DataHealthPage() {
   const statuses = useDataHealthStatuses()
   const rules = useDataHealthRules()
   const incidents = useDataHealthIncidents(days)
+  const sendState = useDataHealthSendState(true)
   const qc = useQueryClient()
   const ack = useMutation({
     mutationFn: ({ id, notes }: { id: number; notes: string | null }) => acknowledgeIncident(id, notes),
@@ -39,7 +40,14 @@ export function DataHealthPage() {
       <div>
         <h1 className="text-xl font-semibold">Data health</h1>
         <p className="text-sm text-gray-500">
-          Checked every 30 min, Sun–Fri 07:00–22:00. Last check: {lastEval ? new Date(lastEval).toLocaleString() : 'not yet'}.
+          Checked every 30 min. New alerts open Sun–Fri 07:00–22:00; a refreshed file closes its incident at any hour. Last check: {lastEval ? new Date(lastEval).toLocaleString() : 'not yet'}.
+        </p>
+        <p className="text-sm" style={{ color: sendState.data?.last_send_error ? COLOUR.amber : '#6b7280' }}>
+          {sendState.data?.last_send_error
+            ? `Email alerts are NOT being delivered (${sendState.data.last_send_error}). Alerts show in the app only.`
+            : sendState.data?.last_send_at
+              ? `Email alerts to ${sendState.data.recipients.join(', ')} are working (last sent ${new Date(sendState.data.last_send_at).toLocaleString()}).`
+              : 'Email alerts: nothing sent yet.'}
         </p>
       </div>
 

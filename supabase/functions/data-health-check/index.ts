@@ -3,7 +3,7 @@
 // sends email via Resend, sends the daily summary once per working day, prunes old observations.
 // Spec: docs/superpowers/specs/2026-10-03-data-health-monitor-design.md
 import { createClient } from 'npm:@supabase/supabase-js@2'
-import { evaluate, localParts, type Rule, type Latest, type SyncLog, type Status } from './evaluate.ts'
+import { evaluate, localParts, type Rule, type Latest, type SyncLog, type Status, type ContentItem } from './evaluate.ts'
 import { planIncidents, type OpenIncident } from './incidents.ts'
 import { alertEmail, resolvedEmail, summaryEmail, type Email } from './emails.ts'
 
@@ -20,12 +20,13 @@ Deno.serve(async () => {
   const now = new Date()
   const log: string[] = []
 
-  const [rulesQ, latestQ, syncQ, openQ, setQ] = await Promise.all([
+  const [rulesQ, latestQ, syncQ, openQ, setQ, contentQ] = await Promise.all([
     sb.from('source_files').select('*'),
     sb.rpc('data_health_latest'),
     sb.from('sync_logs').select('id, started_at, status').order('started_at', { ascending: false }).limit(50),
     sb.from('data_health_incidents').select('id, check_key, opened_at, acknowledged_at, last_notified_at, reason').is('closed_at', null),
     sb.from('data_health_settings').select('*').eq('id', true).single(),
+    sb.rpc('data_health_content'), // newest date inside the loaded tables; optional (older databases lack it)
   ])
   for (const q of [rulesQ, latestQ, syncQ, openQ, setQ]) if (q.error) return json({ error: q.error.message }, 500)
   const rules = rulesQ.data as Rule[]
@@ -36,22 +37,27 @@ Deno.serve(async () => {
   const ruleByKey = new Map(rules.map(r => [r.file_name, r]))
   const ignoreCalendar = settings.ignore_calendar === true // test switch, set only via SQL
 
-  const { statuses, unruled } = evaluate({ rules, latest: latestQ.data as Latest[], syncLogs: syncQ.data as SyncLog[], now, ignoreCalendar })
+  const content: ContentItem[] = contentQ.error ? [] : ((contentQ.data ?? []) as ContentItem[])
+  if (contentQ.error) log.push(`content checks unavailable: ${contentQ.error.message}`)
+  const { statuses, unruled } = evaluate({ rules, latest: latestQ.data as Latest[], syncLogs: syncQ.data as SyncLog[], now, ignoreCalendar, content })
   if (statuses.length) {
     const up = await sb.from('source_file_status').upsert(statuses.map(s => ({ ...s, evaluated_at: now.toISOString() })))
     if (up.error) return json({ error: up.error.message }, 500)
   }
 
+  // Every email attempt is remembered (data_health_settings.last_send_*): a missing key or a refused send must never be silent again.
+  let sendError: string | null = null, sendTried = false, sendOk = false
   const send = async (e: Email): Promise<boolean> => {
     if (!settings.enabled || !settings.recipients.length) return false
+    sendTried = true
     const key = Deno.env.get('RESEND_API_KEY')
-    if (!key) { log.push('RESEND_API_KEY missing'); return false }
+    if (!key) { sendError = 'RESEND_API_KEY is not set - alerts are shown in the app only'; if (log.length < 5) log.push(sendError); return false }
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ from: settings.from_address, to: settings.recipients, subject: e.subject, text: e.text, html: e.html }),
     })
-    if (!r.ok) log.push(`resend ${r.status}: ${await r.text()}`)
+    if (!r.ok) { sendError = `resend ${r.status}: ${(await r.text()).slice(0, 300)}`; if (log.length < 5) log.push(sendError) } else sendOk = true
     return r.ok
   }
   const ruleFor = (s: Status) => ruleByKey.get(s.file_name ?? '')
@@ -86,6 +92,12 @@ Deno.serve(async () => {
     if (summarySent) await sb.from('data_health_settings').update({ last_summary_date: local.date }).eq('id', true)
     await sb.from('source_file_observations').delete().lt('observed_at', new Date(now.getTime() - 365 * 86_400_000).toISOString())
   }
+
+  // Heartbeat + outcome of the email attempts of this run (the app shows "monitor stopped" / "email not working" from these).
+  await sb.from('data_health_settings').update({
+    last_run_at: now.toISOString(),
+    ...(sendTried ? { last_send_at: now.toISOString(), last_send_error: sendOk ? null : sendError } : {}),
+  }).eq('id', true)
 
   return json({ evaluated: statuses.length, opened: plan.open.length, reminded: plan.remind.length,
     closed: plan.close.length, summarySent, unruled, log })

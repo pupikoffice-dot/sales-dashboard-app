@@ -71,7 +71,7 @@ function ProtectedApp() {
         {isSuperAdmin && <Route path="admin/classes" element={<ClassesPage />} />}
         {isSuperAdmin && <Route path="admin/modules" element={<ModulesPage />} />}
         {isSuperAdmin && <Route path="admin/chains" element={<ChainsPage />} />}
-        {isSuperAdmin && <Route path="admin/data-health" element={<DataHealthPage />} />}
+        {canManageUsers && <Route path="admin/data-health" element={<DataHealthPage />} />}
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

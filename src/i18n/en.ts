@@ -151,6 +151,13 @@ export const messages = {
   'nav.adminModules': 'Admin — Modules',
   'nav.adminChains': 'Admin — Chains',
   'nav.adminDataHealth': 'Admin — Data health',
+  'dh.userNotice': 'Data may be out of date. Newer data is expected for:',
+  'dh.lastUpdated': 'Last updated',
+  'dh.adminBar': 'Data sources out of date:',
+  'dh.open': 'Open Data health',
+  'dh.monitorStale': 'The data monitor has not run since',
+  'dh.monitorNever': 'The data monitor has not reported yet.',
+  'dh.emailBroken': 'Alert emails are not being delivered, so alerts show here only:',
 
   'header.title': 'Management Dashboard',
   'header.versionLabel': 'App version {version}',
