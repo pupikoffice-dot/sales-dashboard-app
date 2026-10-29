@@ -1,5 +1,6 @@
 /** Admin -> Chains: the one place chains and their stores are maintained (super admin). */
 import { supabase } from './supabase'
+import type { MessageKey } from '../i18n/types'
 
 export interface AdminChain {
   id: string
@@ -58,6 +59,25 @@ export function addChainStores(chainId: string, company: string, ids: string[], 
 
 export function removeChainStore(company: string, clientId: string): Promise<{ ok?: boolean }> {
   return call('admin_remove_chain_store', { p_company: company, p_client_id: clientId })
+}
+
+/** Remove every store of one chain from ONE company (super admin; the database scopes it to chain + company). Returns how many were removed. */
+export async function removeAllChainStores(chainId: string, company: string): Promise<number> {
+  const n = await call<number | null>('remove_chain_stores', { p_chain_id: chainId, p_company: company })
+  if (n == null) throw new Error('Not allowed.')
+  return n
+}
+
+type Translate = (key: MessageKey, vars?: Record<string, string | number>) => string
+
+/** The confirmation text: chain, company, exact count, and that other companies stay as they are. */
+export function removeAllConfirmText(t: Translate, chain: string, company: string, count: number): string {
+  return t('chains.removeAllConfirm', { chain, company, count })
+}
+
+/** The result line after the removal, e.g. "63 stores removed from Pupik". */
+export function removeAllResultText(t: Translate, company: string, count: number): string {
+  return t('chains.removeAllDone', { count, company })
 }
 
 export async function searchStores(company: string, query: string): Promise<StoreHit[]> {
