@@ -16,6 +16,7 @@ import { fmt, formatGeneratedDisplay } from '../lib/format'
 import type { LogicalCompany } from '../types/dashboard'
 import { DebtModal } from '../components/oversite/DebtModal'
 import { DeliveryNotesModal } from '../components/oversite/DeliveryNotesModal'
+import { MtdClientLedger } from '../components/oversite/MtdClientLedger'
 import { OversiteDebtSummary } from '../components/oversite/OversiteDebtSummary'
 import { OrdersTodayModal } from '../components/oversite/OrdersTodayModal'
 import { StockAlertsPanel } from '../components/oversite/StockAlertsPanel'
@@ -465,6 +466,7 @@ function ClassicOversitePage({
                         📄 {t('oversite.deliveryNotes')} · {fmt(delivery720Mtd.cash)}
                       </button>
                     ) : null}
+                    <MtdClientLedger company={co.id} />
                   </OversiteSection>
               )
             }
