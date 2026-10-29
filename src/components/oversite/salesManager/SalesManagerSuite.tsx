@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { MtdClientLedger } from '../MtdClientLedger'
 import { useAuth } from '../../../context/AuthContext'
 import { useDashboardAccess } from '../../../context/DashboardAccessContext'
 import { useLocale } from '../../../context/LocaleContext'
@@ -635,6 +636,7 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
                       })}
                     </div>
                   )}
+                  <MtdClientLedger company={company} />
                   {showTsomet ? (
                     <div className="bi-tsomet-wide">
                       <BiTsometBudgetCube
