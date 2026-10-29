@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { evaluate, effectiveAgeHours, localParts, type Rule, type Latest, type SyncLog } from '../../../supabase/functions/data-health-check/evaluate.ts'
+import { evaluate, effectiveAgeHours, localParts, workdayLag, type Rule, type Latest, type SyncLog } from '../../../supabase/functions/data-health-check/evaluate.ts'
 
 // Israel is UTC+3 (IDT) on these dates. 2026-10-03 is a Saturday.
 const at = (iso: string) => new Date(iso)
@@ -36,9 +36,24 @@ describe('effectiveAgeHours', () => {
 })
 
 describe('evaluate', () => {
-  it('returns nothing on Saturday or outside 07:00-22:00', () => {
-    expect(evaluate({ rules: [rule({})], latest: [obs({})], syncLogs: okSync, now: at('2026-10-03T09:00:00Z') }).statuses).toEqual([])
-    expect(evaluate({ rules: [rule({})], latest: [obs({})], syncLogs: okSync, now: at('2026-10-04T20:00:00Z') }).statuses).toEqual([])
+  it('on Saturday or outside 07:00-22:00 a STALE file writes nothing (nobody can act)', () => {
+    const stale = obs({ modified_at: '2026-10-01T09:00:00Z' })
+    const quiet = (iso: string) => evaluate({ rules: [rule({})], latest: [stale], syncLogs: okSync, now: at(iso) }).statuses.filter(s => s.status === 'red' || s.status === 'amber')
+    expect(quiet('2026-10-03T09:00:00Z')).toEqual([])
+    expect(quiet('2026-10-04T20:00:00Z')).toEqual([])
+  })
+  it('on Saturday or at night a REFRESHED file is still written green, so its incident closes (rep891 case 2026-10-29)', () => {
+    const fresh = obs({ modified_at: '2026-10-03T08:30:00Z' })
+    const sat = byKey(evaluate({ rules: [rule({})], latest: [fresh], syncLogs: okSync, now: at('2026-10-03T09:00:00Z') }))
+    expect(sat['x.xls'].status).toBe('green')
+    const night = byKey(evaluate({ rules: [rule({})], latest: [obs({ modified_at: '2026-10-04T19:30:00Z' })], syncLogs: okSync, now: at('2026-10-04T20:00:00Z') }))
+    expect(night['x.xls'].status).toBe('green')
+  })
+  it('a refreshed file outside its own rule window closes, a stale one does not open', () => {
+    const now = at('2026-10-04T05:00:00Z') // Sun 08:00, window 10:00-21:00
+    const w = { eval_from: '10:00', eval_to: '21:00' }
+    expect(byKey(evaluate({ rules: [rule(w)], latest: [obs({ modified_at: '2026-10-04T04:30:00Z' })], syncLogs: okSync, now }))['x.xls'].status).toBe('green')
+    expect(byKey(evaluate({ rules: [rule(w)], latest: [obs({ modified_at: '2026-10-02T10:00:00Z' })], syncLogs: okSync, now }))['x.xls']).toBeUndefined()
   })
   it('ignoreCalendar (test switch) evaluates on Saturday and outside rule windows', () => {
     const now = at('2026-10-03T09:00:00Z') // Saturday 12:00
@@ -63,8 +78,8 @@ describe('evaluate', () => {
   })
   it('nightly rule: red if not modified today after 04:30', () => {
     const nightly = rule({ rule_kind: 'nightly', max_age_hours: null, eval_from: '04:30', file_group: 'nightly_aski' })
-    const early = at('2026-10-04T03:00:00Z') // Sun 06:00 local, before 07:00 -> skipped
-    expect(evaluate({ rules: [nightly], latest: [obs({})], syncLogs: okSync, now: early }).statuses).toEqual([])
+    const early = at('2026-10-04T00:30:00Z') // Sun 03:30 local, before the rule's 04:30 start -> no verdict at all
+    expect(byKey(evaluate({ rules: [nightly], latest: [obs({})], syncLogs: okSync, now: early }))['x.xls']).toBeUndefined()
     const later = at('2026-10-04T05:00:00Z') // Sun 08:00
     const old = byKey(evaluate({ rules: [nightly], latest: [obs({ modified_at: '2026-10-02T00:36:00Z' })], syncLogs: okSync, now: later }))['x.xls']
     const fresh = byKey(evaluate({ rules: [nightly], latest: [obs({ modified_at: '2026-10-04T00:36:00Z' })], syncLogs: okSync, now: later }))['x.xls']
@@ -108,5 +123,40 @@ describe('evaluate', () => {
   it('reports processed files without a rule as unruled', () => {
     const res = evaluate({ rules: [], latest: [obs({ file_name: 'new.xls' }), obs({ file_name: 'skip.xls', processed: false })], syncLogs: okSync, now: at('2026-10-04T10:00:00Z') })
     expect(res.unruled).toEqual(['new.xls'])
+  })
+  it('coverage guard: a loaded file without a rule is amber after a day and red after three; a skipped file never is', () => {
+    const now = at('2026-10-04T10:00:00Z')
+    const run = (firstSeen: string, processed = true) => byKey(evaluate({ rules: [], syncLogs: okSync, now,
+      latest: [obs({ file_name: 'new.xls', first_seen: firstSeen, processed })] }))['coverage:new.xls']
+    expect(run('2026-10-04T05:00:00Z')).toBeUndefined()          // 5 h: grace period
+    expect(run('2026-10-03T05:00:00Z').status).toBe('amber')     // 29 h
+    expect(run('2026-10-01T05:00:00Z').status).toBe('red')       // 3+ days
+    expect(run('2026-10-01T05:00:00Z', false)).toBeUndefined()   // not loaded by the sync: not our data
+  })
+})
+
+describe('workdayLag', () => {
+  it('counts working days after the newest date, Saturday excluded', () => {
+    expect(workdayLag('2026-10-28', '2026-10-29')).toBe(1)
+    expect(workdayLag('2026-10-26', '2026-10-28')).toBe(2)
+    expect(workdayLag('2026-10-30', '2026-11-01')).toBe(1) // Fri data, Sunday: Saturday does not count
+    expect(workdayLag('2026-10-29', '2026-10-29')).toBe(0)
+  })
+})
+
+describe('content freshness', () => {
+  const item = (newest: string | null) => ({ check_key: 'content:rep891pupik:pupik', file_group: 'content', company: 'pupik', label: 'sales (891)', newest })
+  const run = (newest: string | null, nowIso: string) => byKey(evaluate({ rules: [], latest: [], syncLogs: okSync, now: at(nowIso), content: [item(newest)] }))['content:rep891pupik:pupik']
+  it('yesterday is fine; two working days behind is red (the 26 Oct rep891 case)', () => {
+    expect(run('2026-10-28', '2026-10-29T08:00:00Z')?.status).toBe('green')   // Thu 11:00
+    expect(run('2026-10-26', '2026-10-28T08:00:00Z')?.status).toBe('red')     // Wed 11:00, data stuck on Monday
+  })
+  it('a red result is only recorded inside 10:00-21:00 on a working day', () => {
+    expect(run('2026-10-26', '2026-10-28T05:00:00Z')).toBeUndefined()         // 08:00
+    expect(run('2026-10-26', '2026-10-31T09:00:00Z')).toBeUndefined()         // Saturday 12:00
+    expect(run('2026-10-29', '2026-10-28T05:00:00Z')?.status).toBe('green')   // green always recorded
+  })
+  it('nothing loaded at all is red', () => {
+    expect(run(null, '2026-10-28T08:00:00Z')?.status).toBe('red')
   })
 })

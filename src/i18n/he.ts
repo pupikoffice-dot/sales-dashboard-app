@@ -153,6 +153,13 @@ export const messages: Record<keyof typeof en, string> = {
   'nav.adminModules': 'ניהול — מודולים',
   'nav.adminChains': 'ניהול — רשתות',
   'nav.adminDataHealth': 'ניהול — תקינות נתונים',
+  'dh.userNotice': 'ייתכן שהנתונים אינם מעודכנים. צפויים נתונים חדשים עבור:',
+  'dh.lastUpdated': 'עודכן לאחרונה',
+  'dh.adminBar': 'מקורות נתונים שאינם מעודכנים:',
+  'dh.open': 'פתח תקינות נתונים',
+  'dh.monitorStale': 'מנגנון בדיקת הנתונים לא רץ מאז',
+  'dh.monitorNever': 'מנגנון בדיקת הנתונים עדיין לא דיווח.',
+  'dh.emailBroken': 'הודעות האימייל לא נשלחות, ולכן ההתראות מוצגות כאן בלבד:',
 
   'header.title': 'לוח ניהול',
   'header.versionLabel': 'גרסת אפליקציה {version}',
