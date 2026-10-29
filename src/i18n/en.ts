@@ -583,4 +583,8 @@ export const messages = {
   'month.oct': 'Oct',
   'month.nov': 'Nov',
   'month.dec': 'Dec',
+  'chains.removeAll': 'Remove all stores of {chain} from {company}',
+  'chains.removeAllConfirm': 'Remove all {count} stores of {chain} from {company}?\n\nThis only affects {company}. The chain {chain} itself and its stores in other companies are not changed.',
+  'chains.removeAllDone': '{count} stores removed from {company}',
+  'chains.removeAllNone': 'No stores to remove in {company}',
 } as const

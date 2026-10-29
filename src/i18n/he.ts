@@ -584,4 +584,8 @@ export const messages: Record<keyof typeof en, string> = {
   'month.oct': 'אוק׳',
   'month.nov': 'נוב׳',
   'month.dec': 'דצמ׳',
+  'chains.removeAll': 'הסר את כל החנויות של {chain} מ-{company}',
+  'chains.removeAllConfirm': 'להסיר את כל {count} החנויות של {chain} מ-{company}?\n\nהפעולה משפיעה רק על {company}. הרשת {chain} עצמה והחנויות שלה בחברות אחרות לא ישתנו.',
+  'chains.removeAllDone': '{count} חנויות הוסרו מ-{company}',
+  'chains.removeAllNone': 'אין חנויות להסרה ב-{company}',
 }

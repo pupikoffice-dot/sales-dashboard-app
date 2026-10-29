@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { SortTh, useSortedRows } from '../../components/rnd/sortRows'
 import { useDebounced } from '../../components/rnd/PurchaseSearch'
+import { useLocale } from '../../context/LocaleContext'
 import { companyLabel } from '../../lib/salesMetrics'
 import {
   addChainStores,
@@ -10,6 +11,9 @@ import {
   deleteChain,
   listChains,
   parseClientNumbers,
+  removeAllChainStores,
+  removeAllConfirmText,
+  removeAllResultText,
   removeChainStore,
   saveChain,
   searchStores,
@@ -21,6 +25,7 @@ const COMPANIES: LogicalCompany[] = ['pupik', 'mt', 'grow', 'gold']
 /** Admin -> Chains: the one place chains and their stores are kept. The Client card, the B2B portal and later builds read from here. */
 export function ChainsPage() {
   const qc = useQueryClient()
+  const { t, dir } = useLocale()
   const chains = useQuery({ queryKey: ['admin-chains'], queryFn: listChains })
   const [chainId, setChainId] = useState<string | null>(null)
   const [company, setCompany] = useState<LogicalCompany>('mt')
@@ -107,6 +112,16 @@ export function ChainsPage() {
     onError: e => setMsg((e as Error).message),
   })
 
+  const removeAll = useMutation({
+    mutationFn: () => removeAllChainStores(chainId as string, company),
+    onSuccess: n => {
+      setMsg(removeAllResultText(t, companyLabel(company), n))
+      refresh()
+    },
+    onError: e => setMsg((e as Error).message),
+  })
+  const companyCount = chain?.companies[company] ?? 0
+
   const pick = (id: string) => {
     setChainId(id)
     setRename(list.find(c => c.id === id)?.name ?? '')
@@ -189,6 +204,20 @@ export function ChainsPage() {
                     {companyLabel(c)} ({chain.companies[c] ?? 0})
                   </button>
                 ))}
+              </div>
+
+              <div style={{ marginBottom: 12 }} dir={dir}>
+                <button
+                  type="button"
+                  className="chip"
+                  disabled={companyCount === 0 || removeAll.isPending}
+                  title={companyCount === 0 ? t('chains.removeAllNone', { company: companyLabel(company) }) : undefined}
+                  onClick={() => {
+                    if (window.confirm(removeAllConfirmText(t, chain.name, companyLabel(company), companyCount))) removeAll.mutate()
+                  }}
+                >
+                  {t('chains.removeAll', { chain: chain.name, company: companyLabel(company) })} ({companyCount})
+                </button>
               </div>
 
               {msg ? <p className="status-msg">{msg}</p> : null}
