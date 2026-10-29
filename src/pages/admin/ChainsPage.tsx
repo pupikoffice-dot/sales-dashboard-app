@@ -15,6 +15,8 @@ import {
   removeAllConfirmText,
   removeAllResultText,
   removeChainStore,
+  listRemovalLog,
+  typedConfirmMatches,
   saveChain,
   searchStores,
 } from '../../lib/chainAdmin'
@@ -36,6 +38,9 @@ export function ChainsPage() {
   const [paste, setPaste] = useState('')
   const [move, setMove] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [typed, setTyped] = useState('')
+  const [logOpen, setLogOpen] = useState(false)
 
   const list = chains.data ?? []
   const chain = list.find(c => c.id === chainId) ?? null
@@ -116,14 +121,20 @@ export function ChainsPage() {
     mutationFn: () => removeAllChainStores(chainId as string, company),
     onSuccess: n => {
       setMsg(removeAllResultText(t, companyLabel(company), n))
+      setConfirmOpen(false)
+      setTyped('')
       refresh()
+      void qc.invalidateQueries({ queryKey: ['admin-chain-removal-log'] })
     },
     onError: e => setMsg((e as Error).message),
   })
+  const removalLog = useQuery({ queryKey: ['admin-chain-removal-log'], queryFn: listRemovalLog, enabled: logOpen })
   const companyCount = chain?.companies[company] ?? 0
 
   const pick = (id: string) => {
     setChainId(id)
+    setConfirmOpen(false)
+    setTyped('')
     setRename(list.find(c => c.id === id)?.name ?? '')
     setMsg(null)
   }
@@ -213,12 +224,56 @@ export function ChainsPage() {
                   disabled={companyCount === 0 || removeAll.isPending}
                   title={companyCount === 0 ? t('chains.removeAllNone', { company: companyLabel(company) }) : undefined}
                   onClick={() => {
-                    if (window.confirm(removeAllConfirmText(t, chain.name, companyLabel(company), companyCount))) removeAll.mutate()
+                    setTyped('')
+                    setConfirmOpen(true)
                   }}
                 >
                   {t('chains.removeAll', { chain: chain.name, company: companyLabel(company) })} ({companyCount})
                 </button>
               </div>
+
+              {confirmOpen ? (
+                <div className="debt-overlay" dir={dir} onClick={e => e.target === e.currentTarget && setConfirmOpen(false)}>
+                  <div className="debt-modal admin-modal" role="dialog" aria-modal="true">
+                    <div className="debt-modal-hdr">
+                      <span>{t('chains.removeAll', { chain: chain.name, company: companyLabel(company) })}</span>
+                      <button type="button" className="debt-modal-close" onClick={() => setConfirmOpen(false)}>
+                        {t('chains.cancel')}
+                      </button>
+                    </div>
+                    <div className="debt-modal-body">
+                      <div className="admin-form">
+                        <p style={{ whiteSpace: 'pre-line', margin: 0 }}>{removeAllConfirmText(t, chain.name, companyLabel(company), companyCount)}</p>
+                        <label>
+                          {t('chains.removeAllTypeLabel', { chain: chain.name })}
+                          <input
+                            className="sbar-search block-input"
+                            type="text"
+                            value={typed}
+                            onChange={e => setTyped(e.target.value)}
+                            autoComplete="off"
+                            autoFocus
+                            aria-label={t('chains.removeAllTypeLabel', { chain: chain.name })}
+                          />
+                        </label>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button
+                            type="button"
+                            className="chip active"
+                            disabled={!typedConfirmMatches(typed, chain.name) || removeAll.isPending}
+                            onClick={() => removeAll.mutate()}
+                          >
+                            {t('chains.removeAllButton', { count: companyCount })}
+                          </button>
+                          <button type="button" className="chip" onClick={() => setConfirmOpen(false)}>
+                            {t('chains.cancel')}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
 
               {msg ? <p className="status-msg">{msg}</p> : null}
 
@@ -307,6 +362,39 @@ export function ChainsPage() {
           )}
         </section>
       </div>
+
+      <details style={{ marginTop: 16 }} dir={dir} open={logOpen} onToggle={e => setLogOpen((e.currentTarget as HTMLDetailsElement).open)}>
+        <summary style={{ cursor: 'pointer', fontWeight: 600 }}>{t('chains.log')}</summary>
+        {removalLog.isLoading ? <p className="status-msg">…</p> : null}
+        {removalLog.error ? <p className="status-msg error">{(removalLog.error as Error).message}</p> : null}
+        {removalLog.isSuccess && !removalLog.data.length ? <p className="status-msg">{t('chains.logEmpty')}</p> : null}
+        {removalLog.data?.length ? (
+          <div className="tw">
+            <table>
+              <thead>
+                <tr>
+                  <th>{t('chains.logWhen')}</th>
+                  <th>{t('chains.logWho')}</th>
+                  <th>{t('chains.logChain')}</th>
+                  <th>{t('chains.logCompany')}</th>
+                  <th>{t('chains.logCount')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {removalLog.data.map(r => (
+                  <tr key={r.id}>
+                    <td>{new Date(r.removed_at).toLocaleString()}</td>
+                    <td>{r.removed_by_email ?? '—'}</td>
+                    <td>{r.chain_name ?? r.chain_id}</td>
+                    <td>{companyLabel(r.company as LogicalCompany)}</td>
+                    <td>{r.removed_count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
+      </details>
     </div>
   )
 }
