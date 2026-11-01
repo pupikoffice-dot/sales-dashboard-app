@@ -30,6 +30,7 @@ import { SmAgentWindowWithTsomet, SmVsCompanyViewWithTsomet } from './SmAgentWin
 import { SmItemsReportModal } from './SmItemsReportModal'
 import { SmOpenOrdersReportModal } from './SmOpenOrdersReportModal'
 import { SmReceiptsReportModal } from './SmReceiptsReportModal'
+import { MtdLedgerModal } from './MtdLedgerModal'
 import { SmVsCompanyView } from './SmVsCompanyView'
 import type { OversightLayoutPreference } from '../../../lib/oversightLayouts'
 import { OversightLayoutToggle, type OversightLayoutOption } from '../OversightLayoutToggle'
@@ -169,6 +170,11 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
     variant?: 'agent' | 'manager'
   } | null>(null)
   const [receiptsModal, setReceiptsModal] = useState<{
+    title: string
+    company: LogicalCompany
+    agents: string[] | null
+  } | null>(null)
+  const [salesModal, setSalesModal] = useState<{
     title: string
     company: LogicalCompany
     agents: string[] | null
@@ -354,6 +360,18 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
     })
   }
 
+  const openSalesReport = (
+    company: LogicalCompany,
+    agents: string[] | null,
+    windowTitle: string,
+  ) => {
+    setSalesModal({
+      title: `${t('mtdLedger.title')} — ${windowTitle}`,
+      company,
+      agents,
+    })
+  }
+
   const modalRows: SalesRow[] = useMemo(() => {
     if (!ordersModal) return []
     if (!ordersModal.agents || ordersModal.agents.length === 0) return rows
@@ -441,8 +459,8 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
               return (
                 <section key={company} id={companyAnchorId(company)} className="sm-company-block">
                   <h3 className="sm-company-title">{label}</h3>
-                  {/* Overall extended report (the user's whole scope). An agent with one agent number gets it in that window only. */}
-                  {!isAgentSuite || agentWindows.length > 1 ? <MtdClientLedger company={company} /> : null}
+                  {/* Sales MTD extended report: a "full report" button on each Sales MTD tile. The Vs view has no windows, so it keeps the dropdown. */}
+                  {effectiveViewMode === 'vs' && !isAgentSuite ? <MtdClientLedger company={company} /> : null}
                   {isAgentSuite ? (
                     <div className="sm-suite-windows">
                       {agentWindows.map(({ agentId, kpis, goalCash }) => {
@@ -460,7 +478,7 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
                             showDeliveryNotes={showDeliveryNotes}
                             deliveryContextLabel={`${label} — ${winTitle}`}
                             agentId={agentId}
-                            footer={<MtdClientLedger company={company} agents={[agentId]} label={winTitle} />}
+                            onOpenSalesReport={() => openSalesReport(company, [agentId], `${label} — ${winTitle}`)}
                             hideOrders7Days
                             receiptsCurrentMonthOnly
                             showYearNetSales={showYearNetSales}
@@ -571,6 +589,7 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
                         onOpenReceiptsReport={() =>
                           openReceiptsReport(company, allAgentsScope, `${label} — ${allTitle}`)
                         }
+                        onOpenSalesReport={() => openSalesReport(company, allAgentsScope, `${label} — ${allTitle}`)}
                         biBlock={
                           <SuiteExtrasBlock
                             biVisibleIds={visibleBiIds}
@@ -602,7 +621,7 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
                             showDeliveryNotes={showDeliveryNotes}
                             deliveryContextLabel={`${label} — ${winTitle}`}
                             agentId={agentId}
-                            footer={<MtdClientLedger company={company} agents={[agentId]} label={winTitle} />}
+                            onOpenSalesReport={() => openSalesReport(company, [agentId], `${label} — ${winTitle}`)}
                             showYearNetSales={showYearNetSales}
                             suiteBoard={suiteBoard}
                             arrange={arrange}
@@ -702,6 +721,15 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
           company={receiptsModal.company}
           agents={receiptsModal.agents}
           onClose={() => setReceiptsModal(null)}
+        />
+      ) : null}
+
+      {salesModal ? (
+        <MtdLedgerModal
+          title={salesModal.title}
+          company={salesModal.company}
+          agents={salesModal.agents}
+          onClose={() => setSalesModal(null)}
         />
       ) : null}
     </div>
