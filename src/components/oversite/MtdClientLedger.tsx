@@ -20,8 +20,19 @@ import type { LogicalCompany } from '../../types/dashboard'
  * when expanded. The database decides what the user may see; "View as" passes the previewed user so a super admin
  * sees exactly that user's scope.
  */
-export function MtdClientLedger({ company }: { company: LogicalCompany }) {
+export function MtdClientLedger({
+  company,
+  agents,
+  label,
+}: {
+  company: LogicalCompany
+  /** Narrow to these agents (an agent window of the Sales Manager suite). Only ever narrows: the database keeps the caller's own scope. */
+  agents?: string[]
+  /** Shown after the title, e.g. the agent this dropdown belongs to. */
+  label?: string
+}) {
   const { t } = useLocale()
+  const agentsKey = (agents ?? []).join(',')
   const { isPreviewing, previewUser } = usePreview()
   const asUser = isPreviewing ? (previewUser?.id ?? null) : null
   const [open, setOpen] = useState(false)
@@ -34,15 +45,15 @@ export function MtdClientLedger({ company }: { company: LogicalCompany }) {
     const id = setTimeout(() => setQuery(search), 300)
     return () => clearTimeout(id)
   }, [search])
-  useEffect(() => setPages(1), [query, company, asUser])
+  useEffect(() => setPages(1), [query, company, asUser, agentsKey])
 
   const limit = pages * MTD_LEDGER_PAGE
   const q = useQuery({
-    queryKey: ['mtd-ledger', company, query, limit, asUser],
+    queryKey: ['mtd-ledger', company, query, limit, asUser, agentsKey],
     queryFn: async () => {
       // Pages are fetched cumulatively (offset 0..limit) so "show more" keeps earlier rows without extra state.
       const out = await Promise.all(
-        Array.from({ length: pages }, (_, i) => fetchMtdLedger(company, query, i * MTD_LEDGER_PAGE, asUser)),
+        Array.from({ length: pages }, (_, i) => fetchMtdLedger(company, query, i * MTD_LEDGER_PAGE, asUser, agents)),
       )
       return { total: out[0]?.total ?? 0, rows: out.flatMap(p => p.rows) }
     },
@@ -61,7 +72,7 @@ export function MtdClientLedger({ company }: { company: LogicalCompany }) {
         aria-expanded={open}
         onClick={() => setOpen(v => !v)}
       >
-        📒 {t('mtdLedger.title')} {open ? '▴' : '▾'}
+        📒 {t('mtdLedger.title')}{label ? ` · ${label}` : ''} {open ? '▴' : '▾'}
       </button>
       {open ? (
         <div className="ov-drop mtdl-body">
@@ -90,7 +101,7 @@ export function MtdClientLedger({ company }: { company: LogicalCompany }) {
                 </thead>
                 <tbody>
                   {rows.map(c => (
-                    <ClientRows key={c.clientID} company={company} client={c} asUser={asUser} />
+                    <ClientRows key={c.clientID} company={company} client={c} asUser={asUser} agents={agents} />
                   ))}
                 </tbody>
               </table>
@@ -112,12 +123,23 @@ export function MtdClientLedger({ company }: { company: LogicalCompany }) {
   )
 }
 
-function ClientRows({ company, client, asUser }: { company: LogicalCompany; client: MtdLedgerClient; asUser: string | null }) {
+function ClientRows({
+  company,
+  client,
+  asUser,
+  agents,
+}: {
+  company: LogicalCompany
+  client: MtdLedgerClient
+  asUser: string | null
+  agents?: string[]
+}) {
   const { t } = useLocale()
   const [open, setOpen] = useState(false)
+  const agentsKey = (agents ?? []).join(',')
   const inv = useQuery({
-    queryKey: ['mtd-ledger-invoices', company, client.clientID, asUser],
-    queryFn: () => fetchMtdInvoices(company, client.clientID, asUser),
+    queryKey: ['mtd-ledger-invoices', company, client.clientID, asUser, agentsKey],
+    queryFn: () => fetchMtdInvoices(company, client.clientID, asUser, agents),
     enabled: open,
     staleTime: 60_000,
   })
@@ -164,7 +186,7 @@ function ClientRows({ company, client, asUser }: { company: LogicalCompany; clie
                   </thead>
                   <tbody>
                     {inv.data.map(i => (
-                      <InvoiceRows key={invoiceKey(i)} company={company} clientId={client.clientID} invoice={i} asUser={asUser} />
+                      <InvoiceRows key={invoiceKey(i)} company={company} clientId={client.clientID} invoice={i} asUser={asUser} agents={agents} />
                     ))}
                   </tbody>
                 </table>
@@ -182,17 +204,20 @@ function InvoiceRows({
   clientId,
   invoice,
   asUser,
+  agents,
 }: {
   company: LogicalCompany
   clientId: string
   invoice: MtdLedgerInvoice
   asUser: string | null
+  agents?: string[]
 }) {
   const { t } = useLocale()
   const [open, setOpen] = useState(false)
+  const agentsKey = (agents ?? []).join(',')
   const lines = useQuery({
-    queryKey: ['mtd-ledger-lines', company, clientId, invoice.docType, invoice.docNum, asUser],
-    queryFn: () => fetchMtdInvoiceLines(company, clientId, invoice.docType, invoice.docNum, asUser),
+    queryKey: ['mtd-ledger-lines', company, clientId, invoice.docType, invoice.docNum, asUser, agentsKey],
+    queryFn: () => fetchMtdInvoiceLines(company, clientId, invoice.docType, invoice.docNum, asUser, agents),
     enabled: open,
     staleTime: 60_000,
   })

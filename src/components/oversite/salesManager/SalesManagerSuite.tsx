@@ -441,6 +441,8 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
               return (
                 <section key={company} id={companyAnchorId(company)} className="sm-company-block">
                   <h3 className="sm-company-title">{label}</h3>
+                  {/* Overall extended report (the user's whole scope). An agent with one agent number gets it in that window only. */}
+                  {!isAgentSuite || agentWindows.length > 1 ? <MtdClientLedger company={company} /> : null}
                   {isAgentSuite ? (
                     <div className="sm-suite-windows">
                       {agentWindows.map(({ agentId, kpis, goalCash }) => {
@@ -458,6 +460,7 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
                             showDeliveryNotes={showDeliveryNotes}
                             deliveryContextLabel={`${label} — ${winTitle}`}
                             agentId={agentId}
+                            footer={<MtdClientLedger company={company} agents={[agentId]} label={winTitle} />}
                             hideOrders7Days
                             receiptsCurrentMonthOnly
                             showYearNetSales={showYearNetSales}
@@ -599,6 +602,7 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
                             showDeliveryNotes={showDeliveryNotes}
                             deliveryContextLabel={`${label} — ${winTitle}`}
                             agentId={agentId}
+                            footer={<MtdClientLedger company={company} agents={[agentId]} label={winTitle} />}
                             showYearNetSales={showYearNetSales}
                             suiteBoard={suiteBoard}
                             arrange={arrange}
@@ -636,7 +640,6 @@ export function SalesManagerSuite({ variant = 'manager', layoutToggle }: SalesMa
                       })}
                     </div>
                   )}
-                  <MtdClientLedger company={company} />
                   {showTsomet ? (
                     <div className="bi-tsomet-wide">
                       <BiTsometBudgetCube

@@ -61,6 +61,7 @@ describe('fetchers go through the scoped database functions only', () => {
       p_limit: MTD_LEDGER_PAGE,
       p_offset: 50,
       p_as: 'user-1',
+      p_agents: null,
     })
     expect(from).not.toHaveBeenCalled()
   })
@@ -68,15 +69,42 @@ describe('fetchers go through the scoped database functions only', () => {
     rpc.mockResolvedValue({ data: [], error: null })
     await fetchMtdInvoices('mt', '123')
     await fetchMtdInvoiceLines('mt', '123', '11', '9')
-    expect(rpc).toHaveBeenNthCalledWith(1, 'get_mtd_client_invoices', { p_company: 'mt', p_client_id: '123', p_as: null })
+    expect(rpc).toHaveBeenNthCalledWith(1, 'get_mtd_client_invoices', { p_company: 'mt', p_client_id: '123', p_as: null, p_agents: null })
     expect(rpc).toHaveBeenNthCalledWith(2, 'get_mtd_invoice_lines', {
-      p_company: 'mt', p_client_id: '123', p_doc_type: '11', p_doc_num: '9', p_as: null,
+      p_company: 'mt', p_client_id: '123', p_doc_type: '11', p_doc_num: '9', p_as: null, p_agents: null,
     })
     expect(from).not.toHaveBeenCalled()
+  })
+  it('narrows every level to the given agents (and sends null for none)', async () => {
+    rpc.mockResolvedValue({ data: { total: 0, rows: [] }, error: null })
+    await fetchMtdLedger('pupik', '', 0, null, ['7', '9'])
+    await fetchMtdInvoices('pupik', '123', null, ['7'])
+    await fetchMtdInvoiceLines('pupik', '123', '11', '9', null, ['7'])
+    await fetchMtdLedger('pupik', '', 0, null, [])
+    expect(rpc).toHaveBeenNthCalledWith(1, 'get_mtd_client_ledger', expect.objectContaining({ p_agents: ['7', '9'] }))
+    expect(rpc).toHaveBeenNthCalledWith(2, 'get_mtd_client_invoices', expect.objectContaining({ p_agents: ['7'] }))
+    expect(rpc).toHaveBeenNthCalledWith(3, 'get_mtd_invoice_lines', expect.objectContaining({ p_agents: ['7'] }))
+    expect(rpc).toHaveBeenNthCalledWith(4, 'get_mtd_client_ledger', expect.objectContaining({ p_agents: null }))
   })
   it('surfaces database errors', async () => {
     rpc.mockResolvedValue({ data: null, error: new Error('boom') })
     await expect(fetchMtdLedger('pupik', '', 0)).rejects.toThrow('boom')
+  })
+})
+
+describe('agent filter migration can only narrow', () => {
+  it('intersects with the caller own agents, keeps the gate, replaces the old signatures', async () => {
+    const fs = await import('node:fs')
+    const path = await import('node:path')
+    const sql = fs.readFileSync(path.resolve(__dirname, '../../supabase/migrations/20261101100000_mtd_ledger_agent_filter.sql'), 'utf8')
+    expect(sql.match(/create or replace function public\.get_mtd_/g)).toHaveLength(3)
+    expect(sql.match(/drop function if exists public\.get_mtd_/g)).toHaveLength(3)
+    expect(sql.match(/mtd_ledger_gate\(p_company, p_as\)/g)).toHaveLength(3)
+    expect(sql.match(/select unnest\(acc\.agents\) intersect select unnest\(p_agents\)/g)).toHaveLength(3)
+    expect(sql.match(/any\(eff\)/g)).toHaveLength(4)
+    expect(sql).not.toContain('any(acc.agents)')
+    expect(sql.match(/s\.line_source ilike 'rep891%'/g)).toHaveLength(3)
+    expect(sql.match(/revoke all on function public\.get_mtd_\w+\([^)]*\) from public, anon;/g)).toHaveLength(3)
   })
 })
 

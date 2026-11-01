@@ -40,6 +40,8 @@ export interface SmAgentWindowProps {
   showDeliveryNotes?: boolean
   /** Company / window context for the delivery notes popup title. */
   deliveryContextLabel?: string
+  /** Rendered under the cube grid (the per-agent Sales MTD extended report). */
+  footer?: ReactNode
 }
 
 export function SmAgentWindow({
@@ -63,6 +65,7 @@ export function SmAgentWindow({
   arrange,
   showDeliveryNotes,
   deliveryContextLabel,
+  footer,
 }: SmAgentWindowProps) {
   return (
     <section className={`sm-window ${windowTintClass(agentId)}`}>
@@ -87,6 +90,7 @@ export function SmAgentWindow({
         showDeliveryNotes={showDeliveryNotes}
         deliveryContextLabel={deliveryContextLabel ?? title}
       />
+      {footer}
     </section>
   )
 }
