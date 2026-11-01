@@ -92,11 +92,18 @@ export function parseLedgerLines(raw: unknown): MtdLedgerLine[] {
 /** Stable key for one invoice (document type + number are only unique together). */
 export const invoiceKey = (inv: Pick<MtdLedgerInvoice, 'docType' | 'docNum'>): string => `${inv.docType}/${inv.docNum}`
 
+/**
+ * Agents to narrow a report to (one agent window of the Sales Manager suite). The database intersects them with the
+ * caller's own access, so they can only narrow what the caller may see. null = the caller's whole scope.
+ */
+export const agentList = (agents?: string[] | null): string[] | null => (agents && agents.length > 0 ? agents : null)
+
 export async function fetchMtdLedger(
   company: string,
   query: string,
   offset: number,
   asUser?: string | null,
+  agents?: string[] | null,
 ): Promise<MtdLedgerPage> {
   const { data, error } = await supabase.rpc('get_mtd_client_ledger', {
     p_company: company,
@@ -104,6 +111,7 @@ export async function fetchMtdLedger(
     p_limit: MTD_LEDGER_PAGE,
     p_offset: offset,
     p_as: asUser ?? null,
+    p_agents: agentList(agents),
   })
   if (error) throw error
   return parseLedgerPage(data)
@@ -113,11 +121,13 @@ export async function fetchMtdInvoices(
   company: string,
   clientId: string,
   asUser?: string | null,
+  agents?: string[] | null,
 ): Promise<MtdLedgerInvoice[]> {
   const { data, error } = await supabase.rpc('get_mtd_client_invoices', {
     p_company: company,
     p_client_id: clientId,
     p_as: asUser ?? null,
+    p_agents: agentList(agents),
   })
   if (error) throw error
   return parseLedgerInvoices(data)
@@ -129,6 +139,7 @@ export async function fetchMtdInvoiceLines(
   docType: string,
   docNum: string,
   asUser?: string | null,
+  agents?: string[] | null,
 ): Promise<MtdLedgerLine[]> {
   const { data, error } = await supabase.rpc('get_mtd_invoice_lines', {
     p_company: company,
@@ -136,6 +147,7 @@ export async function fetchMtdInvoiceLines(
     p_doc_type: docType,
     p_doc_num: docNum,
     p_as: asUser ?? null,
+    p_agents: agentList(agents),
   })
   if (error) throw error
   return parseLedgerLines(data)
