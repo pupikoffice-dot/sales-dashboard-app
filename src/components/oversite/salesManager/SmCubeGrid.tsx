@@ -48,6 +48,8 @@ export interface SmCubeGridProps {
   onOpenOpenOrdersReport?: () => void
   onOpenReturnsReport?: () => void
   onOpenReceiptsReport?: () => void
+  /** Sales MTD extended report (clients, invoices, lines) for this window. */
+  onOpenSalesReport?: () => void
   /** Monkeytime Tsomet — total open budget for this agent window. */
   tsometOpenBudget?: SmTsometOpenBudgetKpiProps | null
   /** Compact BI tables nest under the 7-day orders chart. */
@@ -77,6 +79,7 @@ export function SmCubeGrid({
   onOpenOpenOrdersReport,
   onOpenReturnsReport,
   onOpenReceiptsReport,
+  onOpenSalesReport,
   tsometOpenBudget,
   biSlot,
   hideOrders7Days = false,
@@ -194,6 +197,11 @@ export function SmCubeGrid({
             {salesMtd.lyChangeCashPct >= 0 ? '▲' : '▼'}
             {Math.abs(salesMtd.lyChangeCashPct).toFixed(1)}%
           </div>
+        ) : null}
+        {onOpenSalesReport ? (
+          <button type="button" className="ov-debt-btn sm-cube-report-btn" onClick={onOpenSalesReport}>
+            📋 {t('sm.cube.fullReport')}
+          </button>
         ) : null}
       </div>
     ),

@@ -24,18 +24,22 @@ export function MtdClientLedger({
   company,
   agents,
   label,
+  embedded,
 }: {
   company: LogicalCompany
   /** Narrow to these agents (an agent window of the Sales Manager suite). Only ever narrows: the database keeps the caller's own scope. */
   agents?: string[]
   /** Shown after the title, e.g. the agent this dropdown belongs to. */
   label?: string
+  /** Inside a dialog: always open, no dropdown button. */
+  embedded?: boolean
 }) {
   const { t } = useLocale()
   const agentsKey = (agents ?? []).join(',')
   const { isPreviewing, previewUser } = usePreview()
   const asUser = isPreviewing ? (previewUser?.id ?? null) : null
-  const [open, setOpen] = useState(false)
+  const [openState, setOpen] = useState(false)
+  const open = embedded || openState
   const [search, setSearch] = useState('')
   const [query, setQuery] = useState('')
   const [pages, setPages] = useState(1)
@@ -66,14 +70,16 @@ export function MtdClientLedger({
 
   return (
     <div className="mtdl">
-      <button
-        type="button"
-        className="ov-toggle-btn"
-        aria-expanded={open}
-        onClick={() => setOpen(v => !v)}
-      >
-        📒 {t('mtdLedger.title')}{label ? ` · ${label}` : ''} {open ? '▴' : '▾'}
-      </button>
+      {embedded ? null : (
+        <button
+          type="button"
+          className="ov-toggle-btn"
+          aria-expanded={open}
+          onClick={() => setOpen(v => !v)}
+        >
+          📒 {t('mtdLedger.title')}{label ? ` · ${label}` : ''} {open ? '▴' : '▾'}
+        </button>
+      )}
       {open ? (
         <div className="ov-drop mtdl-body">
           <input
