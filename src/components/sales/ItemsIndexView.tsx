@@ -4,7 +4,13 @@ import { SortableTh } from './SortableTh'
 import { SalesReportUiProvider, useSalesReportUi } from '../../context/SalesReportUiContext'
 import { fmt0, fmt2 } from '../../lib/format'
 import { companyLabel } from '../../lib/salesMetrics'
-import { fetchItemIndex, filterItemIndex, maskItemIndexForPreview } from '../../lib/itemIndex'
+import {
+  fetchItemIndex,
+  fetchUncategorizedStock,
+  filterItemIndex,
+  filterUncategorizedStock,
+  maskItemIndexForPreview,
+} from '../../lib/itemIndex'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { usePreview } from '../../context/PreviewContext'
 import { SalesReportStickySetup } from './SalesReportStickySetup'
@@ -28,6 +34,22 @@ function ItemsIndexContent({ initialCompany }: ItemsIndexViewProps) {
   )
   const q = { isLoading: raw.isLoading, error: raw.error, data }
   const [company, setCompany] = useState<LogicalCompany | 'all'>(initialCompany ?? 'all')
+  const [mode, setMode] = useState<'index' | 'nocat'>('index')
+
+  // In stock but no category (REP103 column I). Reloaded every 10 min: the 103 export now runs twice a day.
+  const nocatRaw = useQuery({ queryKey: ['uncategorized-stock'], queryFn: fetchUncategorizedStock, staleTime: 10 * 60 * 1000 })
+  const nocat = useMemo(() => {
+    const rows = nocatRaw.data ?? []
+    if (isPreviewing && !effectiveIsSuperAdmin && access) {
+      const co = new Set<string>(access.companies)
+      return rows.filter(r => co.has(r.co))
+    }
+    return rows
+  }, [nocatRaw.data, isPreviewing, effectiveIsSuperAdmin, access])
+  const nocatVisible = useMemo(
+    () => filterUncategorizedStock(nocat, company, searchQuery),
+    [nocat, company, searchQuery],
+  )
 
   const companies = useMemo(
     () => [...new Set((q.data?.rows ?? []).map(r => r.co))].sort(),
@@ -37,6 +59,93 @@ function ItemsIndexContent({ initialCompany }: ItemsIndexViewProps) {
     () => filterItemIndex(q.data?.rows ?? [], company, searchQuery),
     [q.data, company, searchQuery],
   )
+
+  if (mode === 'nocat') {
+    const cos = [...new Set(nocat.map(r => r.co))].sort()
+    const showCoCol = company === 'all'
+    return (
+      <div>
+        <div className="sbar">
+          <span>
+            View: <b>In stock, no category</b>
+          </span>
+          <span>
+            Items: <b className="accent2">{fmt0(nocatVisible.length)}</b>
+          </span>
+          <span>
+            WMS Qty: <b className="accent2">{fmt0(nocatVisible.reduce((s, r) => s + r.wms, 0))}</b>
+          </span>
+          <div className="sbar-actions">
+            <button type="button" className="sbar-search" onClick={() => setMode('index')}>
+              ← Items index
+            </button>
+            <select
+              className="sbar-search"
+              value={company}
+              onChange={e => setCompany(e.target.value as LogicalCompany | 'all')}
+              aria-label="Company"
+            >
+              <option value="all">All companies</option>
+              {cos.map(c => (
+                <option key={c} value={c}>
+                  {companyLabel(c)}
+                </option>
+              ))}
+            </select>
+            <input
+              className="sbar-search"
+              type="text"
+              placeholder="🔍 Search SKU, name…"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
+        {nocatRaw.isLoading ? (
+          <div className="welcome">
+            <div className="spin-wrap">
+              <div className="spin" />
+            </div>
+          </div>
+        ) : nocatRaw.error ? (
+          <div className="err">Could not load the list: {(nocatRaw.error as Error).message}</div>
+        ) : !nocatVisible.length ? (
+          <div className="err">Every item in stock has a category.</div>
+        ) : (
+          <TableWithExport exportName="In stock without category">
+            <div className="tw tw-sticky">
+              <table>
+                <thead>
+                  <tr>
+                    {showCoCol && <SortableTh style={{ textAlign: 'left' }}>Company</SortableTh>}
+                    <SortableTh style={{ textAlign: 'left' }}>SKU</SortableTh>
+                    <SortableTh style={{ textAlign: 'left' }}>Item Name</SortableTh>
+                    <SortableTh style={{ textAlign: 'left' }}>Why</SortableTh>
+                    <SortableTh>Wholesale P01</SortableTh>
+                    <SortableTh className="accent2">WMS Stock</SortableTh>
+                  </tr>
+                </thead>
+                <tbody>
+                  {nocatVisible.map(r => (
+                    <tr key={`${r.co}|${r.sku}`}>
+                      {showCoCol && <td>{companyLabel(r.co)}</td>}
+                      <td>{r.sku}</td>
+                      <td title={r.name}>{r.name}</td>
+                      <td>{r.why === 'empty' ? 'Column I empty' : 'Not in the 103 export'}</td>
+                      <td data-sv={r.p01 ?? ''}>{r.p01 != null ? fmt2(r.p01) : '—'}</td>
+                      <td data-sv={r.wms} className="accent2">
+                        {fmt0(r.wms)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </TableWithExport>
+        )}
+      </div>
+    )
+  }
 
   if (q.isLoading) {
     return (
@@ -68,6 +177,9 @@ function ItemsIndexContent({ initialCompany }: ItemsIndexViewProps) {
           WMS Qty: <b className="accent2">{fmt0(totalWms)}</b>
         </span>
         <div className="sbar-actions">
+          <button type="button" className="sbar-search" onClick={() => setMode('nocat')}>
+            In stock, no category{nocatRaw.data ? ` (${fmt0(nocat.length)})` : ''}
+          </button>
           <select
             className="sbar-search"
             value={company}

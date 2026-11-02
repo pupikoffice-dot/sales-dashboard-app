@@ -66,6 +66,48 @@ export async function fetchItemIndex(): Promise<ItemIndex> {
   return parseItemIndex(data)
 }
 
+/** One in-stock item with no category (RPC get_uncategorized_stock; migration 20261102100000_uncategorized_stock.sql). */
+export interface UncategorizedStockRow {
+  co: LogicalCompany
+  sku: string
+  name: string
+  p01: number | null
+  wms: number
+  /** no_row = item not in the latest REP103 load; empty = in the load but column I is empty. */
+  why: 'no_row' | 'empty'
+}
+
+export function parseUncategorizedStock(data: unknown): UncategorizedStockRow[] {
+  const rows = data && typeof data === 'object' ? (data as { rows?: unknown }).rows : null
+  if (!Array.isArray(rows)) return []
+  return rows.map(r => {
+    const x = r as Record<string, unknown>
+    return {
+      co: String(x.co ?? '') as LogicalCompany,
+      sku: String(x.sku ?? ''),
+      name: String(x.name ?? ''),
+      p01: num(x.p01),
+      wms: num(x.wms) ?? 0,
+      why: x.why === 'empty' ? 'empty' : 'no_row',
+    }
+  })
+}
+
+export async function fetchUncategorizedStock(): Promise<UncategorizedStockRow[]> {
+  const { data, error } = await supabase.rpc('get_uncategorized_stock')
+  if (error) throw error
+  return parseUncategorizedStock(data)
+}
+
+/** Rows of one company ('all' = every company), matching the search on SKU and name. */
+export function filterUncategorizedStock(
+  rows: UncategorizedStockRow[],
+  company: LogicalCompany | 'all',
+  query: string,
+): UncategorizedStockRow[] {
+  return rows.filter(r => (company === 'all' || r.co === company) && matchesSearch(query, r.sku, r.name))
+}
+
 /** What a previewed user may see (the preview target's access, not the signed-in admin's). */
 export interface PreviewScope {
   companies: readonly string[]
