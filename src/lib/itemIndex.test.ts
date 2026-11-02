@@ -2,7 +2,13 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('./supabase', () => ({ supabase: { rpc: vi.fn() } }))
 
-import { filterItemIndex, maskItemIndexForPreview, parseItemIndex } from './itemIndex'
+import {
+  filterItemIndex,
+  filterUncategorizedStock,
+  maskItemIndexForPreview,
+  parseItemIndex,
+  parseUncategorizedStock,
+} from './itemIndex'
 import { SIDEBAR_HIDE_OPTIONS } from './sidebarHide'
 
 const payload = {
@@ -13,6 +19,27 @@ const payload = {
     { co: 'mt', sku: 'FFG-0002', name: 'Cosmic Encounter', alt: 'CE01', bc: '9781589944961', cat: 'FUNKO', p01: 147.5, cost: null, fob: null, wms: null },
   ],
 }
+
+describe('uncategorized stock', () => {
+  const rows = [
+    { co: 'pupik', sku: 'A-1', name: 'Alpha', p01: '10', wms: '5', why: 'empty' },
+    { co: 'mt', sku: 'B-2', name: 'Beta', p01: null, wms: 3, why: 'no_row' },
+  ]
+  it('parses numbers and the reason', () => {
+    const r = parseUncategorizedStock({ rows })
+    expect(r[0]).toMatchObject({ p01: 10, wms: 5, why: 'empty' })
+    expect(r[1]).toMatchObject({ p01: null, why: 'no_row' })
+  })
+  it('handles a broken payload', () => {
+    expect(parseUncategorizedStock(null)).toEqual([])
+    expect(parseUncategorizedStock({ rows: 'x' })).toEqual([])
+  })
+  it('filters by company and search', () => {
+    const r = parseUncategorizedStock({ rows })
+    expect(filterUncategorizedStock(r, 'mt', '')).toHaveLength(1)
+    expect(filterUncategorizedStock(r, 'all', 'alpha')).toHaveLength(1)
+  })
+})
 
 describe('parseItemIndex', () => {
   it('normalises numbers and flags', () => {
