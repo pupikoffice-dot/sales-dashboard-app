@@ -3,14 +3,24 @@
 // sends email via Resend, sends the daily summary once per working day, prunes old observations.
 // Spec: docs/superpowers/specs/2026-10-03-data-health-monitor-design.md
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import * as XLSX from 'npm:xlsx@0.18.5'
 import { evaluate, localParts, type Rule, type Latest, type SyncLog, type Status, type ContentItem } from './evaluate.ts'
 import { planIncidents, type OpenIncident } from './incidents.ts'
-import { alertEmail, resolvedEmail, summaryEmail, type Email, type UncategorizedRow } from './emails.ts'
+import { alertEmail, resolvedEmail, summaryEmail, type Email, type EmailTable, type UncategorizedRow } from './emails.ts'
 
 // Email links: production (OMEGA) project -> production site, otherwise the beta site. DATA_HEALTH_PAGE_URL overrides.
 const IS_OMEGA = (Deno.env.get('SUPABASE_URL') ?? '').includes('hzgpkkbqhmtwqhkcntcc')
 const PAGE_URL = Deno.env.get('DATA_HEALTH_PAGE_URL')
   ?? (IS_OMEGA ? 'https://sales-dashboard-app-omega.vercel.app/admin/data-health' : 'https://pupik-sales-dashboard-beta.vercel.app/admin/data-health')
+
+/** The email's table as an .xlsx file, base64 (Resend attachment format). */
+function xlsxBase64(t: EmailTable): string {
+  const ws = XLSX.utils.aoa_to_sheet([t.headers, ...t.rows])
+  ws['!cols'] = t.headers.map((h, i) => ({ wch: Math.min(60, Math.max(h.length, ...t.rows.map(r => String(r[i] ?? '').length)) + 2) }))
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, t.sheet)
+  return XLSX.write(wb, { type: 'base64', bookType: 'xlsx' }) as string
+}
 
 const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { 'Content-Type': 'application/json' } })
@@ -55,7 +65,8 @@ Deno.serve(async () => {
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: settings.from_address, to: settings.recipients, subject: e.subject, text: e.text, html: e.html }),
+      body: JSON.stringify({ from: settings.from_address, to: settings.recipients, subject: e.subject, text: e.text, html: e.html,
+        ...(e.table ? { attachments: [{ filename: e.table.filename, content: xlsxBase64(e.table) }] } : {}) }),
     })
     if (!r.ok) { sendError = `resend ${r.status}: ${(await r.text()).slice(0, 300)}`; if (log.length < 5) log.push(sendError) } else sendOk = true
     return r.ok
@@ -91,7 +102,7 @@ Deno.serve(async () => {
     // In-stock items without a category (optional: older databases lack the function); listed in full in the morning mail.
     const unc = await sb.rpc('data_health_uncategorized')
     if (unc.error) log.push(`uncategorized list unavailable: ${unc.error.message}`)
-    summarySent = await send(summaryEmail({ statuses: (all.data ?? []) as Status[], openCount: open.count ?? 0, unruled, dateLabel: label, url: PAGE_URL,
+    summarySent = await send(summaryEmail({ statuses: (all.data ?? []) as Status[], openCount: open.count ?? 0, unruled, dateLabel: label, url: PAGE_URL, isoDate: local.date,
       uncategorized: unc.error ? [] : ((unc.data ?? []) as UncategorizedRow[]) }))
     if (summarySent) await sb.from('data_health_settings').update({ last_summary_date: local.date }).eq('id', true)
     await sb.from('source_file_observations').delete().lt('observed_at', new Date(now.getTime() - 365 * 86_400_000).toISOString())
