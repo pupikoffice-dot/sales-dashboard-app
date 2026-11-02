@@ -3,7 +3,6 @@
 // sends email via Resend, sends the daily summary once per working day, prunes old observations.
 // Spec: docs/superpowers/specs/2026-10-03-data-health-monitor-design.md
 import { createClient } from 'npm:@supabase/supabase-js@2'
-import * as XLSX from 'npm:xlsx@0.18.5'
 import { evaluate, localParts, type Rule, type Latest, type SyncLog, type Status, type ContentItem } from './evaluate.ts'
 import { planIncidents, type OpenIncident } from './incidents.ts'
 import { alertEmail, resolvedEmail, summaryEmail, type Email, type EmailTable, type UncategorizedRow } from './emails.ts'
@@ -14,7 +13,9 @@ const PAGE_URL = Deno.env.get('DATA_HEALTH_PAGE_URL')
   ?? (IS_OMEGA ? 'https://sales-dashboard-app-omega.vercel.app/admin/data-health' : 'https://pupik-sales-dashboard-beta.vercel.app/admin/data-health')
 
 /** The email's table as an .xlsx file, base64 (Resend attachment format). */
-function xlsxBase64(t: EmailTable): string {
+async function xlsxBase64(t: EmailTable): Promise<string> {
+  // loaded on demand: if the library cannot load, only the attachment is lost, never the monitor itself
+  const XLSX = await import('npm:xlsx@0.18.5')
   const ws = XLSX.utils.aoa_to_sheet([t.headers, ...t.rows])
   ws['!cols'] = t.headers.map((h, i) => ({ wch: Math.min(60, Math.max(h.length, ...t.rows.map(r => String(r[i] ?? '').length)) + 2) }))
   const wb = XLSX.utils.book_new()
@@ -62,11 +63,17 @@ Deno.serve(async () => {
     sendTried = true
     const key = Deno.env.get('RESEND_API_KEY')
     if (!key) { sendError = 'RESEND_API_KEY is not set - alerts are shown in the app only'; if (log.length < 5) log.push(sendError); return false }
+    // An attachment that cannot be built must never stop the mail (or the run): send the mail without it and say so.
+    let att: { filename: string; content: string } | null = null
+    if (e.table) {
+      try { att = { filename: e.table.filename, content: await xlsxBase64(e.table) } }
+      catch (err) { if (log.length < 5) log.push(`excel attachment failed: ${(err as Error).message}`) }
+    }
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ from: settings.from_address, to: settings.recipients, subject: e.subject, text: e.text, html: e.html,
-        ...(e.table ? { attachments: [{ filename: e.table.filename, content: xlsxBase64(e.table) }] } : {}) }),
+        ...(att ? { attachments: [att] } : {}) }),
     })
     if (!r.ok) { sendError = `resend ${r.status}: ${(await r.text()).slice(0, 300)}`; if (log.length < 5) log.push(sendError) } else sendOk = true
     return r.ok
