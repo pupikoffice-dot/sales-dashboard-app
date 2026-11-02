@@ -29,7 +29,9 @@ export function resolvedEmail(checkKey: string, openedAt: string, now: Date, url
   return mk(`${P} OK again: ${checkKey} (was red ${d})`, `${checkKey} is OK again after ${d}.\nDetails: ${url}`)
 }
 
-export function summaryEmail(a: { statuses: Status[]; openCount: number; unruled: string[]; dateLabel: string; url: string }): Email {
+export type UncategorizedRow = { company: string; sku: string; name: string; qty: number }
+
+export function summaryEmail(a: { statuses: Status[]; openCount: number; unruled: string[]; dateLabel: string; url: string; uncategorized?: UncategorizedRow[] }): Email {
   const n = (c: Status['status']) => a.statuses.filter(s => s.status === c).length
   const lines: string[] = [`Open incidents: ${a.openCount}`, '']
   const groups = [...new Set(a.statuses.map(s => s.file_group))].sort()
@@ -38,6 +40,22 @@ export function summaryEmail(a: { statuses: Status[]; openCount: number; unruled
     for (const s of a.statuses.filter(x => x.file_group === g)) lines.push(`  ${s.status.toUpperCase().padEnd(5)} ${s.check_key}: ${s.reason}`)
   }
   if (a.unruled.length) lines.push('', `Loaded by the sync but not monitored (add a rule): ${a.unruled.join(', ')}`)
+  const unc = a.uncategorized ?? []
+  if (unc.length) {
+    lines.push('', `== In stock without a category (REP103 column I): ${unc.length} items`)
+    for (const r of unc) lines.push(`  ${r.company.padEnd(6)} ${r.sku}  ${r.name}  qty ${r.qty}`)
+  }
   lines.push('', `Details: ${a.url}`)
-  return mk(`${P} Daily status ${a.dateLabel}: ${n('red')} red, ${n('amber')} amber, ${n('green')} green`, lines.join('\n'))
+  const subject = `${P} Daily status ${a.dateLabel}: ${n('red')} red, ${n('amber')} amber, ${n('green')} green`
+  const text = lines.join('\n')
+  if (!unc.length) return mk(subject, text)
+  // The item list also goes out as a real table (pastes straight into Excel); the text part keeps the plain list.
+  const cell = (s: string | number) => `<td style="border:1px solid #ccc;padding:2px 8px">${esc(String(s))}</td>`
+  const rows = unc.map(r => `<tr>${cell(r.company)}${cell(r.sku)}${cell(r.name)}${cell(r.qty)}</tr>`).join('')
+  const head = ['Company', 'SKU', 'Item name', 'Stock'].map(h => `<th style="border:1px solid #ccc;padding:2px 8px;background:#eee;text-align:left">${h}</th>`).join('')
+  const statusText = lines.slice(0, lines.findIndex(l => l.startsWith('== In stock without a category'))).join('\n')
+  const html = `${toHtml(statusText)}<h3 style="font-family:Segoe UI,Arial,sans-serif">In stock without a category (REP103 column I): ${unc.length} items</h3>`
+    + `<table style="border-collapse:collapse;font-family:Segoe UI,Arial,sans-serif;font-size:13px"><tr>${head}</tr>${rows}</table>`
+    + `<p style="font-family:Segoe UI,Arial,sans-serif">Details: ${esc(a.url)}</p>`
+  return { subject, text, html }
 }
