@@ -20,7 +20,11 @@ export type Status = {
   status: Colour; reason: string; modified_at: string | null; age_hours: number | null; rows_loaded: number | null
 }
 /** One newest-date reading from data_health_content(): the newest date INSIDE a loaded table. */
-export type ContentItem = { check_key: string; file_group: string; company: string | null; label: string; newest: string | null }
+export type ContentItem = {
+  check_key: string; file_group: string; company: string | null; label: string; newest: string | null
+  /** set by the database for checks that are not about a date (e.g. new uncategorised items): used as is */
+  alert_status?: 'green' | 'amber' | 'red' | null; alert_reason?: string | null
+}
 /** ignoreCalendar: test switch (data_health_settings.ignore_calendar) - skip the Saturday, hours and rule-window gates. */
 export type EvalInput = { rules: Rule[]; latest: Latest[]; syncLogs: SyncLog[]; now: Date; ignoreCalendar?: boolean; content?: ContentItem[] }
 
@@ -141,6 +145,7 @@ export function evaluate({ rules, latest, syncLogs, now, ignoreCalendar = false,
   for (const c of content) {
     const base = { check_key: c.check_key, file_name: null, file_group: c.file_group, company: c.company, modified_at: null, age_hours: null, rows_loaded: null }
     const gated = gatedNow || (!ignoreCalendar && (local.minutes < CONTENT_FROM || local.minutes > CONTENT_TO))
+    if (c.alert_status) { push({ ...base, status: c.alert_status, reason: c.alert_reason ?? c.label }, gated); continue }
     if (!c.newest) { push({ ...base, status: 'red', reason: `${c.label}: nothing loaded` }, gated); continue }
     const lag = workdayLag(c.newest, local.date)
     // Yesterday's data at most is normal; two or more working days behind means a whole day is missing.
