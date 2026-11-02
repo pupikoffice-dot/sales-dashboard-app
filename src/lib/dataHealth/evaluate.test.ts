@@ -159,4 +159,11 @@ describe('content freshness', () => {
   it('nothing loaded at all is red', () => {
     expect(run(null, '2026-10-28T08:00:00Z')?.status).toBe('red')
   })
+  it('a database-supplied alert (new uncategorised items) is used as is, inside the same window', () => {
+    const c = { check_key: 'content:nocat:pupik', file_group: 'content', company: 'pupik', label: 'x', newest: null, alert_status: 'red' as const, alert_reason: '2 item(s) newly in stock without a category' }
+    const go = (nowIso: string) => byKey(evaluate({ rules: [], latest: [], syncLogs: okSync, now: at(nowIso), content: [c] }))['content:nocat:pupik']
+    expect(go('2026-10-28T11:00:00Z')?.status).toBe('red')
+    expect(go('2026-10-28T11:00:00Z')?.reason).toContain('newly in stock')
+    expect(go('2026-10-31T09:00:00Z')).toBeUndefined()   // Saturday: not opened
+  })
 })
