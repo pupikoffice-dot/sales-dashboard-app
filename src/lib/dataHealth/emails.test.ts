@@ -23,13 +23,14 @@ describe('emails', () => {
     expect(e.subject).toBe('[Dashboard data] Daily status Sun 04-Oct: 1 red, 1 amber, 1 green')
     expect(e.text).toContain('new.xls')
   })
-  it('summary lists the items without a category as text and as an html table', () => {
-    const e = summaryEmail({ statuses: [s], openCount: 0, unruled: [], dateLabel: 'Mon 02-Nov', url,
-      uncategorized: [{ company: 'pupik', sku: 'A-1', name: 'Alpha <b>', qty: 5 }, { company: 'mt', sku: 'B-2', name: 'Beta', qty: 3 }] })
-    expect(e.text).toContain('In stock without a category (REP103 column I): 2 items')
-    expect(e.text).toContain('pupik  A-1  Alpha <b>  qty 5')
-    expect(e.html).toContain('<table')
-    expect(e.html).toContain('Alpha &lt;b&gt;')
-    expect(summaryEmail({ statuses: [s], openCount: 0, unruled: [], dateLabel: 'x', url }).html).not.toContain('<table')
+  it('summary attaches the items without a category as an Excel table', () => {
+    const e = summaryEmail({ statuses: [s], openCount: 0, unruled: [], dateLabel: 'Mon 02-Nov', url, isoDate: '2026-11-02',
+      uncategorized: [{ company: 'pupik', sku: 'A-1', name: 'Alpha', qty: 5 }, { company: 'mt', sku: 'B-2', name: 'Beta', qty: 3 }] })
+    expect(e.text).toContain('2 items (mt 1, pupik 1)')
+    expect(e.text).toContain('attached as an Excel file')
+    expect(e.table?.filename).toBe('in_stock_no_category_2026-11-02.xlsx')
+    expect(e.table?.headers).toEqual(['Company', 'SKU', 'Item name', 'Stock'])
+    expect(e.table?.rows[0]).toEqual(['pupik', 'A-1', 'Alpha', 5])
+    expect(summaryEmail({ statuses: [s], openCount: 0, unruled: [], dateLabel: 'x', url }).table).toBeUndefined()
   })
 })
