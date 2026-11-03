@@ -62,7 +62,6 @@ function ItemsIndexContent({ initialCompany }: ItemsIndexViewProps) {
 
   if (mode === 'nocat') {
     const cos = [...new Set(nocat.map(r => r.co))].sort()
-    const showCoCol = company === 'all'
     return (
       <div>
         <div className="sbar">
@@ -112,12 +111,19 @@ function ItemsIndexContent({ initialCompany }: ItemsIndexViewProps) {
         ) : !nocatVisible.length ? (
           <div className="err">Every item in stock has a category.</div>
         ) : (
-          <TableWithExport exportName="In stock without category">
+          // One table (and one CSV) per company: an item can have a category in one company and none in another.
+          [...new Set(nocatVisible.map(r => r.co))].sort().map(co => {
+            const rows = nocatVisible.filter(r => r.co === co)
+            return (
+          <div key={co}>
+            <h3 style={{ margin: '14px 0 6px' }}>
+              {companyLabel(co)} — {fmt0(rows.length)} item{rows.length === 1 ? '' : 's'} in stock without a category
+            </h3>
+          <TableWithExport exportName={`In stock without category - ${companyLabel(co)}`}>
             <div className="tw tw-sticky">
               <table>
                 <thead>
                   <tr>
-                    {showCoCol && <SortableTh style={{ textAlign: 'left' }}>Company</SortableTh>}
                     <SortableTh style={{ textAlign: 'left' }}>SKU</SortableTh>
                     <SortableTh style={{ textAlign: 'left' }}>Item Name</SortableTh>
                     <SortableTh style={{ textAlign: 'left' }}>Why</SortableTh>
@@ -126,9 +132,8 @@ function ItemsIndexContent({ initialCompany }: ItemsIndexViewProps) {
                   </tr>
                 </thead>
                 <tbody>
-                  {nocatVisible.map(r => (
+                  {rows.map(r => (
                     <tr key={`${r.co}|${r.sku}`}>
-                      {showCoCol && <td>{companyLabel(r.co)}</td>}
                       <td>{r.sku}</td>
                       <td title={r.name}>{r.name}</td>
                       <td>{r.why === 'empty' ? 'Column I empty' : 'Not in the 103 export'}</td>
@@ -142,6 +147,9 @@ function ItemsIndexContent({ initialCompany }: ItemsIndexViewProps) {
               </table>
             </div>
           </TableWithExport>
+          </div>
+            )
+          })
         )}
       </div>
     )
@@ -178,7 +186,10 @@ function ItemsIndexContent({ initialCompany }: ItemsIndexViewProps) {
         </span>
         <div className="sbar-actions">
           <button type="button" className="sbar-search" onClick={() => setMode('nocat')}>
-            In stock, no category{nocatRaw.data ? ` (${fmt0(nocat.length)})` : ''}
+            In stock, no category
+            {nocatRaw.data
+              ? ` (${[...new Set(nocat.map(r => r.co))].sort().map(c => `${companyLabel(c)} ${fmt0(nocat.filter(r => r.co === c).length)}`).join(' · ')})`
+              : ''}
           </button>
           <select
             className="sbar-search"
