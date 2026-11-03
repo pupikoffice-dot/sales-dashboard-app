@@ -5,7 +5,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { evaluate, localParts, type Rule, type Latest, type SyncLog, type Status, type ContentItem } from './evaluate.ts'
 import { planIncidents, type OpenIncident } from './incidents.ts'
-import { alertEmail, resolvedEmail, summaryEmail, type Email, type EmailTable, type UncategorizedRow } from './emails.ts'
+import { alertEmail, resolvedEmail, summaryEmail, uncategorizedEmail, type Email, type EmailTable, type UncategorizedRow } from './emails.ts'
 
 // Email links: production (OMEGA) project -> production site, otherwise the beta site. DATA_HEALTH_PAGE_URL overrides.
 const IS_OMEGA = (Deno.env.get('SUPABASE_URL') ?? '').includes('hzgpkkbqhmtwqhkcntcc')
@@ -111,7 +111,13 @@ Deno.serve(async () => {
     if (unc.error) log.push(`uncategorized list unavailable: ${unc.error.message}`)
     summarySent = await send(summaryEmail({ statuses: (all.data ?? []) as Status[], openCount: open.count ?? 0, unruled, dateLabel: label, url: PAGE_URL, isoDate: local.date,
       uncategorized: unc.error ? [] : ((unc.data ?? []) as UncategorizedRow[]) }))
-    if (summarySent) await sb.from('data_health_settings').update({ last_summary_date: local.date }).eq('id', true)
+    if (summarySent) {
+      await sb.from('data_health_settings').update({ last_summary_date: local.date }).eq('id', true)
+      // One mail per company (different people handle each), same recipients, company named in the subject.
+      const uncRows = unc.error ? [] : ((unc.data ?? []) as UncategorizedRow[])
+      for (const co of [...new Set(uncRows.map(r => r.company))].sort())
+        await send(uncategorizedEmail(co, uncRows.filter(r => r.company === co), local.date, PAGE_URL))
+    }
     await sb.from('source_file_observations').delete().lt('observed_at', new Date(now.getTime() - 365 * 86_400_000).toISOString())
   }
 

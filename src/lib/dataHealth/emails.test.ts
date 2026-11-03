@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { alertEmail, resolvedEmail, summaryEmail, durationText } from '../../../supabase/functions/data-health-check/emails.ts'
+import { alertEmail, resolvedEmail, summaryEmail, uncategorizedEmail, durationText } from '../../../supabase/functions/data-health-check/emails.ts'
 
 const s = { check_key: '855PUP.xls', file_name: '855PUP.xls', file_group: 'manual_sales', company: 'pupik', status: 'red' as const, reason: '855PUP.xls is 9 days old (limit 7 days)', modified_at: null, age_hours: 216, rows_loaded: null }
 const rule = { fix_hint: 'Run REP855&854ALL.BAT', impact: 'returns MTD' }
@@ -23,14 +23,22 @@ describe('emails', () => {
     expect(e.subject).toBe('[Dashboard data] Daily status Sun 04-Oct: 1 red, 1 amber, 1 green')
     expect(e.text).toContain('new.xls')
   })
-  it('summary attaches the items without a category as an Excel table', () => {
-    const e = summaryEmail({ statuses: [s], openCount: 0, unruled: [], dateLabel: 'Mon 02-Nov', url, isoDate: '2026-11-02',
+  it('summary mentions the counts but carries no table (each company has its own mail)', () => {
+    const e = summaryEmail({ statuses: [s], openCount: 0, unruled: [], dateLabel: 'Mon 02-Nov', url,
       uncategorized: [{ company: 'pupik', sku: 'A-1', name: 'Alpha', qty: 5 }, { company: 'mt', sku: 'B-2', name: 'Beta', qty: 3 }] })
     expect(e.text).toContain('2 items (mt 1, pupik 1)')
-    expect(e.text).toContain('attached as an Excel file')
-    expect(e.table?.filename).toBe('in_stock_no_category_2026-11-02.xlsx')
-    expect(e.table?.headers).toEqual(['Company', 'SKU', 'Item name', 'Stock'])
-    expect(e.table?.rows[0]).toEqual(['pupik', 'A-1', 'Alpha', 5])
-    expect(summaryEmail({ statuses: [s], openCount: 0, unruled: [], dateLabel: 'x', url }).table).toBeUndefined()
+    expect(e.table).toBeUndefined()
+  })
+  it('one uncategorised mail per company, company in the subject and file name', () => {
+    const e = uncategorizedEmail('mt', [{ company: 'mt', sku: 'B-2', name: 'Beta', qty: 3 }], '2026-11-03', url)
+    expect(e.subject).toBe('[Dashboard data] [MONKEYTIME] In stock without a category: 1 item (2026-11-03)')
+    expect(e.table?.filename).toBe('in_stock_no_category_mt_2026-11-03.xlsx')
+    expect(e.table?.headers).toEqual(['SKU', 'Item name', 'Stock'])
+    expect(e.table?.rows[0]).toEqual(['B-2', 'Beta', 3])
+    expect(uncategorizedEmail('pupik', [], '2026-11-03', url).subject).toContain('[PUPIK]')
+  })
+  it('no-category alerts name the company in the subject', () => {
+    const a = alertEmail({ ...s, check_key: 'content:nocat:mt', company: 'mt', reason: '2 item(s) newly in stock without a category' }, undefined, url, false)
+    expect(a.subject).toBe('[Dashboard data] [MONKEYTIME] RED: 2 item(s) newly in stock without a category')
   })
 })

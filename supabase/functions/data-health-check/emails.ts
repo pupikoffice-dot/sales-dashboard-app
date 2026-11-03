@@ -23,7 +23,29 @@ export function alertEmail(s: Status, rule: { fix_hint: string; impact: string }
     `Group: ${s.file_group}`,
     `Details: ${url}`,
   ].filter(Boolean).join('\n')
-  return mk(`${P} ${reminder ? 'STILL RED' : 'RED'}: ${s.reason}`, text)
+  // The no-category alerts go to one mailbox per company's owner: the company is in the subject so a mail rule can route them.
+  const tag = s.check_key.startsWith('content:nocat:') ? ` [${companyName(s.check_key.slice('content:nocat:'.length))}]` : ''
+  return mk(`${P}${tag} ${reminder ? 'STILL RED' : 'RED'}: ${s.reason}`, text)
+}
+
+export const companyName = (c: string) => (c === 'mt' ? 'MONKEYTIME' : c.toUpperCase())
+
+/** One mail per company (each is handled by a different person); the company is in the subject for mail rules. */
+export function uncategorizedEmail(company: string, rows: UncategorizedRow[], isoDate: string, url: string): Email {
+  const name = companyName(company)
+  const text = [
+    `${name}: ${rows.length} item${rows.length === 1 ? '' : 's'} in stock without a category (REP103 column I).`,
+    'The full list is attached as an Excel file.',
+    '', `Details: ${url}`,
+  ].join('\n')
+  return {
+    ...mk(`${P} [${name}] In stock without a category: ${rows.length} item${rows.length === 1 ? '' : 's'} (${isoDate})`, text),
+    table: {
+      filename: `in_stock_no_category_${company}_${isoDate}.xlsx`, sheet: 'No category',
+      headers: ['SKU', 'Item name', 'Stock'],
+      rows: rows.map(r => [r.sku, r.name, r.qty]),
+    },
+  }
 }
 
 export function resolvedEmail(checkKey: string, openedAt: string, now: Date, url: string): Email {
@@ -45,18 +67,9 @@ export function summaryEmail(a: { statuses: Status[]; openCount: number; unruled
   const unc = a.uncategorized ?? []
   if (unc.length) {
     const per = [...new Set(unc.map(r => r.company))].sort().map(c => `${c} ${unc.filter(r => r.company === c).length}`).join(', ')
-    lines.push('', `In stock without a category (REP103 column I): ${unc.length} items (${per}) - the full list is attached as an Excel file.`)
+    lines.push('', `In stock without a category (REP103 column I): ${unc.length} items (${per}) - each company's list is sent in its own email.`)
   }
   lines.push('', `Details: ${a.url}`)
   const subject = `${P} Daily status ${a.dateLabel}: ${n('red')} red, ${n('amber')} amber, ${n('green')} green`
-  const email = mk(subject, lines.join('\n'))
-  if (!unc.length) return email
-  return {
-    ...email,
-    table: {
-      filename: `in_stock_no_category_${a.isoDate ?? 'today'}.xlsx`, sheet: 'No category',
-      headers: ['Company', 'SKU', 'Item name', 'Stock'],
-      rows: unc.map(r => [r.company, r.sku, r.name, r.qty]),
-    },
-  }
+  return mk(subject, lines.join('\n'))
 }
