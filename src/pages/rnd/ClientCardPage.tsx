@@ -6,6 +6,7 @@ import { HubChart, cssVar } from '../../components/oversite/hub/HubChart'
 import { Kpi, PurchaseSearchBar, useDebounced } from '../../components/rnd/PurchaseSearch'
 import { SortTh, useSortedRows } from '../../components/rnd/sortRows'
 import { ComparisonTable } from '../../components/rnd/ComparisonTable'
+import { ClientItemSales } from '../../components/rnd/ClientItemSales'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { usePreview } from '../../context/PreviewContext'
 import { fmt0 } from '../../lib/format'
@@ -481,6 +482,13 @@ export function ClientCardPage() {
               </section>
             ) : null}
 
+            <section className="hub-card hub-span-12">
+              <div className="hub-card-hdr">
+                <h3>Search sales</h3>
+                <span className="hub-card-aside">what this client paid for an item, line by line</span>
+              </div>
+              <ClientItemSales company={company} clientId={clientId} asUser={asUser} />
+            </section>
             <section className="hub-card hub-span-12">
               <div className="hub-card-hdr"><h3>Top items — last 12 months</h3></div>
               <ItemRows rows={data.topItems} company={company} empty="No purchases in the last 12 months." />
