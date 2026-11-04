@@ -6,7 +6,10 @@ import { BrandMatrix, COMPANY_ORDER, buildBarCharts, changeColor, pct, signed } 
 import { useLocale } from '../../context/LocaleContext'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { usePreview } from '../../context/PreviewContext'
+import { MarginNote } from '../../components/rnd/marginShared'
 import { fmt0 } from '../../lib/format'
+import { attachMargin, fmtPct, hasMarginData, marginOf, overallMargin } from '../../lib/grossMargin'
+import { fetchYearlyMargin } from '../../lib/grossMarginApi'
 import { companyLabel } from '../../lib/salesMetrics'
 import {
   buildBrandMatrix,
@@ -32,12 +35,27 @@ export function YearlyDataPage() {
     staleTime: 10 * 60 * 1000,
   })
   const data = q.data
-  const rows = useMemo(() => (data ? buildYearRows(data) : []), [data])
+  // Gross margin: null for users who may not see item costs (the database decides), then no margin column or chart is shown.
+  const marginQ = useQuery({
+    queryKey: ['yearly-margin', company, asUser],
+    queryFn: () => fetchYearlyMargin(company as string, asUser),
+    enabled: !!company,
+    staleTime: 10 * 60 * 1000,
+  })
+  const marginData = marginQ.data ?? null
+  const hasM = hasMarginData(marginData?.years ?? [])
+  const rows = useMemo(
+    () => attachMargin(data ? buildYearRows(data) : [], marginData?.years, r => r.year, e => e.year, r => r.net),
+    [data, marginData],
+  )
+  const overall = useMemo(() => overallMargin(marginData?.years, rows.reduce((a, r) => a + r.net, 0)), [marginData, rows])
   const { sorted, sort, onSort } = useSortedRows(
     rows,
     {
       year: r => r.year,
       net: r => r.net,
+      margin: r => r.margin,
+      marginPct: r => r.marginPct,
       vsPrev: r => r.vsPrev,
       returned: r => r.returned,
       rate: r => r.rate,
@@ -60,7 +78,22 @@ export function YearlyDataPage() {
     [data],
   )
 
-  const charts = useMemo(() => (rows.length ? buildBarCharts(rows.map(r => String(r.year)), { net: t('rnd.col.net'), returns: t('rnd.col.returns'), receipts: t('rnd.chart.receipts'), pieces: t('rnd.chart.pieces') }, rows) : null), [rows, t])
+  const brandMargin = useMemo(
+    () => buildBrandMatrix((marginData?.brands ?? []).map(b => ({ year: b.year, brand: b.brand, value: marginOf(b).margin }))),
+    [marginData],
+  )
+  const charts = useMemo(
+    () =>
+      rows.length
+        ? buildBarCharts(
+            rows.map(r => String(r.year)),
+            { net: t('rnd.col.net'), returns: t('rnd.col.returns'), receipts: t('rnd.chart.receipts'), pieces: t('rnd.chart.pieces') },
+            rows,
+            hasM ? { label: t('gm.chart.margin'), values: rows.map(r => r.margin) } : undefined,
+          )
+        : null,
+    [rows, t, hasM],
+  )
 
   if (!company) return <p className="status-msg">{t('rnd.noCompanies')}</p>
 
@@ -111,12 +144,15 @@ export function YearlyDataPage() {
               <h3>{t('rnd.byYear')}</h3>
               <span className="hub-card-aside">{t('rnd.note.net')}</span>
             </div>
+            <MarginNote visible={hasM} coverage={overall.coverage} />
             <div className="tw">
               <table>
                 <thead>
                   <tr>
                     <SortTh label={t('rnd.col.year')} k="year" left sort={sort} onSort={onSort} />
                     <SortTh label={t('rnd.col.net')} k="net" sort={sort} onSort={onSort} />
+                    {hasM ? <SortTh label={t('gm.col.margin')} k="margin" sort={sort} onSort={onSort} title={t('gm.hint')} /> : null}
+                    {hasM ? <SortTh label={t('gm.col.marginPct')} k="marginPct" sort={sort} onSort={onSort} title={t('gm.hint')} /> : null}
                     <SortTh label={t('rnd.col.vsYear')} k="vsPrev" sort={sort} onSort={onSort} />
                     <SortTh label={t('rnd.col.returns')} k="returned" sort={sort} onSort={onSort} />
                     <SortTh label={t('rnd.col.rate')} k="rate" sort={sort} onSort={onSort} />
@@ -130,6 +166,8 @@ export function YearlyDataPage() {
                     <tr key={r.year}>
                       <td style={{ textAlign: 'start' }}>{r.year}</td>
                       <td>{fmt0(r.net)}</td>
+                      {hasM ? <td title={r.coverage == null ? undefined : t('gm.coverage', { pct: Math.round(r.coverage * 100) })}>{r.margin == null ? '—' : fmt0(r.margin)}</td> : null}
+                      {hasM ? <td>{fmtPct(r.marginPct)}</td> : null}
                       <td style={{ color: changeColor(r.vsPrev) }}>{signed(r.vsPrev)}</td>
                       <td>{fmt0(r.returned)}</td>
                       <td>{pct(r.rate)}</td>
@@ -174,6 +212,15 @@ export function YearlyDataPage() {
             years={brandImportQty.years}
             unit={t('rnd.unit.pieces')}
           />
+          {hasM && brandMargin.rows.some(r => r.total !== 0) ? (
+            <BrandMatrix
+              title={t('gm.brand.titleYears')}
+              note={t('gm.brand.note')}
+              rows={brandMargin.rows}
+              years={brandMargin.years}
+              unit={t('gm.unit.margin')}
+            />
+          ) : null}
           {brandImportValue.rows.some(r => r.total !== 0) ? (
             <BrandMatrix
               title={t('rnd.brand.impValueYears')}

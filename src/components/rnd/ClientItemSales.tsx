@@ -6,10 +6,14 @@ import { HubChart, cssVar } from '../oversite/hub/HubChart'
 import { Kpi, useDebounced } from './PurchaseSearch'
 import { SortTh, useSortedRows } from './sortRows'
 import { downloadCSV } from '../../lib/csvExport'
+import { useLocale } from '../../context/LocaleContext'
 import { fmt0 } from '../../lib/format'
+import { fmtPct } from '../../lib/grossMargin'
 import {
   fetchClientItemSales,
   itemSalesCsv,
+  itemSalesLineMargin,
+  itemSalesLineMarginPct,
   pricePoints,
   queryReady,
   summarizeItemSales,
@@ -22,6 +26,7 @@ const MAX_SERIES = 6
 
 /** Client card section "Search sales": the lines one client bought for an item, with the price paid over time. */
 export function ClientItemSales({ company, clientId, asUser }: { company: string; clientId: string; asUser: string | null }) {
+  const { t } = useLocale()
   const [query, setQuery] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
@@ -36,6 +41,10 @@ export function ClientItemSales({ company, clientId, asUser }: { company: string
   })
   const rows = useMemo(() => res.data?.rows ?? [], [res.data])
   const summary = useMemo(() => summarizeItemSales(rows), [rows])
+  // Margin columns only when the database says the user may see item costs.
+  const showM = !!res.data?.margin
+  const costedLines = useMemo(() => rows.filter(r => !r.isReturn && r.unitCost != null).length, [rows])
+  const soldLines = useMemo(() => rows.filter(r => !r.isReturn).length, [rows])
   const isChain = clientId.startsWith('chain:')
 
   const { sorted, sort, onSort } = useSortedRows<ItemSalesLine>(
@@ -50,6 +59,8 @@ export function ClientItemSales({ company, clientId, asUser }: { company: string
       qty: r => r.qty,
       price: r => r.price,
       cash: r => r.cash,
+      margin: r => itemSalesLineMargin(r),
+      marginPct: r => itemSalesLineMarginPct(r),
       discount: r => r.discountPct ?? r.discountCash,
     },
     { key: 'date', dir: 'desc' },
@@ -157,6 +168,14 @@ export function ClientItemSales({ company, clientId, asUser }: { company: string
               note={`min ${price(summary.minPrice)} · max ${price(summary.maxPrice)}`}
               hint="Total amount divided by pieces. Min and max are the lowest and highest unit price on a single line."
             />
+            {showM ? (
+              <Kpi
+                label={t('gm.sales.kpi')}
+                value={summary.margin.margin == null ? '—' : fmt0(summary.margin.margin)}
+                note={summary.margin.margin == null ? t('gm.coverageNone') : t('gm.sales.kpiNote', { pct: fmtPct(summary.margin.pct), n: costedLines, total: soldLines })}
+                hint={t('gm.hint')}
+              />
+            ) : null}
             <Kpi
               label="Invoices"
               value={fmt0(summary.invoices)}
@@ -177,7 +196,7 @@ export function ClientItemSales({ company, clientId, asUser }: { company: string
           ) : null}
 
           <div className="dl-bar">
-            <button type="button" className="dl-btn" onClick={() => downloadCSV(itemSalesCsv(sorted), `sales_${clientId.replace(/\W+/g, '_')}_${q.replace(/\W+/g, '_')}.csv`)}>
+            <button type="button" className="dl-btn" onClick={() => downloadCSV(itemSalesCsv(sorted, showM), `sales_${clientId.replace(/\W+/g, '_')}_${q.replace(/\W+/g, '_')}.csv`)}>
               📥 Export CSV
             </button>
           </div>
@@ -194,6 +213,8 @@ export function ClientItemSales({ company, clientId, asUser }: { company: string
                   <SortTh label="Qty" k="qty" sort={sort} onSort={onSort} />
                   <SortTh label="Unit price" k="price" sort={sort} onSort={onSort} />
                   <SortTh label="Line total" k="cash" sort={sort} onSort={onSort} />
+                  {showM ? <SortTh label={t('gm.sales.lineMargin')} k="margin" sort={sort} onSort={onSort} title={t('gm.hint')} /> : null}
+                  {showM ? <SortTh label={t('gm.col.marginPct')} k="marginPct" sort={sort} onSort={onSort} title={t('gm.hint')} /> : null}
                   <SortTh label="Discount" k="discount" sort={sort} onSort={onSort} />
                 </tr>
               </thead>
@@ -213,6 +234,8 @@ export function ClientItemSales({ company, clientId, asUser }: { company: string
                     <td>{fmt0(r.qty)}</td>
                     <td>{price(r.price)}</td>
                     <td>{fmt0(r.cash)}</td>
+                    {showM ? <td>{itemSalesLineMargin(r) == null ? '—' : fmt0(itemSalesLineMargin(r) as number)}</td> : null}
+                    {showM ? <td>{fmtPct(itemSalesLineMarginPct(r))}</td> : null}
                     <td>
                       {r.discountPct != null && r.discountPct !== 0
                         ? `${r.discountPct.toLocaleString(undefined, { maximumFractionDigits: 2 })}%`

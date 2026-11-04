@@ -93,7 +93,15 @@ export function pickableYears(o: {
   return [...s].sort((a, b) => b - a)
 }
 
-export interface BrandYearRow { brand: string; sales: number; importQty: number; importValue: number }
+export interface BrandYearRow {
+  brand: string
+  sales: number
+  importQty: number
+  importValue: number
+  /** gross margin and margin % (a fraction) over the brand's sales that had a cost; absent / null without cost data */
+  margin?: number | null
+  marginPct?: number | null
+}
 
 /** One row per brand with the year's sales and imports side by side (brands that only appear in one list still get a row). */
 export function mergeBrandYear(

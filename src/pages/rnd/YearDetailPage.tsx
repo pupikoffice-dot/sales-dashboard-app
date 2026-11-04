@@ -5,7 +5,10 @@ import { BrandYearTable, COMPANY_ORDER, buildBarCharts, changeColor, pct, signed
 import { useLocale } from '../../context/LocaleContext'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { usePreview } from '../../context/PreviewContext'
+import { MarginNote } from '../../components/rnd/marginShared'
 import { fmt0 } from '../../lib/format'
+import { attachMargin, fmtPct, hasMarginData, overallMargin } from '../../lib/grossMargin'
+import { fetchYearlyDetailMargin } from '../../lib/grossMarginApi'
 import { companyLabel } from '../../lib/salesMetrics'
 import { buildMonthRows, buildYearTotal, fetchYearlyDetail, mergeBrandYear, pickableYears, type MonthRow } from '../../lib/yearlyDetail'
 import { fetchYearlyOverview } from '../../lib/yearlyOverview'
@@ -54,11 +57,33 @@ export function YearDetailPage() {
     staleTime: 10 * 60 * 1000,
   })
   const data = q.data
-  const months = useMemo(() => (data ? buildMonthRows(data) : []), [data])
-  const total = useMemo(() => (data ? buildYearTotal(data) : null), [data])
+  // Gross margin (null for users who may not see item costs).
+  const marginQ = useQuery({
+    queryKey: ['yearly-detail-margin', company, year, asUser],
+    queryFn: () => fetchYearlyDetailMargin(company as string, year as number, asUser),
+    enabled: !!company && year != null,
+    staleTime: 10 * 60 * 1000,
+  })
+  const marginData = marginQ.data ?? null
+  const hasM = hasMarginData(marginData?.months ?? [])
+  const months = useMemo(
+    () => attachMargin(data ? buildMonthRows(data) : [], marginData?.months, r => r.month, e => e.month, r => r.net),
+    [data, marginData],
+  )
+  const baseTotal = useMemo(() => (data ? buildYearTotal(data) : null), [data])
+  const total = useMemo(() => {
+    if (!baseTotal) return null
+    const f = overallMargin(marginData?.months, baseTotal.net)
+    return { ...baseTotal, margin: f.margin, marginPct: f.pct, coverage: f.coverage }
+  }, [baseTotal, marginData])
 
   // Brand tables: one column for the whole year, and one column per month.
-  const brandYear = useMemo(() => mergeBrandYear(data?.brandSales ?? [], data?.brandImports ?? []), [data])
+  const withBrandMargin = (rows: ReturnType<typeof mergeBrandYear>, entries: NonNullable<typeof marginData>['brands']) =>
+    attachMargin(rows, entries, r => r.brand, e => e.brand, r => r.sales).map(r => ({ ...r, margin: r.margin, marginPct: r.marginPct }))
+  const brandYear = useMemo(
+    () => withBrandMargin(mergeBrandYear(data?.brandSales ?? [], data?.brandImports ?? []), marginData?.brands ?? []),
+    [data, marginData], // eslint-disable-line react-hooks/exhaustive-deps
+  )
   // Months table: pick a month, same combined table as the year (default: the latest month that has brand data).
   const [pickedMonth, setPickedMonth] = useState<number | null>(null)
   const brandMonths = useMemo(
@@ -67,22 +92,38 @@ export function YearDetailPage() {
   )
   const brandMonth = pickedMonth != null && brandMonths.includes(pickedMonth) ? pickedMonth : (brandMonths[brandMonths.length - 1] ?? null)
   const brandMonthRows = useMemo(
-    () => mergeBrandYear((data?.brandSales ?? []).filter(b => b.month === brandMonth), (data?.brandImports ?? []).filter(b => b.month === brandMonth)),
-    [data, brandMonth],
+    () =>
+      withBrandMargin(
+        mergeBrandYear((data?.brandSales ?? []).filter(b => b.month === brandMonth), (data?.brandImports ?? []).filter(b => b.month === brandMonth)),
+        (marginData?.brands ?? []).filter(b => b.month === brandMonth),
+      ),
+    [data, marginData, brandMonth], // eslint-disable-line react-hooks/exhaustive-deps
   )
 
-  const charts = useMemo(() => (months.length ? buildBarCharts(months.map(m => monthLabel(m.month)), { net: t('rnd.col.net'), returns: t('rnd.col.returns'), receipts: t('rnd.chart.receipts'), pieces: t('rnd.chart.pieces') }, months) : null),
-    [months, t, monthNames])
+  const charts = useMemo(
+    () =>
+      months.length
+        ? buildBarCharts(
+            months.map(m => monthLabel(m.month)),
+            { net: t('rnd.col.net'), returns: t('rnd.col.returns'), receipts: t('rnd.chart.receipts'), pieces: t('rnd.chart.pieces') },
+            months,
+            hasM ? { label: t('gm.chart.margin'), values: months.map(m => m.margin) } : undefined,
+          )
+        : null,
+    [months, t, monthNames, hasM], // eslint-disable-line react-hooks/exhaustive-deps
+  )
 
   if (!company) return <p className="status-msg">{t('rnd.noCompanies')}</p>
 
   const hasAnything = !!data && (data.sales.length > 0 || data.receipts.length > 0 || data.imports.length > 0)
   const hasImportValue = !!total && total.importValue != null
 
-  const row = (r: MonthRow, label: string, strong = false) => (
+  const row = (r: MonthRow & { margin: number | null; marginPct: number | null }, label: string, strong = false) => (
     <tr key={r.month}>
       <td style={{ textAlign: 'start' }}>{strong ? <b>{label}</b> : label}</td>
       <td>{strong ? <b>{fmt0(r.net)}</b> : fmt0(r.net)}</td>
+      {hasM ? <td>{r.margin == null ? '—' : strong ? <b>{fmt0(r.margin)}</b> : fmt0(r.margin)}</td> : null}
+      {hasM ? <td>{fmtPct(r.marginPct)}</td> : null}
       <td style={{ color: changeColor(r.vsPrev) }}>{signed(r.vsPrev)}</td>
       <td>{fmt0(r.returned)}</td>
       <td>{pct(r.rate)}</td>
@@ -135,6 +176,14 @@ export function YearDetailPage() {
 
           <h3 className="hub-span-12" style={{ margin: '4px 0 0' }}>{t('rnd.year.total', { year: year ?? '' })}</h3>
           <Kpi label={t('rnd.kpi.net')} value={fmt0(total.net)} sub={t('rnd.kpi.netSub')} />
+          {hasM ? (
+            <Kpi
+              label={t('gm.kpi.margin')}
+              value={orDash(total.margin)}
+              sub={total.marginPct == null ? t('gm.coverageNone') : t('gm.kpi.marginSub', { pct: fmtPct(total.marginPct) })}
+              tone={total.margin != null && total.margin < 0 ? 'amber' : undefined}
+            />
+          ) : null}
           <Kpi label={t('rnd.kpi.returns')} value={fmt0(total.returned)} sub={t('rnd.kpi.returnsSub', { rate: pct(total.rate) })} />
           <Kpi label={t('rnd.kpi.receipts')} value={orDash(total.receipts)} sub={total.receipts == null ? t('rnd.kpi.none') : t('rnd.kpi.receiptsSub')} />
           <Kpi
@@ -147,6 +196,7 @@ export function YearDetailPage() {
             }
           />
 
+          <MarginNote visible={hasM} coverage={total.coverage} className="sel-months-list hub-span-12" />
           <BrandYearTable title={t('rnd.brand.combinedYear', { year: year ?? '' })} note={t('rnd.brand.combinedNote')} rows={brandYear} />
 
           <h3 className="hub-span-12" style={{ margin: '16px 0 0' }}>{t('rnd.year.months', { year: year ?? '' })}</h3>
@@ -179,6 +229,8 @@ export function YearDetailPage() {
                   <tr>
                     <th style={{ textAlign: 'start' }}>{t('rnd.col.month')}</th>
                     <th>{t('rnd.col.net')}</th>
+                    {hasM ? <th title={t('gm.hint')}>{t('gm.col.margin')}</th> : null}
+                    {hasM ? <th title={t('gm.hint')}>{t('gm.col.marginPct')}</th> : null}
                     <th>{t('rnd.col.vsMonth')}</th>
                     <th>{t('rnd.col.returns')}</th>
                     <th>{t('rnd.col.rate')}</th>
