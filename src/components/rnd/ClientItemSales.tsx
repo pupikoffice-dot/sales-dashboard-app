@@ -61,7 +61,7 @@ export function ClientItemSales({ company, clientId, asUser }: { company: string
     if (pts.length < 2) return null
     const bySku = new Map<string, Map<string, { sum: number; n: number }>>()
     for (const r of rows) {
-      if (r.isReturn || r.price == null || r.price <= 0 || !r.date) continue
+      if (r.isReturn || r.qty <= 0 || r.price == null || r.price <= 0 || !r.date) continue
       const m = bySku.get(r.sku) ?? new Map()
       const cur = m.get(r.date) ?? { sum: 0, n: 0 }
       cur.sum += r.price
@@ -148,8 +148,8 @@ export function ClientItemSales({ company, clientId, asUser }: { company: string
             <Kpi
               label="Total amount"
               value={fmt0(summary.amount)}
-              note={summary.creditAmount > 0 ? `credits not included: ${fmt0(summary.creditAmount)} (${fmt0(summary.creditQty)} pcs)` : undefined}
-              hint="Invoiced lines only. Credit invoice lines (document 14) are listed in the table but kept out of these figures."
+              note={summary.creditAmount > 0 ? `returned, not included: ${fmt0(summary.creditAmount)} (${fmt0(summary.creditQty)} pcs)` : undefined}
+              hint="Sold, as the client card counts it. Returns (credit invoices, document 14, whose reason counts as a return) are listed in the table but kept out of these figures."
             />
             <Kpi
               label="Average price paid"
@@ -202,8 +202,8 @@ export function ClientItemSales({ company, clientId, asUser }: { company: string
                   <tr key={`${r.docType}/${r.docNum}/${r.sku}/${i}`} style={r.isReturn ? { opacity: 0.75 } : undefined}>
                     <td style={{ textAlign: 'left' }}>{r.date}</td>
                     <td style={{ textAlign: 'left' }}>{r.docNum || '—'}</td>
-                    <td style={{ textAlign: 'left' }} title={r.isReturn ? 'Credit invoice (return)' : undefined}>
-                      {r.docType || '—'}{r.isReturn ? ' · credit' : ''}
+                    <td style={{ textAlign: 'left' }} title={r.isReturn ? 'Credit invoice counted as a return' : undefined}>
+                      {r.docType || '—'}{r.isReturn ? ' · return' : ''}
                     </td>
                     {isChain ? <td style={{ textAlign: 'left' }}>{r.clientID}</td> : null}
                     <td style={{ textAlign: 'left' }}>

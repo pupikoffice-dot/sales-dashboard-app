@@ -25,7 +25,11 @@ export interface ItemSalesLine {
   price: number | null
   discountPct: number | null
   discountCash: number | null
-  /** Credit invoice line (document 14 with negative cash). Shown, but kept out of the price statistics. */
+  /**
+   * Credit invoice line (document 14, negative cash) that counts as a return on the client card. Credits whose 855 reason
+   * says they are not returns (damaged / not supplied) stay out of this flag and sit in the sold figures as negatives,
+   * exactly as the card books them, so sold, returned and net equal the card's.
+   */
   isReturn: boolean
 }
 
@@ -36,7 +40,7 @@ export interface ItemSalesResult {
 }
 
 export interface ItemSalesSummary {
-  /** Sold lines (credits excluded) */
+  /** Sold lines, as the card counts them (returns excluded; non-return credits count as negative sales) */
   lines: number
   qty: number
   amount: number
@@ -107,7 +111,7 @@ export function summarizeItemSales(rows: readonly ItemSalesLine[]): ItemSalesSum
     qty += r.qty
     amount += r.cash
     invoices.add(salesInvoiceKey(r))
-    if (r.price != null) {
+    if (r.price != null && r.qty > 0) {
       min = min == null ? r.price : Math.min(min, r.price)
       max = max == null ? r.price : Math.max(max, r.price)
     }
@@ -134,7 +138,7 @@ export function summarizeItemSales(rows: readonly ItemSalesLine[]): ItemSalesSum
 /** Points for the price-over-time chart: sold lines with a price, oldest first. */
 export function pricePoints(rows: readonly ItemSalesLine[]): { date: string; price: number }[] {
   return rows
-    .filter(r => !r.isReturn && r.price != null && r.price > 0 && r.date)
+    .filter(r => !r.isReturn && r.qty > 0 && r.price != null && r.price > 0 && r.date)
     .map(r => ({ date: r.date, price: r.price as number }))
     .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
 }

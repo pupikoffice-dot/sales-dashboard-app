@@ -62,6 +62,16 @@ describe('summarizeItemSales', () => {
     expect(s.creditQty).toBe(2)
     expect(s.creditAmount).toBe(24)
   })
+  it('books non-return credits as negative sales and keeps them out of min/max price', () => {
+    const s = summarizeItemSales([
+      line({ qty: 10, cash: 100, price: 10 }),
+      line({ docNum: '5', docType: '14', qty: -1, cash: -9, price: 9 }),
+    ])
+    expect(s.qty).toBe(9)
+    expect(s.amount).toBe(91)
+    expect(s.minPrice).toBe(10)
+    expect(s.creditQty).toBe(0)
+  })
   it('counts the same document number of different types as different invoices', () => {
     expect(summarizeItemSales([line({ docType: '1' }), line({ docType: '2' })]).invoices).toBe(2)
   })
