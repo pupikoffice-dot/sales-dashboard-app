@@ -110,6 +110,7 @@ Deno.serve(async () => {
     const unc = await sb.rpc('data_health_uncategorized')
     if (unc.error) log.push(`uncategorized list unavailable: ${unc.error.message}`)
     summarySent = await send(summaryEmail({ statuses: (all.data ?? []) as Status[], openCount: open.count ?? 0, unruled, dateLabel: label, url: PAGE_URL, isoDate: local.date,
+      rules: Object.fromEntries(rules.map(r => [r.file_name, { fix_hint: r.fix_hint, impact: r.impact }])),
       uncategorized: unc.error ? [] : ((unc.data ?? []) as UncategorizedRow[]) }))
     if (summarySent) {
       await sb.from('data_health_settings').update({ last_summary_date: local.date }).eq('id', true)
