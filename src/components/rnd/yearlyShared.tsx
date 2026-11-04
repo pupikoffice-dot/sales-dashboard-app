@@ -5,6 +5,7 @@ import type { ChartConfiguration } from 'chart.js'
 import { cssVar } from '../oversite/hub/HubChart'
 import { SortTh, useSortedRows } from './sortRows'
 import { fmt0 } from '../../lib/format'
+import { fmtPct } from '../../lib/grossMargin'
 import { fmtK } from '../../lib/stockByBrand'
 import type { BrandMatrixRow } from '../../lib/yearlyOverview'
 import type { BrandYearRow } from '../../lib/yearlyDetail'
@@ -36,6 +37,7 @@ export function buildBarCharts(
   labels: string[],
   names: { net: string; returns: string; receipts: string; pieces: string },
   rows: Array<{ net: number; returned: number; receipts: number | null; importQty: number | null }>,
+  margin?: { label: string; values: Array<number | null> },
 ) {
   const sales: ChartConfiguration = {
     type: 'bar',
@@ -44,6 +46,7 @@ export function buildBarCharts(
       datasets: [
         { label: names.net, data: rows.map(r => r.net), backgroundColor: cssVar('--chart-c0'), borderRadius: 3 },
         { label: names.returns, data: rows.map(r => r.returned), backgroundColor: cssVar('--chart-c3'), borderRadius: 3 },
+        ...(margin ? [{ label: margin.label, data: margin.values, backgroundColor: cssVar('--chart-c4'), borderRadius: 3 }] : []),
       ],
     },
     options: barOptions(true, true),
@@ -131,7 +134,10 @@ export function BrandYearTable({ title, note, rows }: { title: string; note: str
   const { t } = useLocale()
   const brandName = (b: string) => (b === 'Other' ? t('rnd.brand.other') : b === '(no brand)' ? t('rnd.brand.noBrand') : b)
   const showValue = rows.some(r => r.importValue !== 0)
+  const showMargin = rows.some(r => r.margin != null)
   const accessors = useMemo(() => ({
+    margin: (r: BrandYearRow) => r.margin,
+    marginPct: (r: BrandYearRow) => r.marginPct,
     brand: (r: BrandYearRow) => r.brand,
     sales: (r: BrandYearRow) => r.sales,
     importQty: (r: BrandYearRow) => r.importQty,
@@ -152,6 +158,8 @@ export function BrandYearTable({ title, note, rows }: { title: string; note: str
               <tr>
                 <SortTh label={t('rnd.col.brand')} k="brand" left sort={sort} onSort={onSort} />
                 <SortTh label={t('rnd.col.sales')} k="sales" sort={sort} onSort={onSort} />
+                {showMargin ? <SortTh label={t('gm.col.margin')} k="margin" sort={sort} onSort={onSort} title={t('gm.hint')} /> : null}
+                {showMargin ? <SortTh label={t('gm.col.marginPct')} k="marginPct" sort={sort} onSort={onSort} title={t('gm.hint')} /> : null}
                 <SortTh label={t('rnd.col.impQty')} k="importQty" sort={sort} onSort={onSort} />
                 {showValue ? <SortTh label={t('rnd.col.impValue')} k="importValue" sort={sort} onSort={onSort} /> : null}
               </tr>
@@ -161,6 +169,8 @@ export function BrandYearTable({ title, note, rows }: { title: string; note: str
                 <tr key={r.brand}>
                   <td style={{ textAlign: 'start' }}>{brandName(r.brand)}</td>
                   <td><b>{cell(r.sales)}</b></td>
+                  {showMargin ? <td>{r.margin == null ? '—' : fmt0(r.margin)}</td> : null}
+                  {showMargin ? <td>{fmtPct(r.marginPct ?? null)}</td> : null}
                   <td>{cell(r.importQty)}</td>
                   {showValue ? <td>{cell(r.importValue)}</td> : null}
                 </tr>

@@ -26,6 +26,7 @@ const line = (o: Partial<ItemSalesLine>): ItemSalesLine => ({
   discountPct: null,
   discountCash: null,
   isReturn: false,
+  unitCost: null,
   ...o,
 })
 
@@ -38,7 +39,7 @@ describe('parseItemSales', () => {
     expect(r.total).toBe(2)
     expect(r.rows[0]).toMatchObject({ docNum: '7', qty: 3, cash: 30.5, price: 10.1667, discountPct: null, isReturn: true })
     expect(r.rows[1]).toMatchObject({ qty: 0, price: null, isReturn: false })
-    expect(parseItemSales(null)).toEqual({ total: 0, rows: [] })
+    expect(parseItemSales(null)).toEqual({ total: 0, margin: false, rows: [] })
   })
 })
 

@@ -6,7 +6,11 @@ import { HubChart, cssVar } from '../../components/oversite/hub/HubChart'
 import { Kpi, PurchaseSearchBar, useDebounced } from '../../components/rnd/PurchaseSearch'
 import { SortTh, useSortedRows } from '../../components/rnd/sortRows'
 import { ComparisonTable } from '../../components/rnd/ComparisonTable'
+import { MarginNote } from '../../components/rnd/marginShared'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
+import { useLocale } from '../../context/LocaleContext'
+import { attachMargin, fmtPct, hasMarginData, marginOf, type CostCover } from '../../lib/grossMargin'
+import { fetchItemCardMargin } from '../../lib/grossMarginApi'
 import { usePreview } from '../../context/PreviewContext'
 import { fmt0 } from '../../lib/format'
 import {
@@ -27,10 +31,13 @@ import type { LogicalCompany } from '../../types/dashboard'
 const COMPANY_ORDER: LogicalCompany[] = ['pupik', 'mt', 'grow', 'gold']
 const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-function ClientRows({ rows, company, empty }: { rows: ItemCardClient[]; company: string; empty: string }) {
+function ClientRows({ rows: baseRows, company, empty, margins }: { rows: ItemCardClient[]; company: string; empty: string; margins?: Array<CostCover & { id: string }> | null }) {
+  const { t } = useLocale()
+  const showM = hasMarginData(margins ?? [])
+  const rows = useMemo(() => attachMargin(baseRows, margins, r => r.id, e => e.id, r => r.cash ?? 0), [baseRows, margins])
   const { sorted, sort, onSort } = useSortedRows(
     rows,
-    { client: r => r.name || r.id, qty: r => r.qty, cash: r => r.cash, months: r => r.months, last: r => r.last },
+    { client: r => r.name || r.id, qty: r => r.qty, cash: r => r.cash, margin: r => r.margin, marginPct: r => r.marginPct, months: r => r.months, last: r => r.last },
     { key: 'cash', dir: 'desc' },
     ['client'],
   )
@@ -43,6 +50,8 @@ function ClientRows({ rows, company, empty }: { rows: ItemCardClient[]; company:
             <SortTh label="Client" k="client" left sort={sort} onSort={onSort} />
             <SortTh label="Pieces" k="qty" sort={sort} onSort={onSort} />
             <SortTh label="Cash" k="cash" sort={sort} onSort={onSort} />
+            {showM ? <SortTh label={t('gm.col.margin')} k="margin" sort={sort} onSort={onSort} title={t('gm.hint')} /> : null}
+            {showM ? <SortTh label={t('gm.col.marginPct')} k="marginPct" sort={sort} onSort={onSort} title={t('gm.hint')} /> : null}
             <SortTh label="Months bought" k="months" sort={sort} onSort={onSort} />
             <SortTh label="Last bought" k="last" sort={sort} onSort={onSort} />
           </tr>
@@ -55,6 +64,8 @@ function ClientRows({ rows, company, empty }: { rows: ItemCardClient[]; company:
               </td>
               <td>{r.qty != null ? fmt0(r.qty) : '—'}</td>
               <td>{r.cash != null ? fmt0(r.cash) : '—'}</td>
+              {showM ? <td>{r.margin == null ? '—' : fmt0(r.margin)}</td> : null}
+              {showM ? <td>{fmtPct(r.marginPct)}</td> : null}
               <td>{r.months}</td>
               <td>{r.last ?? '—'}</td>
             </tr>
@@ -67,6 +78,7 @@ function ClientRows({ rows, company, empty }: { rows: ItemCardClient[]; company:
 
 /** R&D → Item card: who buys one item, how fast it sells, how long the stock lasts. Needs the Purchase insights module. */
 export function ItemCardPage() {
+  const { t } = useLocale()
   const { access } = useDashboardAccess()
   const { isPreviewing, previewUser } = usePreview()
   const asUser = isPreviewing ? (previewUser?.id ?? null) : null
@@ -98,6 +110,22 @@ export function ItemCardPage() {
     staleTime: 5 * 60 * 1000,
   })
   const data = card.data
+  // Gross margin (null for users who may not see item costs).
+  const marginQ = useQuery({
+    queryKey: ['item-card-margin', company, sku, asUser],
+    queryFn: () => fetchItemCardMargin(company as string, sku as string, asUser),
+    enabled: !!company && !!sku,
+    staleTime: 5 * 60 * 1000,
+  })
+  const marginData = marginQ.data ?? null
+  const hasM = hasMarginData(marginData?.months ?? [])
+  const net12 = useMemo(() => {
+    if (!data) return null
+    const now = new Date()
+    const cur = now.getFullYear() * 12 + now.getMonth() + 1
+    return data.months.filter(m => m.y * 12 + m.m > cur - 12).reduce((a, m) => a + m.cash, 0)
+  }, [data])
+  const margin12 = marginOf({ cost: marginData?.cost12, covered: marginData?.covered12 }, net12)
   const hitSort = useSortedRows(
     hits.data,
     { item: h => `${h.sku} ${h.name}`, qty12: h => h.qty12, cash12: h => h.cash12, clients12: h => h.clients12 },
@@ -136,6 +164,23 @@ export function ItemCardPage() {
         },
       },
     }
+    const marginOfMonth = new Map((marginData?.months ?? []).map(m => [m.y * 12 + m.m, marginOf(m).margin]))
+    const marginChart: ChartConfiguration = {
+      type: 'bar',
+      data: {
+        labels: keys.map(k => `${MONTH_SHORT[k.m - 1]} ${String(k.y).slice(2)}`),
+        datasets: [{ label: t('gm.chart.margin'), data: keys.map(k => marginOfMonth.get(k.y * 12 + k.m) ?? 0), backgroundColor: cssVar('--chart-c4'), borderRadius: 3 }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: muted, maxRotation: 0, autoSkipPadding: 8 }, grid: { display: false } },
+          y: { ticks: { color: muted }, grid: { color: grid } },
+        },
+      },
+    }
     const stock: ChartConfiguration = {
       type: 'line',
       data: {
@@ -162,8 +207,8 @@ export function ItemCardPage() {
         },
       },
     }
-    return { monthly, stock }
-  }, [data])
+    return { monthly, stock, marginChart }
+  }, [data, marginData, t])
 
   if (!company) return <p className="status-msg">No companies available.</p>
 
@@ -249,6 +294,15 @@ export function ItemCardPage() {
             <Kpi label="In stock now" value={fmt0(data.stock)} note={cover == null ? 'no sales in the last 3 months' : `about ${cover.toFixed(1)} months at the last 3 months pace`} tone={cover != null && cover < 1 ? 'amber' : undefined} />
             <Kpi label="Sold, last 12 months" value={fmt0(data.sold12)} note={`${fmt0(data.sold3)} net in the last 3 months`} tone="grn" />
             <Kpi label="Return rate" value={rate == null ? '—' : `${(rate * 100).toFixed(1)}%`} hint="Pieces on return invoices (document 14) divided by pieces sold including them, last 12 months." note={`${fmt0(data.returned12)} pieces returned`} tone={rate != null && rate > 0.15 ? 'amber' : undefined} />
+            {hasM ? (
+              <Kpi
+                label={t('gm.kpi.margin') + ' — 12m'}
+                value={margin12.margin == null ? '—' : fmt0(margin12.margin)}
+                note={margin12.pct == null ? t('gm.coverageNone') : t('gm.kpi.marginSub', { pct: fmtPct(margin12.pct) })}
+                hint={t('gm.hint')}
+                tone={margin12.margin != null && margin12.margin < 0 ? 'amber' : undefined}
+              />
+            ) : null}
             <Kpi label="Clients, last 12 months" value={fmt0(data.clients12)} note={since == null ? undefined : `last sale ${since} days ago (${data.last})`} />
 
             {vs.data ? (
@@ -272,6 +326,23 @@ export function ItemCardPage() {
               <div className="hub-card-hdr"><h3>Pieces sold and returned — 24 months</h3></div>
               {charts ? <HubChart config={charts.monthly} height={240} label="Sold and returned by month" minWidth={560} /> : null}
             </section>
+            {hasM && charts ? (
+              <section className="hub-card hub-span-12">
+                <div className="hub-card-hdr">
+                  <h3>{t('gm.monthly.title')} — 24</h3>
+                  <span className="hub-card-aside">
+                    {marginData!.unitCosts.length
+                      ? `${t('gm.item.costs')}: ` +
+                        marginData!.unitCosts
+                          .map(u => `${u.year} ${u.unitCost.toLocaleString(undefined, { maximumFractionDigits: 2 })} (${u.basis === 'import' ? t('gm.item.basisImport') : t('gm.item.basisCurrent')})`)
+                          .join(' · ')
+                      : t('gm.coverageNone')}
+                  </span>
+                </div>
+                <MarginNote visible coverage={margin12.coverage} />
+                <HubChart config={charts.marginChart} height={200} label={t('gm.monthly.aria')} minWidth={560} />
+              </section>
+            ) : null}
             <section className="hub-card hub-span-4">
               <div className="hub-card-hdr"><h3>Stock — last 150 days</h3></div>
               {charts && data.stockDaily.length ? (
@@ -311,14 +382,14 @@ export function ItemCardPage() {
 
             <section className="hub-card hub-span-12">
               <div className="hub-card-hdr"><h3>Top clients — last 12 months</h3></div>
-              <ClientRows rows={data.topClients} company={company} empty="Nobody bought it in the last 12 months." />
+              <ClientRows rows={data.topClients} company={company} empty="Nobody bought it in the last 12 months." margins={marginData?.topClients} />
             </section>
             <section className="hub-card hub-span-12">
               <div className="hub-card-hdr">
                 <h3>Stopped buying</h3>
                 <span className="hub-card-aside">bought in 3+ different months of the year before, none in the last 3 months</span>
               </div>
-              <ClientRows rows={data.stopped} company={company} empty="No regular client has stopped buying it." />
+              <ClientRows rows={data.stopped} company={company} empty="No regular client has stopped buying it." margins={marginData?.stopped} />
             </section>
             <section className="hub-card hub-span-12">
               <div className="hub-card-hdr"><h3>Latest arrivals (imports and local purchases)</h3></div>

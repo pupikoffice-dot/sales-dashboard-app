@@ -7,7 +7,11 @@ import { Kpi, PurchaseSearchBar, useDebounced } from '../../components/rnd/Purch
 import { SortTh, useSortedRows } from '../../components/rnd/sortRows'
 import { ComparisonTable } from '../../components/rnd/ComparisonTable'
 import { ClientItemSales } from '../../components/rnd/ClientItemSales'
+import { MarginNote } from '../../components/rnd/marginShared'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
+import { useLocale } from '../../context/LocaleContext'
+import { attachMargin, fmtPct, hasMarginData, marginOf, type CostCover } from '../../lib/grossMargin'
+import { fetchClientCardMargin } from '../../lib/grossMarginApi'
 import { usePreview } from '../../context/PreviewContext'
 import { fmt0 } from '../../lib/format'
 import { fmtK } from '../../lib/stockByBrand'
@@ -32,10 +36,13 @@ import type { LogicalCompany } from '../../types/dashboard'
 const COMPANY_ORDER: LogicalCompany[] = ['pupik', 'mt', 'grow', 'gold']
 const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-function ItemRows({ rows, company, empty }: { rows: ClientCardItem[]; company: string; empty: string }) {
+function ItemRows({ rows: baseRows, company, empty, margins }: { rows: ClientCardItem[]; company: string; empty: string; margins?: Array<CostCover & { sku: string }> | null }) {
+  const { t } = useLocale()
+  const showM = hasMarginData(margins ?? [])
+  const rows = useMemo(() => attachMargin(baseRows, margins, r => r.sku, e => e.sku, r => r.cash ?? 0), [baseRows, margins])
   const { sorted, sort, onSort } = useSortedRows(
     rows,
-    { item: r => `${r.sku} ${r.name}`, qty: r => r.qty, cash: r => r.cash, months: r => r.months, last: r => r.last },
+    { item: r => `${r.sku} ${r.name}`, qty: r => r.qty, cash: r => r.cash, margin: r => r.margin, marginPct: r => r.marginPct, months: r => r.months, last: r => r.last },
     { key: 'cash', dir: 'desc' },
     ['item'],
   )
@@ -48,6 +55,8 @@ function ItemRows({ rows, company, empty }: { rows: ClientCardItem[]; company: s
             <SortTh label="Item" k="item" left sort={sort} onSort={onSort} />
             <SortTh label="Pieces" k="qty" sort={sort} onSort={onSort} />
             <SortTh label="Cash" k="cash" sort={sort} onSort={onSort} />
+            {showM ? <SortTh label={t('gm.col.margin')} k="margin" sort={sort} onSort={onSort} title={t('gm.hint')} /> : null}
+            {showM ? <SortTh label={t('gm.col.marginPct')} k="marginPct" sort={sort} onSort={onSort} title={t('gm.hint')} /> : null}
             <SortTh label="Months bought" k="months" sort={sort} onSort={onSort} />
             <SortTh label="Last bought" k="last" sort={sort} onSort={onSort} />
           </tr>
@@ -60,6 +69,8 @@ function ItemRows({ rows, company, empty }: { rows: ClientCardItem[]; company: s
               </td>
               <td>{r.qty != null ? fmt0(r.qty) : '—'}</td>
               <td>{r.cash != null ? fmt0(r.cash) : '—'}</td>
+              {showM ? <td>{r.margin == null ? '—' : fmt0(r.margin)}</td> : null}
+              {showM ? <td>{fmtPct(r.marginPct)}</td> : null}
               <td>{r.months}</td>
               <td>{r.last ?? '—'}</td>
             </tr>
@@ -72,6 +83,7 @@ function ItemRows({ rows, company, empty }: { rows: ClientCardItem[]; company: s
 
 /** R&D → Client card: what one client buys, how often, what they stopped buying. Needs the Purchase insights module. */
 export function ClientCardPage() {
+  const { t } = useLocale()
   const { access } = useDashboardAccess()
   const { isPreviewing, previewUser } = usePreview()
   const asUser = isPreviewing ? (previewUser?.id ?? null) : null
@@ -128,6 +140,20 @@ export function ClientCardPage() {
     staleTime: 5 * 60 * 1000,
   })
   const data = card.data
+  // Gross margin (null for users who may not see item costs: then no margin column, tile or line appears).
+  const marginQ = useQuery({
+    queryKey: ['client-card-margin', company, clientId, asUser],
+    queryFn: () => fetchClientCardMargin(company as string, clientId as string, asUser),
+    enabled: !!company && !!clientId,
+    staleTime: 5 * 60 * 1000,
+  })
+  const marginData = marginQ.data ?? null
+  const hasM = hasMarginData(marginData?.years ?? [])
+  const margin12 = marginOf({ cost: marginData?.cost12, covered: marginData?.covered12 }, data ? data.sold12 - data.returned12 : null)
+  const yearRows = useMemo(
+    () => attachMargin(data?.years ?? [], marginData?.years, y => y.y, e => e.y, y => y.sold - y.returned),
+    [data, marginData],
+  )
   const chainRows = useMemo(
     () => (chains.data ?? []).map(c => ({ id: c.id, name: c.name, stores: c.stores, cash12: c.cash12, last: c.last })),
     [chains.data],
@@ -158,8 +184,10 @@ export function ClientCardPage() {
     ['reason'],
   )
   const yearSort = useSortedRows(
-    data?.years,
+    yearRows,
     {
+      margin: y => y.margin,
+      marginPct: y => y.marginPct,
       year: y => y.y,
       sold: y => y.sold,
       returned: y => y.returned,
@@ -175,16 +203,22 @@ export function ClientCardPage() {
     const now = new Date()
     const keys = lastMonthKeys(now.getFullYear(), now.getMonth() + 1, 24)
     const cashOf = new Map(data.months.map(m => [m.y * 12 + m.m, m.cash]))
+    const marginOfMonth = new Map((marginData?.months ?? []).map(m => [m.y * 12 + m.m, marginOf(m).margin]))
     const monthly: ChartConfiguration = {
       type: 'bar',
       data: {
         labels: keys.map(k => `${MONTH_SHORT[k.m - 1]} ${String(k.y).slice(2)}`),
-        datasets: [{ label: 'Net cash', data: keys.map(k => cashOf.get(k.y * 12 + k.m) ?? 0), backgroundColor: cssVar('--chart-c0'), borderRadius: 3 }],
+        datasets: [
+          { label: 'Net cash', data: keys.map(k => cashOf.get(k.y * 12 + k.m) ?? 0), backgroundColor: cssVar('--chart-c0'), borderRadius: 3 },
+          ...(hasM
+            ? [{ label: t('gm.chart.margin'), data: keys.map(k => marginOfMonth.get(k.y * 12 + k.m) ?? 0), backgroundColor: cssVar('--chart-c4'), borderRadius: 3 }]
+            : []),
+        ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
+        plugins: { legend: { display: hasM } },
         scales: {
           x: { ticks: { color: muted, maxRotation: 0, autoSkipPadding: 8 }, grid: { display: false } },
           y: { ticks: { color: muted, callback: v => fmtK(Number(v)) }, grid: { color: grid }, beginAtZero: true },
@@ -209,7 +243,7 @@ export function ClientCardPage() {
       },
     }
     return { monthly, brands }
-  }, [data])
+  }, [data, marginData, hasM, t])
 
   if (!company) return <p className="status-msg">No companies available.</p>
 
@@ -355,6 +389,15 @@ export function ClientCardPage() {
               tone={rate != null && rate > 0.15 ? 'amber' : undefined}
             />
             <Kpi label="Documents, last 12 months" value={fmt0(data.docs12)} note={data.first ? `first purchase ${data.first}` : undefined} />
+            {hasM ? (
+              <Kpi
+                label={t('gm.kpi.margin') + ' — ' + '12m'}
+                value={margin12.margin == null ? '—' : fmt0(margin12.margin)}
+                note={margin12.pct == null ? t('gm.coverageNone') : t('gm.kpi.marginSub', { pct: fmtPct(margin12.pct) })}
+                hint={t('gm.hint')}
+                tone={margin12.margin != null && margin12.margin < 0 ? 'amber' : undefined}
+              />
+            ) : null}
             <Kpi label="Last purchase" value={since == null ? '—' : `${since} days ago`} note={data.last ?? undefined} tone={since != null && since > 90 ? 'amber' : undefined} />
 
             {vs.data ? (
@@ -380,6 +423,11 @@ export function ClientCardPage() {
               </>
             ) : null}
 
+            {hasM ? (
+              <div className="hub-span-12">
+                <MarginNote visible coverage={margin12.coverage} />
+              </div>
+            ) : null}
             <section className="hub-card hub-span-8">
               <div className="hub-card-hdr"><h3>Net cash by month — 24 months</h3></div>
               {charts ? <HubChart config={charts.monthly} height={240} label="Net cash by month" minWidth={560} /> : null}
@@ -491,14 +539,14 @@ export function ClientCardPage() {
             </section>
             <section className="hub-card hub-span-12">
               <div className="hub-card-hdr"><h3>Top items — last 12 months</h3></div>
-              <ItemRows rows={data.topItems} company={company} empty="No purchases in the last 12 months." />
+              <ItemRows rows={data.topItems} company={company} empty="No purchases in the last 12 months." margins={marginData?.topItems} />
             </section>
             <section className="hub-card hub-span-12">
               <div className="hub-card-hdr">
                 <h3>Stopped buying</h3>
                 <span className="hub-card-aside">bought in 3+ different months of the year before, none in the last 3 months</span>
               </div>
-              <ItemRows rows={data.stopped} company={company} empty="Nothing the client used to buy regularly has stopped." />
+              <ItemRows rows={data.stopped} company={company} empty="Nothing the client used to buy regularly has stopped." margins={marginData?.stopped} />
             </section>
             <section className="hub-card hub-span-12">
               <div className="hub-card-hdr">
@@ -549,6 +597,8 @@ export function ClientCardPage() {
                     <tr>
                       <SortTh label="Year" k="year" left sort={yearSort.sort} onSort={yearSort.onSort} />
                       <SortTh label="Sold" k="sold" sort={yearSort.sort} onSort={yearSort.onSort} />
+                      {hasM ? <SortTh label={t('gm.col.margin')} k="margin" sort={yearSort.sort} onSort={yearSort.onSort} title={t('gm.hint')} /> : null}
+                      {hasM ? <SortTh label={t('gm.col.marginPct')} k="marginPct" sort={yearSort.sort} onSort={yearSort.onSort} title={t('gm.hint')} /> : null}
                       <SortTh label="Returned" k="returned" sort={yearSort.sort} onSort={yearSort.onSort} />
                       <SortTh label="Return rate" k="rate" sort={yearSort.sort} onSort={yearSort.onSort} />
                       <SortTh label="Net pieces" k="qty" sort={yearSort.sort} onSort={yearSort.onSort} />
@@ -561,6 +611,8 @@ export function ClientCardPage() {
                         <tr key={y.y}>
                           <td style={{ textAlign: 'left' }}>{y.y}</td>
                           <td>{fmt0(y.sold)}</td>
+                          {hasM ? <td>{y.margin == null ? '—' : fmt0(y.margin)}</td> : null}
+                          {hasM ? <td>{fmtPct(y.marginPct)}</td> : null}
                           <td>{fmt0(y.returned)}</td>
                           <td>{r == null ? '—' : `${(r * 100).toFixed(1)}%`}</td>
                           <td>{fmt0(y.qty)}</td>

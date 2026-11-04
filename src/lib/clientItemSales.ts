@@ -1,5 +1,6 @@
 import { csvCell } from './csvExport'
 import { supabase } from './supabase'
+import { linesMargin, lineMargin, marginOf, type MarginFigures } from './grossMargin'
 
 /**
  * R&D client card -> "Search sales": every invoice line one client (or a chain's stores) bought for an item.
@@ -31,9 +32,13 @@ export interface ItemSalesLine {
    * exactly as the card books them, so sold, returned and net equal the card's.
    */
   isReturn: boolean
+  /** Unit cost of the item for the year of the line (import cost of that year, else the current cost); null = no cost, or the user may not see costs. */
+  unitCost: number | null
 }
 
 export interface ItemSalesResult {
+  /** True when the user may see item costs (margin columns are shown). */
+  margin: boolean
   /** Lines matching, before the database cap; larger than rows.length when the list was cut. */
   total: number
   rows: ItemSalesLine[]
@@ -53,6 +58,8 @@ export interface ItemSalesSummary {
   invoices: number
   creditQty: number
   creditAmount: number
+  /** Gross margin over the sold lines that have a unit cost (null = no costs to show). Same lines as qty / amount. */
+  margin: MarginFigures
 }
 
 const num = (v: unknown): number => {
@@ -63,10 +70,11 @@ const numOrNull = (v: unknown): number | null => (v == null || v === '' || !Numb
 const str = (v: unknown): string => (v == null ? '' : String(v))
 
 export function parseItemSales(raw: unknown): ItemSalesResult {
-  const o = (raw ?? {}) as { total?: unknown; rows?: unknown }
+  const o = (raw ?? {}) as { total?: unknown; rows?: unknown; margin?: unknown }
   const rows = Array.isArray(o.rows) ? o.rows : []
   return {
     total: num(o.total),
+    margin: o.margin === true,
     rows: rows.map((r: Record<string, unknown>) => ({
       date: str(r.date),
       docNum: str(r.docNum),
@@ -80,6 +88,7 @@ export function parseItemSales(raw: unknown): ItemSalesResult {
       discountPct: numOrNull(r.discountPct),
       discountCash: numOrNull(r.discountCash),
       isReturn: r.isReturn === true,
+      unitCost: numOrNull(r.unitCost),
     })),
   }
 }
@@ -132,7 +141,18 @@ export function summarizeItemSales(rows: readonly ItemSalesLine[]): ItemSalesSum
     invoices: invoices.size,
     creditQty,
     creditAmount,
+    margin: marginOf(linesMargin(rows, { skipReturns: true }), amount),
   }
+}
+
+/** Margin of one line (cash - qty x unit cost); null without a unit cost. */
+export const itemSalesLineMargin = (l: Pick<ItemSalesLine, 'cash' | 'qty' | 'unitCost'>): number | null =>
+  lineMargin(l.cash, l.qty, l.unitCost)
+
+/** Line margin as a share of the line total (null without a cost, or when the line total is not positive). */
+export function itemSalesLineMarginPct(l: Pick<ItemSalesLine, 'cash' | 'qty' | 'unitCost'>): number | null {
+  const m = itemSalesLineMargin(l)
+  return m != null && l.cash > 0 ? Math.round((m / l.cash) * 10000) / 10000 : null
 }
 
 /** Points for the price-over-time chart: sold lines with a price, oldest first. */
@@ -145,14 +165,19 @@ export function pricePoints(rows: readonly ItemSalesLine[]): { date: string; pri
 
 const CSV_HEAD = ['Date', 'Document', 'Type', 'SKU', 'Item', 'Qty', 'Unit price', 'Line total', 'Discount %', 'Discount amount']
 
-export function itemSalesCsv(rows: readonly ItemSalesLine[]): string {
+export function itemSalesCsv(rows: readonly ItemSalesLine[], withMargin = false): string {
   const cell = (v: number | null) => (v == null ? '' : String(v))
-  const lines = rows.map(r =>
-    [r.date, r.docNum, r.docType, r.sku, r.name, String(r.qty), cell(r.price), String(r.cash), cell(r.discountPct), cell(r.discountCash)]
+  const lines = rows.map(r => {
+    const pct = itemSalesLineMarginPct(r)
+    return [
+      r.date, r.docNum, r.docType, r.sku, r.name, String(r.qty), cell(r.price), String(r.cash), cell(r.discountPct), cell(r.discountCash),
+      ...(withMargin ? [cell(r.unitCost), cell(itemSalesLineMargin(r)), cell(pct == null ? null : Math.round(pct * 10000) / 100)] : []),
+    ]
       .map(csvCell)
-      .join(','),
-  )
-  return [CSV_HEAD.map(csvCell).join(','), ...lines].join('\r\n')
+      .join(',')
+  })
+  const head = withMargin ? [...CSV_HEAD, 'Unit cost', 'Margin', 'Margin %'] : CSV_HEAD
+  return [head.map(csvCell).join(','), ...lines].join('\r\n')
 }
 
 export async function fetchClientItemSales(
