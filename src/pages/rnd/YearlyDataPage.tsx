@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { HubChart } from '../../components/oversite/hub/HubChart'
 import { SortTh, useSortedRows } from '../../components/rnd/sortRows'
 import { BrandMatrix, COMPANY_ORDER, buildBarCharts, changeColor, pct, signed } from '../../components/rnd/yearlyShared'
+import { useLocale } from '../../context/LocaleContext'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { usePreview } from '../../context/PreviewContext'
 import { fmt0 } from '../../lib/format'
@@ -16,6 +17,7 @@ import type { LogicalCompany } from '../../types/dashboard'
 
 /** R&D → Multi-year data: one company, year by year. Needs the R&D section module. */
 export function YearlyDataPage() {
+  const { t } = useLocale()
   const { access } = useDashboardAccess()
   const { isPreviewing, previewUser } = usePreview()
   const asUser = isPreviewing ? (previewUser?.id ?? null) : null
@@ -58,9 +60,9 @@ export function YearlyDataPage() {
     [data],
   )
 
-  const charts = useMemo(() => (rows.length ? buildBarCharts(rows.map(r => String(r.year)), rows) : null), [rows])
+  const charts = useMemo(() => (rows.length ? buildBarCharts(rows.map(r => String(r.year)), { net: t('rnd.col.net'), returns: t('rnd.col.returns'), receipts: t('rnd.chart.receipts'), pieces: t('rnd.chart.pieces') }, rows) : null), [rows, t])
 
-  if (!company) return <p className="status-msg">No companies available.</p>
+  if (!company) return <p className="status-msg">{t('rnd.noCompanies')}</p>
 
   const gaps: string[] = []
   if (data) {
@@ -68,15 +70,15 @@ export function YearlyDataPage() {
     const salesFrom = first(data.years.map(y => y.year))
     const recFrom = first(data.receipts.map(r => r.year))
     const impFrom = first(data.imports.map(i => i.year))
-    if (salesFrom != null && recFrom != null && recFrom > salesFrom) gaps.push(`Receivables start in ${recFrom} (sales in ${salesFrom}).`)
-    if (salesFrom != null && impFrom != null && impFrom > salesFrom) gaps.push(`Imports start in ${impFrom} (sales in ${salesFrom}).`)
-    if (!data.imports.length) gaps.push('No imports recorded yet.')
-    if (data.imports.length && data.imports.every(i => i.value == null)) gaps.push('Import value is empty until the purchase reports are reloaded.')
+    if (salesFrom != null && recFrom != null && recFrom > salesFrom) gaps.push(t('rnd.gap.rec', { from: recFrom, sales: salesFrom }))
+    if (salesFrom != null && impFrom != null && impFrom > salesFrom) gaps.push(t('rnd.gap.imp', { from: impFrom, sales: salesFrom }))
+    if (!data.imports.length) gaps.push(t('rnd.gap.noImports'))
+    if (data.imports.length && data.imports.every(i => i.value == null)) gaps.push(t('rnd.gap.noImpValue'))
   }
 
   return (
     <div className="panel" style={{ padding: 16 }}>
-      <h2 style={{ marginTop: 0 }}>R&amp;D — Multi-year data</h2>
+      <h2 style={{ marginTop: 0 }}>{t('rnd.multi.title')}</h2>
 
       {companies.length > 1 ? (
         <div className="chip-row" style={{ marginBottom: 12 }}>
@@ -92,41 +94,41 @@ export function YearlyDataPage() {
         </p>
       )}
 
-      {q.isLoading ? <p className="status-msg">Loading…</p> : null}
+      {q.isLoading ? <p className="status-msg">{t('common.loading')}</p> : null}
       {q.error ? <p className="status-msg error">{(q.error as Error).message}</p> : null}
-      {q.isSuccess && !data ? <p className="status-msg">No multi-year data for this company (it needs the R&amp;D section and no agent limit).</p> : null}
+      {q.isSuccess && !data ? <p className="status-msg">{t('rnd.multi.noData')}</p> : null}
 
       {data ? (
         <div className="hub-grid">
           {gaps.length ? (
             <p className="sel-months-list hub-span-12" style={{ margin: 0 }}>
-              {gaps.join(' ')} Earlier years fill in as the older reports are exported and loaded.
+              {gaps.join(' ')} {t('rnd.gap.tail')}
             </p>
           ) : null}
 
           <section className="hub-card hub-span-12">
             <div className="hub-card-hdr">
-              <h3>Year by year</h3>
-              <span className="hub-card-aside">net sales = invoiced less returns; return rate = returns ÷ revenue including them</span>
+              <h3>{t('rnd.byYear')}</h3>
+              <span className="hub-card-aside">{t('rnd.note.net')}</span>
             </div>
             <div className="tw">
               <table>
                 <thead>
                   <tr>
-                    <SortTh label="Year" k="year" left sort={sort} onSort={onSort} />
-                    <SortTh label="Net sales" k="net" sort={sort} onSort={onSort} />
-                    <SortTh label="vs year before" k="vsPrev" sort={sort} onSort={onSort} />
-                    <SortTh label="Returns" k="returned" sort={sort} onSort={onSort} />
-                    <SortTh label="Return rate" k="rate" sort={sort} onSort={onSort} />
-                    <SortTh label="Receivables (receipts)" k="receipts" sort={sort} onSort={onSort} />
-                    <SortTh label="Import pieces" k="importQty" sort={sort} onSort={onSort} />
-                    <SortTh label="Import value" k="importValue" sort={sort} onSort={onSort} />
+                    <SortTh label={t('rnd.col.year')} k="year" left sort={sort} onSort={onSort} />
+                    <SortTh label={t('rnd.col.net')} k="net" sort={sort} onSort={onSort} />
+                    <SortTh label={t('rnd.col.vsYear')} k="vsPrev" sort={sort} onSort={onSort} />
+                    <SortTh label={t('rnd.col.returns')} k="returned" sort={sort} onSort={onSort} />
+                    <SortTh label={t('rnd.col.rate')} k="rate" sort={sort} onSort={onSort} />
+                    <SortTh label={t('rnd.col.receipts')} k="receipts" sort={sort} onSort={onSort} />
+                    <SortTh label={t('rnd.col.impQty')} k="importQty" sort={sort} onSort={onSort} />
+                    <SortTh label={t('rnd.col.impValue')} k="importValue" sort={sort} onSort={onSort} />
                   </tr>
                 </thead>
                 <tbody>
                   {sorted.map(r => (
                     <tr key={r.year}>
-                      <td style={{ textAlign: 'left' }}>{r.year}</td>
+                      <td style={{ textAlign: 'start' }}>{r.year}</td>
                       <td>{fmt0(r.net)}</td>
                       <td style={{ color: changeColor(r.vsPrev) }}>{signed(r.vsPrev)}</td>
                       <td>{fmt0(r.returned)}</td>
@@ -144,41 +146,41 @@ export function YearlyDataPage() {
           {charts ? (
             <>
               <section className="hub-card hub-span-8">
-                <div className="hub-card-hdr"><h3>Net sales and returns</h3></div>
-                <HubChart config={charts.sales} height={240} label="Net sales and returns by year" />
+                <div className="hub-card-hdr"><h3>{t('rnd.chart.sales')}</h3></div>
+                <HubChart config={charts.sales} height={240} label={t('rnd.chart.aria.salesYears')} />
               </section>
               <section className="hub-card hub-span-4">
-                <div className="hub-card-hdr"><h3>Receivables</h3></div>
-                <HubChart config={charts.receipts} height={240} label="Receipts by year" />
+                <div className="hub-card-hdr"><h3>{t('rnd.chart.receivables')}</h3></div>
+                <HubChart config={charts.receipts} height={240} label={t('rnd.chart.aria.receiptsYears')} />
               </section>
               <section className="hub-card hub-span-12">
-                <div className="hub-card-hdr"><h3>Imports (pieces)</h3></div>
-                <HubChart config={charts.imports} height={200} label="Pieces imported by year" />
+                <div className="hub-card-hdr"><h3>{t('rnd.chart.imports')}</h3></div>
+                <HubChart config={charts.imports} height={200} label={t('rnd.chart.aria.importsYears')} />
               </section>
             </>
           ) : null}
 
           <BrandMatrix
-            title="Brand sales by year"
-            note="net sales (invoiced less returns); the 15 biggest brands, the rest as Other"
+            title={t('rnd.brand.salesYears')}
+            note={t('rnd.brand.salesYearsNote')}
             rows={brandSales.rows}
             years={brandSales.years}
-            unit="net sales"
+            unit={t('rnd.unit.net')}
           />
           <BrandMatrix
-            title="Brand imports by year — pieces"
-            note="B8 import documents; the 15 biggest brands, the rest as Other"
+            title={t('rnd.brand.impQtyYears')}
+            note={t('rnd.brand.impNote')}
             rows={brandImportQty.rows}
             years={brandImportQty.years}
-            unit="pieces"
+            unit={t('rnd.unit.pieces')}
           />
           {brandImportValue.rows.some(r => r.total !== 0) ? (
             <BrandMatrix
-              title="Brand imports by year — value"
-              note="the value on the import documents"
+              title={t('rnd.brand.impValueYears')}
+              note={t('rnd.brand.impValueNote')}
               rows={brandImportValue.rows}
               years={brandImportValue.years}
-              unit="value"
+              unit={t('rnd.unit.value')}
             />
           ) : null}
         </div>
