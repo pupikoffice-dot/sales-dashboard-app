@@ -4,6 +4,7 @@
 @import './styles/skin-solid.css';
 @import './styles/skin-glass.css';
 @import './styles/hub.css';
+@import './styles/layout-styles.css';
 
 @tailwind base;
 @tailwind components;
