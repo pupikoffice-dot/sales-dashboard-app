@@ -52,6 +52,7 @@ const NAV_KEYS: Record<string, MessageKey> = {
   items_index: 'nav.itemsIndex',
   rnd_monthly: 'nav.rndMonthly',
   rnd_yearly: 'nav.rndYearly',
+  rnd_year: 'nav.rndYear',
   rnd_client_card: 'nav.rndClientCard',
   rnd_item_card: 'nav.rndItemCard',
 }
