@@ -10,12 +10,14 @@ import { SkinProvider } from './context/SkinContext'
 import { applySkin, readStoredSkin } from './lib/skin'
 import { PreviewProvider } from './context/PreviewContext'
 import { queryClient } from './lib/queryClient'
+import { applyLayoutStyle, readStoredLayoutStyle } from './lib/layoutStyle'
 import { applyTheme, readStoredTheme } from './lib/theme'
 import App from './App'
 import './index.css'
 
 applyTheme(readStoredTheme())
 applySkin(readStoredSkin()) // no flash of the wrong look before React mounts
+applyLayoutStyle(readStoredLayoutStyle())
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
