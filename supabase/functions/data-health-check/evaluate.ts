@@ -25,8 +25,10 @@ export type ContentItem = {
   /** set by the database for checks that are not about a date (e.g. new uncategorised items): used as is */
   alert_status?: 'green' | 'amber' | 'red' | null; alert_reason?: string | null
 }
+/** One row of erp_job_results (only the columns the checks need). */
+export type JobResult = { task: string; started_at: string; exit_code: number | null; export_timeout?: boolean | null; attempts?: number | null }
 /** ignoreCalendar: test switch (data_health_settings.ignore_calendar) - skip the Saturday, hours and rule-window gates. */
-export type EvalInput = { rules: Rule[]; latest: Latest[]; syncLogs: SyncLog[]; now: Date; ignoreCalendar?: boolean; content?: ContentItem[] }
+export type EvalInput = { rules: Rule[]; latest: Latest[]; syncLogs: SyncLog[]; now: Date; ignoreCalendar?: boolean; content?: ContentItem[]; jobs?: JobResult[] }
 
 const TZ = 'Asia/Jerusalem'
 const DAY_FROM = 7 * 60, DAY_TO = 22 * 60          // checker active window (local)
@@ -34,6 +36,24 @@ const SYNC_FROM = 8 * 60                            // sync-health window starts
 const CONTENT_FROM = 10 * 60, CONTENT_TO = 21 * 60  // content checks may OPEN incidents only in this window
 const COVERAGE_AMBER_H = 24, COVERAGE_RED_H = 72   // a loaded file without a rule: amber after a day, red after three
 const H = 3_600_000
+const RECENT_H = 48                                  // a file not seen by the sync for this long is no longer "loaded by the sync"
+// Weekly jobs recorded in erp_job_results. The debt aging robot (smartpupik task 'NextERP debt aging') runs Friday 23:00 and retries on later nights.
+// The verdict is due Saturday 07:00 (anchor + 9 h). JOB_ALERT_SATURDAY: the one check allowed to open on a Saturday morning (the owner wants it "the morning after").
+export const JOB_CHECKS = [
+  { task: 'Aging-pupik', company: 'pupik', label: 'Debt aging run (report 007, Pupik)' },
+  { task: 'Aging-monkeytime', company: 'mt', label: 'Debt aging run (report 007, Monkeytime)' },
+]
+const JOB_ANCHOR_HOUR = 22, JOB_DUE_AFTER_H = 9, JOB_ALERT_SATURDAY = true
+
+/** The latest Friday 22:00 (Israel time) at or before `now`, as an instant; null if none within 8 days. */
+export function lastFridayAnchor(now: Date): Date | null {
+  const top = Math.floor(now.getTime() / H) * H
+  for (let t = top; t > now.getTime() - 8 * 24 * H; t -= H) {
+    const p = localParts(new Date(t))
+    if (p.weekday === 'Fri' && p.minutes === JOB_ANCHOR_HOUR * 60) return new Date(t)
+  }
+  return null
+}
 
 export function localParts(d: Date): { weekday: string; minutes: number; date: string } {
   const f = new Intl.DateTimeFormat('en-GB', {
@@ -75,10 +95,13 @@ export function workdayLag(newest: string, today: string): number {
  * 07:00 / after 22:00, outside a rule's own window) only GREEN results are written, so a refreshed file closes its
  * incident at any hour, while nothing new turns amber or red when nobody can act on it. `ignoreCalendar` removes the gate.
  */
-export function evaluate({ rules, latest, syncLogs, now, ignoreCalendar = false, content = [] }: EvalInput): { statuses: Status[]; unruled: string[] } {
+export function evaluate(input: EvalInput): { statuses: Status[]; unruled: string[] } {
+  const { rules, latest, syncLogs, now, ignoreCalendar = false, content = [] } = input
   const local = localParts(now)
   const ruled = new Set(rules.map(r => r.file_name.toLowerCase()))
-  const unruledRows = latest.filter(l => l.processed && !ruled.has(l.file_name.toLowerCase()))
+  const unruledAll = latest.filter(l => l.processed && !ruled.has(l.file_name.toLowerCase()))
+  const isRecent = (l: Latest) => now.getTime() - new Date(l.observed_at).getTime() <= RECENT_H * H
+  const unruledRows = unruledAll.filter(isRecent)
   const unruled = unruledRows.map(l => l.file_name).sort()
   const gatedNow = !ignoreCalendar && (local.weekday === 'Sat' || local.minutes < DAY_FROM || local.minutes > DAY_TO)
 
@@ -93,6 +116,13 @@ export function evaluate({ rules, latest, syncLogs, now, ignoreCalendar = false,
     const afterEnd = !ignoreCalendar && !!r.eval_to && local.minutes > toMin(r.eval_to)
     // A nightly file is not DUE before its start time: no verdict at all (a green would be yesterday's file).
     if (r.rule_kind === 'nightly' && beforeStart) continue
+    // ... and not due until the sync has LOOKED at the folder since then: the sync runs hourly at :40 from 07:40, so the file
+    // (written about 03:00) is first seen about 07:50. Judging it from 07:00 gave a false red almost every morning (52 of 57 cases on BETA).
+    if (r.rule_kind === 'nightly' && !ignoreCalendar && r.eval_from) {
+      const seen = syncLogs.some(sl => sl.status === 'success' && localParts(new Date(sl.started_at)).date === local.date
+        && localParts(new Date(sl.started_at)).minutes >= toMin(r.eval_from!))
+      if (!seen) continue
+    }
     const gated = gatedNow || beforeStart || afterEnd
     const l = byFile.get(r.file_name.toLowerCase())
     const base = { check_key: r.file_name, file_name: r.file_name, file_group: r.file_group, company: r.company }
@@ -139,6 +169,31 @@ export function evaluate({ rules, latest, syncLogs, now, ignoreCalendar = false,
       status: h >= COVERAGE_RED_H ? 'red' : 'amber',
       reason: `${l.file_name} is loaded by the sync but has no freshness rule - add one (or mark it frozen)`,
       modified_at: l.modified_at, age_hours: null, rows_loaded: l.rows_loaded }, gatedNow)
+  }
+
+  // A one-off file the sync saw once and never again is not "loaded by the sync" any more: close its old coverage incident.
+  for (const l of unruledAll) {
+    if (isRecent(l) || !l.first_seen) continue
+    out.push({ check_key: `coverage:${l.file_name}`, file_name: l.file_name, file_group: 'coverage', company: null, status: 'green',
+      reason: `${l.file_name} is no longer loaded by the sync`, modified_at: l.modified_at, age_hours: null, rows_loaded: l.rows_loaded })
+  }
+
+  // Weekly ERP job results (erp_job_results): a failed Friday debt aging run is red from Saturday 07:00, green once a run (retry) succeeded.
+  // Jobs that never recorded a row (older databases, BETA) give no verdict, so there is no false red where the feed does not exist.
+  const jobs = input.jobs ?? []
+  const anchor = lastFridayAnchor(now)
+  for (const j of JOB_CHECKS) {
+    const mine = jobs.filter(x => x.task === j.task)
+    if (!anchor || !mine.length || now.getTime() < anchor.getTime() + JOB_DUE_AFTER_H * H) continue
+    const since = mine.filter(x => new Date(x.started_at).getTime() >= anchor.getTime())
+    const ok = since.find(x => x.exit_code === 0 && !x.export_timeout)
+    const base = { check_key: `job:${j.task}`, file_name: null, file_group: 'debt', company: j.company, modified_at: ok?.started_at ?? null, age_hours: null, rows_loaded: null }
+    const gated = !ignoreCalendar && (local.minutes < DAY_FROM || local.minutes > DAY_TO || (local.weekday === 'Sat' && !JOB_ALERT_SATURDAY))
+    if (ok) { push({ ...base, status: 'green', reason: `${j.label}: succeeded` }, gated); continue }
+    const last = [...since].sort((a, b) => b.started_at.localeCompare(a.started_at))[0]
+    push({ ...base, status: 'red', reason: last
+      ? `${j.label} failed this week (${since.length} run${since.length === 1 ? '' : 's'}, last exit code ${last.exit_code}${last.export_timeout ? ', export timed out' : ''}) - check the aging log on smartpupik, or run "NextERP debt aging - run now"`
+      : `${j.label} did not run since Friday 22:00 - is smartpupik running and unlocked?` }, gated)
   }
 
   // Content freshness: the newest date INSIDE the loaded tables (a fresh file can still hold old data).
