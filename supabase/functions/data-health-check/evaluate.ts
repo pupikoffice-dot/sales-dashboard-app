@@ -36,6 +36,8 @@ const SYNC_FROM = 8 * 60                            // sync-health window starts
 const CONTENT_FROM = 10 * 60, CONTENT_TO = 21 * 60  // content checks may OPEN incidents only in this window
 const COVERAGE_AMBER_H = 24, COVERAGE_RED_H = 72   // a loaded file without a rule: amber after a day, red after three
 const H = 3_600_000
+const STUCK_SYNC_H = 3                               // a sync_logs row still 'running' after this long is stuck (red)
+const GRACE_H: Record<string, number> = { p1: 0.5 } // file groups whose robot may finish late: no amber/red until limit-based age exceeds this much
 const RECENT_H = 48                                  // a file not seen by the sync for this long is no longer "loaded by the sync"
 // Weekly jobs recorded in erp_job_results. The debt aging robot (smartpupik task 'NextERP debt aging') runs Friday 23:00 and retries on later nights.
 // The verdict is due Saturday 07:00 (anchor + 9 h). JOB_ALERT_SATURDAY: the one check allowed to open on a Saturday morning (the owner wants it "the morning after").
@@ -142,9 +144,12 @@ export function evaluate(input: EvalInput): { statuses: Status[]; unruled: strin
         reason: fresh ? 'refreshed overnight' : `${r.file_name} was not refreshed overnight (last ${localParts(mod).date})` }, gated)
     } else {
       const limit = r.max_age_hours ?? 0
-      const status: Colour = age > limit ? 'red' : age > 0.75 * limit ? 'amber' : 'green'
+      // P1 robot files: 30 min of slack (the 90-minute cycle can finish late) - the age that is judged is age minus the group's grace.
+      const grace = GRACE_H[r.file_group] ?? 0
+      const judged = Math.max(0, age - grace)
+      const status: Colour = judged > limit ? 'red' : judged > 0.75 * limit ? 'amber' : 'green'
       push({ ...base, ...common, status,
-        reason: status === 'green' ? `${fmtAge(age)} old` : `${r.file_name} is ${fmtAge(age)} old (limit ${fmtAge(limit)})` }, gated)
+        reason: status === 'green' ? `${fmtAge(age)} old` : `${r.file_name} is ${fmtAge(age)} old (limit ${fmtAge(limit)}${grace ? ` + ${Math.round(grace * 60)} min grace` : ''})` }, gated)
     }
     if (r.rule_kind !== 'frozen' && l.processed && l.rows_loaded !== null) {
       const hist = l.history ?? []
@@ -219,11 +224,11 @@ export function evaluate(input: EvalInput): { statuses: Status[]; unruled: strin
       age_hours: isFinite(okAge) ? Math.round(okAge * 10) / 10 : null, rows_loaded: null,
       reason: okAge > 2 ? `No successful sync for ${isFinite(okAge) ? fmtAge(okAge) : 'a long time'} - is smartpupik running?` : 'syncing normally' }, syncGated)
     const stuck = sortedSync.find(s => s.status === 'running'
-      && (now.getTime() - new Date(s.started_at).getTime()) / H > 0.75
+      && (now.getTime() - new Date(s.started_at).getTime()) / H > STUCK_SYNC_H
       && !sortedSync.some(o => o.status === 'success' && o.started_at > s.started_at))
     push({ check_key: 'sync:stuck', file_name: null, file_group: 'sync', company: null,
       status: stuck ? 'red' : 'green', modified_at: stuck?.started_at ?? null, age_hours: null, rows_loaded: null,
-      reason: stuck ? `A sync started ${stuck.started_at} is still 'running' (interrupted?)` : 'no stuck sync' }, syncGated)
+      reason: stuck ? `A sync started ${stuck.started_at} has been 'running' for over ${STUCK_SYNC_H} h (since ${stuck.started_at}) - interrupted?` : 'no stuck sync' }, syncGated)
   } else if (lastOk && okAge <= 2) {
     // before 08:00 nothing new may open, but a sync that has since succeeded must close yesterday's incident
     out.push({ check_key: 'sync:no_success', file_name: null, file_group: 'sync', company: null, status: 'green',

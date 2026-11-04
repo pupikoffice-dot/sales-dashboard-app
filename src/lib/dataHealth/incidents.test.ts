@@ -27,4 +27,18 @@ describe('planIncidents', () => {
   it('retries an alert that was never sent', () => {
     expect(planIncidents([st('a', 'red')], [inc({ last_notified_at: null })], now).remind.map(i => i.id)).toEqual([1])
   })
+  it('re-open within 6 h of the last close is quiet (still opened in-app, no mail)', () => {
+    const closed = (h: number, key = 'a') => ({ check_key: key, closed_at: new Date(now.getTime() - h * 3_600_000).toISOString() })
+    const p = planIncidents([st('a', 'red')], [], now, [closed(2)])
+    expect(p.open.map(s => s.check_key)).toEqual(['a']); expect(p.quiet).toEqual(['a'])
+    expect(planIncidents([st('a', 'red')], [], now, [closed(7)]).quiet).toEqual([])
+    expect(planIncidents([st('a', 'red')], [], now, [closed(1, 'b')]).quiet).toEqual([])
+    expect(planIncidents([st('a', 'red')], [], now, [closed(9), closed(5.9)]).quiet).toEqual(['a'])
+    expect(planIncidents([st('a', 'red')], [], now).quiet).toEqual([])
+  })
+  it('damping does not change reminders for an incident that is already open', () => {
+    const old = inc({ last_notified_at: '2026-10-03T09:00:00Z' })
+    const p = planIncidents([st('a', 'red')], [old], now, [{ check_key: 'a', closed_at: '2026-10-04T08:00:00Z' }])
+    expect(p.remind.map(i => i.id)).toEqual([1]); expect(p.quiet).toEqual([])
+  })
 })

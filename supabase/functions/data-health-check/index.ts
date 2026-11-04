@@ -4,7 +4,7 @@
 // Spec: docs/superpowers/specs/2026-10-03-data-health-monitor-design.md
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { evaluate, localParts, JOB_CHECKS, type JobResult, type Rule, type Latest, type SyncLog, type Status, type ContentItem } from './evaluate.ts'
-import { planIncidents, type OpenIncident } from './incidents.ts'
+import { planIncidents, REOPEN_DAMP_H, type ClosedIncident, type OpenIncident } from './incidents.ts'
 import { alertEmail, digestEmail, resolvedDigestEmail, summaryEmail, uncategorizedEmail, type Email, type EmailTable, type UncategorizedRow } from './emails.ts'
 
 // Email links: production (OMEGA) project -> production site, otherwise the beta site. DATA_HEALTH_PAGE_URL overrides.
@@ -85,14 +85,26 @@ Deno.serve(async () => {
   }
   const ruleFor = (s: Status) => ruleByKey.get(s.file_name ?? '')
 
-  const plan = planIncidents(statuses, openQ.data as OpenIncident[], now)
+  // Orphan 'running' sync rows (older than 6 h) are marked failed. Optional: older databases lack the function.
+  const cleanQ = await sb.rpc('sync_stuck_cleanup')
+  if (cleanQ.error) log.push(`sync cleanup unavailable: ${cleanQ.error.message}`)
+  // Recently closed incidents: a check that re-opens within REOPEN_DAMP_H of its close is opened without a mail (flapping).
+  const closedQ = await sb.from('data_health_incidents').select('check_key, closed_at')
+    .not('closed_at', 'is', null).gte('closed_at', new Date(now.getTime() - REOPEN_DAMP_H * 3_600_000).toISOString())
+  if (closedQ.error) log.push(`recent closed incidents unavailable: ${closedQ.error.message}`)
+  const recentClosed = closedQ.error ? [] : ((closedQ.data ?? []) as ClosedIncident[])
+  const plan = planIncidents(statuses, openQ.data as OpenIncident[], now, recentClosed)
+  const quiet = new Set(plan.quiet)
   // Everything that opens, is reminded or closes in this run goes into ONE mail each (alert digest, resolved digest). The per-company
   // 'no category' alerts stay single mails: their subject carries the company so each owner's mail rule can route them.
   const isNocat = (k: string) => k.startsWith('content:nocat:')
   const opened: { s: Status; id: number; reminder: boolean }[] = []
   for (const s of plan.open) {
-    const ins = await sb.from('data_health_incidents').insert({ check_key: s.check_key, reason: s.reason }).select('id').single()
+    // quiet re-open: mark as notified now so the 'never sent' retry does not mail it; the 24 h reminder logic applies as usual
+    const ins = await sb.from('data_health_incidents')
+      .insert({ check_key: s.check_key, reason: s.reason, ...(quiet.has(s.check_key) ? { last_notified_at: now.toISOString() } : {}) }).select('id').single()
     if (ins.error) { log.push(ins.error.message); continue }
+    if (quiet.has(s.check_key)) { log.push(`re-opened quietly (closed < ${REOPEN_DAMP_H} h ago): ${s.check_key}`); continue }
     opened.push({ s, id: ins.data.id, reminder: false })
   }
   const byKey = new Map(statuses.map(s => [s.check_key, s]))
