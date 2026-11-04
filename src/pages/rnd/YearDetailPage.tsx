@@ -1,14 +1,14 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { HubChart } from '../../components/oversite/hub/HubChart'
-import { BrandMatrix, BrandYearTable, COMPANY_ORDER, buildBarCharts, changeColor, pct, signed } from '../../components/rnd/yearlyShared'
+import { BrandYearTable, COMPANY_ORDER, buildBarCharts, changeColor, pct, signed } from '../../components/rnd/yearlyShared'
 import { useLocale } from '../../context/LocaleContext'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { usePreview } from '../../context/PreviewContext'
 import { fmt0 } from '../../lib/format'
 import { companyLabel } from '../../lib/salesMetrics'
 import { buildMonthRows, buildYearTotal, fetchYearlyDetail, mergeBrandYear, pickableYears, type MonthRow } from '../../lib/yearlyDetail'
-import { buildBrandMatrix, fetchYearlyOverview } from '../../lib/yearlyOverview'
+import { fetchYearlyOverview } from '../../lib/yearlyOverview'
 import type { LogicalCompany } from '../../types/dashboard'
 
 const orDash = (v: number | null) => (v == null ? '—' : fmt0(v))
@@ -59,9 +59,17 @@ export function YearDetailPage() {
 
   // Brand tables: one column for the whole year, and one column per month.
   const brandYear = useMemo(() => mergeBrandYear(data?.brandSales ?? [], data?.brandImports ?? []), [data])
-  const brandSalesMonths = useMemo(() => buildBrandMatrix((data?.brandSales ?? []).map(b => ({ year: b.month, brand: b.brand, value: b.net }))), [data])
-  const brandQtyMonths = useMemo(() => buildBrandMatrix((data?.brandImports ?? []).map(b => ({ year: b.month, brand: b.brand, value: b.qty }))), [data])
-  const brandValueMonths = useMemo(() => buildBrandMatrix((data?.brandImports ?? []).map(b => ({ year: b.month, brand: b.brand, value: b.value }))), [data])
+  // Months table: pick a month, same combined table as the year (default: the latest month that has brand data).
+  const [pickedMonth, setPickedMonth] = useState<number | null>(null)
+  const brandMonths = useMemo(
+    () => [...new Set([...(data?.brandSales ?? []).map(b => b.month), ...(data?.brandImports ?? []).map(b => b.month)])].sort((a, b) => a - b),
+    [data],
+  )
+  const brandMonth = pickedMonth != null && brandMonths.includes(pickedMonth) ? pickedMonth : (brandMonths[brandMonths.length - 1] ?? null)
+  const brandMonthRows = useMemo(
+    () => mergeBrandYear((data?.brandSales ?? []).filter(b => b.month === brandMonth), (data?.brandImports ?? []).filter(b => b.month === brandMonth)),
+    [data, brandMonth],
+  )
 
   const charts = useMemo(() => (months.length ? buildBarCharts(months.map(m => monthLabel(m.month)), { net: t('rnd.col.net'), returns: t('rnd.col.returns'), receipts: t('rnd.chart.receipts'), pieces: t('rnd.chart.pieces') }, months) : null),
     [months, t, monthNames])
@@ -185,32 +193,20 @@ export function YearDetailPage() {
             </div>
           </section>
 
-          <BrandMatrix
-            title={t('rnd.brand.salesMonths')}
-            note={t('rnd.brand.monthsNote')}
-            rows={brandSalesMonths.rows}
-            years={brandSalesMonths.years}
-            unit={t('rnd.unit.net')}
-            colLabel={monthLabel}
-          />
-          <BrandMatrix
-            title={t('rnd.brand.impQtyMonths')}
-            note={t('rnd.brand.impMonthsNote')}
-            rows={brandQtyMonths.rows}
-            years={brandQtyMonths.years}
-            unit={t('rnd.unit.pieces')}
-            colLabel={monthLabel}
-          />
-          {brandValueMonths.rows.some(r => r.total !== 0) ? (
-            <BrandMatrix
-              title={t('rnd.brand.impValueMonths')}
-              note={t('rnd.brand.impValueNote')}
-              rows={brandValueMonths.rows}
-              years={brandValueMonths.years}
-              unit={t('rnd.unit.value')}
-              colLabel={monthLabel}
-            />
+          {brandMonths.length ? (
+            <div className="chip-row hub-span-12" role="group" aria-label={t('rnd.brand.pickMonth')}>
+              {brandMonths.map(m => (
+                <button key={m} type="button" className={`chip${m === brandMonth ? ' active' : ''}`} onClick={() => setPickedMonth(m)}>
+                  {monthLabel(m)}
+                </button>
+              ))}
+            </div>
           ) : null}
+          <BrandYearTable
+            title={t('rnd.brand.combinedMonth', { month: brandMonth != null ? monthLabel(brandMonth) : '', year: year ?? '' })}
+            note={t('rnd.brand.combinedNote')}
+            rows={brandMonthRows}
+          />
         </div>
       ) : null}
     </div>

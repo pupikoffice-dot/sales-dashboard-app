@@ -172,6 +172,8 @@ export const messages = {
   'rnd.brand.combinedYear': 'Brands {year} — sales and imports',
   'rnd.brand.combinedNote': 'net sales (invoiced less returns) and B8 import documents (pieces, value); the 15 biggest brands of each, the rest as Other',
   'rnd.col.sales': 'Sales',
+  'rnd.brand.combinedMonth': 'Brands {month} {year} — sales and imports',
+  'rnd.brand.pickMonth': 'Pick a month',
   'rnd.brand.salesYear': 'Brand sales {year}',
   'rnd.brand.impQtyYear': 'Brand imports {year} — pieces',
   'rnd.brand.impValueYear': 'Brand imports {year} — value',

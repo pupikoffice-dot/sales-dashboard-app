@@ -174,6 +174,8 @@ export const messages: Record<keyof typeof en, string> = {
   'rnd.brand.combinedYear': 'מותגים {year} — מכירות ויבוא',
   'rnd.brand.combinedNote': 'מכירות נטו (חיוב בניכוי החזרות) ומסמכי יבוא B8 (יחידות, ערך); 15 המותגים הגדולים בכל אחד, השאר כ"אחר"',
   'rnd.col.sales': 'מכירות',
+  'rnd.brand.combinedMonth': 'מותגים {month} {year} — מכירות ויבוא',
+  'rnd.brand.pickMonth': 'בחירת חודש',
   'rnd.brand.salesYear': 'מכירות לפי מותג {year}',
   'rnd.brand.impQtyYear': 'יבוא לפי מותג {year} — יחידות',
   'rnd.brand.impValueYear': 'יבוא לפי מותג {year} — ערך',
