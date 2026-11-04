@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { HubChart } from '../../components/oversite/hub/HubChart'
-import { BrandMatrix, COMPANY_ORDER, buildBarCharts, changeColor, pct, signed } from '../../components/rnd/yearlyShared'
+import { BrandMatrix, BrandYearTable, COMPANY_ORDER, buildBarCharts, changeColor, pct, signed } from '../../components/rnd/yearlyShared'
 import { useLocale } from '../../context/LocaleContext'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { usePreview } from '../../context/PreviewContext'
 import { fmt0 } from '../../lib/format'
 import { companyLabel } from '../../lib/salesMetrics'
-import { buildMonthRows, buildYearTotal, fetchYearlyDetail, pickableYears, type MonthRow } from '../../lib/yearlyDetail'
+import { buildMonthRows, buildYearTotal, fetchYearlyDetail, mergeBrandYear, pickableYears, type MonthRow } from '../../lib/yearlyDetail'
 import { buildBrandMatrix, fetchYearlyOverview } from '../../lib/yearlyOverview'
 import type { LogicalCompany } from '../../types/dashboard'
 
@@ -58,11 +58,9 @@ export function YearDetailPage() {
   const total = useMemo(() => (data ? buildYearTotal(data) : null), [data])
 
   // Brand tables: one column for the whole year, and one column per month.
-  const brandSalesYear = useMemo(() => buildBrandMatrix((data?.brandSales ?? []).map(b => ({ year: 0, brand: b.brand, value: b.net }))), [data])
+  const brandYear = useMemo(() => mergeBrandYear(data?.brandSales ?? [], data?.brandImports ?? []), [data])
   const brandSalesMonths = useMemo(() => buildBrandMatrix((data?.brandSales ?? []).map(b => ({ year: b.month, brand: b.brand, value: b.net }))), [data])
-  const brandQtyYear = useMemo(() => buildBrandMatrix((data?.brandImports ?? []).map(b => ({ year: 0, brand: b.brand, value: b.qty }))), [data])
   const brandQtyMonths = useMemo(() => buildBrandMatrix((data?.brandImports ?? []).map(b => ({ year: b.month, brand: b.brand, value: b.qty }))), [data])
-  const brandValueYear = useMemo(() => buildBrandMatrix((data?.brandImports ?? []).map(b => ({ year: 0, brand: b.brand, value: b.value }))), [data])
   const brandValueMonths = useMemo(() => buildBrandMatrix((data?.brandImports ?? []).map(b => ({ year: b.month, brand: b.brand, value: b.value }))), [data])
 
   const charts = useMemo(() => (months.length ? buildBarCharts(months.map(m => monthLabel(m.month)), { net: t('rnd.col.net'), returns: t('rnd.col.returns'), receipts: t('rnd.chart.receipts'), pieces: t('rnd.chart.pieces') }, months) : null),
@@ -72,7 +70,6 @@ export function YearDetailPage() {
 
   const hasAnything = !!data && (data.sales.length > 0 || data.receipts.length > 0 || data.imports.length > 0)
   const hasImportValue = !!total && total.importValue != null
-  const yearLabel = (_: number) => String(year)
 
   const row = (r: MonthRow, label: string, strong = false) => (
     <tr key={r.month}>
@@ -142,32 +139,7 @@ export function YearDetailPage() {
             }
           />
 
-          <BrandMatrix
-            title={t('rnd.brand.salesYear', { year: year ?? '' })}
-            note={t('rnd.brand.salesYearsNote')}
-            rows={brandSalesYear.rows}
-            years={[0]}
-            unit={t('rnd.unit.net')}
-            colLabel={yearLabel}
-          />
-          <BrandMatrix
-            title={t('rnd.brand.impQtyYear', { year: year ?? '' })}
-            note={t('rnd.brand.impNote')}
-            rows={brandQtyYear.rows}
-            years={[0]}
-            unit={t('rnd.unit.pieces')}
-            colLabel={yearLabel}
-          />
-          {brandValueYear.rows.some(r => r.total !== 0) ? (
-            <BrandMatrix
-              title={t('rnd.brand.impValueYear', { year: year ?? '' })}
-              note={t('rnd.brand.impValueNote')}
-              rows={brandValueYear.rows}
-              years={[0]}
-              unit={t('rnd.unit.value')}
-              colLabel={yearLabel}
-            />
-          ) : null}
+          <BrandYearTable title={t('rnd.brand.combinedYear', { year: year ?? '' })} note={t('rnd.brand.combinedNote')} rows={brandYear} />
 
           <h3 className="hub-span-12" style={{ margin: '16px 0 0' }}>{t('rnd.year.months', { year: year ?? '' })}</h3>
 

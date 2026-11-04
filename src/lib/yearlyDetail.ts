@@ -92,3 +92,25 @@ export function pickableYears(o: {
   o.imports.forEach(y => s.add(y.year))
   return [...s].sort((a, b) => b - a)
 }
+
+export interface BrandYearRow { brand: string; sales: number; importQty: number; importValue: number }
+
+/** One row per brand with the year's sales and imports side by side (brands that only appear in one list still get a row). */
+export function mergeBrandYear(
+  sales: ReadonlyArray<{ brand: string; net: number }>,
+  imports: ReadonlyArray<{ brand: string; qty: number | null; value: number | null }>,
+): BrandYearRow[] {
+  const by = new Map<string, BrandYearRow>()
+  const get = (brand: string) => {
+    let r = by.get(brand)
+    if (!r) by.set(brand, (r = { brand, sales: 0, importQty: 0, importValue: 0 }))
+    return r
+  }
+  for (const s of sales) get(s.brand).sales += Number(s.net ?? 0)
+  for (const i of imports) {
+    const r = get(i.brand)
+    r.importQty += Number(i.qty ?? 0)
+    r.importValue += Number(i.value ?? 0)
+  }
+  return [...by.values()]
+}

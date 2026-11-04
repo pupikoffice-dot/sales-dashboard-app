@@ -1,5 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import { buildMonthRows, buildYearTotal, pickableYears, type YearlyDetail } from './yearlyDetail'
+import { buildMonthRows, buildYearTotal, mergeBrandYear, pickableYears, type YearlyDetail } from './yearlyDetail'
+
+describe('mergeBrandYear', () => {
+  it('puts sales and imports of a brand on one row and keeps brands seen on one side only', () => {
+    const rows = mergeBrandYear(
+      [{ brand: 'A', net: 100 }, { brand: 'B', net: 50 }],
+      [{ brand: 'A', qty: 10, value: 200 }, { brand: 'C', qty: 5, value: null }],
+    )
+    expect(rows.find(r => r.brand === 'A')).toEqual({ brand: 'A', sales: 100, importQty: 10, importValue: 200 })
+    expect(rows.find(r => r.brand === 'B')).toEqual({ brand: 'B', sales: 50, importQty: 0, importValue: 0 })
+    expect(rows.find(r => r.brand === 'C')).toEqual({ brand: 'C', sales: 0, importQty: 5, importValue: 0 })
+  })
+})
 import { buildBrandMatrix } from './yearlyOverview'
 
 const detail: YearlyDetail = {
