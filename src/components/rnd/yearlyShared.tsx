@@ -1,5 +1,6 @@
 /** Pieces shared by the two R&D pages "Multi-year data" and "Yearly data". */
 import { useMemo } from 'react'
+import { useLocale } from '../../context/LocaleContext'
 import type { ChartConfiguration } from 'chart.js'
 import { cssVar } from '../oversite/hub/HubChart'
 import { SortTh, useSortedRows } from './sortRows'
@@ -32,6 +33,7 @@ export function barOptions(legend: boolean, money: boolean): ChartConfiguration[
 /** The sales / receipts / imports bar charts, one bar group per label (a year or a month). */
 export function buildBarCharts(
   labels: string[],
+  names: { net: string; returns: string; receipts: string; pieces: string },
   rows: Array<{ net: number; returned: number; receipts: number | null; importQty: number | null }>,
 ) {
   const sales: ChartConfiguration = {
@@ -39,20 +41,20 @@ export function buildBarCharts(
     data: {
       labels,
       datasets: [
-        { label: 'Net sales', data: rows.map(r => r.net), backgroundColor: cssVar('--chart-c0'), borderRadius: 3 },
-        { label: 'Returns', data: rows.map(r => r.returned), backgroundColor: cssVar('--chart-c3'), borderRadius: 3 },
+        { label: names.net, data: rows.map(r => r.net), backgroundColor: cssVar('--chart-c0'), borderRadius: 3 },
+        { label: names.returns, data: rows.map(r => r.returned), backgroundColor: cssVar('--chart-c3'), borderRadius: 3 },
       ],
     },
     options: barOptions(true, true),
   }
   const receipts: ChartConfiguration = {
     type: 'bar',
-    data: { labels, datasets: [{ label: 'Receipts', data: rows.map(r => r.receipts ?? 0), backgroundColor: cssVar('--chart-c1'), borderRadius: 3 }] },
+    data: { labels, datasets: [{ label: names.receipts, data: rows.map(r => r.receipts ?? 0), backgroundColor: cssVar('--chart-c1'), borderRadius: 3 }] },
     options: barOptions(false, true),
   }
   const imports: ChartConfiguration = {
     type: 'bar',
-    data: { labels, datasets: [{ label: 'Pieces imported', data: rows.map(r => r.importQty ?? 0), backgroundColor: cssVar('--chart-c2'), borderRadius: 3 }] },
+    data: { labels, datasets: [{ label: names.pieces, data: rows.map(r => r.importQty ?? 0), backgroundColor: cssVar('--chart-c2'), borderRadius: 3 }] },
     options: barOptions(false, false),
   }
   return { sales, receipts, imports }
@@ -75,6 +77,8 @@ export function BrandMatrix({
   unit: string
   colLabel?: (key: number) => string
 }) {
+  const { t } = useLocale()
+  const brandName = (b: string) => (b === 'Other' ? t('rnd.brand.other') : b === '(no brand)' ? t('rnd.brand.noBrand') : b)
   const accessors = useMemo(() => {
     const a: Record<string, (r: BrandMatrixRow) => number | string> = { brand: r => r.brand, total: r => r.total }
     for (const y of years) a[`y${y}`] = r => r.byYear[y] ?? 0
@@ -92,17 +96,17 @@ export function BrandMatrix({
           <table>
             <thead>
               <tr>
-                <SortTh label="Brand" k="brand" left sort={sort} onSort={onSort} />
+                <SortTh label={t('rnd.col.brand')} k="brand" left sort={sort} onSort={onSort} />
                 {years.map(y => (
                   <SortTh key={y} label={colLabel(y)} k={`y${y}`} sort={sort} onSort={onSort} />
                 ))}
-                <SortTh label={`Total ${unit}`} k="total" sort={sort} onSort={onSort} />
+                <SortTh label={t('rnd.col.total', { unit })} k="total" sort={sort} onSort={onSort} />
               </tr>
             </thead>
             <tbody>
               {sorted.map(r => (
                 <tr key={r.brand}>
-                  <td style={{ textAlign: 'left' }}>{r.brand}</td>
+                  <td style={{ textAlign: 'start' }}>{brandName(r.brand)}</td>
                   {years.map(y => (
                     <td key={y}>{r.byYear[y] ? fmt0(r.byYear[y]) : '—'}</td>
                   ))}
@@ -115,7 +119,7 @@ export function BrandMatrix({
           </table>
         </div>
       ) : (
-        <p className="status-msg">Nothing recorded yet.</p>
+        <p className="status-msg">{t('rnd.brand.empty')}</p>
       )}
     </section>
   )
