@@ -3,9 +3,9 @@
 // sends email via Resend, sends the daily summary once per working day, prunes old observations.
 // Spec: docs/superpowers/specs/2026-10-03-data-health-monitor-design.md
 import { createClient } from 'npm:@supabase/supabase-js@2'
-import { evaluate, localParts, type Rule, type Latest, type SyncLog, type Status, type ContentItem } from './evaluate.ts'
+import { evaluate, localParts, JOB_CHECKS, type JobResult, type Rule, type Latest, type SyncLog, type Status, type ContentItem } from './evaluate.ts'
 import { planIncidents, type OpenIncident } from './incidents.ts'
-import { alertEmail, resolvedEmail, summaryEmail, uncategorizedEmail, type Email, type EmailTable, type UncategorizedRow } from './emails.ts'
+import { alertEmail, digestEmail, resolvedDigestEmail, summaryEmail, uncategorizedEmail, type Email, type EmailTable, type UncategorizedRow } from './emails.ts'
 
 // Email links: production (OMEGA) project -> production site, otherwise the beta site. DATA_HEALTH_PAGE_URL overrides.
 const IS_OMEGA = (Deno.env.get('SUPABASE_URL') ?? '').includes('hzgpkkbqhmtwqhkcntcc')
@@ -50,7 +50,12 @@ Deno.serve(async () => {
 
   const content: ContentItem[] = contentQ.error ? [] : ((contentQ.data ?? []) as ContentItem[])
   if (contentQ.error) log.push(`content checks unavailable: ${contentQ.error.message}`)
-  const { statuses, unruled } = evaluate({ rules, latest: latestQ.data as Latest[], syncLogs: syncQ.data as SyncLog[], now, ignoreCalendar, content })
+  // ERP job results of the weekly debt aging robot (optional: the table may be empty or missing on older databases)
+  const jobsQ = await sb.from('erp_job_results').select('task, started_at, exit_code, export_timeout, attempts')
+    .in('task', JOB_CHECKS.map(j => j.task)).gte('started_at', new Date(now.getTime() - 21 * 86_400_000).toISOString())
+  if (jobsQ.error) log.push(`job results unavailable: ${jobsQ.error.message}`)
+  const jobs = jobsQ.error ? [] : ((jobsQ.data ?? []) as JobResult[])
+  const { statuses, unruled } = evaluate({ rules, latest: latestQ.data as Latest[], syncLogs: syncQ.data as SyncLog[], now, ignoreCalendar, content, jobs })
   if (statuses.length) {
     const up = await sb.from('source_file_status').upsert(statuses.map(s => ({ ...s, evaluated_at: now.toISOString() })))
     if (up.error) return json({ error: up.error.message }, 500)
@@ -81,22 +86,25 @@ Deno.serve(async () => {
   const ruleFor = (s: Status) => ruleByKey.get(s.file_name ?? '')
 
   const plan = planIncidents(statuses, openQ.data as OpenIncident[], now)
+  // Everything that opens, is reminded or closes in this run goes into ONE mail each (alert digest, resolved digest). The per-company
+  // 'no category' alerts stay single mails: their subject carries the company so each owner's mail rule can route them.
+  const isNocat = (k: string) => k.startsWith('content:nocat:')
+  const opened: { s: Status; id: number; reminder: boolean }[] = []
   for (const s of plan.open) {
     const ins = await sb.from('data_health_incidents').insert({ check_key: s.check_key, reason: s.reason }).select('id').single()
     if (ins.error) { log.push(ins.error.message); continue }
-    if (await send(alertEmail(s, ruleFor(s), PAGE_URL, false)))
-      await sb.from('data_health_incidents').update({ last_notified_at: now.toISOString() }).eq('id', ins.data.id)
+    opened.push({ s, id: ins.data.id, reminder: false })
   }
   const byKey = new Map(statuses.map(s => [s.check_key, s]))
-  for (const i of plan.remind) {
-    const s = byKey.get(i.check_key)!
-    if (await send(alertEmail(s, ruleFor(s), PAGE_URL, i.last_notified_at !== null)))
-      await sb.from('data_health_incidents').update({ last_notified_at: now.toISOString() }).eq('id', i.id)
-  }
-  for (const i of plan.close) {
-    await sb.from('data_health_incidents').update({ closed_at: now.toISOString() }).eq('id', i.id)
-    await send(resolvedEmail(i.check_key, i.opened_at, now, PAGE_URL))
-  }
+  for (const i of plan.remind) opened.push({ s: byKey.get(i.check_key)!, id: i.id, reminder: i.last_notified_at !== null })
+  const notifyIds = async (ids: number[]) => { if (ids.length) await sb.from('data_health_incidents').update({ last_notified_at: now.toISOString() }).in('id', ids) }
+  const digestItems = opened.filter(o => !isNocat(o.s.check_key))
+  if (digestItems.length && await send(digestEmail(digestItems.map(o => ({ s: o.s, rule: ruleFor(o.s), reminder: o.reminder })), PAGE_URL)))
+    await notifyIds(digestItems.map(o => o.id))
+  for (const o of opened.filter(o => isNocat(o.s.check_key)))
+    if (await send(alertEmail(o.s, ruleFor(o.s), PAGE_URL, o.reminder))) await notifyIds([o.id])
+  for (const i of plan.close) await sb.from('data_health_incidents').update({ closed_at: now.toISOString() }).eq('id', i.id)
+  if (plan.close.length) await send(resolvedDigestEmail(plan.close.map(i => ({ checkKey: i.check_key, openedAt: i.opened_at })), now, PAGE_URL))
 
   // Daily summary: first run on a working day at/after summary_time.
   const local = localParts(now)

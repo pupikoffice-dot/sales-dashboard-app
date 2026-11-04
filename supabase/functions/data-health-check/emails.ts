@@ -106,6 +106,43 @@ export function alertEmail(s: Status, rule: { fix_hint: string; impact: string }
   return mk(`${P}${tag} ${reminder ? 'STILL RED' : 'RED'}: ${s.reason}`, text, html)
 }
 
+/** One incident of an alert digest: a new red, or a reminder of one that is still red. */
+export type DigestItem = { s: Status; rule?: FixRule; reminder: boolean }
+
+/**
+ * ONE mail for everything that opened or needs a reminder in the same run (red first, new before reminders).
+ * A single item is exactly today's alertEmail (same subject and body).
+ */
+export function digestEmail(items: DigestItem[], url: string): Email {
+  if (items.length === 1) return alertEmail(items[0].s, items[0].rule, url, items[0].reminder)
+  const sorted = [...items].sort((a, b) => RANK[a.s.status] - RANK[b.s.status] || Number(a.reminder) - Number(b.reminder) || a.s.check_key.localeCompare(b.s.check_key))
+  const n = sorted.length, fresh = sorted.filter(i => !i.reminder).length
+  const head = fresh === n ? `RED: ${n} new issues` : fresh === 0 ? `STILL RED: ${n} issues` : `RED: ${n} issues (${fresh} new)`
+  const subject = `${P} ${head} - ${sorted[0].s.reason}`
+  const text = sorted.map(i => [`${i.reminder ? 'STILL RED' : 'RED'}: ${i.s.reason}`,
+    i.rule ? `  How to fix: ${i.rule.fix_hint}` : '', i.rule ? `  Affects: ${i.rule.impact}` : '', `  Group: ${i.s.file_group}`].filter(Boolean).join('\n'))
+    .concat('', `Details: ${url}`).join('\n')
+  const rows = sorted.map(i => checkRow(i.s, i.rule).replace('</b></div>', `</b>${i.reminder ? ' <span style="color:#78858f;font-size:12px;">(reminder)</span>' : ''}</div>`)).join('')
+  const body = block(tiles([{ n: fresh, label: 'new', tone: 'red' }, { n: n - fresh, label: 'still red', tone: 'amber' }]))
+    + block(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows}</table>`, '16px 24px 0')
+  const html = frame({ tone: 'red', title: `${n} issues need attention`, sub: fresh === n ? 'All new in this check' : `${fresh} new, ${n - fresh} reminders`, preheader: sorted[0].s.reason, body, url })
+  return mk(subject, text, html)
+}
+
+/** ONE mail for every incident that closed in the same run. A single one is exactly today's resolvedEmail. */
+export function resolvedDigestEmail(items: { checkKey: string; openedAt: string }[], now: Date, url: string): Email {
+  if (items.length === 1) return resolvedEmail(items[0].checkKey, items[0].openedAt, now, url)
+  const ms = (o: string) => now.getTime() - new Date(o).getTime()
+  const sorted = [...items].sort((a, b) => ms(b.openedAt) - ms(a.openedAt))
+  const n = sorted.length
+  const text = sorted.map(i => `${i.checkKey} is OK again after ${durationText(ms(i.openedAt))}.`).concat('', `Details: ${url}`).join('\n')
+  const rows = sorted.map(i => `<tr><td style="padding:0 0 6px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f7f9fa;border-left:5px solid ${TONES.green.solid};border-radius:4px;"><tr><td style="padding:8px 12px;${FONT}font-size:13px;">${chip('green', 'OK')} <b style="word-break:break-all;">${esc(i.checkKey)}</b><div style="color:#52606d;margin-top:2px;">was red for ${esc(durationText(ms(i.openedAt)))}</div></td></tr></table></td></tr>`).join('')
+  const body = block(tiles([{ n, label: 'back to normal', tone: 'green' }]))
+    + block(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows}</table>`, '16px 24px 0')
+  const html = frame({ tone: 'green', title: `${n} issues are OK again`, sub: `Longest was red for ${durationText(ms(sorted[0].openedAt))}`, preheader: `${n} checks are back to normal.`, body, url })
+  return mk(`${P} OK again: ${n} issues (${sorted[0].checkKey} +${n - 1} more, longest red ${durationText(ms(sorted[0].openedAt))})`, text, html)
+}
+
 export const companyName = (c: string) => (c === 'mt' ? 'MONKEYTIME' : c.toUpperCase())
 
 /** One mail per company (each is handled by a different person); the company is in the subject for mail rules. */
