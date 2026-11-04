@@ -6,7 +6,6 @@ import { useDashboardAccess } from '../context/DashboardAccessContext'
 import { useDashboardFilters } from '../context/DashboardFiltersContext'
 import { useLocale } from '../context/LocaleContext'
 import { useTheme } from '../context/ThemeContext'
-import { LayoutStyleSwitch } from '../components/LayoutStyleSwitch'
 import { useSkin } from '../context/SkinContext'
 import { usePreview } from '../context/PreviewContext'
 import { useDashboardData } from '../hooks/useDashboardData'
@@ -390,7 +389,6 @@ export function DashboardLayout() {
               </select>
             </label>
           ) : null}
-          <LayoutStyleSwitch />
           <div className="theme-switch" role="group" aria-label={t('common.theme')}>
             <button
               type="button"

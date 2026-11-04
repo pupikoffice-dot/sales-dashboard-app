@@ -36,10 +36,7 @@ function ensureSkinFont(skin: AppSkin): void {
 }
 
 export function applySkin(skin: AppSkin): void {
-  const root = document.documentElement
-  root.dataset.skinChoice = skin
-  // A BETA layout style (data-layout) replaces the skin layer; the skin returns when the style is set back to current.
-  root.dataset.skin = root.dataset.layout ? 'classic' : skin
+  document.documentElement.dataset.skin = skin
   ensureSkinFont(skin)
 }
 
