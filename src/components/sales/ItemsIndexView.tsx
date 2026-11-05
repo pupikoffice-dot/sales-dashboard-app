@@ -17,6 +17,8 @@ import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { usePreview } from '../../context/PreviewContext'
 import { SalesReportStickySetup } from './SalesReportStickySetup'
 import { TableWithExport } from './TableWithExport'
+import { CategoryControlPanel, useCategoryControl } from './CategoryControlPanel'
+import { controlCounts } from '../../lib/categoryControl'
 import type { LogicalCompany } from '../../types/dashboard'
 
 interface ItemsIndexViewProps {
@@ -37,7 +39,9 @@ function ItemsIndexContent({ initialCompany }: ItemsIndexViewProps) {
   )
   const q = { isLoading: raw.isLoading, error: raw.error, data }
   const [company, setCompany] = useState<LogicalCompany | 'all'>(initialCompany ?? 'all')
-  const [mode, setMode] = useState<'index' | 'nocat'>('index')
+  const [mode, setMode] = useState<'index' | 'nocat' | 'control'>('index')
+  const cc = useCategoryControl()
+  const ccCounts = cc.data ? controlCounts(cc.data, company) : null
 
   // In stock but no category (REP103 column I). Reloaded every 10 min: the 103 export now runs twice a day.
   const nocatRaw = useQuery({ queryKey: ['uncategorized-stock'], queryFn: fetchUncategorizedStock, staleTime: 10 * 60 * 1000 })
@@ -62,6 +66,45 @@ function ItemsIndexContent({ initialCompany }: ItemsIndexViewProps) {
     () => filterItemIndex(q.data?.rows ?? [], company, searchQuery),
     [q.data, company, searchQuery],
   )
+
+  if (mode === 'control') {
+    const cos = [...new Set([...(cc.data?.toDecide ?? []), ...(cc.data?.restore ?? []), ...(cc.data?.pending ?? [])].map(r => r.co))].sort()
+    return (
+      <div>
+        <div className="sbar">
+          <span>
+            {t('items.view')}: <b>{t('cc.title')}</b>
+          </span>
+          <div className="sbar-actions">
+            <button type="button" className="sbar-search" onClick={() => setMode('index')}>
+              ← {t('items.backToIndex')}
+            </button>
+            <select
+              className="sbar-search"
+              value={company}
+              onChange={e => setCompany(e.target.value as LogicalCompany | 'all')}
+              aria-label={t('cc.col.company')}
+            >
+              <option value="all">{t('items.allCompanies')}</option>
+              {cos.map(c => (
+                <option key={c} value={c}>
+                  {companyLabel(c as LogicalCompany)}
+                </option>
+              ))}
+            </select>
+            <input
+              className="sbar-search"
+              type="text"
+              placeholder="🔍 SKU, name…"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
+        <CategoryControlPanel company={company} searchQuery={searchQuery} />
+      </div>
+    )
+  }
 
   if (mode === 'nocat') {
     const cos = [...new Set(nocat.map(r => r.co))].sort()
@@ -194,6 +237,12 @@ function ItemsIndexContent({ initialCompany }: ItemsIndexViewProps) {
             In stock, no category
             {nocatRaw.data
               ? ` (${[...new Set(nocat.map(r => r.co))].sort().map(c => `${companyLabel(c)} ${fmt0(nocat.filter(r => r.co === c).length)}`).join(' · ')})`
+              : ''}
+          </button>
+          <button type="button" className="sbar-search" onClick={() => setMode('control')}>
+            {t('cc.tab.button')}
+            {ccCounts && (ccCounts.toDecide || ccCounts.restore || ccCounts.held)
+              ? ` (${fmt0(ccCounts.toDecide)} · ${fmt0(ccCounts.restore)}${ccCounts.held ? ' !' : ''})`
               : ''}
           </button>
           <select

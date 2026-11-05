@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { alertEmail, resolvedEmail, summaryEmail, uncategorizedEmail, durationText } from '../../../supabase/functions/data-health-check/emails.ts'
+import { alertEmail, categoryHeldEmail, resolvedEmail, summaryEmail, uncategorizedEmail, durationText } from '../../../supabase/functions/data-health-check/emails.ts'
 
 const s = { check_key: '855PUP.xls', file_name: '855PUP.xls', file_group: 'manual_sales', company: 'pupik', status: 'red' as const, reason: '855PUP.xls is 9 days old (limit 7 days)', modified_at: null, age_hours: 216, rows_loaded: null }
 const rule = { fix_hint: 'Run REP855&854ALL.BAT', impact: 'returns MTD' }
@@ -71,5 +71,16 @@ describe('emails', () => {
       const u = uncategorizedEmail('mt', [{ company: 'mt', sku: 'B<2', name: 'Beta', qty: 3 }], '2026-11-03', url)
       expect(u.html).toContain('MONKEYTIME'); expect(u.html).toContain('B&lt;2'); expect(u.table?.rows.length).toBe(1)
     })
+  })
+  it('category control: held-batch mail names the company and the numbers; summary carries the counts', () => {
+    const e = categoryHeldEmail([{ id: 1, company: 'mt', newFlags: 562, newRestores: 35, threshold: 47, catalogItems: 956 }], url)
+    expect(e.subject).toBe('[Dashboard data] Category control: batch held for approval (MONKEYTIME)')
+    expect(e.text).toContain('562 items to flag and 35 to restore (limit 47')
+    expect(e.html).toContain('Category control')
+    expect(e.html).toContain(url)
+    const sum = summaryEmail({ statuses: [s], openCount: 0, unruled: [], dateLabel: 'Mon 02-Nov', url, categoryControl: { toDecide: 3, restorePending: 4, held: 1 } })
+    expect(sum.text).toContain('Category control: 3 to decide, 4 restore pending, 1 held batch.')
+    expect(sum.html).toContain('3 to decide')
+    expect(summaryEmail({ statuses: [s], openCount: 0, unruled: [], dateLabel: 'x', url }).text).not.toContain('Category control')
   })
 })

@@ -174,6 +174,32 @@ ${rows.length > preview.length ? `<tr><td colspan="3" style="padding:6px 10px;bo
   }
 }
 
+export type CategoryControlCounts = {
+  toDecide: number; restorePending: number; clearPending?: number; held: number
+}
+export type HeldBatch = { id: number; company: string; newFlags: number; newRestores: number; threshold: number; catalogItems: number }
+
+const heldLine = (b: HeldBatch) =>
+  `${b.newFlags} item${b.newFlags === 1 ? '' : 's'} to flag and ${b.newRestores} to restore (limit ${b.threshold} = 5% of ${b.catalogItems} categorised items, max 300)`
+
+/** ONE mail when the safety cap held back a batch of category changes: a person must approve it in the dashboard. */
+export function categoryHeldEmail(batches: HeldBatch[], url: string): Email {
+  const n = batches.length
+  const text = [
+    `The category control found more changes than the safety limit allows, so nothing new was queued for ${n === 1 ? 'this company' : 'these companies'}:`,
+    ...batches.map(b => `  ${companyName(b.company)}: ${heldLine(b)}`),
+    '', 'Open the Items area, tab "Category control" and approve the batch to queue everything at once.',
+    '', `Details: ${url}`,
+  ].join('\n')
+  const rows = batches.map(b => `<tr><td style="padding:0 0 6px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${TONES.amber.soft};border-left:5px solid ${TONES.amber.solid};border-radius:4px;"><tr><td style="padding:9px 12px;${FONT}font-size:14px;line-height:1.45;">
+<b>${esc(companyName(b.company))}</b><div style="font-size:13px;color:${TONES.amber.text};margin-top:3px;">${esc(heldLine(b))}</div></td></tr></table></td></tr>`).join('')
+  const body = block(tiles([{ n, label: `held batch${n === 1 ? '' : 'es'} to approve`, tone: 'amber' }]))
+    + block(`<div>Nothing new was queued for ${n === 1 ? 'this company' : 'these companies'} until a person approves it. Open the Items area, tab <b>Category control</b>.</div>`, '14px 24px 0')
+    + block(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows}</table>`, '12px 24px 0')
+  const html = frame({ tone: 'amber', title: `Category control: ${n} batch${n === 1 ? '' : 'es'} held`, sub: 'Safety limit reached', preheader: 'More category changes than the safety limit allows. Approval needed.', body, url })
+  return mk(`${P} Category control: batch held for approval (${batches.map(b => companyName(b.company)).join(', ')})`, text, html)
+}
+
 export function resolvedEmail(checkKey: string, openedAt: string, now: Date, url: string): Email {
   const d = durationText(now.getTime() - new Date(openedAt).getTime())
   const body = block(`<div style="margin-bottom:10px;">${chip('green', 'RESOLVED')}</div>
@@ -186,7 +212,8 @@ export function resolvedEmail(checkKey: string, openedAt: string, now: Date, url
 export type UncategorizedRow = { company: string; sku: string; name: string; qty: number }
 
 export function summaryEmail(a: { statuses: Status[]; openCount: number; unruled: string[]; dateLabel: string; url: string; uncategorized?: UncategorizedRow[]; isoDate?: string;
-  /** optional: fix hints by file name, so red/amber rows can say how to fix them */ rules?: Record<string, FixRule> }): Email {
+  /** optional: fix hints by file name, so red/amber rows can say how to fix them */ rules?: Record<string, FixRule>
+  /** optional: category control counts (the function may be missing on older databases) */ categoryControl?: CategoryControlCounts }): Email {
   const n = (c: Status['status']) => a.statuses.filter(s => s.status === c).length
   const lines: string[] = [`Open incidents: ${a.openCount}`, '']
   const groups = [...new Set(a.statuses.map(s => s.file_group))].sort()
@@ -200,6 +227,8 @@ export function summaryEmail(a: { statuses: Status[]; openCount: number; unruled
     const per = [...new Set(unc.map(r => r.company))].sort().map(c => `${c} ${unc.filter(r => r.company === c).length}`).join(', ')
     lines.push('', `In stock without a category (REP103 column I): ${unc.length} items (${per}) - each company's list is sent in its own email.`)
   }
+  const cc = a.categoryControl
+  if (cc) lines.push('', `Category control: ${cc.toDecide} to decide, ${cc.restorePending} restore pending, ${cc.held} held batch${cc.held === 1 ? '' : 'es'}.`)
   lines.push('', `Details: ${a.url}`)
   const [red, amber, green] = [n('red'), n('amber'), n('green')]
   const subject = `${P} Daily status ${a.dateLabel}: ${red} red, ${amber} amber, ${green} green`
@@ -232,6 +261,10 @@ export function summaryEmail(a: { statuses: Status[]; openCount: number; unruled
   if (unc.length) {
     const per = [...new Set(unc.map(r => r.company))].sort().map(c => `${esc(companyName(c))} ${unc.filter(r => r.company === c).length}`).join(', ')
     body += block(`<div style="background:${TONES.amber.soft};border-left:5px solid ${TONES.amber.solid};border-radius:4px;padding:10px 12px;font-size:13px;"><b>${unc.length} item${unc.length === 1 ? '' : 's'} in stock without a category</b> (${per}). Each company's list is sent in its own email.</div>`, '16px 24px 0')
+  }
+  if (cc && (cc.toDecide || cc.restorePending || cc.held)) {
+    const t = cc.held ? TONES.amber : TONES.grey
+    body += block(`<div style="background:${t.soft};border-left:5px solid ${t.solid};border-radius:4px;padding:10px 12px;font-size:13px;"><b>Category control:</b> ${cc.toDecide} to decide, ${cc.restorePending} restore pending, ${cc.held} held batch${cc.held === 1 ? '' : 'es'}.</div>`, '16px 24px 0')
   }
   const html = frame({ tone, title: headline, sub: `Daily status - ${a.dateLabel}`, preheader: `${red} red, ${amber} amber, ${green} green. ${a.openCount} open incident${a.openCount === 1 ? '' : 's'}.`, body, url: a.url })
   return mk(subject, lines.join('\n'), html)

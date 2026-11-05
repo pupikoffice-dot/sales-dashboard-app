@@ -5,7 +5,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { evaluate, localParts, JOB_CHECKS, type JobResult, type Rule, type Latest, type SyncLog, type Status, type ContentItem } from './evaluate.ts'
 import { planIncidents, REOPEN_DAMP_H, type ClosedIncident, type OpenIncident } from './incidents.ts'
-import { alertEmail, digestEmail, resolvedDigestEmail, summaryEmail, uncategorizedEmail, type Email, type EmailTable, type UncategorizedRow } from './emails.ts'
+import { alertEmail, categoryHeldEmail, digestEmail, resolvedDigestEmail, summaryEmail, uncategorizedEmail, type CategoryControlCounts, type Email, type EmailTable, type HeldBatch, type UncategorizedRow } from './emails.ts'
 
 // Email links: production (OMEGA) project -> production site, otherwise the beta site. DATA_HEALTH_PAGE_URL overrides.
 const IS_OMEGA = (Deno.env.get('SUPABASE_URL') ?? '').includes('hzgpkkbqhmtwqhkcntcc')
@@ -118,6 +118,18 @@ Deno.serve(async () => {
   for (const i of plan.close) await sb.from('data_health_incidents').update({ closed_at: now.toISOString() }).eq('id', i.id)
   if (plan.close.length) await send(resolvedDigestEmail(plan.close.map(i => ({ checkKey: i.check_key, openedAt: i.opened_at })), now, PAGE_URL))
 
+  // Category control (flag / restore evaluation of items by stock and category). Runs on every check; optional (older databases lack
+  // the function). When the safety cap holds a batch back, ONE mail goes out and each batch is marked as mailed once it was sent.
+  const ccQ = await sb.rpc('category_control_evaluate')
+  if (ccQ.error) log.push(`category control unavailable: ${ccQ.error.message}`)
+  else {
+    const out = ccQ.data as { companies?: { company: string; status: string; reason?: string }[]; heldUnmailed?: HeldBatch[] }
+    for (const c of out.companies ?? []) if (c.status === 'error') log.push(`category control ${c.company}: ${c.reason}`)
+    const held = out.heldUnmailed ?? []
+    if (held.length && await send(categoryHeldEmail(held, PAGE_URL.replace('/admin/data-health', '/items'))))
+      await sb.rpc('category_control_mark_mailed', { p_ids: held.map(h => h.id) })
+  }
+
   // Daily summary: first run on a working day at/after summary_time.
   const local = localParts(now)
   const [sh, sm] = settings.summary_time.split(':').map(Number)
@@ -129,7 +141,9 @@ Deno.serve(async () => {
     // In-stock items without a category (optional: older databases lack the function); listed in full in the morning mail.
     const unc = await sb.rpc('data_health_uncategorized')
     if (unc.error) log.push(`uncategorized list unavailable: ${unc.error.message}`)
-    summarySent = await send(summaryEmail({ statuses: (all.data ?? []) as Status[], openCount: open.count ?? 0, unruled, dateLabel: label, url: PAGE_URL, isoDate: local.date,
+    const ccC = await sb.rpc('category_control_counts')
+    if (ccC.error) log.push(`category control counts unavailable: ${ccC.error.message}`)
+    summarySent = await send(summaryEmail({ categoryControl: ccC.error ? undefined : (ccC.data as CategoryControlCounts), statuses: (all.data ?? []) as Status[], openCount: open.count ?? 0, unruled, dateLabel: label, url: PAGE_URL, isoDate: local.date,
       rules: Object.fromEntries(rules.map(r => [r.file_name, { fix_hint: r.fix_hint, impact: r.impact }])),
       uncategorized: unc.error ? [] : ((unc.data ?? []) as UncategorizedRow[]) }))
     if (summarySent) {
