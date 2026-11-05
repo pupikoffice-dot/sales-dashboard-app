@@ -9,8 +9,10 @@ import {
   fetchUncategorizedStock,
   filterItemIndex,
   filterUncategorizedStock,
+  formatLastCategory,
   maskItemIndexForPreview,
 } from '../../lib/itemIndex'
+import { useLocale } from '../../context/LocaleContext'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { usePreview } from '../../context/PreviewContext'
 import { SalesReportStickySetup } from './SalesReportStickySetup'
@@ -24,6 +26,7 @@ interface ItemsIndexViewProps {
 
 function ItemsIndexContent({ initialCompany }: ItemsIndexViewProps) {
   const { searchQuery, setSearchQuery } = useSalesReportUi()
+  const { t } = useLocale()
   const raw = useQuery({ queryKey: ['item-index'], queryFn: fetchItemIndex, staleTime: 30 * 60 * 1000 })
   const { access } = useDashboardAccess()
   const { isPreviewing, effectiveIsSuperAdmin } = usePreview()
@@ -127,6 +130,7 @@ function ItemsIndexContent({ initialCompany }: ItemsIndexViewProps) {
                     <SortableTh style={{ textAlign: 'left' }}>SKU</SortableTh>
                     <SortableTh style={{ textAlign: 'left' }}>Item Name</SortableTh>
                     <SortableTh style={{ textAlign: 'left' }}>Why</SortableTh>
+                    <SortableTh style={{ textAlign: 'left' }}>{t('items.lastCategory')}</SortableTh>
                     <SortableTh>Wholesale P01</SortableTh>
                     <SortableTh className="accent2">WMS Stock</SortableTh>
                   </tr>
@@ -137,6 +141,7 @@ function ItemsIndexContent({ initialCompany }: ItemsIndexViewProps) {
                       <td>{r.sku}</td>
                       <td title={r.name}>{r.name}</td>
                       <td>{r.why === 'empty' ? 'Column I empty' : 'Not in the 103 export'}</td>
+                      <td data-sv={r.lastCategory ?? ''}>{formatLastCategory(r.lastCategory, r.lastCategorySeenAt) || '—'}</td>
                       <td data-sv={r.p01 ?? ''}>{r.p01 != null ? fmt2(r.p01) : '—'}</td>
                       <td data-sv={r.wms} className="accent2">
                         {fmt0(r.wms)}
@@ -228,6 +233,7 @@ function ItemsIndexContent({ initialCompany }: ItemsIndexViewProps) {
                   <SortableTh style={{ textAlign: 'left' }}>Alt. No.</SortableTh>
                   <SortableTh style={{ textAlign: 'left' }}>Barcode</SortableTh>
                   <SortableTh style={{ textAlign: 'left' }}>Category (103 I)</SortableTh>
+                  <SortableTh style={{ textAlign: 'left' }}>{t('items.lastCategory')}</SortableTh>
                   <SortableTh>Wholesale P01</SortableTh>
                   {showCost && <SortableTh>Landed Cost</SortableTh>}
                   {showFob && <SortableTh>FOB</SortableTh>}
@@ -243,6 +249,7 @@ function ItemsIndexContent({ initialCompany }: ItemsIndexViewProps) {
                     <td>{r.alt ?? ''}</td>
                     <td>{r.bc ?? ''}</td>
                     <td>{r.cat ?? ''}</td>
+                    <td data-sv={r.lastCategory ?? ''}>{formatLastCategory(r.lastCategory, r.lastCategorySeenAt)}</td>
                     <td data-sv={r.p01 ?? ''}>{r.p01 != null ? fmt2(r.p01) : '—'}</td>
                     {showCost && <td data-sv={r.cost ?? ''}>{r.cost != null ? fmt2(r.cost) : '—'}</td>}
                     {showFob && <td data-sv={r.fob ?? ''}>{r.fob != null ? fmt2(r.fob) : '—'}</td>}

@@ -7,6 +7,8 @@ import {
   filterUncategorizedStock,
   maskItemIndexForPreview,
   parseItemIndex,
+  formatCategorySeenDate,
+  formatLastCategory,
   parseUncategorizedStock,
 } from './itemIndex'
 import { SIDEBAR_HIDE_OPTIONS } from './sidebarHide'
@@ -88,5 +90,24 @@ describe('hide keys', () => {
     expect(costNoFob.showFob).toBe(false)
     expect(costNoFob.rows.every(r => r.fob === null)).toBe(true)
     expect(maskItemIndexForPreview(idx, { companies: ['pupik'], showItemCost: true, hiddenSidebar: ['date.items'] }).rows).toEqual([])
+  })
+})
+
+describe('last category history', () => {
+  it('parses lcat / lcatAt on index and no-category rows', () => {
+    const idx = parseItemIndex({ rows: [{ co: 'pupik', sku: 'A', lcat: ' Toys ', lcatAt: '2026-11-05T10:00:00+00:00' }, { co: 'mt', sku: 'B' }] })
+    expect(idx.rows[0]).toMatchObject({ lastCategory: 'Toys', lastCategorySeenAt: '2026-11-05T10:00:00+00:00' })
+    expect(idx.rows[1]).toMatchObject({ lastCategory: null, lastCategorySeenAt: null })
+    const nc = parseUncategorizedStock({ rows: [{ co: 'mt', sku: 'B', lcat: '', lcatAt: null }, { co: 'mt', sku: 'C', lcat: 'Games', lcatAt: '2026-11-01T12:00:00Z' }] })
+    expect(nc[0].lastCategory).toBeNull()
+    expect(nc[1].lastCategory).toBe('Games')
+  })
+  it('formats the date and the combined label', () => {
+    expect(formatCategorySeenDate('2026-11-05T12:00:00Z')).toBe('05/11/2026')
+    expect(formatCategorySeenDate(null)).toBe('')
+    expect(formatCategorySeenDate('nope')).toBe('')
+    expect(formatLastCategory('Toys', '2026-11-05T12:00:00Z')).toBe('Toys (05/11/2026)')
+    expect(formatLastCategory('Toys', null)).toBe('Toys')
+    expect(formatLastCategory(null, '2026-11-05T12:00:00Z')).toBe('')
   })
 })

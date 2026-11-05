@@ -116,6 +116,7 @@ export const messages: Record<keyof typeof en, string> = {
   'nav.expandSidebar': 'פתח את התפריט המלא',
   'nav.stockHistory': 'היסטוריית מלאי',
   'nav.itemsIndex': 'פריטים',
+  'items.lastCategory': 'קטגוריה אחרונה',
   'nav.rnd': 'מחקר ופיתוח',
   'nav.rndMonthly': 'נתונים חודשיים',
   'nav.rndYearly': 'נתונים רב-שנתיים',

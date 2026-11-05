@@ -114,6 +114,7 @@ export const messages = {
   'nav.expandSidebar': 'Open the full menu',
   'nav.stockHistory': 'Stock history',
   'nav.itemsIndex': 'Items',
+  'items.lastCategory': 'Last category',
   'nav.rnd': 'R&D',
   'nav.rndMonthly': 'Monthly data',
   'nav.rndYearly': 'Multi-year data',
