@@ -13,14 +13,26 @@ import {
   controlCounts,
   decideCategory,
   fetchCategoryControl,
+  DECIDE_PAGE_SIZES,
+  DEFAULT_DECIDE_PAGE_SIZE,
+  EMPTY_DECIDE_FILTERS,
+  checkState,
+  countSelected,
+  facetOptions,
   filterControlRows,
+  filterToDecide,
   formatCcDate,
   groupSelection,
+  hasDecideFilters,
   maskCategoryControlForPreview,
+  paginate,
   selKey,
+  selectKeys,
   toggleAllVisible,
   toggleKey,
   undoCategory,
+  type DecideFilters,
+  type PageInfo,
   type CcAction,
   type CcDecision,
   type CcHistory,
@@ -90,12 +102,12 @@ export function CategoryControlPanel({ company, searchQuery }: Props) {
   const held = (data?.held ?? []).filter(h => company === 'all' || h.co === company)
   const counts = data ? controlCounts(data, company) : { toDecide: 0, restore: 0, pending: 0, held: 0 }
 
-  const decideSelected = (decision: CcDecision) => {
-    const groups = groupSelection(sel, toDecide)
+  const decideSelected = (decision: CcDecision, rows: CcToDecide[]) => {
+    const groups = groupSelection(sel, rows)
     const total = [...groups.values()].reduce((a, l) => a + l.length, 0)
     if (!total) return
     const key = decision === 'remove' ? 'cc.confirm.remove' : decision === 'leave' ? 'cc.confirm.leave' : 'cc.confirm.exempt'
-    if (!window.confirm(t(key, { n: String(total) }))) return
+    if (!window.confirm(t(key, { n: fmt0(total) }))) return
     run.mutate(async () => {
       let done = 0
       let skipped = 0
@@ -104,7 +116,11 @@ export function CategoryControlPanel({ company, searchQuery }: Props) {
         done += r.done
         skipped += r.skipped
       }
-      setSel(new Set())
+      setSel(s => {
+        const next = new Set(s)
+        for (const [co, skus] of groups) for (const sku of skus) next.delete(selKey(co, sku))
+        return next
+      })
       return t('cc.decided', { done: String(done), skipped: String(skipped) })
     })
   }
@@ -199,7 +215,7 @@ export function CategoryControlPanel({ company, searchQuery }: Props) {
           canWrite={canWrite}
           busy={run.isPending}
           onToggle={k => setSel(s => toggleKey(s, k))}
-          onToggleAll={() => setSel(s => toggleAllVisible(s, toDecide.map(r => selKey(r.co, r.sku))))}
+          onSetSel={setSel}
           onBulk={decideSelected}
           onOne={decideOne}
         />
@@ -241,111 +257,245 @@ function Empty({ text }: { text: string }) {
   return <div className="err">{text}</div>
 }
 
+const fieldStyle = { minWidth: 0, maxWidth: '100%' }
+
 function DecideSection(p: {
   rows: CcToDecide[]
   sel: Set<string>
   canWrite: boolean
   busy: boolean
   onToggle: (k: string) => void
-  onToggleAll: () => void
-  onBulk: (d: CcDecision) => void
+  onSetSel: (next: Set<string>) => void
+  onBulk: (d: CcDecision, rows: CcToDecide[]) => void
   onOne: (r: CcToDecide, d: CcDecision) => void
 }) {
   const { t } = useLocale()
+  const [filters, setFilters] = useState<DecideFilters>(EMPTY_DECIDE_FILTERS)
+  const [pageNo, setPageNo] = useState(1)
+  const [pageSize, setPageSize] = useState<number>(DEFAULT_DECIDE_PAGE_SIZE)
+  const setFilter = (patch: Partial<DecideFilters>) => {
+    setFilters(f => ({ ...f, ...patch }))
+    setPageNo(1)
+  }
+  const categories = useMemo(() => facetOptions(p.rows.map(r => r.cat)), [p.rows])
+  const suppliers = useMemo(() => facetOptions(p.rows.map(r => r.supplier)), [p.rows])
+  const filtered = useMemo(() => filterToDecide(p.rows, filters), [p.rows, filters])
   const { sorted, sort, onSort } = useSortedRows<CcToDecide>(
-    p.rows,
+    filtered,
     {
       co: r => companyLabel(r.co),
       sku: r => r.sku,
       name: r => r.name,
       cat: r => r.cat,
+      sup: r => r.supplier,
       lastStock: r => r.lastStockAt,
       flagged: r => r.flaggedAt,
       wms: r => r.wms,
     },
     null,
-    ['co', 'sku', 'name', 'cat'],
+    ['co', 'sku', 'name', 'cat', 'sup'],
   )
+  const page = paginate(sorted, pageNo, pageSize)
+  const pageKeys = page.rows.map(r => selKey(r.co, r.sku))
+  const filteredKeys = useMemo(() => filtered.map(r => selKey(r.co, r.sku)), [filtered])
+  const nSel = countSelected(p.sel, filteredKeys)
+  const pageState = checkState(p.sel, pageKeys)
+  const filtering = hasDecideFilters(filters)
+  const nHidden = p.sel.size - nSel
   if (!p.rows.length) return <Empty text={t('cc.decide.empty')} />
-  const visibleKeys = sorted.map(r => selKey(r.co, r.sku))
-  const nSel = visibleKeys.filter(k => p.sel.has(k)).length
   return (
     <div>
       <p style={{ margin: '6px 0' }}>{t('cc.decide.hint')}</p>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'flex-end', margin: '8px 0' }}>
+        <label style={{ display: 'grid', gap: 2, flex: '1 1 180px', ...fieldStyle }}>
+          <span style={{ fontSize: 12, opacity: 0.75 }}>{t('cc.filter.search')}</span>
+          <input
+            type="search"
+            className="sbar-search"
+            value={filters.query}
+            placeholder={t('cc.filter.searchPh')}
+            onChange={e => setFilter({ query: e.target.value })}
+          />
+        </label>
+        <label style={{ display: 'grid', gap: 2, flex: '1 1 150px', ...fieldStyle }}>
+          <span style={{ fontSize: 12, opacity: 0.75 }}>{t('cc.col.category')}</span>
+          <select className="sbar-search" value={filters.category} onChange={e => setFilter({ category: e.target.value })}>
+            <option value="">{t('cc.filter.any')}</option>
+            {categories.map(c => (
+              <option key={c.value} value={c.value}>
+                {c.value} ({fmt0(c.count)})
+              </option>
+            ))}
+          </select>
+        </label>
+        {suppliers.length > 0 && (
+          <label style={{ display: 'grid', gap: 2, flex: '1 1 130px', ...fieldStyle }}>
+            <span style={{ fontSize: 12, opacity: 0.75 }}>{t('cc.filter.supplier')}</span>
+            <select className="sbar-search" value={filters.supplier} onChange={e => setFilter({ supplier: e.target.value })}>
+              <option value="">{t('cc.filter.any')}</option>
+              {suppliers.map(c => (
+                <option key={c.value} value={c.value}>
+                  {c.value} ({fmt0(c.count)})
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        <label style={{ display: 'grid', gap: 2, flex: '1 1 130px', ...fieldStyle }}>
+          <span style={{ fontSize: 12, opacity: 0.75 }}>{t('cc.filter.stockFrom')}</span>
+          <input type="date" className="sbar-search" value={filters.stockFrom} max={filters.stockTo || undefined} onChange={e => setFilter({ stockFrom: e.target.value })} />
+        </label>
+        <label style={{ display: 'grid', gap: 2, flex: '1 1 130px', ...fieldStyle }}>
+          <span style={{ fontSize: 12, opacity: 0.75 }}>{t('cc.filter.stockTo')}</span>
+          <input type="date" className="sbar-search" value={filters.stockTo} min={filters.stockFrom || undefined} onChange={e => setFilter({ stockTo: e.target.value })} />
+        </label>
+        {filtering && (
+          <button type="button" className="dl-btn" onClick={() => setFilter({ ...EMPTY_DECIDE_FILTERS })}>
+            {t('cc.filter.clear')}
+          </button>
+        )}
+      </div>
+      <div style={{ margin: '4px 0', opacity: 0.8 }}>
+        {t(filtering ? 'cc.filter.count' : 'cc.filter.countAll', { n: fmt0(filtered.length), total: fmt0(p.rows.length) })}
+      </div>
+
       {p.canWrite && (
-        <div style={{ margin: '8px 0' }}>
-          <span style={{ marginInlineEnd: 10 }}>{t('cc.selected', { n: String(nSel) })}</span>
-          <button type="button" className="dl-btn" style={chipBtn} disabled={!nSel || p.busy} onClick={() => p.onBulk('remove')}>
-            {t('cc.btn.remove')}
-          </button>
-          <button type="button" className="dl-btn" style={chipBtn} disabled={!nSel || p.busy} onClick={() => p.onBulk('leave')}>
-            {t('cc.btn.leave')}
-          </button>
-          <button type="button" className="dl-btn" style={chipBtn} disabled={!nSel || p.busy} onClick={() => p.onBulk('exempt')}>
-            {t('cc.btn.exempt')}
-          </button>
+        <div
+          role="region"
+          aria-label={t('cc.bar.label')}
+          style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--card-bg, Canvas)', border: '1px solid currentColor', borderRadius: 6, padding: 8, margin: '8px 0' }}
+        >
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+            <b>{t('cc.bar.selected', { n: fmt0(nSel), total: fmt0(filtered.length) })}</b>
+            {nSel < filtered.length && filtered.length > 0 && (
+              <button type="button" className="dl-btn" disabled={p.busy} onClick={() => p.onSetSel(selectKeys(p.sel, filteredKeys))}>
+                {t('cc.bar.selectAllFiltered', { n: fmt0(filtered.length) })}
+              </button>
+            )}
+            {nSel > 0 && (
+              <button type="button" className="dl-btn" disabled={p.busy} onClick={() => p.onSetSel(new Set())}>
+                {t('cc.bar.clear')}
+              </button>
+            )}
+          </div>
+          {nHidden > 0 && <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>{t('cc.bar.hidden', { n: fmt0(nHidden) })}</div>}
+          <div style={{ marginTop: 6 }}>
+            <button type="button" className="dl-btn" style={chipBtn} disabled={!nSel || p.busy} onClick={() => p.onBulk('remove', filtered)}>
+              {t('cc.btn.remove')} ({fmt0(nSel)})
+            </button>
+            <button type="button" className="dl-btn" style={chipBtn} disabled={!nSel || p.busy} onClick={() => p.onBulk('leave', filtered)}>
+              {t('cc.btn.leave')} ({fmt0(nSel)})
+            </button>
+            <button type="button" className="dl-btn" style={chipBtn} disabled={!nSel || p.busy} onClick={() => p.onBulk('exempt', filtered)}>
+              {t('cc.btn.exempt')} ({fmt0(nSel)})
+            </button>
+          </div>
+          <div style={{ fontSize: 12, opacity: 0.8 }}>
+            {nSel ? t('cc.bar.willDo', { n: fmt0(nSel) }) : t('cc.bar.pick')}
+          </div>
         </div>
       )}
-      <div className="tw tw-sticky" style={wrapStyle}>
-        <table>
-          <thead>
-            <tr>
-              {p.canWrite && (
-                <th>
-                  <input
-                    type="checkbox"
-                    aria-label={t('cc.selectAll')}
-                    checked={nSel > 0 && nSel === visibleKeys.length}
-                    onChange={p.onToggleAll}
-                  />
-                </th>
-              )}
-              <SortTh label={t('cc.col.company')} k="co" left sort={sort} onSort={onSort} />
-              <SortTh label="SKU" k="sku" left sort={sort} onSort={onSort} />
-              <SortTh label={t('cc.col.name')} k="name" left sort={sort} onSort={onSort} />
-              <SortTh label={t('cc.col.category')} k="cat" left sort={sort} onSort={onSort} />
-              <SortTh label={t('cc.col.lastStock')} k="lastStock" sort={sort} onSort={onSort} />
-              <SortTh label={t('cc.col.flagged')} k="flagged" sort={sort} onSort={onSort} />
-              <SortTh label={t('cc.col.wms')} k="wms" sort={sort} onSort={onSort} />
-              {p.canWrite && <th>{t('cc.col.actions')}</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map(r => {
-              const k = selKey(r.co, r.sku)
-              return (
-                <tr key={k}>
-                  {p.canWrite && (
-                    <td>
-                      <input type="checkbox" aria-label={r.sku} checked={p.sel.has(k)} onChange={() => p.onToggle(k)} />
-                    </td>
-                  )}
-                  <td>{companyLabel(r.co)}</td>
-                  <td>{r.sku}</td>
-                  <td title={r.name}>{r.name}</td>
-                  <td>{r.cat ?? ''}</td>
-                  <td>{formatCcDate(r.lastStockAt) || '—'}</td>
-                  <td>{formatCcDate(r.flaggedAt) || '—'}</td>
-                  <td>{fmt0(r.wms)}</td>
-                  {p.canWrite && (
-                    <td style={{ whiteSpace: 'nowrap' }}>
-                      <button type="button" className="dl-btn" disabled={p.busy} onClick={() => p.onOne(r, 'remove')}>
-                        {t('cc.btn.remove')}
-                      </button>{' '}
-                      <button type="button" className="dl-btn" disabled={p.busy} onClick={() => p.onOne(r, 'leave')}>
-                        {t('cc.btn.leave')}
-                      </button>{' '}
-                      <button type="button" className="dl-btn" disabled={p.busy} onClick={() => p.onOne(r, 'exempt')}>
-                        {t('cc.btn.exempt')}
-                      </button>
-                    </td>
-                  )}
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
+
+      <Pager page={page} pageSize={pageSize} onPage={setPageNo} onSize={n => { setPageSize(n); setPageNo(1) }} />
+
+      {!filtered.length ? (
+        <Empty text={t('cc.filter.none')} />
+      ) : (
+        <div className="tw tw-sticky" style={wrapStyle}>
+          <table>
+            <thead>
+              <tr>
+                {p.canWrite && (
+                  <th>
+                    <input
+                      type="checkbox"
+                      aria-label={t('cc.selectPage')}
+                      title={t('cc.selectPage')}
+                      checked={pageState === 'all'}
+                      ref={el => {
+                        if (el) el.indeterminate = pageState === 'some'
+                      }}
+                      onChange={() => p.onSetSel(toggleAllVisible(p.sel, pageKeys))}
+                    />
+                  </th>
+                )}
+                <SortTh label={t('cc.col.company')} k="co" left sort={sort} onSort={onSort} />
+                <SortTh label="SKU" k="sku" left sort={sort} onSort={onSort} />
+                <SortTh label={t('cc.col.name')} k="name" left sort={sort} onSort={onSort} />
+                <SortTh label={t('cc.col.category')} k="cat" left sort={sort} onSort={onSort} />
+                <SortTh label={t('cc.filter.supplier')} k="sup" left sort={sort} onSort={onSort} />
+                <SortTh label={t('cc.col.lastStock')} k="lastStock" sort={sort} onSort={onSort} />
+                <SortTh label={t('cc.col.flagged')} k="flagged" sort={sort} onSort={onSort} />
+                <SortTh label={t('cc.col.wms')} k="wms" sort={sort} onSort={onSort} />
+                {p.canWrite && <th>{t('cc.col.actions')}</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {page.rows.map(r => {
+                const k = selKey(r.co, r.sku)
+                return (
+                  <tr key={k}>
+                    {p.canWrite && (
+                      <td>
+                        <input type="checkbox" aria-label={r.sku} checked={p.sel.has(k)} onChange={() => p.onToggle(k)} />
+                      </td>
+                    )}
+                    <td>{companyLabel(r.co)}</td>
+                    <td>{r.sku}</td>
+                    <td title={r.name}>{r.name}</td>
+                    <td>{r.cat ?? ''}</td>
+                    <td>{r.supplier ?? ''}</td>
+                    <td data-sv={r.lastStockAt ?? ''}>{formatCcDate(r.lastStockAt) || '—'}</td>
+                    <td data-sv={r.flaggedAt ?? ''}>{formatCcDate(r.flaggedAt) || '—'}</td>
+                    <td>{fmt0(r.wms)}</td>
+                    {p.canWrite && (
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        <button type="button" className="dl-btn" disabled={p.busy} onClick={() => p.onOne(r, 'remove')}>
+                          {t('cc.btn.remove')}
+                        </button>{' '}
+                        <button type="button" className="dl-btn" disabled={p.busy} onClick={() => p.onOne(r, 'leave')}>
+                          {t('cc.btn.leave')}
+                        </button>{' '}
+                        <button type="button" className="dl-btn" disabled={p.busy} onClick={() => p.onOne(r, 'exempt')}>
+                          {t('cc.btn.exempt')}
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <Pager page={page} pageSize={pageSize} onPage={setPageNo} onSize={n => { setPageSize(n); setPageNo(1) }} />
+    </div>
+  )
+}
+
+function Pager(p: { page: PageInfo<unknown>; pageSize: number; onPage: (n: number) => void; onSize: (n: number) => void }) {
+  const { t } = useLocale()
+  if (!p.page.total) return null
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', margin: '8px 0' }}>
+      <button type="button" className="dl-btn" disabled={p.page.page <= 1} onClick={() => p.onPage(p.page.page - 1)} aria-label={t('cc.page.prev')}>
+        ‹
+      </button>
+      <span>{t('cc.page.of', { from: fmt0(p.page.from), to: fmt0(p.page.to), total: fmt0(p.page.total), page: String(p.page.page), pages: String(p.page.pages) })}</span>
+      <button type="button" className="dl-btn" disabled={p.page.page >= p.page.pages} onClick={() => p.onPage(p.page.page + 1)} aria-label={t('cc.page.next')}>
+        ›
+      </button>
+      <label style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}>
+        <span style={{ fontSize: 12, opacity: 0.75 }}>{t('cc.page.size')}</span>
+        <select className="sbar-search" value={p.pageSize} onChange={e => p.onSize(Number(e.target.value))}>
+          {DECIDE_PAGE_SIZES.map(n => (
+            <option key={n} value={n}>
+              {n}
+            </option>
+          ))}
+        </select>
+      </label>
     </div>
   )
 }

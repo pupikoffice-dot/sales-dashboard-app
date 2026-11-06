@@ -20,6 +20,8 @@ export interface CcToDecide {
   lastStockAt: string | null
   wms: number
   lastCategory: string | null
+  /** Supplier code from the price list (the closest thing to a brand the item index has); null when unknown. */
+  supplier: string | null
 }
 
 export interface CcRestore {
@@ -144,6 +146,7 @@ export function parseCategoryControl(data: unknown): CategoryControlData {
       lastStockAt: sn(x.lastStockAt),
       wms: n(x.wms),
       lastCategory: sn(x.lcat),
+      supplier: sn(x.sup),
     })),
     restore: arr(d.restore).map(x => ({
       id: n(x.id),
@@ -204,21 +207,37 @@ export async function fetchCategoryControl(): Promise<CategoryControlData> {
   return parseCategoryControl(data)
 }
 
+/** Split a list into slices of at most `size` (bulk calls stay well inside the database statement timeout). */
+export function chunk<T>(list: readonly T[], size: number): T[][] {
+  const sz = Math.max(1, Math.floor(size) || 1)
+  const out: T[][] = []
+  for (let i = 0; i < list.length; i += sz) out.push(list.slice(i, i + sz))
+  return out
+}
+
+export const DECIDE_CALL_SIZE = 200
+
 export async function decideCategory(
   company: string,
   skus: string[],
   decision: CcDecision,
   note: string | null = null,
 ): Promise<{ done: number; skipped: number }> {
-  const { data, error } = await supabase.rpc('category_control_decide_bulk', {
-    p_company: company,
-    p_skus: skus,
-    p_decision: decision,
-    p_note: note,
-  })
-  if (error) throw error
-  const d = (data ?? {}) as { done?: unknown; skipped?: unknown }
-  return { done: n(d.done), skipped: n(d.skipped) }
+  let done = 0
+  let skipped = 0
+  for (const part of chunk(skus, DECIDE_CALL_SIZE)) {
+    const { data, error } = await supabase.rpc('category_control_decide_bulk', {
+      p_company: company,
+      p_skus: part,
+      p_decision: decision,
+      p_note: note,
+    })
+    if (error) throw error
+    const d = (data ?? {}) as { done?: unknown; skipped?: unknown }
+    done += n(d.done)
+    skipped += n(d.skipped)
+  }
+  return { done, skipped }
 }
 
 export async function undoCategory(company: string, sku: string, what: 'presale' | 'exempt' | 'action', ref: number | null = null): Promise<number> {
@@ -313,4 +332,96 @@ export interface CcCounts {
 export function controlCounts(d: CategoryControlData, company: string = 'all'): CcCounts {
   const f = <T extends { co: string }>(rows: T[]) => rows.filter(r => company === 'all' || r.co === company).length
   return { toDecide: f(d.toDecide), restore: f(d.restore), pending: f(d.pending), held: f(d.held) }
+}
+
+// ---------------------------------------------------------------- "to decide" list: filters, pages, selection
+
+export interface DecideFilters {
+  /** Free text over SKU, name, current and last category. */
+  query: string
+  /** Exact category ('' = any). */
+  category: string
+  /** Exact supplier code ('' = any). */
+  supplier: string
+  /** Last in stock between these local dates, 'YYYY-MM-DD' ('' = open end). Items with no known date never match once a bound is set. */
+  stockFrom: string
+  stockTo: string
+}
+
+export const EMPTY_DECIDE_FILTERS: DecideFilters = { query: '', category: '', supplier: '', stockFrom: '', stockTo: '' }
+
+export const DECIDE_PAGE_SIZES = [50, 100, 250, 500] as const
+export const DEFAULT_DECIDE_PAGE_SIZE = 100
+
+/** Local 'YYYY-MM-DD' of an ISO timestamp ('' when missing or invalid). */
+export function isoToLocalDay(iso: string | null | undefined): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+export function filterToDecide(rows: readonly CcToDecide[], f: DecideFilters): CcToDecide[] {
+  const hasDate = !!(f.stockFrom || f.stockTo)
+  return rows.filter(r => {
+    if (f.category && (r.cat ?? '') !== f.category) return false
+    if (f.supplier && (r.supplier ?? '') !== f.supplier) return false
+    if (hasDate) {
+      const day = isoToLocalDay(r.lastStockAt)
+      if (!day) return false
+      if (f.stockFrom && day < f.stockFrom) return false
+      if (f.stockTo && day > f.stockTo) return false
+    }
+    return matchesSearch(f.query, r.sku, r.name, r.cat, r.lastCategory)
+  })
+}
+
+export const hasDecideFilters = (f: DecideFilters): boolean =>
+  !!(f.query.trim() || f.category || f.supplier || f.stockFrom || f.stockTo)
+
+/** Distinct non-empty values with their row counts, most frequent first (ties alphabetical). */
+export function facetOptions(values: readonly (string | null | undefined)[]): { value: string; count: number }[] {
+  const m = new Map<string, number>()
+  for (const v of values) {
+    const x = (v ?? '').trim()
+    if (x) m.set(x, (m.get(x) ?? 0) + 1)
+  }
+  return [...m.entries()].map(([value, count]) => ({ value, count })).sort((a, b) => b.count - a.count || a.value.localeCompare(b.value))
+}
+
+export interface PageInfo<T> {
+  rows: T[]
+  /** Clamped, 1-based. */
+  page: number
+  pages: number
+  total: number
+  /** 1-based index of the first and last row shown (0 when empty). */
+  from: number
+  to: number
+}
+
+export function paginate<T>(rows: readonly T[], page: number, size: number): PageInfo<T> {
+  const sz = Math.max(1, Math.floor(size) || DEFAULT_DECIDE_PAGE_SIZE)
+  const total = rows.length
+  const pages = Math.max(1, Math.ceil(total / sz))
+  const p = Math.min(Math.max(1, Math.floor(page) || 1), pages)
+  const start = (p - 1) * sz
+  const slice = rows.slice(start, start + sz)
+  return { rows: slice, page: p, pages, total, from: slice.length ? start + 1 : 0, to: start + slice.length }
+}
+
+/** Add every key (select the current page, or every filtered row). */
+export function selectKeys(sel: ReadonlySet<string>, keys: readonly string[]): Set<string> {
+  const next = new Set(sel)
+  for (const k of keys) next.add(k)
+  return next
+}
+
+/** How many of the keys are selected. */
+export const countSelected = (sel: ReadonlySet<string>, keys: readonly string[]): number => keys.reduce((a, k) => a + (sel.has(k) ? 1 : 0), 0)
+
+/** Header checkbox state for a set of keys. */
+export function checkState(sel: ReadonlySet<string>, keys: readonly string[]): 'none' | 'some' | 'all' {
+  const n = countSelected(sel, keys)
+  return n === 0 ? 'none' : n === keys.length ? 'all' : 'some'
 }

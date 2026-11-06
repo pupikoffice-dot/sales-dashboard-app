@@ -180,23 +180,23 @@ export type CategoryControlCounts = {
 export type HeldBatch = { id: number; company: string; newFlags: number; newRestores: number; threshold: number; catalogItems: number }
 
 const heldLine = (b: HeldBatch) =>
-  `${b.newFlags} item${b.newFlags === 1 ? '' : 's'} to flag and ${b.newRestores} to restore (limit ${b.threshold} = 5% of ${b.catalogItems} categorised items, max 300)`
+  `${b.newRestores} automatic restore${b.newRestores === 1 ? '' : 's'} waiting (limit ${b.threshold} = 5% of ${b.catalogItems} categorised items, max 300)`
 
-/** ONE mail when the safety cap held back a batch of category changes: a person must approve it in the dashboard. */
+/** ONE mail when the safety cap held back a batch of automatic restores: an admin must approve it in the dashboard. Items to decide are never held. */
 export function categoryHeldEmail(batches: HeldBatch[], url: string): Email {
   const n = batches.length
   const text = [
-    `The category control found more changes than the safety limit allows, so nothing new was queued for ${n === 1 ? 'this company' : 'these companies'}:`,
+    `The category control found more automatic restores than the safety limit allows, so none were queued for ${n === 1 ? 'this company' : 'these companies'}:`,
     ...batches.map(b => `  ${companyName(b.company)}: ${heldLine(b)}`),
-    '', 'Open the Items area, tab "Category control" and approve the batch to queue everything at once.',
+    '', 'Open the Items area, tab "Category control" and approve the batch to queue all the restores at once. Items waiting for your decision are not affected.',
     '', `Details: ${url}`,
   ].join('\n')
   const rows = batches.map(b => `<tr><td style="padding:0 0 6px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${TONES.amber.soft};border-left:5px solid ${TONES.amber.solid};border-radius:4px;"><tr><td style="padding:9px 12px;${FONT}font-size:14px;line-height:1.45;">
 <b>${esc(companyName(b.company))}</b><div style="font-size:13px;color:${TONES.amber.text};margin-top:3px;">${esc(heldLine(b))}</div></td></tr></table></td></tr>`).join('')
   const body = block(tiles([{ n, label: `held batch${n === 1 ? '' : 'es'} to approve`, tone: 'amber' }]))
-    + block(`<div>Nothing new was queued for ${n === 1 ? 'this company' : 'these companies'} until a person approves it. Open the Items area, tab <b>Category control</b>.</div>`, '14px 24px 0')
+    + block(`<div>No restore was queued for ${n === 1 ? 'this company' : 'these companies'} until an admin approves it. Open the Items area, tab <b>Category control</b>.</div>`, '14px 24px 0')
     + block(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows}</table>`, '12px 24px 0')
-  const html = frame({ tone: 'amber', title: `Category control: ${n} batch${n === 1 ? '' : 'es'} held`, sub: 'Safety limit reached', preheader: 'More category changes than the safety limit allows. Approval needed.', body, url })
+  const html = frame({ tone: 'amber', title: `Category control: ${n} batch${n === 1 ? '' : 'es'} held`, sub: 'Safety limit reached', preheader: 'More automatic restores than the safety limit allows. Approval needed.', body, url })
   return mk(`${P} Category control: batch held for approval (${batches.map(b => companyName(b.company)).join(', ')})`, text, html)
 }
 

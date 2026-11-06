@@ -75,7 +75,7 @@ describe('emails', () => {
   it('category control: held-batch mail names the company and the numbers; summary carries the counts', () => {
     const e = categoryHeldEmail([{ id: 1, company: 'mt', newFlags: 562, newRestores: 35, threshold: 47, catalogItems: 956 }], url)
     expect(e.subject).toBe('[Dashboard data] Category control: batch held for approval (MONKEYTIME)')
-    expect(e.text).toContain('562 items to flag and 35 to restore (limit 47')
+    expect(e.text).toContain('35 automatic restores waiting (limit 47')
     expect(e.html).toContain('Category control')
     expect(e.html).toContain(url)
     const sum = summaryEmail({ statuses: [s], openCount: 0, unruled: [], dateLabel: 'Mon 02-Nov', url, categoryControl: { toDecide: 3, restorePending: 4, held: 1 } })
