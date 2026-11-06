@@ -66,7 +66,7 @@ export function SortTh({
   title?: string
 }) {
   const active = sort?.key === k
-  const style: CSSProperties = { cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap', ...(left ? { textAlign: 'left' } : null) }
+  const style: CSSProperties = { cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap', ...(left ? { textAlign: 'start' } : null) }
   return (
     <th
       style={style}

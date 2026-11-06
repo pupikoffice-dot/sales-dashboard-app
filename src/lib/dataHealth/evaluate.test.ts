@@ -64,7 +64,7 @@ describe('evaluate', () => {
     const now = at('2026-10-04T10:00:00Z') // Sun 13:00
     const r = (mod: string) => byKey(evaluate({ rules: [rule({})], latest: [obs({ modified_at: mod })], syncLogs: okSync, now }))['x.xls'].status
     expect(r('2026-10-04T09:00:00Z')).toBe('green') // 1 h
-    expect(r('2026-10-04T06:30:00Z')).toBe('amber') // 3.5 h > 75 % of 4
+    expect(r('2026-10-04T06:20:00Z')).toBe('amber') // 3.67 h (P1 grace: amber from 3.5 h) > 75 % of 4
     expect(r('2026-10-04T05:00:00Z')).toBe('red')   // 5 h
   })
   it('skips a rule outside its window', () => {
@@ -112,9 +112,14 @@ describe('evaluate', () => {
     const stale = byKey(evaluate({ rules: [], latest: [], syncLogs: [{ id: 'a', started_at: '2026-10-04T07:00:00Z', status: 'success' }], now }))
     expect(stale['sync:no_success'].status).toBe('red')
     const stuck = byKey(evaluate({ rules: [], latest: [], now, syncLogs: [
-      { id: 'b', started_at: '2026-10-04T09:00:00Z', status: 'running' },
-      { id: 'c', started_at: '2026-10-04T08:50:00Z', status: 'success' } ] }))
+      { id: 'b', started_at: '2026-10-04T06:30:00Z', status: 'running' },
+      { id: 'c', started_at: '2026-10-04T06:20:00Z', status: 'success' } ] }))
     expect(stuck['sync:stuck'].status).toBe('red')
+    expect(stuck['sync:stuck'].reason).toContain('since 2026-10-04T06:30:00Z')
+    const young = byKey(evaluate({ rules: [], latest: [], now, syncLogs: [
+      { id: 'y', started_at: '2026-10-04T08:00:00Z', status: 'running' },
+      { id: 'z', started_at: '2026-10-04T07:50:00Z', status: 'success' } ] }))
+    expect(young['sync:stuck'].status).toBe('green') // running for 2 h: below the 3 h threshold
     const superseded = byKey(evaluate({ rules: [], latest: [], now, syncLogs: [
       { id: 'd', started_at: '2026-10-04T09:30:00Z', status: 'success' },
       { id: 'e', started_at: '2026-10-04T08:45:00Z', status: 'running' } ] }))
@@ -165,5 +170,16 @@ describe('content freshness', () => {
     expect(go('2026-10-28T11:00:00Z')?.status).toBe('red')
     expect(go('2026-10-28T11:00:00Z')?.reason).toContain('newly in stock')
     expect(go('2026-10-31T09:00:00Z')).toBeUndefined()   // Saturday: not opened
+  })
+  it('P1 files get 30 min grace beyond the limit before amber/red; other groups do not', () => {
+    const now = at('2026-10-05T12:00:00Z') // Mon 15:00, inside the rule window
+    const run = (group: string, ageH: number) => byKey(evaluate({ rules: [rule({ file_group: group })], syncLogs: okSync, now,
+      latest: [obs({ modified_at: new Date(now.getTime() - ageH * 3_600_000).toISOString(), observed_at: now.toISOString() })] }))['x.xls'].status
+    expect(run('p1', 4.4)).toBe('amber')   // past the 4 h limit but within the 30 min grace: not red
+    expect(run('p1', 4.6)).toBe('red')
+    expect(run('p1', 3.3)).toBe('green')   // amber would start at 3 h, grace moves it to 3.5 h
+    expect(run('p1', 3.6)).toBe('amber')
+    expect(run('wms', 4.4)).toBe('red')
+    expect(run('wms', 3.3)).toBe('amber')
   })
 })

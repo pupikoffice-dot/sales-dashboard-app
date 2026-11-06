@@ -18,6 +18,10 @@ export interface ItemIndexRow {
   fob: number | null
   /** WMS stock (summed per SKU); null when the item is not in the WMS file. */
   wms: number | null
+  /** Last non-empty category this item ever had (item_category_last); null when never seen with one. */
+  lastCategory: string | null
+  /** ISO timestamp of the last REP103 load that had the item with lastCategory. */
+  lastCategorySeenAt: string | null
 }
 
 export interface ItemIndex {
@@ -32,6 +36,28 @@ function num(v: unknown): number | null {
   if (v == null || v === '') return null
   const n = Number(v)
   return Number.isFinite(n) ? n : null
+}
+
+/** Non-empty trimmed string or null. */
+function str(v: unknown): string | null {
+  if (v == null) return null
+  const s = String(v).trim()
+  return s === '' ? null : s
+}
+
+/** ISO timestamp -> 'DD/MM/YYYY' (local date); empty string when missing or invalid. */
+export function formatCategorySeenDate(iso: string | null | undefined): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
+}
+
+/** 'Toys (05/11/2026)'; the category alone when the date is unknown; empty string when there is no last category. */
+export function formatLastCategory(cat: string | null | undefined, seenAt: string | null | undefined): string {
+  if (!cat) return ''
+  const d = formatCategorySeenDate(seenAt)
+  return d ? `${cat} (${d})` : cat
 }
 
 /** Normalise the RPC payload (numbers may arrive as strings; missing keys become null). */
@@ -55,6 +81,8 @@ export function parseItemIndex(data: unknown): ItemIndex {
         cost: num(x.cost),
         fob: num(x.fob),
         wms: num(x.wms),
+        lastCategory: str(x.lcat),
+        lastCategorySeenAt: str(x.lcatAt),
       }
     }),
   }
@@ -75,6 +103,9 @@ export interface UncategorizedStockRow {
   wms: number
   /** no_row = item not in the latest REP103 load; empty = in the load but column I is empty. */
   why: 'no_row' | 'empty'
+  /** Last known category (item_category_last) and the date it was seen; null when none is on record. */
+  lastCategory: string | null
+  lastCategorySeenAt: string | null
 }
 
 export function parseUncategorizedStock(data: unknown): UncategorizedStockRow[] {
@@ -89,6 +120,8 @@ export function parseUncategorizedStock(data: unknown): UncategorizedStockRow[] 
       p01: num(x.p01),
       wms: num(x.wms) ?? 0,
       why: x.why === 'empty' ? 'empty' : 'no_row',
+      lastCategory: str(x.lcat),
+      lastCategorySeenAt: str(x.lcatAt),
     }
   })
 }

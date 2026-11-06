@@ -17,6 +17,7 @@ const SalesPage = lazy(() => import('./pages/SalesPage').then(m => ({ default: m
 const StockPage = lazy(() => import('./pages/StockPage').then(m => ({ default: m.StockPage })))
 const StockBrandPage = lazy(() => import('./pages/StockBrandPage').then(m => ({ default: m.StockBrandPage })))
 const YearlyDataPage = lazy(() => import('./pages/rnd/YearlyDataPage').then(m => ({ default: m.YearlyDataPage })))
+const YearDetailPage = lazy(() => import('./pages/rnd/YearDetailPage').then(m => ({ default: m.YearDetailPage })))
 const ClientCardPage = lazy(() => import('./pages/rnd/ClientCardPage').then(m => ({ default: m.ClientCardPage })))
 const ItemCardPage = lazy(() => import('./pages/rnd/ItemCardPage').then(m => ({ default: m.ItemCardPage })))
 const StockHistoryPage = lazy(() => import('./pages/StockHistoryPage').then(m => ({ default: m.StockHistoryPage })))
@@ -63,6 +64,7 @@ function ProtectedApp() {
         <Route path="stock-history" element={<RequireModule moduleId="stock"><StockHistoryPage /></RequireModule>} />
         <Route path="rnd/monthly" element={<RequireModule moduleId="rnd"><MonthlyDataPage /></RequireModule>} />
         <Route path="rnd/yearly" element={<RequireModule moduleId="rnd"><YearlyDataPage /></RequireModule>} />
+        <Route path="rnd/year" element={<RequireModule moduleId="rnd"><YearDetailPage /></RequireModule>} />
         <Route path="rnd/client" element={<RequireModule moduleId="purchase_insights"><ClientCardPage /></RequireModule>} />
         <Route path="rnd/item" element={<RequireModule moduleId="purchase_insights"><ItemCardPage /></RequireModule>} />
         <Route path="export" element={<RequireModule moduleId="export"><PlaceholderModulePage title="Export" /></RequireModule>} />

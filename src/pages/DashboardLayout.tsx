@@ -514,6 +514,8 @@ const NAV_ICONS: Record<string, string> = {
   stock_history: '🕘',
   items_index: '🗂',
   rnd_monthly: '🔬',
+  rnd_yearly: '📅',
+  rnd_year: '🗓',
   'nav.adminUsers': '👤',
   'nav.adminClasses': '🔑',
   'nav.adminModules': '🧩',

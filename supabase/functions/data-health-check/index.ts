@@ -3,9 +3,9 @@
 // sends email via Resend, sends the daily summary once per working day, prunes old observations.
 // Spec: docs/superpowers/specs/2026-10-03-data-health-monitor-design.md
 import { createClient } from 'npm:@supabase/supabase-js@2'
-import { evaluate, localParts, type Rule, type Latest, type SyncLog, type Status, type ContentItem } from './evaluate.ts'
-import { planIncidents, type OpenIncident } from './incidents.ts'
-import { alertEmail, resolvedEmail, summaryEmail, uncategorizedEmail, type Email, type EmailTable, type UncategorizedRow } from './emails.ts'
+import { evaluate, localParts, JOB_CHECKS, type JobResult, type Rule, type Latest, type SyncLog, type Status, type ContentItem } from './evaluate.ts'
+import { planIncidents, REOPEN_DAMP_H, type ClosedIncident, type OpenIncident } from './incidents.ts'
+import { alertEmail, categoryHeldEmail, digestEmail, resolvedDigestEmail, summaryEmail, uncategorizedEmail, type CategoryControlCounts, type Email, type EmailTable, type HeldBatch, type UncategorizedRow } from './emails.ts'
 
 // Email links: production (OMEGA) project -> production site, otherwise the beta site. DATA_HEALTH_PAGE_URL overrides.
 const IS_OMEGA = (Deno.env.get('SUPABASE_URL') ?? '').includes('hzgpkkbqhmtwqhkcntcc')
@@ -50,7 +50,12 @@ Deno.serve(async () => {
 
   const content: ContentItem[] = contentQ.error ? [] : ((contentQ.data ?? []) as ContentItem[])
   if (contentQ.error) log.push(`content checks unavailable: ${contentQ.error.message}`)
-  const { statuses, unruled } = evaluate({ rules, latest: latestQ.data as Latest[], syncLogs: syncQ.data as SyncLog[], now, ignoreCalendar, content })
+  // ERP job results of the weekly debt aging robot (optional: the table may be empty or missing on older databases)
+  const jobsQ = await sb.from('erp_job_results').select('task, started_at, exit_code, export_timeout, attempts')
+    .in('task', JOB_CHECKS.map(j => j.task)).gte('started_at', new Date(now.getTime() - 21 * 86_400_000).toISOString())
+  if (jobsQ.error) log.push(`job results unavailable: ${jobsQ.error.message}`)
+  const jobs = jobsQ.error ? [] : ((jobsQ.data ?? []) as JobResult[])
+  const { statuses, unruled } = evaluate({ rules, latest: latestQ.data as Latest[], syncLogs: syncQ.data as SyncLog[], now, ignoreCalendar, content, jobs })
   if (statuses.length) {
     const up = await sb.from('source_file_status').upsert(statuses.map(s => ({ ...s, evaluated_at: now.toISOString() })))
     if (up.error) return json({ error: up.error.message }, 500)
@@ -80,22 +85,49 @@ Deno.serve(async () => {
   }
   const ruleFor = (s: Status) => ruleByKey.get(s.file_name ?? '')
 
-  const plan = planIncidents(statuses, openQ.data as OpenIncident[], now)
+  // Orphan 'running' sync rows (older than 6 h) are marked failed. Optional: older databases lack the function.
+  const cleanQ = await sb.rpc('sync_stuck_cleanup')
+  if (cleanQ.error) log.push(`sync cleanup unavailable: ${cleanQ.error.message}`)
+  // Recently closed incidents: a check that re-opens within REOPEN_DAMP_H of its close is opened without a mail (flapping).
+  const closedQ = await sb.from('data_health_incidents').select('check_key, closed_at')
+    .not('closed_at', 'is', null).gte('closed_at', new Date(now.getTime() - REOPEN_DAMP_H * 3_600_000).toISOString())
+  if (closedQ.error) log.push(`recent closed incidents unavailable: ${closedQ.error.message}`)
+  const recentClosed = closedQ.error ? [] : ((closedQ.data ?? []) as ClosedIncident[])
+  const plan = planIncidents(statuses, openQ.data as OpenIncident[], now, recentClosed)
+  const quiet = new Set(plan.quiet)
+  // Everything that opens, is reminded or closes in this run goes into ONE mail each (alert digest, resolved digest). The per-company
+  // 'no category' alerts stay single mails: their subject carries the company so each owner's mail rule can route them.
+  const isNocat = (k: string) => k.startsWith('content:nocat:')
+  const opened: { s: Status; id: number; reminder: boolean }[] = []
   for (const s of plan.open) {
-    const ins = await sb.from('data_health_incidents').insert({ check_key: s.check_key, reason: s.reason }).select('id').single()
+    // quiet re-open: mark as notified now so the 'never sent' retry does not mail it; the 24 h reminder logic applies as usual
+    const ins = await sb.from('data_health_incidents')
+      .insert({ check_key: s.check_key, reason: s.reason, ...(quiet.has(s.check_key) ? { last_notified_at: now.toISOString() } : {}) }).select('id').single()
     if (ins.error) { log.push(ins.error.message); continue }
-    if (await send(alertEmail(s, ruleFor(s), PAGE_URL, false)))
-      await sb.from('data_health_incidents').update({ last_notified_at: now.toISOString() }).eq('id', ins.data.id)
+    if (quiet.has(s.check_key)) { log.push(`re-opened quietly (closed < ${REOPEN_DAMP_H} h ago): ${s.check_key}`); continue }
+    opened.push({ s, id: ins.data.id, reminder: false })
   }
   const byKey = new Map(statuses.map(s => [s.check_key, s]))
-  for (const i of plan.remind) {
-    const s = byKey.get(i.check_key)!
-    if (await send(alertEmail(s, ruleFor(s), PAGE_URL, i.last_notified_at !== null)))
-      await sb.from('data_health_incidents').update({ last_notified_at: now.toISOString() }).eq('id', i.id)
-  }
-  for (const i of plan.close) {
-    await sb.from('data_health_incidents').update({ closed_at: now.toISOString() }).eq('id', i.id)
-    await send(resolvedEmail(i.check_key, i.opened_at, now, PAGE_URL))
+  for (const i of plan.remind) opened.push({ s: byKey.get(i.check_key)!, id: i.id, reminder: i.last_notified_at !== null })
+  const notifyIds = async (ids: number[]) => { if (ids.length) await sb.from('data_health_incidents').update({ last_notified_at: now.toISOString() }).in('id', ids) }
+  const digestItems = opened.filter(o => !isNocat(o.s.check_key))
+  if (digestItems.length && await send(digestEmail(digestItems.map(o => ({ s: o.s, rule: ruleFor(o.s), reminder: o.reminder })), PAGE_URL)))
+    await notifyIds(digestItems.map(o => o.id))
+  for (const o of opened.filter(o => isNocat(o.s.check_key)))
+    if (await send(alertEmail(o.s, ruleFor(o.s), PAGE_URL, o.reminder))) await notifyIds([o.id])
+  for (const i of plan.close) await sb.from('data_health_incidents').update({ closed_at: now.toISOString() }).eq('id', i.id)
+  if (plan.close.length) await send(resolvedDigestEmail(plan.close.map(i => ({ checkKey: i.check_key, openedAt: i.opened_at })), now, PAGE_URL))
+
+  // Category control (flag / restore evaluation of items by stock and category). Runs on every check; optional (older databases lack
+  // the function). When the safety cap holds a batch back, ONE mail goes out and each batch is marked as mailed once it was sent.
+  const ccQ = await sb.rpc('category_control_evaluate')
+  if (ccQ.error) log.push(`category control unavailable: ${ccQ.error.message}`)
+  else {
+    const out = ccQ.data as { companies?: { company: string; status: string; reason?: string }[]; heldUnmailed?: HeldBatch[] }
+    for (const c of out.companies ?? []) if (c.status === 'error') log.push(`category control ${c.company}: ${c.reason}`)
+    const held = out.heldUnmailed ?? []
+    if (held.length && await send(categoryHeldEmail(held, PAGE_URL.replace('/admin/data-health', '/items'))))
+      await sb.rpc('category_control_mark_mailed', { p_ids: held.map(h => h.id) })
   }
 
   // Daily summary: first run on a working day at/after summary_time.
@@ -109,7 +141,10 @@ Deno.serve(async () => {
     // In-stock items without a category (optional: older databases lack the function); listed in full in the morning mail.
     const unc = await sb.rpc('data_health_uncategorized')
     if (unc.error) log.push(`uncategorized list unavailable: ${unc.error.message}`)
-    summarySent = await send(summaryEmail({ statuses: (all.data ?? []) as Status[], openCount: open.count ?? 0, unruled, dateLabel: label, url: PAGE_URL, isoDate: local.date,
+    const ccC = await sb.rpc('category_control_counts')
+    if (ccC.error) log.push(`category control counts unavailable: ${ccC.error.message}`)
+    summarySent = await send(summaryEmail({ categoryControl: ccC.error ? undefined : (ccC.data as CategoryControlCounts), statuses: (all.data ?? []) as Status[], openCount: open.count ?? 0, unruled, dateLabel: label, url: PAGE_URL, isoDate: local.date,
+      rules: Object.fromEntries(rules.map(r => [r.file_name, { fix_hint: r.fix_hint, impact: r.impact }])),
       uncategorized: unc.error ? [] : ((unc.data ?? []) as UncategorizedRow[]) }))
     if (summarySent) {
       await sb.from('data_health_settings').update({ last_summary_date: local.date }).eq('id', true)

@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ChartConfiguration } from 'chart.js'
 import { HubChart, cssVar } from '../../components/oversite/hub/HubChart'
+import { useQuery } from '@tanstack/react-query'
+import { MarginNote } from '../../components/rnd/marginShared'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
+import { useLocale } from '../../context/LocaleContext'
+import { usePreview } from '../../context/PreviewContext'
+import { fmtPct, hasMarginData, marginOf, overallMargin, type MarginFigures } from '../../lib/grossMargin'
+import { fetchMonthlyMargin } from '../../lib/grossMarginApi'
 import { useDashboardData } from '../../hooks/useDashboardData'
 import { fmt0 } from '../../lib/format'
 import { companyLabel } from '../../lib/salesMetrics'
@@ -28,6 +34,9 @@ function toggle<T>(list: T[], v: T): T[] {
 /** R&D → Monthly data: pick a company, years and months; see sales and receipts as graphs. Super admin only. */
 export function MonthlyDataPage() {
   const { access } = useDashboardAccess()
+  const { t } = useLocale()
+  const { isPreviewing, previewUser } = usePreview()
+  const asUser = isPreviewing ? (previewUser?.id ?? null) : null
   const { allRows, data, isLoading, error, loadedYears, loadYear, loadingYears } = useDashboardData()
 
   const companies = useMemo(
@@ -71,6 +80,30 @@ export function MonthlyDataPage() {
     [allRows, activeCompany, picks],
   )
   const rec = useMemo(() => receiptsByMonth(receipts, picks), [receipts, picks])
+
+  // Gross margin per month from the database (null for users who may not see item costs: then nothing margin-related shows).
+  const marginQ = useQuery({
+    queryKey: ['monthly-margin', activeCompany, asUser],
+    queryFn: () => fetchMonthlyMargin(activeCompany as string, asUser),
+    enabled: !!activeCompany,
+    staleTime: 10 * 60 * 1000,
+  })
+  const marginRows = marginQ.data?.months
+  const hasM = hasMarginData(marginRows ?? [])
+  const marginByMonth = useMemo(() => {
+    const m = new Map<number, MarginFigures>()
+    for (const r of marginRows ?? []) m.set(r.year * 12 + (r.month - 1), marginOf(r, r.net))
+    return m
+  }, [marginRows])
+  const marginValues = useMemo(() => {
+    const m = new Map<number, number>()
+    for (const [k, f] of marginByMonth) if (f.margin != null) m.set(k, f.margin)
+    return m
+  }, [marginByMonth])
+  const chosenMargin = (years: number[]) => {
+    const rs = (marginRows ?? []).filter(r => years.includes(r.year) && monthsSel.includes(r.month))
+    return overallMargin(rs, rs.reduce((a, r) => a + (Number(r.net) || 0), 0))
+  }
   const summary = useMemo(() => summarize(picks, sales, rec), [picks, sales, rec])
   const yearTotals = useMemo(() => totalsByYear(summary), [summary])
   const hasReceipts = rec.size > 0
@@ -170,13 +203,14 @@ export function MonthlyDataPage() {
       dailyMin,
       salesMonthly: salesWithTrend(),
       receiptsMonthly: barsOf(rec),
+      marginMonthly: barsOf(marginValues),
       salesDaily: {
         type: 'line',
         data: { labels: days, datasets: dailyDatasets },
         options: base(),
       } as ChartConfiguration,
     }
-  }, [picks, activeCompany, yearsSel, monthsSel, sales, rec, allRows])
+  }, [picks, activeCompany, yearsSel, monthsSel, sales, rec, allRows, marginValues])
 
   if (isLoading) return <p className="status-msg">Loading data…</p>
   if (error) return <p className="status-msg error">{(error as Error).message}</p>
@@ -272,6 +306,25 @@ export function MonthlyDataPage() {
             </div>
             <HubChart config={charts.salesMonthly} height={260} label="Sales by month" minWidth={charts.monthlyMin} />
           </section>
+          {hasM ? (
+            <section style={{ minWidth: 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
+                <h3 style={{ marginBottom: 8 }}>{t('gm.monthly.title')}</h3>
+                <div>
+                  {yearCols.map(y => {
+                    const f = chosenMargin([y])
+                    return (
+                      <span key={y} style={{ marginInlineStart: 12 }}>
+                        {y} <b>{f.margin == null ? '—' : fmt0(f.margin)}</b> <small>{fmtPct(f.pct)}</small>
+                      </span>
+                    )
+                  })}
+                </div>
+              </div>
+              <MarginNote visible coverage={chosenMargin(yearCols).coverage} />
+              <HubChart config={charts.marginMonthly} height={260} label={t('gm.monthly.aria')} minWidth={charts.monthlyMin} />
+            </section>
+          ) : null}
           <section style={{ minWidth: 0 }}>
             <h3>Sales by day{yearCols.length > 1 && dailyYear ? ` — ${dailyYear}` : ''}</h3>
             <HubChart config={charts.salesDaily} height={260} label="Sales by day" minWidth={charts.dailyMin} />
@@ -299,6 +352,8 @@ export function MonthlyDataPage() {
                           <th key={`r${y}`}>{y} receipts</th>
                         ))
                       : null}
+                    {hasM ? yearCols.map(y => <th key={`m${y}`} title={t('gm.hint')}>{t('gm.monthly.marginCol', { year: y })}</th>) : null}
+                    {hasM ? yearCols.map(y => <th key={`p${y}`} title={t('gm.hint')}>{t('gm.monthly.marginPctCol', { year: y })}</th>) : null}
                   </tr>
                 </thead>
                 <tbody>
@@ -315,6 +370,11 @@ export function MonthlyDataPage() {
                             return <td key={`r${y}`}>{row?.receipts != null ? fmt0(row.receipts) : '—'}</td>
                           })
                         : null}
+                      {hasM ? yearCols.map(y => {
+                        const v = marginByMonth.get(y * 12 + (m - 1))?.margin
+                        return <td key={`m${y}`}>{v == null ? '—' : fmt0(v)}</td>
+                      }) : null}
+                      {hasM ? yearCols.map(y => <td key={`p${y}`}>{fmtPct(marginByMonth.get(y * 12 + (m - 1))?.pct ?? null)}</td>) : null}
                     </tr>
                   ))}
                   <tr>
@@ -332,6 +392,11 @@ export function MonthlyDataPage() {
                           return <td key={`rt${y}`}>{any ? <b>{fmt0(total)}</b> : '—'}</td>
                         })
                       : null}
+                    {hasM ? yearCols.map(y => {
+                      const f = chosenMargin([y])
+                      return <td key={`mt${y}`}><b>{f.margin == null ? '—' : fmt0(f.margin)}</b></td>
+                    }) : null}
+                    {hasM ? yearCols.map(y => <td key={`pt${y}`}><b>{fmtPct(chosenMargin([y]).pct)}</b></td>) : null}
                   </tr>
                 </tbody>
               </table>
