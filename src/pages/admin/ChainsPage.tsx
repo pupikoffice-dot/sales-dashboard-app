@@ -21,6 +21,7 @@ import {
   searchStores,
 } from '../../lib/chainAdmin'
 import type { LogicalCompany } from '../../types/dashboard'
+import { fmtDateTime } from '../../lib/dates'
 
 const COMPANIES: LogicalCompany[] = ['pupik', 'mt', 'grow', 'gold']
 
@@ -383,7 +384,7 @@ export function ChainsPage() {
               <tbody>
                 {removalLog.data.map(r => (
                   <tr key={r.id}>
-                    <td>{new Date(r.removed_at).toLocaleString()}</td>
+                    <td>{fmtDateTime(r.removed_at)}</td>
                     <td>{r.removed_by_email ?? '—'}</td>
                     <td>{r.chain_name ?? r.chain_id}</td>
                     <td>{companyLabel(r.company as LogicalCompany)}</td>

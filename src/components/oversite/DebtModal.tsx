@@ -14,6 +14,7 @@ import {
 import { exportDebtAgentToPdf, exportDebtSectionsToPdf } from '../../lib/debtPdfExport'
 import type { DebtRow, LogicalCompany } from '../../types/dashboard'
 import { FilterCheckList } from '../sidebar/FilterCheckList'
+import { fmtDatesInText } from '../../lib/dates'
 
 interface DebtModalProps {
   company: LogicalCompany
@@ -155,7 +156,7 @@ export function DebtModal({ company, debtData, debtLastUpdate, titleOverride, on
   const title = `${
     titleOverride ??
     t('oversite.debtReportTitle', { company: companyDebtLabel(company), min: DEBT_REPORT_MIN_TOTAL })
-  }${debtLastUpdate ? ` · ${t('oversite.lastUpdate')}: ${debtLastUpdate}` : ''}`
+  }${debtLastUpdate ? ` · ${t('oversite.lastUpdate')}: ${fmtDatesInText(debtLastUpdate)}` : ''}`
 
   const pdfLabels = useMemo(
     () => ({

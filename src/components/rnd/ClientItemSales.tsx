@@ -20,6 +20,8 @@ import {
   MIN_QUERY_LENGTH,
   type ItemSalesLine,
 } from '../../lib/clientItemSales'
+import { DateField } from '../DateField'
+import { fmtDate } from '../../lib/dates'
 
 const price = (v: number | null) => (v == null ? '—' : v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
 const MAX_SERIES = 6
@@ -87,7 +89,7 @@ export function ClientItemSales({ company, clientId, asUser }: { company: string
     return {
       type: 'line',
       data: {
-        labels: dates,
+        labels: dates.map(d => fmtDate(d)),
         datasets: skus.map(([sku, byDate], i) => ({
           label: sku,
           data: dates.map(d => {
@@ -124,49 +126,49 @@ export function ClientItemSales({ company, clientId, asUser }: { company: string
           className="sbar-search"
           type="text"
           value={query}
-          placeholder="🔍 SKU or part of the item name…"
-          aria-label="Search this client's sales by SKU or item name"
+          placeholder={t('pc.cis.placeholder')}
+          aria-label={t('pc.cis.aria')}
           onChange={e => setQuery(e.target.value)}
           style={{ minWidth: 240, flex: '1 1 240px' }}
         />
         <label className="sbar-search" style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
-          From
-          <input type="date" value={from} max={to || undefined} onChange={e => setFrom(e.target.value)} />
+          {t('pc.cis.from')}
+          <DateField value={from} max={to || undefined} onChange={setFrom} />
         </label>
         <label className="sbar-search" style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
-          To
-          <input type="date" value={to} min={from || undefined} onChange={e => setTo(e.target.value)} />
+          {t('pc.cis.to')}
+          <DateField value={to} min={from || undefined} onChange={setTo} />
         </label>
         {from || to ? (
           <button type="button" className="chip" onClick={() => { setFrom(''); setTo('') }}>
-            All dates
+            {t('pc.cis.allDates')}
           </button>
         ) : null}
       </div>
 
       {!ready ? (
-        <p className="status-msg">Type at least {MIN_QUERY_LENGTH} characters of a SKU or item name to see what this client paid. Without dates, every year you can see is searched.</p>
+        <p className="status-msg">{t('pc.cis.typeMore', { n: MIN_QUERY_LENGTH })}</p>
       ) : res.isLoading ? (
-        <p className="status-msg">Searching…</p>
+        <p className="status-msg">{t('pc.searching')}</p>
       ) : res.error ? (
         <p className="status-msg error">{(res.error as Error).message}</p>
       ) : !rows.length ? (
-        <p className="status-msg">This client has no sales lines matching “{q}”{from || to ? ' in these dates' : ''}.</p>
+        <p className="status-msg">{t('pc.cis.noLines', { q, dates: from || to ? t('pc.cis.inDates') : '' })}</p>
       ) : (
         <>
           <div className="hub-grid" style={{ marginBottom: 12 }}>
-            <Kpi label="Pieces sold" value={fmt0(summary.qty)} note={`${summary.lines} lines${skuCount > 1 ? ` · ${skuCount} items` : ''}`} />
+            <Kpi label={t('pc.cis.piecesSold')} value={fmt0(summary.qty)} note={t('pc.cis.linesNote', { lines: summary.lines, items: skuCount > 1 ? t('pc.cis.itemsNote', { n: skuCount }) : '' })} />
             <Kpi
-              label="Total amount"
+              label={t('pc.cis.totalAmount')}
               value={fmt0(summary.amount)}
-              note={summary.creditAmount > 0 ? `returned, not included: ${fmt0(summary.creditAmount)} (${fmt0(summary.creditQty)} pcs)` : undefined}
-              hint="Sold, as the client card counts it. Returns (credit invoices, document 14, whose reason counts as a return) are listed in the table but kept out of these figures."
+              note={summary.creditAmount > 0 ? t('pc.cis.creditNote', { amount: fmt0(summary.creditAmount), qty: fmt0(summary.creditQty) }) : undefined}
+              hint={t('pc.cis.totalHint')}
             />
             <Kpi
-              label="Average price paid"
+              label={t('pc.cis.avgPrice')}
               value={price(summary.avgPrice)}
-              note={`min ${price(summary.minPrice)} · max ${price(summary.maxPrice)}`}
-              hint="Total amount divided by pieces. Min and max are the lowest and highest unit price on a single line."
+              note={t('pc.cis.minMax', { min: price(summary.minPrice), max: price(summary.maxPrice) })}
+              hint={t('pc.cis.avgHint')}
             />
             {showM ? (
               <Kpi
@@ -177,54 +179,54 @@ export function ClientItemSales({ company, clientId, asUser }: { company: string
               />
             ) : null}
             <Kpi
-              label="Invoices"
+              label={t('pc.cis.invoices')}
               value={fmt0(summary.invoices)}
-              note={summary.firstDate ? `${summary.firstDate} → ${summary.lastDate}` : undefined}
-              hint="First and last purchase date"
+              note={summary.firstDate ? `${fmtDate(summary.firstDate)} → ${fmtDate(summary.lastDate)}` : undefined}
+              hint={t('pc.cis.firstLast')}
             />
           </div>
-          {skuCount > 1 ? <p className="sel-months-list" style={{ margin: '0 0 8px' }}>The search matches {skuCount} different items, so the figures above add them together.</p> : null}
+          {skuCount > 1 ? <p className="sel-months-list" style={{ margin: '0 0 8px' }}>{t('pc.cis.matchesMany', { n: skuCount })}</p> : null}
           {cut > 0 ? (
-            <p className="status-msg">Showing the newest {fmt0(rows.length)} of {fmt0(res.data!.total)} lines. Narrow the search or the dates to see the rest.</p>
+            <p className="status-msg">{t('pc.cis.showingNewest', { n: fmt0(rows.length), total: fmt0(res.data!.total) })}</p>
           ) : null}
 
           {chart ? (
             <section className="hub-card" style={{ marginBottom: 12 }}>
-              <div className="hub-card-hdr"><h3>Unit price paid over time</h3></div>
-              <HubChart config={chart} height={200} label="Unit price paid over time" minWidth={480} />
+              <div className="hub-card-hdr"><h3>{t('pc.cis.priceOverTime')}</h3></div>
+              <HubChart config={chart} height={200} label={t('pc.cis.priceOverTime')} minWidth={480} />
             </section>
           ) : null}
 
           <div className="dl-bar">
             <button type="button" className="dl-btn" onClick={() => downloadCSV(itemSalesCsv(sorted, showM), `sales_${clientId.replace(/\W+/g, '_')}_${q.replace(/\W+/g, '_')}.csv`)}>
-              📥 Export CSV
+              {t('pc.cis.exportCsv')}
             </button>
           </div>
           <div className="tw">
             <table>
               <thead>
                 <tr>
-                  <SortTh label="Date" k="date" left sort={sort} onSort={onSort} />
-                  <SortTh label="Document" k="doc" left sort={sort} onSort={onSort} />
-                  <SortTh label="Type" k="type" left sort={sort} onSort={onSort} />
-                  {isChain ? <SortTh label="Store" k="client" left sort={sort} onSort={onSort} /> : null}
-                  <SortTh label="SKU" k="sku" left sort={sort} onSort={onSort} />
-                  <SortTh label="Item" k="name" left sort={sort} onSort={onSort} />
-                  <SortTh label="Qty" k="qty" sort={sort} onSort={onSort} />
-                  <SortTh label="Unit price" k="price" sort={sort} onSort={onSort} />
-                  <SortTh label="Line total" k="cash" sort={sort} onSort={onSort} />
+                  <SortTh label={t('pc.col.date')} k="date" left sort={sort} onSort={onSort} />
+                  <SortTh label={t('pc.col.document')} k="doc" left sort={sort} onSort={onSort} />
+                  <SortTh label={t('pc.col.type')} k="type" left sort={sort} onSort={onSort} />
+                  {isChain ? <SortTh label={t('pc.col.store')} k="client" left sort={sort} onSort={onSort} /> : null}
+                  <SortTh label={t('pc.cis.sku')} k="sku" left sort={sort} onSort={onSort} />
+                  <SortTh label={t('pc.col.item')} k="name" left sort={sort} onSort={onSort} />
+                  <SortTh label={t('pc.cis.qty')} k="qty" sort={sort} onSort={onSort} />
+                  <SortTh label={t('pc.cis.unitPrice')} k="price" sort={sort} onSort={onSort} />
+                  <SortTh label={t('pc.cis.lineTotal')} k="cash" sort={sort} onSort={onSort} />
                   {showM ? <SortTh label={t('gm.sales.lineMargin')} k="margin" sort={sort} onSort={onSort} title={t('gm.hint')} /> : null}
                   {showM ? <SortTh label={t('gm.col.marginPct')} k="marginPct" sort={sort} onSort={onSort} title={t('gm.hint')} /> : null}
-                  <SortTh label="Discount" k="discount" sort={sort} onSort={onSort} />
+                  <SortTh label={t('pc.cis.discount')} k="discount" sort={sort} onSort={onSort} />
                 </tr>
               </thead>
               <tbody>
                 {sorted.map((r, i) => (
                   <tr key={`${r.docType}/${r.docNum}/${r.sku}/${i}`} style={r.isReturn ? { opacity: 0.75 } : undefined}>
-                    <td style={{ textAlign: 'left' }}>{r.date}</td>
+                    <td style={{ textAlign: 'left' }}>{fmtDate(r.date)}</td>
                     <td style={{ textAlign: 'left' }}>{r.docNum || '—'}</td>
-                    <td style={{ textAlign: 'left' }} title={r.isReturn ? 'Credit invoice counted as a return' : undefined}>
-                      {r.docType || '—'}{r.isReturn ? ' · return' : ''}
+                    <td style={{ textAlign: 'left' }} title={r.isReturn ? t('pc.cis.returnTitle') : undefined}>
+                      {r.docType || '—'}{r.isReturn ? t('pc.cis.returnWord') : ''}
                     </td>
                     {isChain ? <td style={{ textAlign: 'left' }}>{r.clientID}</td> : null}
                     <td style={{ textAlign: 'left' }}>

@@ -32,9 +32,10 @@ import {
   type ClientCardItem,
 } from '../../lib/purchaseCards'
 import type { LogicalCompany } from '../../types/dashboard'
+import { ReturnsDetail } from '../../components/rnd/ReturnsDetail'
+import { fmtDate } from '../../lib/dates'
 
 const COMPANY_ORDER: LogicalCompany[] = ['pupik', 'mt', 'grow', 'gold']
-const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 function ItemRows({ rows: baseRows, company, empty, margins }: { rows: ClientCardItem[]; company: string; empty: string; margins?: Array<CostCover & { sku: string }> | null }) {
   const { t } = useLocale()
@@ -52,13 +53,13 @@ function ItemRows({ rows: baseRows, company, empty, margins }: { rows: ClientCar
       <table>
         <thead>
           <tr>
-            <SortTh label="Item" k="item" left sort={sort} onSort={onSort} />
-            <SortTh label="Pieces" k="qty" sort={sort} onSort={onSort} />
-            <SortTh label="Cash" k="cash" sort={sort} onSort={onSort} />
+            <SortTh label={t('pc.col.item')} k="item" left sort={sort} onSort={onSort} />
+            <SortTh label={t('pc.col.pieces')} k="qty" sort={sort} onSort={onSort} />
+            <SortTh label={t('pc.col.cash')} k="cash" sort={sort} onSort={onSort} />
             {showM ? <SortTh label={t('gm.col.margin')} k="margin" sort={sort} onSort={onSort} title={t('gm.hint')} /> : null}
             {showM ? <SortTh label={t('gm.col.marginPct')} k="marginPct" sort={sort} onSort={onSort} title={t('gm.hint')} /> : null}
-            <SortTh label="Months bought" k="months" sort={sort} onSort={onSort} />
-            <SortTh label="Last bought" k="last" sort={sort} onSort={onSort} />
+            <SortTh label={t('pc.col.monthsBought')} k="months" sort={sort} onSort={onSort} />
+            <SortTh label={t('pc.col.lastBought')} k="last" sort={sort} onSort={onSort} />
           </tr>
         </thead>
         <tbody>
@@ -72,7 +73,7 @@ function ItemRows({ rows: baseRows, company, empty, margins }: { rows: ClientCar
               {showM ? <td>{r.margin == null ? '—' : fmt0(r.margin)}</td> : null}
               {showM ? <td>{fmtPct(r.marginPct)}</td> : null}
               <td>{r.months}</td>
-              <td>{r.last ?? '—'}</td>
+              <td>{r.last ? fmtDate(r.last) : '—'}</td>
             </tr>
           ))}
         </tbody>
@@ -83,7 +84,7 @@ function ItemRows({ rows: baseRows, company, empty, margins }: { rows: ClientCar
 
 /** R&D → Client card: what one client buys, how often, what they stopped buying. Needs the Purchase insights module. */
 export function ClientCardPage() {
-  const { t } = useLocale()
+  const { t, monthNames } = useLocale()
   const { access } = useDashboardAccess()
   const { isPreviewing, previewUser } = usePreview()
   const asUser = isPreviewing ? (previewUser?.id ?? null) : null
@@ -171,6 +172,24 @@ export function ClientCardPage() {
     { key: 'cash12', dir: 'desc' },
     ['store', 'city', 'agent'],
   )
+  const agentRows = useMemo(() => {
+    const m = new Map<string, { agent: string; stores: number; cash12: number }>()
+    for (const st of stores.data ?? []) {
+      const key = st.agent ?? ''
+      const e = m.get(key) ?? { agent: key, stores: 0, cash12: 0 }
+      e.stores += 1
+      e.cash12 += st.cash12 ?? 0
+      m.set(key, e)
+    }
+    const total = [...m.values()].reduce((a, e) => a + e.cash12, 0)
+    return [...m.values()].map(e => ({ ...e, share: total > 0 ? e.cash12 / total : 0 }))
+  }, [stores.data])
+  const agentSort = useSortedRows(
+    agentRows,
+    { agent: a => a.agent, stores: a => a.stores, cash12: a => a.cash12, share: a => a.share },
+    { key: 'cash12', dir: 'desc' },
+    ['agent'],
+  )
   const hitSort = useSortedRows(
     allHits,
     { client: h => h.name || h.id, city: h => h.city, agent: h => h.agent, cash12: h => h.cash12, last: h => h.last },
@@ -207,9 +226,9 @@ export function ClientCardPage() {
     const monthly: ChartConfiguration = {
       type: 'bar',
       data: {
-        labels: keys.map(k => `${MONTH_SHORT[k.m - 1]} ${String(k.y).slice(2)}`),
+        labels: keys.map(k => `${monthNames[k.m - 1]} ${String(k.y).slice(2)}`),
         datasets: [
-          { label: 'Net cash', data: keys.map(k => cashOf.get(k.y * 12 + k.m) ?? 0), backgroundColor: cssVar('--chart-c0'), borderRadius: 3 },
+          { label: t('pc.kpi.netCash'), data: keys.map(k => cashOf.get(k.y * 12 + k.m) ?? 0), backgroundColor: cssVar('--chart-c0'), borderRadius: 3 },
           ...(hasM
             ? [{ label: t('gm.chart.margin'), data: keys.map(k => marginOfMonth.get(k.y * 12 + k.m) ?? 0), backgroundColor: cssVar('--chart-c4'), borderRadius: 3 }]
             : []),
@@ -243,9 +262,9 @@ export function ClientCardPage() {
       },
     }
     return { monthly, brands }
-  }, [data, marginData, hasM, t])
+  }, [data, marginData, hasM, t, monthNames])
 
-  if (!company) return <p className="status-msg">No companies available.</p>
+  if (!company) return <p className="status-msg">{t('pc.noCompanies')}</p>
 
   const pick = (id: string) => setParams({ co: company, id })
   const rate = data ? returnRate(data.sold12, data.returned12) : null
@@ -253,34 +272,34 @@ export function ClientCardPage() {
 
   return (
     <div className="panel" style={{ padding: 16 }}>
-      <h2 style={{ marginTop: 0 }}>R&amp;D — Client card</h2>
+      <h2 style={{ marginTop: 0 }}>{t('pc.client.title')}</h2>
       <PurchaseSearchBar
         companies={companies}
         company={company}
         onCompany={c => setParams({ co: c })}
         query={query}
         onQuery={setQuery}
-        placeholder="🔍 Client name or number…"
+        placeholder={t('pc.client.placeholder')}
       />
 
       {!clientId || !data ? (
         <>
-          {hits.isLoading ? <p className="status-msg">Searching…</p> : null}
+          {hits.isLoading ? <p className="status-msg">{t('pc.searching')}</p> : null}
           {hits.error ? <p className="status-msg error">{(hits.error as Error).message}</p> : null}
-          {hits.data && !allHits.length && !chainRows.length ? <p className="status-msg">No clients match.</p> : null}
-          {card.isLoading ? <p className="status-msg">Loading the client…</p> : null}
+          {hits.data && !allHits.length && !chainRows.length ? <p className="status-msg">{t('pc.client.noMatch')}</p> : null}
+          {card.isLoading ? <p className="status-msg">{t('pc.client.loading')}</p> : null}
           {card.error ? <p className="status-msg error">{(card.error as Error).message}</p> : null}
           {chainRows.length ? (
             <>
-              <h3 style={{ margin: '4px 0 8px' }}>Chains</h3>
+              <h3 style={{ margin: '4px 0 8px' }}>{t('pc.client.chains')}</h3>
               <div className="tw" style={{ marginBottom: 16 }}>
                 <table>
                   <thead>
                     <tr>
-                      <SortTh label="Chain" k="chain" left sort={chainSort.sort} onSort={chainSort.onSort} />
-                      <SortTh label="Stores" k="stores" sort={chainSort.sort} onSort={chainSort.onSort} />
-                      <SortTh label="Net cash, last 12 months" k="cash12" sort={chainSort.sort} onSort={chainSort.onSort} />
-                      <SortTh label="Last bought" k="last" sort={chainSort.sort} onSort={chainSort.onSort} />
+                      <SortTh label={t('pc.col.chain')} k="chain" left sort={chainSort.sort} onSort={chainSort.onSort} />
+                      <SortTh label={t('pc.col.stores')} k="stores" sort={chainSort.sort} onSort={chainSort.onSort} />
+                      <SortTh label={t('pc.col.netCashL12')} k="cash12" sort={chainSort.sort} onSort={chainSort.onSort} />
+                      <SortTh label={t('pc.col.lastBought')} k="last" sort={chainSort.sort} onSort={chainSort.onSort} />
                     </tr>
                   </thead>
                   <tbody>
@@ -299,13 +318,13 @@ export function ClientCardPage() {
                         </td>
                         <td>{c.stores}</td>
                         <td>{c.cash12 != null ? fmt0(c.cash12) : '—'}</td>
-                        <td>{c.last ?? '—'}</td>
+                        <td>{c.last ? fmtDate(c.last) : '—'}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-              {allHits.length ? <h3 style={{ margin: '4px 0 8px' }}>Clients</h3> : null}
+              {allHits.length ? <h3 style={{ margin: '4px 0 8px' }}>{t('pc.client.clients')}</h3> : null}
             </>
           ) : null}
           {allHits.length ? (
@@ -313,11 +332,11 @@ export function ClientCardPage() {
               <table>
                 <thead>
                   <tr>
-                    <SortTh label="Client" k="client" left sort={hitSort.sort} onSort={hitSort.onSort} />
-                    <SortTh label="City" k="city" left sort={hitSort.sort} onSort={hitSort.onSort} />
-                    <SortTh label="Agent" k="agent" sort={hitSort.sort} onSort={hitSort.onSort} />
-                    <SortTh label="Net cash, last 12 months" k="cash12" sort={hitSort.sort} onSort={hitSort.onSort} />
-                    <SortTh label="Last bought" k="last" sort={hitSort.sort} onSort={hitSort.onSort} />
+                    <SortTh label={t('pc.col.client')} k="client" left sort={hitSort.sort} onSort={hitSort.onSort} />
+                    <SortTh label={t('pc.col.city')} k="city" left sort={hitSort.sort} onSort={hitSort.onSort} />
+                    <SortTh label={t('pc.col.agent')} k="agent" sort={hitSort.sort} onSort={hitSort.onSort} />
+                    <SortTh label={t('pc.col.netCashL12')} k="cash12" sort={hitSort.sort} onSort={hitSort.onSort} />
+                    <SortTh label={t('pc.col.lastBought')} k="last" sort={hitSort.sort} onSort={hitSort.onSort} />
                   </tr>
                 </thead>
                 <tbody>
@@ -338,7 +357,7 @@ export function ClientCardPage() {
                       <td style={{ textAlign: 'left' }}>{h.city ?? ''}</td>
                       <td>{h.agent ?? '—'}</td>
                       <td>{h.cash12 != null ? fmt0(h.cash12) : '—'}</td>
-                      <td>{h.last ?? '—'}</td>
+                      <td>{h.last ? fmtDate(h.last) : '—'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -351,44 +370,44 @@ export function ClientCardPage() {
           <div style={{ display: 'flex', gap: 12, alignItems: 'baseline', flexWrap: 'wrap', marginBottom: 12 }}>
             <h3 style={{ margin: 0 }}>{data.client.name || data.client.id}</h3>
             <small>
-              {data.client.isChain ? `chain · ${data.client.stores ?? 0} stores` : data.client.id}
+              {data.client.isChain ? t('pc.client.chainSub', { n: data.client.stores ?? 0 }) : data.client.id}
               {data.client.city ? ` · ${data.client.city}` : ''}
-              {data.client.agent ? ` · agent ${data.client.agent}` : ''}
-              {data.client.chain ? ` · chain ${data.client.chain}` : ''}
-              {data.client.intergroup ? ' · group company' : ''}
+              {data.client.agent ? t('pc.client.agentSub', { a: data.client.agent }) : ''}
+              {data.client.chain ? t('pc.client.chainOf', { c: data.client.chain }) : ''}
+              {data.client.intergroup ? t('pc.client.groupCo') : ''}
             </small>
             <button type="button" className="chip" onClick={() => setParams({ co: company })}>
-              ← Other client
+              {t('pc.client.other')}
             </button>
             {!data.client.isChain && ownChain.data ? (
               <button type="button" className="chip" onClick={() => setParams({ co: company, id: ownChain.data!.id })}>
-                View the whole chain: {ownChain.data.name} ({ownChain.data.stores} stores)
+                {t('pc.client.wholeChain', { name: ownChain.data.name, n: ownChain.data.stores })}
               </button>
             ) : null}
             {data.client.isChain ? (
-              <small>Every figure on this card is the total of the chain's stores.</small>
+              <small>{t('pc.client.chainNote')}</small>
             ) : null}
           </div>
 
           <div className="hub-grid">
-            <Kpi label="Net cash, last 12 months" value={fmt0(data.sold12 - data.returned12)} note={`${fmt0(data.sold12)} sold · ${fmt0(data.returned12)} returned`} tone="grn" />
+            <Kpi label={t('pc.kpi.netCash12')} value={fmt0(data.sold12 - data.returned12)} note={t('pc.client.soldReturned', { sold: fmt0(data.sold12), ret: fmt0(data.returned12) })} tone="grn" />
             <Kpi
-              label="Return rate"
+              label={t('pc.kpi.returnRate')}
               value={rate == null ? '—' : `${(rate * 100).toFixed(1)}%`}
-              hint="Return invoices (document 14) divided by revenue including them, last 12 months: 200K of returns on 400K net revenue is 200K ÷ 600K = 33%. A return invoice can also be an invoice cancelled and issued again; the breakdown below the number shows how much looks like that."
+              hint={t('pc.client.rateHint')}
               note={
                 credit.data && credit.data.credits12 > 0
                   ? (() => {
                       const c = credit.data
                       const pct = (v: number) => `${Math.round((v / c.credits12) * 100)}%`
                       const clean = rateWithoutReissue(data.sold12, data.returned12, c.reissued12)
-                      return `of the returns: ${pct(c.reverses12)} reverse a whole earlier invoice line, ${pct(c.reissued12)} were invoiced again (cancel and reissue), ${pct(c.other12)} other (partial or price)${clean == null ? '' : `. Without the reissued: ${(clean * 100).toFixed(1)}%`}${c.excluded12 > 0 ? `. Not counted as returns: ${fmt0(c.excluded12)} (damaged / not supplied)` : ''}`
+                      return t('pc.client.rateNote', { a: pct(c.reverses12), b: pct(c.reissued12), c: pct(c.other12), clean: clean == null ? '' : t('pc.client.withoutReissued', { p: (clean * 100).toFixed(1) }), excl: c.excluded12 > 0 ? t('pc.client.notCounted', { n: fmt0(c.excluded12) }) : '' })
                     })()
-                  : 'credit notes ÷ invoiced cash, last 12 months'
+                  : t('pc.client.rateDefault')
               }
               tone={rate != null && rate > 0.15 ? 'amber' : undefined}
             />
-            <Kpi label="Documents, last 12 months" value={fmt0(data.docs12)} note={data.first ? `first purchase ${data.first}` : undefined} />
+            <Kpi label={t('pc.client.docs12')} value={fmt0(data.docs12)} note={data.first ? t('pc.client.firstPurchase', { date: fmtDate(data.first) }) : undefined} />
             {hasM ? (
               <Kpi
                 label={t('gm.kpi.margin') + ' — ' + '12m'}
@@ -398,26 +417,26 @@ export function ClientCardPage() {
                 tone={margin12.margin != null && margin12.margin < 0 ? 'amber' : undefined}
               />
             ) : null}
-            <Kpi label="Last purchase" value={since == null ? '—' : `${since} days ago`} note={data.last ?? undefined} tone={since != null && since > 90 ? 'amber' : undefined} />
+            <Kpi label={t('pc.client.lastPurchase')} value={since == null ? '—' : t('pc.client.daysAgo', { n: since })} note={data.last ? fmtDate(data.last) : undefined} tone={since != null && since > 90 ? 'amber' : undefined} />
 
             {vs.data ? (
               <>
                 <Kpi
-                  label={`Net cash ${throughLabel(vs.data.throughMonth)}, this year`}
+                  label={t('pc.client.netCashThrough', { through: throughLabel(vs.data.throughMonth, monthNames) })}
                   value={fmt0(vs.data.cy.sold - vs.data.cy.returned)}
-                  note={`last year ${fmt0(vs.data.ly.sold - vs.data.ly.returned)} · ${changeLabel(vs.data.cy.sold - vs.data.cy.returned, vs.data.ly.sold - vs.data.ly.returned)}`}
+                  note={t('pc.kpi.lastYearChange', { ly: fmt0(vs.data.ly.sold - vs.data.ly.returned), chg: changeLabel(vs.data.cy.sold - vs.data.cy.returned, vs.data.ly.sold - vs.data.ly.returned, t('pc.new')) })}
                   tone={vs.data.cy.sold - vs.data.cy.returned >= vs.data.ly.sold - vs.data.ly.returned ? 'grn' : 'amber'}
-                  hint={`Net cash (invoiced less returns), January to the last full month of ${vs.data.year}, against the same months of ${vs.data.prevYear}.`}
+                  hint={t('pc.client.netCashHint', { y: vs.data.year, py: vs.data.prevYear })}
                 />
                 <Kpi
-                  label={`Return rate ${throughLabel(vs.data.throughMonth)}`}
+                  label={t('pc.client.rateThrough', { through: throughLabel(vs.data.throughMonth, monthNames) })}
                   value={(() => {
                     const r = returnRate(vs.data.cy.sold, vs.data.cy.returned)
                     return r == null ? '—' : `${(r * 100).toFixed(1)}%`
                   })()}
                   note={(() => {
                     const r = returnRate(vs.data.ly.sold, vs.data.ly.returned)
-                    return `last year ${r == null ? '—' : `${(r * 100).toFixed(1)}%`}`
+                    return t('pc.kpi.lastYearRate', { r: r == null ? '—' : `${(r * 100).toFixed(1)}%` })
                   })()}
                 />
               </>
@@ -429,15 +448,15 @@ export function ClientCardPage() {
               </div>
             ) : null}
             <section className="hub-card hub-span-8">
-              <div className="hub-card-hdr"><h3>Net cash by month — 24 months</h3></div>
-              {charts ? <HubChart config={charts.monthly} height={240} label="Net cash by month" minWidth={560} /> : null}
+              <div className="hub-card-hdr"><h3>{t('pc.client.netCashByMonth')}</h3></div>
+              {charts ? <HubChart config={charts.monthly} height={240} label={t('pc.client.netCashAria')} minWidth={560} /> : null}
             </section>
             <section className="hub-card hub-span-4">
-              <div className="hub-card-hdr"><h3>Brands — last 12 months</h3></div>
+              <div className="hub-card-hdr"><h3>{t('pc.client.brands12')}</h3></div>
               {charts && data.topBrands.length ? (
-                <HubChart config={charts.brands} height={Math.max(160, data.topBrands.length * 30)} label="Cash by brand" />
+                <HubChart config={charts.brands} height={Math.max(160, data.topBrands.length * 30)} label={t('pc.client.brandsAria')} />
               ) : (
-                <p className="status-msg">No purchases in the last 12 months.</p>
+                <p className="status-msg">{t('pc.client.noPurch12')}</p>
               )}
             </section>
 
@@ -445,27 +464,27 @@ export function ClientCardPage() {
               <>
                 <section className="hub-card hub-span-6">
                   <div className="hub-card-hdr">
-                    <h3>Brands vs last year</h3>
-                    <span className="hub-card-aside">{throughLabel(vs.data.throughMonth)} {vs.data.year} against {vs.data.prevYear}, net cash</span>
+                    <h3>{t('pc.client.brandsVs')}</h3>
+                    <span className="hub-card-aside">{t('pc.client.brandsVsAside', { through: throughLabel(vs.data.throughMonth, monthNames), y: vs.data.year, py: vs.data.prevYear })}</span>
                   </div>
                   <ComparisonTable
-                    head="Brand"
+                    head={t('pc.col.brand')}
                     cyLabel={String(vs.data.year)}
                     lyLabel={String(vs.data.prevYear)}
-                    empty="No purchases in either period."
+                    empty={t('pc.noPurchEither')}
                     rows={vs.data.brands.map(b => ({ key: b.brand, label: b.brand, text: b.brand, cy: b.cy, ly: b.ly }))}
                   />
                 </section>
                 <section className="hub-card hub-span-6">
                   <div className="hub-card-hdr">
-                    <h3>Items vs last year</h3>
-                    <span className="hub-card-aside">the 20 biggest movers, net cash</span>
+                    <h3>{t('pc.client.itemsVs')}</h3>
+                    <span className="hub-card-aside">{t('pc.client.itemsVsAside')}</span>
                   </div>
                   <ComparisonTable
-                    head="Item"
+                    head={t('pc.col.item')}
                     cyLabel={String(vs.data.year)}
                     lyLabel={String(vs.data.prevYear)}
-                    empty="No purchases in either period."
+                    empty={t('pc.noPurchEither')}
                     rows={vs.data.items.map(i => ({
                       key: i.sku,
                       label: (
@@ -485,19 +504,54 @@ export function ClientCardPage() {
             {data.client.isChain ? (
               <section className="hub-card hub-span-12">
                 <div className="hub-card-hdr">
-                  <h3>Stores in this chain</h3>
-                  <span className="hub-card-aside">net cash, last 12 months; click a store for its own card</span>
+                  <h3>{t('pc.client.byAgent')}</h3>
+                  <span className="hub-card-aside">{t('pc.client.byAgentAside')}</span>
+                </div>
+                {agentRows.length ? (
+                  <div className="tw">
+                    <table>
+                      <thead>
+                        <tr>
+                          <SortTh label={t('pc.col.agent')} k="agent" left sort={agentSort.sort} onSort={agentSort.onSort} />
+                          <SortTh label={t('pc.col.stores')} k="stores" sort={agentSort.sort} onSort={agentSort.onSort} />
+                          <SortTh label={t('pc.col.netCashL12')} k="cash12" sort={agentSort.sort} onSort={agentSort.onSort} />
+                          <SortTh label={t('pc.col.share')} k="share" sort={agentSort.sort} onSort={agentSort.onSort} />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {agentSort.sorted.map(a => (
+                          <tr key={a.agent || 'none'}>
+                            <td style={{ textAlign: 'left' }}>{a.agent || t('pc.noAgent')}</td>
+                            <td>{a.stores}</td>
+                            <td>{fmt0(a.cash12)}</td>
+                            <td>{`${(a.share * 100).toFixed(1)}%`}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="status-msg">{stores.isLoading ? t('pc.client.loadingStores') : t('pc.client.noStores')}</p>
+                )}
+              </section>
+            ) : null}
+
+            {data.client.isChain ? (
+              <section className="hub-card hub-span-12">
+                <div className="hub-card-hdr">
+                  <h3>{t('pc.client.storesTitle')}</h3>
+                  <span className="hub-card-aside">{t('pc.client.storesAside')}</span>
                 </div>
                 {stores.data && stores.data.length ? (
                   <div className="tw">
                     <table>
                       <thead>
                         <tr>
-                          <SortTh label="Store" k="store" left sort={storeSort.sort} onSort={storeSort.onSort} />
-                          <SortTh label="City" k="city" left sort={storeSort.sort} onSort={storeSort.onSort} />
-                          <SortTh label="Agent" k="agent" sort={storeSort.sort} onSort={storeSort.onSort} />
-                          <SortTh label="Net cash, last 12 months" k="cash12" sort={storeSort.sort} onSort={storeSort.onSort} />
-                          <SortTh label="Last bought" k="last" sort={storeSort.sort} onSort={storeSort.onSort} />
+                          <SortTh label={t('pc.col.store')} k="store" left sort={storeSort.sort} onSort={storeSort.onSort} />
+                          <SortTh label={t('pc.col.city')} k="city" left sort={storeSort.sort} onSort={storeSort.onSort} />
+                          <SortTh label={t('pc.col.agent')} k="agent" sort={storeSort.sort} onSort={storeSort.onSort} />
+                          <SortTh label={t('pc.col.netCashL12')} k="cash12" sort={storeSort.sort} onSort={storeSort.onSort} />
+                          <SortTh label={t('pc.col.lastBought')} k="last" sort={storeSort.sort} onSort={storeSort.onSort} />
                         </tr>
                       </thead>
                       <tbody>
@@ -518,55 +572,57 @@ export function ClientCardPage() {
                             <td style={{ textAlign: 'left' }}>{s.city ?? ''}</td>
                             <td>{s.agent ?? '—'}</td>
                             <td>{s.cash12 != null ? fmt0(s.cash12) : '—'}</td>
-                            <td>{s.last ?? '—'}</td>
+                            <td>{s.last ? fmtDate(s.last) : '—'}</td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
                 ) : (
-                  <p className="status-msg">{stores.isLoading ? 'Loading the stores…' : 'No stores to show.'}</p>
+                  <p className="status-msg">{stores.isLoading ? t('pc.client.loadingStores') : t('pc.client.noStores')}</p>
                 )}
               </section>
             ) : null}
 
             <section className="hub-card hub-span-12">
               <div className="hub-card-hdr">
-                <h3>Search sales</h3>
-                <span className="hub-card-aside">what this client paid for an item, line by line</span>
+                <h3>{t('pc.client.searchSales')}</h3>
+                <span className="hub-card-aside">{t('pc.client.searchSalesAside')}</span>
               </div>
               <ClientItemSales company={company} clientId={clientId} asUser={asUser} />
             </section>
             <section className="hub-card hub-span-12">
-              <div className="hub-card-hdr"><h3>Top items — last 12 months</h3></div>
-              <ItemRows rows={data.topItems} company={company} empty="No purchases in the last 12 months." margins={marginData?.topItems} />
+              <div className="hub-card-hdr"><h3>{t('pc.client.topItems')}</h3></div>
+              <ItemRows rows={data.topItems} company={company} empty={t('pc.client.noPurch12')} margins={marginData?.topItems} />
             </section>
             <section className="hub-card hub-span-12">
               <div className="hub-card-hdr">
-                <h3>Stopped buying</h3>
-                <span className="hub-card-aside">bought in 3+ different months of the year before, none in the last 3 months</span>
+                <h3>{t('pc.stopped')}</h3>
+                <span className="hub-card-aside">{t('pc.stoppedAside')}</span>
               </div>
-              <ItemRows rows={data.stopped} company={company} empty="Nothing the client used to buy regularly has stopped." margins={marginData?.stopped} />
+              <ItemRows rows={data.stopped} company={company} empty={t('pc.client.noStopped')} margins={marginData?.stopped} />
             </section>
+            <ReturnsDetail company={company} target={{ clientId }} asUser={asUser} />
+
             <section className="hub-card hub-span-12">
               <div className="hub-card-hdr">
-                <h3>Why they return</h3>
-                <span className="hub-card-aside">from the returns report (855); only the periods exported so far</span>
+                <h3>{t('pc.client.whyReturn')}</h3>
+                <span className="hub-card-aside">{t('pc.client.whyReturnAside')}</span>
               </div>
               {credit.data && credit.data.reasons.length ? (
                 <>
                   <p className="sel-months-list" style={{ margin: '0 0 8px' }}>
-                    Reason known for {Math.round((credit.data.withReason12 / Math.max(1, credit.data.credits12)) * 100)}% of the return cash in the last 12 months.
+                    {t('pc.client.reasonKnown', { p: Math.round((credit.data.withReason12 / Math.max(1, credit.data.credits12)) * 100) })}
                   </p>
                   <div className="tw">
                     <table>
                       <thead>
                         <tr>
-                          <SortTh label="Reason" k="reason" left sort={reasonSort.sort} onSort={reasonSort.onSort} />
-                          <SortTh label="Cash" k="cash" sort={reasonSort.sort} onSort={reasonSort.onSort} />
-                          <SortTh label="Lines" k="lines" sort={reasonSort.sort} onSort={reasonSort.onSort} />
-                          <SortTh label="Share of known" k="share" sort={reasonSort.sort} onSort={reasonSort.onSort} />
-                          <SortTh label="Counts as a return" k="counts" sort={reasonSort.sort} onSort={reasonSort.onSort} />
+                          <SortTh label={t('pc.col.reason')} k="reason" left sort={reasonSort.sort} onSort={reasonSort.onSort} />
+                          <SortTh label={t('pc.col.cash')} k="cash" sort={reasonSort.sort} onSort={reasonSort.onSort} />
+                          <SortTh label={t('pc.col.lines')} k="lines" sort={reasonSort.sort} onSort={reasonSort.onSort} />
+                          <SortTh label={t('pc.col.shareKnown')} k="share" sort={reasonSort.sort} onSort={reasonSort.onSort} />
+                          <SortTh label={t('pc.col.countsReturn')} k="counts" sort={reasonSort.sort} onSort={reasonSort.onSort} />
                         </tr>
                       </thead>
                       <tbody>
@@ -578,7 +634,7 @@ export function ClientCardPage() {
                             <td>{fmt0(r.cash)}</td>
                             <td>{r.lines}</td>
                             <td>{Math.round((r.cash / Math.max(1, credit.data!.withReason12)) * 100)}%</td>
-                            <td>{r.counts ? 'yes' : 'no'}</td>
+                            <td>{r.counts ? t('pc.yes') : t('pc.no')}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -586,22 +642,22 @@ export function ClientCardPage() {
                   </div>
                 </>
               ) : (
-                <p className="status-msg">No return reasons recorded for this client yet. Reasons come from the Pupik returns report (855); Monkeytime has none.</p>
+                <p className="status-msg">{t('pc.client.noReasons')}</p>
               )}
             </section>
             <section className="hub-card hub-span-12">
-              <div className="hub-card-hdr"><h3>By year</h3></div>
+              <div className="hub-card-hdr"><h3>{t('pc.client.byYear')}</h3></div>
               <div className="tw">
                 <table>
                   <thead>
                     <tr>
-                      <SortTh label="Year" k="year" left sort={yearSort.sort} onSort={yearSort.onSort} />
-                      <SortTh label="Sold" k="sold" sort={yearSort.sort} onSort={yearSort.onSort} />
+                      <SortTh label={t('pc.col.year')} k="year" left sort={yearSort.sort} onSort={yearSort.onSort} />
+                      <SortTh label={t('pc.col.sold')} k="sold" sort={yearSort.sort} onSort={yearSort.onSort} />
                       {hasM ? <SortTh label={t('gm.col.margin')} k="margin" sort={yearSort.sort} onSort={yearSort.onSort} title={t('gm.hint')} /> : null}
                       {hasM ? <SortTh label={t('gm.col.marginPct')} k="marginPct" sort={yearSort.sort} onSort={yearSort.onSort} title={t('gm.hint')} /> : null}
-                      <SortTh label="Returned" k="returned" sort={yearSort.sort} onSort={yearSort.onSort} />
-                      <SortTh label="Return rate" k="rate" sort={yearSort.sort} onSort={yearSort.onSort} />
-                      <SortTh label="Net pieces" k="qty" sort={yearSort.sort} onSort={yearSort.onSort} />
+                      <SortTh label={t('pc.col.returned')} k="returned" sort={yearSort.sort} onSort={yearSort.onSort} />
+                      <SortTh label={t('pc.col.returnRate')} k="rate" sort={yearSort.sort} onSort={yearSort.onSort} />
+                      <SortTh label={t('pc.col.netPieces')} k="qty" sort={yearSort.sort} onSort={yearSort.onSort} />
                     </tr>
                   </thead>
                   <tbody>

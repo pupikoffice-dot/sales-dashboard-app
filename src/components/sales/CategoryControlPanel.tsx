@@ -40,6 +40,7 @@ import {
   type CcRestore,
   type CcToDecide,
 } from '../../lib/categoryControl'
+import { DateField } from '../DateField'
 
 const companyLabel = (c: string) => rawCompanyLabel(c as LogicalCompany)
 
@@ -344,11 +345,11 @@ function DecideSection(p: {
         )}
         <label style={{ display: 'grid', gap: 2, flex: '1 1 130px', ...fieldStyle }}>
           <span style={{ fontSize: 12, opacity: 0.75 }}>{t('cc.filter.stockFrom')}</span>
-          <input type="date" className="sbar-search" value={filters.stockFrom} max={filters.stockTo || undefined} onChange={e => setFilter({ stockFrom: e.target.value })} />
+          <DateField className="sbar-search" value={filters.stockFrom} max={filters.stockTo || undefined} onChange={v => setFilter({ stockFrom: v })} />
         </label>
         <label style={{ display: 'grid', gap: 2, flex: '1 1 130px', ...fieldStyle }}>
           <span style={{ fontSize: 12, opacity: 0.75 }}>{t('cc.filter.stockTo')}</span>
-          <input type="date" className="sbar-search" value={filters.stockTo} min={filters.stockFrom || undefined} onChange={e => setFilter({ stockTo: e.target.value })} />
+          <DateField className="sbar-search" value={filters.stockTo} min={filters.stockFrom || undefined} onChange={v => setFilter({ stockTo: v })} />
         </label>
         {filtering && (
           <button type="button" className="dl-btn" onClick={() => setFilter({ ...EMPTY_DECIDE_FILTERS })}>

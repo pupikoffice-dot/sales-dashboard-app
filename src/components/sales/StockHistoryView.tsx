@@ -9,6 +9,8 @@ import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { SalesReportStickySetup } from './SalesReportStickySetup'
 import { TableWithExport } from './TableWithExport'
 import type { LogicalCompany } from '../../types/dashboard'
+import { DateField } from '../DateField'
+import { fmtDate } from '../../lib/dates'
 
 /** Companies that have a warehouse stock file, and so a stock history. */
 const STOCK_COMPANIES: LogicalCompany[] = ['pupik', 'mt']
@@ -71,11 +73,11 @@ function StockHistoryContent({ initialCompany }: { initialCompany: LogicalCompan
           )}
           <label className="sbar-search" style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
             From
-            <input type="date" value={from} min={q.data?.first ?? undefined} max={to} onChange={e => setFrom(e.target.value)} />
+            <DateField value={from} min={q.data?.first ?? undefined} max={to} onChange={setFrom} />
           </label>
           <label className="sbar-search" style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
             To
-            <input type="date" value={to} min={from} max={isoDay(new Date())} onChange={e => setTo(e.target.value)} />
+            <DateField value={to} min={from} max={isoDay(new Date())} onChange={setTo} />
           </label>
           <input
             className="sbar-search"
@@ -99,7 +101,7 @@ function StockHistoryContent({ initialCompany }: { initialCompany: LogicalCompan
       ) : !visible.length ? (
         <div className="err">
           No stock recorded for these days
-          {q.data?.first ? ` (history runs from ${q.data.first} to ${q.data.last}).` : '.'}
+          {q.data?.first ? ` (history runs from ${fmtDate(q.data.first)} to ${fmtDate(q.data.last)}).` : '.'}
         </div>
       ) : (
         <>
@@ -128,7 +130,7 @@ function StockHistoryContent({ initialCompany }: { initialCompany: LogicalCompan
                     const change = r.open != null ? r.close - r.open : null
                     return (
                       <tr key={`${r.day}|${r.sku}`}>
-                        {multiDay && <td>{r.day}</td>}
+                        {multiDay && <td>{fmtDate(r.day)}</td>}
                         <td>{r.sku}</td>
                         <td title={r.name}>{r.name}</td>
                         <td data-sv={r.open ?? ''}>{r.open != null ? fmt0(r.open) : '—'}</td>

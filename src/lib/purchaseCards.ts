@@ -212,15 +212,17 @@ export function changePct(cy: number, ly: number): number | null {
 }
 
 /** "+12%", "-30%", "new" (nothing last year) or "–" (nothing either year). */
-export function changeLabel(cy: number, ly: number): string {
-  if (ly === 0) return cy === 0 ? '–' : 'new'
+export function changeLabel(cy: number, ly: number, newWord = 'new'): string {
+  if (ly === 0) return cy === 0 ? '–' : newWord
   const p = Math.round(((cy - ly) / Math.abs(ly)) * 100)
   return `${p > 0 ? '+' : ''}${p}%`
 }
 
 /** The period in words: 'Jan–Sep' (or just 'Jan'). */
-export function throughLabel(throughMonth: number): string {
-  const m = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+export function throughLabel(
+  throughMonth: number,
+  m: string[] = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+): string {
   return throughMonth <= 1 ? m[0] : `${m[0]}–${m[Math.min(12, throughMonth) - 1]}`
 }
 
@@ -277,4 +279,39 @@ export const MOVE_LABEL: Record<string, string> = {
   import: 'Import (B8)',
   local_purchase: 'Local purchase (76)',
   return_in: 'Return to stock',
+}
+
+/** What the returns of a card are made of (migration 20261108130000): one row per credit line, plus totals by reason. */
+export interface ReturnsDetail {
+  lines: number
+  qty: number
+  cash: number
+  withReason: number
+  reasons: Array<{ code: string | null; text: string | null; qty: number; cash: number; lines: number }>
+  rows: Array<{
+    date: string
+    docNum: string
+    clientID: string
+    client: string
+    sku: string
+    name: string
+    qty: number
+    cash: number
+    code: string | null
+    reason: string | null
+  }>
+}
+
+/** Pass exactly one of clientId (a client or 'chain:<id>') and sku. */
+export function fetchReturnsDetail(
+  company: string,
+  target: { clientId: string } | { sku: string },
+  asUser?: string | null,
+): Promise<ReturnsDetail | null> {
+  return rpc<ReturnsDetail>('get_returns_detail', {
+    p_company: company,
+    p_client_id: 'clientId' in target ? target.clientId : null,
+    p_sku: 'sku' in target ? target.sku : null,
+    p_as: asUser ?? null,
+  })
 }

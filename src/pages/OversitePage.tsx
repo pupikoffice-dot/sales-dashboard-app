@@ -75,6 +75,7 @@ import {
 } from '../lib/oversightCompanyFilter'
 import { boardStyleAttrs } from '../lib/oversightClassLayout'
 import { SmReceiptsReportModal } from '../components/oversite/salesManager/SmReceiptsReportModal'
+import { fmtDatesInText } from '../lib/dates'
 
 export function OversitePage() {
   const { t } = useLocale()
@@ -507,7 +508,7 @@ function ClassicOversitePage({
             if (showModule('debt')) {
               sectionNodes.debt = (
                   <OversiteSection
-                    title={`💳 ${t('oversite.openDebt')}${debtUpdated ? ` · ${t('oversite.lastUpdate')}: ${debtUpdated}` : ''}`}
+                    title={`💳 ${t('oversite.openDebt')}${debtUpdated ? ` · ${t('oversite.lastUpdate')}: ${fmtDatesInText(debtUpdated)}` : ''}`}
                     updatedAt={segUpdated(co.id, 'debt')}
                     sourceFile={srcFile(co.id, 'debt')}
                   >

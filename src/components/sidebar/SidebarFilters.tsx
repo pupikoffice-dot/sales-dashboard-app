@@ -17,6 +17,7 @@ import {
 import type { LogicalCompany } from '../../types/dashboard'
 import { FilterCheckList } from './FilterCheckList'
 import { SidebarLegend, type SectionId } from './SidebarLegend'
+import { DateField } from '../DateField'
 
 const COMPANY_BUTTONS: { id: LogicalCompany; label: string }[] = [
   { id: 'pupik', label: '🏢 Pupik' },
@@ -214,23 +215,9 @@ export function SidebarFilters() {
         {f.dateMode === 'range' && (
           <div className="date-range">
             <label>{t('filters.from')}</label>
-            <input
-              type="date"
-              min={earliest}
-              max={latest}
-              value={f.dateFrom}
-              onChange={e => f.setDateFrom(e.target.value)}
-              disabled={!f.company}
-            />
+            <DateField min={earliest} max={latest} value={f.dateFrom} onChange={v => f.setDateFrom(v)} disabled={!f.company} />
             <label>{t('filters.to')}</label>
-            <input
-              type="date"
-              min={earliest}
-              max={latest}
-              value={f.dateTo}
-              onChange={e => f.setDateTo(e.target.value)}
-              disabled={!f.company}
-            />
+            <DateField min={earliest} max={latest} value={f.dateTo} onChange={v => f.setDateTo(v)} disabled={!f.company} />
             {loadingYears.length ? (
               <p className="sel-months-list" role="status">
                 {t('filters.loadingYears')} {loadingYears.join(', ')}…

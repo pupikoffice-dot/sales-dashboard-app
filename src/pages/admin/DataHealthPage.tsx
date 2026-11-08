@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useDataHealthIncidents, useDataHealthRules, useDataHealthSendState, useDataHealthStatuses } from '../../hooks/useDataHealth'
 import { acknowledgeIncident, type StatusRow } from '../../lib/dataHealth/api'
 import { monthlyStats, redSegments } from '../../lib/dataHealth/timeline'
+import { fmtDateTime, fmtDatesInText } from '../../lib/dates'
 
 // Data health monitor page (admin and super-admin). Spec: docs/superpowers/specs/2026-10-03-data-health-monitor-design.md
 const COLOUR: Record<StatusRow['status'], string> = { green: '#2e7d32', amber: '#ed8c00', red: '#c62828', grey: '#9e9e9e' }
@@ -40,13 +41,13 @@ export function DataHealthPage() {
       <div>
         <h1 className="text-xl font-semibold">Data health</h1>
         <p className="text-sm text-gray-500">
-          Checked every 30 min. New alerts open Sun–Fri 07:00–22:00; a refreshed file closes its incident at any hour. Last check: {lastEval ? new Date(lastEval).toLocaleString() : 'not yet'}.
+          Checked every 30 min. New alerts open Sun–Fri 07:00–22:00; a refreshed file closes its incident at any hour. Last check: {lastEval ? fmtDateTime(lastEval) : 'not yet'}.
         </p>
         <p className="text-sm" style={{ color: sendState.data?.last_send_error ? COLOUR.amber : '#6b7280' }}>
           {sendState.data?.last_send_error
             ? `Email alerts are NOT being delivered (${sendState.data.last_send_error}). Alerts show in the app only.`
             : sendState.data?.last_send_at
-              ? `Email alerts to ${sendState.data.recipients.join(', ')} are working (last sent ${new Date(sendState.data.last_send_at).toLocaleString()}).`
+              ? `Email alerts to ${sendState.data.recipients.join(', ')} are working (last sent ${fmtDateTime(sendState.data.last_send_at)}).`
               : 'Email alerts: nothing sent yet.'}
         </p>
       </div>
@@ -57,10 +58,10 @@ export function DataHealthPage() {
         <ul className="space-y-2">
           {open.map(i => (
             <li key={i.id} className="border rounded p-2 text-sm" style={{ borderLeft: `4px solid ${COLOUR.red}` }}>
-              <div><span style={{ color: COLOUR.red }}>● red</span> <b>{i.check_key}</b> — {i.reason} (since {new Date(i.opened_at).toLocaleString()})</div>
+              <div><span style={{ color: COLOUR.red }}>● red</span> <b>{i.check_key}</b> — {fmtDatesInText(i.reason)} (since {fmtDateTime(i.opened_at)})</div>
               {ruleBy.get(i.check_key) && <div className="text-gray-600">How to fix: {ruleBy.get(i.check_key)!.fix_hint}</div>}
               {i.acknowledged_at
-                ? <div className="text-gray-500">Acknowledged {new Date(i.acknowledged_at).toLocaleString()}{i.notes ? ` — ${i.notes}` : ''}</div>
+                ? <div className="text-gray-500">Acknowledged {fmtDateTime(i.acknowledged_at)}{i.notes ? ` — ${i.notes}` : ''}</div>
                 : <button type="button" className="nav-btn mt-1" disabled={ack.isPending}
                     onClick={() => ack.mutate({ id: i.id, notes: window.prompt('Note (optional)') || null })}>Acknowledge</button>}
             </li>
@@ -95,7 +96,7 @@ export function DataHealthPage() {
                       <td>{s.check_key}</td>
                       <td><span style={{ color: COLOUR[s.status] }}>● {s.status}</span></td>
                       <td>{age(s.age_hours)}</td>
-                      <td>{s.reason}</td>
+                      <td>{fmtDatesInText(s.reason)}</td>
                       <td>{r ? `${r.producer} — ${r.fix_hint}` : ''}</td>
                       <td>
                         <div className="relative h-3 rounded" style={{ background: '#e8f5e9' }} title="red = incident">
