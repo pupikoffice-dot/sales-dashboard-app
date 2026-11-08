@@ -11,8 +11,15 @@ export type DashboardModuleId =
   | 'stock'
   | 'export'
   | 'ops_deliveries'
-  | 'rnd'
-  | 'purchase_insights'
+  // pages inside a section menu: each one is its own grant (see modules/registry.ts)
+  | 'stock_brand'
+  | 'stock_history'
+  | 'items_index'
+  | 'rnd_monthly'
+  | 'rnd_yearly'
+  | 'rnd_year'
+  | 'rnd_client_card'
+  | 'rnd_item_card'
 
 export interface DashboardAccess {
   userId: string

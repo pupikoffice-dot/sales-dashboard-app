@@ -8,6 +8,8 @@ export interface ModuleDef {
   label: string
   path: string
   section: ModuleSection
+  /** A page inside a section menu rather than a top-level module. */
+  subpage?: boolean
 }
 
 export const MODULE_REGISTRY: ModuleDef[] = [
@@ -21,15 +23,21 @@ export const MODULE_REGISTRY: ModuleDef[] = [
   { id: 'export', label: 'Export', path: '/export', section: 'main' },
   { id: 'ops_deliveries', label: 'Deliveries', path: '/operations/deliveries', section: 'operations' },
   { id: 'stock', label: 'Stock', path: '/stock', section: 'operations' },
-  // grants the whole R&D section (its pages are NAV_EXTRAS that follow this module); nothing is stored for it in dashboard_modules
-  { id: 'rnd', label: 'R&D section', path: '/rnd/monthly', section: 'rnd' },
-  // client card and item card (R&D); also nothing in dashboard_modules
-  { id: 'purchase_insights', label: 'Purchase insights (client + item cards)', path: '/rnd/client', section: 'rnd' },
+  // Pages inside a section menu. Each is its own grant in dashboard_user_access.modules (migration 20261108120000), so the
+  // user editor can allow Item card and refuse Yearly data. `subpage`: no "default module" option, not a top-level button.
+  { id: 'stock_brand', label: 'Stock by brand', path: '/stock-brand', section: 'operations', subpage: true },
+  { id: 'stock_history', label: 'Stock history', path: '/stock-history', section: 'operations', subpage: true },
+  { id: 'items_index', label: 'Items', path: '/items', section: 'operations', subpage: true },
+  { id: 'rnd_monthly', label: 'Monthly data', path: '/rnd/monthly', section: 'rnd', subpage: true },
+  { id: 'rnd_yearly', label: 'Multi-year data', path: '/rnd/yearly', section: 'rnd', subpage: true },
+  { id: 'rnd_year', label: 'Yearly data', path: '/rnd/year', section: 'rnd', subpage: true },
+  { id: 'rnd_client_card', label: 'Client card', path: '/rnd/client', section: 'rnd', subpage: true },
+  { id: 'rnd_item_card', label: 'Item card', path: '/rnd/item', section: 'rnd', subpage: true },
 ]
 
 /**
  * Sidebar buttons that are not grantable modules (they do not appear as permission checkboxes).
- *  - follows: shown to anyone who has that module
+ *  - follows: legacy; every page is now its own module id, so this is no longer used
  *  - hideKey: legacy Filter-panel hide key that still hides it (kept so existing per-user settings keep working)
  *  - superAdminOnly: super admin only (honours "View as")
  */
@@ -44,14 +52,14 @@ export interface NavExtra {
 }
 
 export const NAV_EXTRAS: NavExtra[] = [
-  { id: 'stock_brand', label: 'Stock by brand', path: '/stock-brand', section: 'operations', follows: 'stock' },
-  { id: 'stock_history', label: 'Stock history', path: '/stock-history', section: 'operations', follows: 'stock' },
+  { id: 'stock_brand', label: 'Stock by brand', path: '/stock-brand', section: 'operations' },
+  { id: 'stock_history', label: 'Stock history', path: '/stock-history', section: 'operations' },
   { id: 'items_index', label: 'Items', path: '/items', section: 'operations', hideKey: 'date.items' },
-  { id: 'rnd_monthly', label: 'Monthly data', path: '/rnd/monthly', section: 'rnd', follows: 'rnd' },
-  { id: 'rnd_yearly', label: 'Multi-year data', path: '/rnd/yearly', section: 'rnd', follows: 'rnd' },
-  { id: 'rnd_year', label: 'Yearly data', path: '/rnd/year', section: 'rnd', follows: 'rnd' },
-  { id: 'rnd_client_card', label: 'Client card', path: '/rnd/client', section: 'rnd', follows: 'purchase_insights' },
-  { id: 'rnd_item_card', label: 'Item card', path: '/rnd/item', section: 'rnd', follows: 'purchase_insights' },
+  { id: 'rnd_monthly', label: 'Monthly data', path: '/rnd/monthly', section: 'rnd' },
+  { id: 'rnd_yearly', label: 'Multi-year data', path: '/rnd/yearly', section: 'rnd' },
+  { id: 'rnd_year', label: 'Yearly data', path: '/rnd/year', section: 'rnd' },
+  { id: 'rnd_client_card', label: 'Client card', path: '/rnd/client', section: 'rnd' },
+  { id: 'rnd_item_card', label: 'Item card', path: '/rnd/item', section: 'rnd' },
 ]
 
 export function pathForModule(id: DashboardModuleId): string {
