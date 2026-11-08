@@ -57,6 +57,9 @@ export function lastFridayAnchor(now: Date): Date | null {
   return null
 }
 
+/** Israeli rest days: Friday and Saturday are not working days (owner, 2026-11-08). */
+export const isRestDay = (weekday: string) => weekday === 'Fri' || weekday === 'Sat'
+
 export function localParts(d: Date): { weekday: string; minutes: number; date: string } {
   const f = new Intl.DateTimeFormat('en-GB', {
     timeZone: TZ, weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit',
@@ -69,31 +72,31 @@ export function localParts(d: Date): { weekday: string; minutes: number; date: s
 const toMin = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + (m || 0) }
 
 /**
- * Wall-clock hours between two instants, minus Saturday hours in between (no work on Saturday).
- * Exact (hour by hour) up to 14 days; beyond that 6/7 of wall time, which is precise enough for
+ * Wall-clock hours between two instants, minus Friday and Saturday hours in between (no work on rest days).
+ * Exact (hour by hour) up to 14 days; beyond that 5/7 of wall time, which is precise enough for
  * the 7/14/30-day manual rules and keeps the edge function far inside its CPU budget.
  */
 export function effectiveAgeHours(from: Date, to: Date): number {
   let hours = (to.getTime() - from.getTime()) / H
-  if (hours > 14 * 24) return Math.max(0, (hours * 6) / 7)
+  if (hours > 14 * 24) return Math.max(0, (hours * 5) / 7)
   for (let t = from.getTime(); t < to.getTime(); t += H) {
-    if (localParts(new Date(t)).weekday === 'Sat') hours -= Math.min(1, (to.getTime() - t) / H)
+    if (isRestDay(localParts(new Date(t)).weekday)) hours -= Math.min(1, (to.getTime() - t) / H)
   }
   return Math.max(0, hours)
 }
 
 export const fmtAge = (h: number) => (h < 48 ? `${Math.round(h)} h` : `${Math.round(h / 24)} days`)
 
-/** Working days (Saturday excluded) after `newest` up to and including `today`; both 'YYYY-MM-DD'. */
+/** Working days (Friday and Saturday excluded) after `newest` up to and including `today`; both 'YYYY-MM-DD'. */
 export function workdayLag(newest: string, today: string): number {
   const parse = (d: string) => { const [y, m, dd] = d.split('-').map(Number); return Date.UTC(y, m - 1, dd) }
   let n = 0
-  for (let t = parse(newest) + 86_400_000; t <= parse(today); t += 86_400_000) if (new Date(t).getUTCDay() !== 6) n++
+  for (let t = parse(newest) + 86_400_000; t <= parse(today); t += 86_400_000) if (new Date(t).getUTCDay() < 5) n++
   return n
 }
 
 /**
- * Evaluate every rule. The checker ALWAYS evaluates (changed 2026-10-29): outside the working window (Saturday, before
+ * Evaluate every rule. The checker ALWAYS evaluates (changed 2026-10-29): outside the working window (Friday, Saturday, before
  * 07:00 / after 22:00, outside a rule's own window) only GREEN results are written, so a refreshed file closes its
  * incident at any hour, while nothing new turns amber or red when nobody can act on it. `ignoreCalendar` removes the gate.
  */
@@ -105,7 +108,7 @@ export function evaluate(input: EvalInput): { statuses: Status[]; unruled: strin
   const isRecent = (l: Latest) => now.getTime() - new Date(l.observed_at).getTime() <= RECENT_H * H
   const unruledRows = unruledAll.filter(isRecent)
   const unruled = unruledRows.map(l => l.file_name).sort()
-  const gatedNow = !ignoreCalendar && (local.weekday === 'Sat' || local.minutes < DAY_FROM || local.minutes > DAY_TO)
+  const gatedNow = !ignoreCalendar && (isRestDay(local.weekday) || local.minutes < DAY_FROM || local.minutes > DAY_TO)
 
   const byFile = new Map(latest.map(l => [l.file_name.toLowerCase(), l]))
   const out: Status[] = []
@@ -218,7 +221,7 @@ export function evaluate(input: EvalInput): { statuses: Status[]; unruled: strin
   const lastOk = sortedSync.find(s => s.status === 'success')
   const okAge = lastOk ? (now.getTime() - new Date(lastOk.started_at).getTime()) / H : Infinity
   if (ignoreCalendar || local.minutes >= SYNC_FROM) {
-    const syncGated = !ignoreCalendar && (local.weekday === 'Sat' || local.minutes > DAY_TO)
+    const syncGated = !ignoreCalendar && (isRestDay(local.weekday) || local.minutes > DAY_TO)
     push({ check_key: 'sync:no_success', file_name: null, file_group: 'sync', company: null,
       status: okAge > 2 ? 'red' : 'green', modified_at: lastOk?.started_at ?? null,
       age_hours: isFinite(okAge) ? Math.round(okAge * 10) / 10 : null, rows_loaded: null,
