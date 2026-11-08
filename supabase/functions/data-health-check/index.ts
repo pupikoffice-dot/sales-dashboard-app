@@ -3,7 +3,7 @@
 // sends email via Resend, sends the daily summary once per working day, prunes old observations.
 // Spec: docs/superpowers/specs/2026-10-03-data-health-monitor-design.md
 import { createClient } from 'npm:@supabase/supabase-js@2'
-import { evaluate, localParts, JOB_CHECKS, type JobResult, type Rule, type Latest, type SyncLog, type Status, type ContentItem } from './evaluate.ts'
+import { evaluate, localParts, isRestDay, JOB_CHECKS, type JobResult, type Rule, type Latest, type SyncLog, type Status, type ContentItem } from './evaluate.ts'
 import { planIncidents, REOPEN_DAMP_H, type ClosedIncident, type OpenIncident } from './incidents.ts'
 import { alertEmail, categoryHeldEmail, digestEmail, resolvedDigestEmail, summaryEmail, uncategorizedEmail, type CategoryControlCounts, type Email, type EmailTable, type HeldBatch, type UncategorizedRow } from './emails.ts'
 
@@ -134,7 +134,7 @@ Deno.serve(async () => {
   const local = localParts(now)
   const [sh, sm] = settings.summary_time.split(':').map(Number)
   let summarySent = false
-  if ((ignoreCalendar || local.weekday !== 'Sat') && local.minutes >= sh * 60 + sm && settings.last_summary_date !== local.date) {
+  if ((ignoreCalendar || !isRestDay(local.weekday)) && local.minutes >= sh * 60 + sm && settings.last_summary_date !== local.date) {
     const all = await sb.from('source_file_status').select('*').order('file_group')
     const open = await sb.from('data_health_incidents').select('id', { count: 'exact', head: true }).is('closed_at', null)
     const label = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jerusalem', weekday: 'short', day: '2-digit', month: 'short' }).format(now)

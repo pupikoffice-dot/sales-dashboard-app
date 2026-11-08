@@ -49,12 +49,12 @@ export function oldestUpdate(items: NoticeItem[]): string | null {
   return t[0] ?? null
 }
 
-/** True when the checker itself has not run for over 2 hours during Israeli working hours (Sun-Fri 08:00-22:00). */
+/** True when the checker itself has not run for over 2 hours during Israeli working hours (Sun-Thu 08:00-22:00). */
 export function monitorStale(lastRunAt: string | null, now: Date): boolean {
   const f = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jerusalem', weekday: 'short', hour: '2-digit', hourCycle: 'h23' })
   const p = Object.fromEntries(f.formatToParts(now).map(x => [x.type, x.value]))
   const hour = Number(p.hour)
-  if (p.weekday === 'Sat' || hour < 8 || hour >= 22) return false
+  if (p.weekday === 'Fri' || p.weekday === 'Sat' || hour < 8 || hour >= 22) return false
   if (!lastRunAt) return true
   return now.getTime() - new Date(lastRunAt).getTime() > 2 * 3_600_000
 }

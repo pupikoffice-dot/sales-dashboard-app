@@ -22,16 +22,18 @@ describe('localParts', () => {
 })
 
 describe('effectiveAgeHours', () => {
-  it('does not count Saturday', () => {
-    // Fri 2026-10-02 19:00 local -> Sun 2026-10-04 07:00 local = 36 h wall, 12 h without Saturday
-    expect(effectiveAgeHours(at('2026-10-02T16:00:00Z'), at('2026-10-04T04:00:00Z'))).toBeCloseTo(12, 0)
+  it('does not count Friday or Saturday', () => {
+    // Fri 2026-10-02 19:00 local -> Sun 2026-10-04 07:00 local = 36 h wall, 7 h without the rest of Friday (5 h) and Saturday (24 h)
+    expect(effectiveAgeHours(at('2026-10-02T16:00:00Z'), at('2026-10-04T04:00:00Z'))).toBeCloseTo(7, 0)
+    // Thu 22:37 local -> Sun 09:00 local (the 721mt case of 2026-11-08, UTC+2): 58.4 h wall, minus Friday and Saturday = about 10.4 h
+    expect(effectiveAgeHours(at('2026-11-05T20:37:00Z'), at('2026-11-08T07:00:00Z'))).toBeCloseTo(10.4, 0)
   })
   it('is fast and approximately right for long ages (frozen / manual files)', () => {
     const t0 = performance.now()
     const h = effectiveAgeHours(at('2024-10-18T14:00:00Z'), at('2026-10-04T10:00:00Z'))
     expect(performance.now() - t0).toBeLessThan(50)
     const wall = (at('2026-10-04T10:00:00Z').getTime() - at('2024-10-18T14:00:00Z').getTime()) / 3_600_000
-    expect(h).toBeCloseTo(wall * 6 / 7, -1)
+    expect(h).toBeCloseTo(wall * 5 / 7, -1)
   })
 })
 
@@ -41,6 +43,11 @@ describe('evaluate', () => {
     const quiet = (iso: string) => evaluate({ rules: [rule({})], latest: [stale], syncLogs: okSync, now: at(iso) }).statuses.filter(s => s.status === 'red' || s.status === 'amber')
     expect(quiet('2026-10-03T09:00:00Z')).toEqual([])
     expect(quiet('2026-10-04T20:00:00Z')).toEqual([])
+  })
+  it('on Friday a STALE file writes nothing (Friday is a rest day)', () => {
+    const stale = obs({ modified_at: '2026-10-01T09:00:00Z' })
+    const quiet = evaluate({ rules: [rule({})], latest: [stale], syncLogs: okSync, now: at('2026-10-02T09:00:00Z') }).statuses.filter(s => s.status === 'red' || s.status === 'amber')
+    expect(quiet).toEqual([])
   })
   it('on Saturday or at night a REFRESHED file is still written green, so its incident closes (rep891 case 2026-10-29)', () => {
     const fresh = obs({ modified_at: '2026-10-03T08:30:00Z' })
@@ -145,6 +152,7 @@ describe('workdayLag', () => {
     expect(workdayLag('2026-10-28', '2026-10-29')).toBe(1)
     expect(workdayLag('2026-10-26', '2026-10-28')).toBe(2)
     expect(workdayLag('2026-10-30', '2026-11-01')).toBe(1) // Fri data, Sunday: Saturday does not count
+    expect(workdayLag('2026-10-29', '2026-11-01')).toBe(1) // Thu data, Sunday: Friday and Saturday do not count
     expect(workdayLag('2026-10-29', '2026-10-29')).toBe(0)
   })
 })
