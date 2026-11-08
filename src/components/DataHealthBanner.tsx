@@ -3,9 +3,10 @@ import { useDashboardAccess } from '../context/DashboardAccessContext'
 import { useLocale } from '../context/LocaleContext'
 import { useDataHealthNotices, useDataHealthSendState } from '../hooks/useDataHealth'
 import { itemsForUser, monitorStale, oldestUpdate, summarise, unacknowledgedRed } from '../lib/dataHealth/notices'
+import { fmtDateTime } from '../lib/dates'
 
 const BAR = { margin: '0 0 12px', fontSize: 14 } as const
-const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : '-')
+const fmt = (iso: string | null) => (iso ? fmtDateTime(iso) : '-')
 
 /**
  * In-app data-freshness alert (2026-10-29), shown at the top of every page.

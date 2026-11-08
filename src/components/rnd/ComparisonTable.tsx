@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useLocale } from '../../context/LocaleContext'
 import { fmt0 } from '../../lib/format'
 import { changeLabel } from '../../lib/purchaseCards'
 import { SortTh, useSortedRows } from './sortRows'
@@ -27,6 +28,7 @@ export function ComparisonTable({
   lyLabel: string
   empty: string
 }) {
+  const { t } = useLocale()
   const { sorted, sort, onSort } = useSortedRows(
     rows,
     {
@@ -48,8 +50,8 @@ export function ComparisonTable({
             <SortTh label={head} k="label" left sort={sort} onSort={onSort} />
             <SortTh label={cyLabel} k="cy" sort={sort} onSort={onSort} />
             <SortTh label={lyLabel} k="ly" sort={sort} onSort={onSort} />
-            <SortTh label="Change" k="change" sort={sort} onSort={onSort} />
-            <SortTh label="Change %" k="pct" sort={sort} onSort={onSort} />
+            <SortTh label={t('pc.col.change')} k="change" sort={sort} onSort={onSort} />
+            <SortTh label={t('pc.col.changePct')} k="pct" sort={sort} onSort={onSort} />
           </tr>
         </thead>
         <tbody>
@@ -62,7 +64,7 @@ export function ComparisonTable({
                 <td>{fmt0(r.cy)}</td>
                 <td>{fmt0(r.ly)}</td>
                 <td style={{ color: colour }}>{diff > 0 ? '+' : ''}{fmt0(diff)}</td>
-                <td style={{ color: colour }}>{changeLabel(r.cy, r.ly)}</td>
+                <td style={{ color: colour }}>{changeLabel(r.cy, r.ly, t('pc.new'))}</td>
               </tr>
             )
           })}

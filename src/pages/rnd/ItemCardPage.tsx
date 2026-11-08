@@ -21,15 +21,15 @@ import {
   throughLabel,
   lastMonthKeys,
   monthsOfCover,
-  MOVE_LABEL,
   returnRate,
   searchItems,
   type ItemCardClient,
 } from '../../lib/purchaseCards'
 import type { LogicalCompany } from '../../types/dashboard'
+import { ReturnsDetail } from '../../components/rnd/ReturnsDetail'
+import { fmtDate } from '../../lib/dates'
 
 const COMPANY_ORDER: LogicalCompany[] = ['pupik', 'mt', 'grow', 'gold']
-const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 function ClientRows({ rows: baseRows, company, empty, margins }: { rows: ItemCardClient[]; company: string; empty: string; margins?: Array<CostCover & { id: string }> | null }) {
   const { t } = useLocale()
@@ -47,13 +47,13 @@ function ClientRows({ rows: baseRows, company, empty, margins }: { rows: ItemCar
       <table>
         <thead>
           <tr>
-            <SortTh label="Client" k="client" left sort={sort} onSort={onSort} />
-            <SortTh label="Pieces" k="qty" sort={sort} onSort={onSort} />
-            <SortTh label="Cash" k="cash" sort={sort} onSort={onSort} />
+            <SortTh label={t('pc.col.client')} k="client" left sort={sort} onSort={onSort} />
+            <SortTh label={t('pc.col.pieces')} k="qty" sort={sort} onSort={onSort} />
+            <SortTh label={t('pc.col.cash')} k="cash" sort={sort} onSort={onSort} />
             {showM ? <SortTh label={t('gm.col.margin')} k="margin" sort={sort} onSort={onSort} title={t('gm.hint')} /> : null}
             {showM ? <SortTh label={t('gm.col.marginPct')} k="marginPct" sort={sort} onSort={onSort} title={t('gm.hint')} /> : null}
-            <SortTh label="Months bought" k="months" sort={sort} onSort={onSort} />
-            <SortTh label="Last bought" k="last" sort={sort} onSort={onSort} />
+            <SortTh label={t('pc.col.monthsBought')} k="months" sort={sort} onSort={onSort} />
+            <SortTh label={t('pc.col.lastBought')} k="last" sort={sort} onSort={onSort} />
           </tr>
         </thead>
         <tbody>
@@ -67,7 +67,7 @@ function ClientRows({ rows: baseRows, company, empty, margins }: { rows: ItemCar
               {showM ? <td>{r.margin == null ? '—' : fmt0(r.margin)}</td> : null}
               {showM ? <td>{fmtPct(r.marginPct)}</td> : null}
               <td>{r.months}</td>
-              <td>{r.last ?? '—'}</td>
+              <td>{r.last ? fmtDate(r.last) : '—'}</td>
             </tr>
           ))}
         </tbody>
@@ -78,7 +78,7 @@ function ClientRows({ rows: baseRows, company, empty, margins }: { rows: ItemCar
 
 /** R&D → Item card: who buys one item, how fast it sells, how long the stock lasts. Needs the Purchase insights module. */
 export function ItemCardPage() {
-  const { t } = useLocale()
+  const { t, monthNames } = useLocale()
   const { access } = useDashboardAccess()
   const { isPreviewing, previewUser } = usePreview()
   const asUser = isPreviewing ? (previewUser?.id ?? null) : null
@@ -89,6 +89,9 @@ export function ItemCardPage() {
   const sku = params.get('sku')
   const [query, setQuery] = useState('')
   const q = useDebounced(query)
+
+  const moveLabel = (k: string) =>
+    k === 'import' ? t('pc.move.import') : k === 'local_purchase' ? t('pc.move.local') : k === 'return_in' ? t('pc.move.returnIn') : k
 
   const hits = useQuery({
     queryKey: ['pc-items', company, q, asUser],
@@ -134,7 +137,7 @@ export function ItemCardPage() {
   )
   const moveSort = useSortedRows(
     data?.moves,
-    { date: m => m.date, type: m => MOVE_LABEL[m.kind] ?? m.kind, qty: m => m.qty, doc: m => m.doc },
+    { date: m => m.date, type: m => moveLabel(m.kind), qty: m => m.qty, doc: m => m.doc },
     { key: 'date', dir: 'desc' },
     ['type', 'doc'],
   )
@@ -148,10 +151,10 @@ export function ItemCardPage() {
     const monthly: ChartConfiguration = {
       type: 'bar',
       data: {
-        labels: keys.map(k => `${MONTH_SHORT[k.m - 1]} ${String(k.y).slice(2)}`),
+        labels: keys.map(k => `${monthNames[k.m - 1]} ${String(k.y).slice(2)}`),
         datasets: [
-          { label: 'Sold', data: keys.map(k => byKey.get(k.y * 12 + k.m)?.sold ?? 0), backgroundColor: cssVar('--chart-c0'), borderRadius: 3 },
-          { label: 'Returned', data: keys.map(k => byKey.get(k.y * 12 + k.m)?.returned ?? 0), backgroundColor: cssVar('--chart-c3'), borderRadius: 3 },
+          { label: t('pc.col.sold'), data: keys.map(k => byKey.get(k.y * 12 + k.m)?.sold ?? 0), backgroundColor: cssVar('--chart-c0'), borderRadius: 3 },
+          { label: t('pc.col.returned'), data: keys.map(k => byKey.get(k.y * 12 + k.m)?.returned ?? 0), backgroundColor: cssVar('--chart-c3'), borderRadius: 3 },
         ],
       },
       options: {
@@ -168,7 +171,7 @@ export function ItemCardPage() {
     const marginChart: ChartConfiguration = {
       type: 'bar',
       data: {
-        labels: keys.map(k => `${MONTH_SHORT[k.m - 1]} ${String(k.y).slice(2)}`),
+        labels: keys.map(k => `${monthNames[k.m - 1]} ${String(k.y).slice(2)}`),
         datasets: [{ label: t('gm.chart.margin'), data: keys.map(k => marginOfMonth.get(k.y * 12 + k.m) ?? 0), backgroundColor: cssVar('--chart-c4'), borderRadius: 3 }],
       },
       options: {
@@ -184,10 +187,10 @@ export function ItemCardPage() {
     const stock: ChartConfiguration = {
       type: 'line',
       data: {
-        labels: data.stockDaily.map(d => d.day.slice(5)),
+        labels: data.stockDaily.map(d => fmtDate(d.day).slice(0, 5)),
         datasets: [
           {
-            label: 'Pieces in stock (end of day)',
+            label: t('pc.item.stockSeries'),
             data: data.stockDaily.map(d => d.qty),
             borderColor: cssVar('--chart-c1'),
             backgroundColor: cssVar('--chart-c1'),
@@ -208,9 +211,9 @@ export function ItemCardPage() {
       },
     }
     return { monthly, stock, marginChart }
-  }, [data, marginData, t])
+  }, [data, marginData, t, monthNames])
 
-  if (!company) return <p className="status-msg">No companies available.</p>
+  if (!company) return <p className="status-msg">{t('pc.noCompanies')}</p>
 
   const pick = (s: string) => setParams({ co: company, sku: s })
   const rate = data ? returnRate(data.sold12, data.returned12) : null
@@ -219,32 +222,32 @@ export function ItemCardPage() {
 
   return (
     <div className="panel" style={{ padding: 16 }}>
-      <h2 style={{ marginTop: 0 }}>R&amp;D — Item card</h2>
+      <h2 style={{ marginTop: 0 }}>{t('pc.item.title')}</h2>
       <PurchaseSearchBar
         companies={companies}
         company={company}
         onCompany={c => setParams({ co: c })}
         query={query}
         onQuery={setQuery}
-        placeholder="🔍 SKU, name or barcode…"
+        placeholder={t('pc.item.placeholder')}
       />
 
       {!sku || !data ? (
         <>
-          {hits.isLoading ? <p className="status-msg">Searching…</p> : null}
+          {hits.isLoading ? <p className="status-msg">{t('pc.searching')}</p> : null}
           {hits.error ? <p className="status-msg error">{(hits.error as Error).message}</p> : null}
-          {hits.data && !hits.data.length ? <p className="status-msg">No items match.</p> : null}
-          {card.isLoading ? <p className="status-msg">Loading the item…</p> : null}
+          {hits.data && !hits.data.length ? <p className="status-msg">{t('pc.item.noMatch')}</p> : null}
+          {card.isLoading ? <p className="status-msg">{t('pc.item.loading')}</p> : null}
           {card.error ? <p className="status-msg error">{(card.error as Error).message}</p> : null}
           {hits.data?.length ? (
             <div className="tw">
               <table>
                 <thead>
                   <tr>
-                    <SortTh label="Item" k="item" left sort={hitSort.sort} onSort={hitSort.onSort} />
-                    <SortTh label="Pieces, last 12 months" k="qty12" sort={hitSort.sort} onSort={hitSort.onSort} />
-                    <SortTh label="Net cash, last 12 months" k="cash12" sort={hitSort.sort} onSort={hitSort.onSort} />
-                    <SortTh label="Clients" k="clients12" sort={hitSort.sort} onSort={hitSort.onSort} />
+                    <SortTh label={t('pc.col.item')} k="item" left sort={hitSort.sort} onSort={hitSort.onSort} />
+                    <SortTh label={t('pc.col.piecesL12')} k="qty12" sort={hitSort.sort} onSort={hitSort.onSort} />
+                    <SortTh label={t('pc.col.netCashL12')} k="cash12" sort={hitSort.sort} onSort={hitSort.onSort} />
+                    <SortTh label={t('pc.col.clients')} k="clients12" sort={hitSort.sort} onSort={hitSort.onSort} />
                   </tr>
                 </thead>
                 <tbody>
@@ -281,19 +284,20 @@ export function ItemCardPage() {
               {data.item.barcode ? ` · ${data.item.barcode}` : ''}
             </small>
             <button type="button" className="chip" onClick={() => setParams({ co: company })}>
-              ← Other item
+              {t('pc.item.other')}
             </button>
           </div>
 
           {data.scoped ? (
             <p className="sel-months-list" style={{ margin: '0 0 8px' }}>
-              Your clients only: sales, returns and clients count the clients you look after. Stock and arrivals are the whole warehouse.
+              {t('pc.item.scoped')}
             </p>
           ) : null}
           <div className="hub-grid">
-            <Kpi label="In stock now" value={fmt0(data.stock)} note={cover == null ? 'no sales in the last 3 months' : `about ${cover.toFixed(1)} months at the last 3 months pace`} tone={cover != null && cover < 1 ? 'amber' : undefined} />
-            <Kpi label="Sold, last 12 months" value={fmt0(data.sold12)} note={`${fmt0(data.sold3)} net in the last 3 months`} tone="grn" />
-            <Kpi label="Return rate" value={rate == null ? '—' : `${(rate * 100).toFixed(1)}%`} hint="Pieces on return invoices (document 14) divided by pieces sold including them, last 12 months." note={`${fmt0(data.returned12)} pieces returned`} tone={rate != null && rate > 0.15 ? 'amber' : undefined} />
+            <Kpi label={t('pc.item.inStock')} value={fmt0(data.stock)} note={cover == null ? t('pc.item.noSales3') : t('pc.item.cover', { n: cover.toFixed(1) })} tone={cover != null && cover < 1 ? 'amber' : undefined} />
+            <Kpi label={t('pc.item.sold12')} value={fmt0(data.sold12)} note={t('pc.item.net3', { n: fmt0(data.sold3) })} tone="grn" />
+            <Kpi label={t('pc.kpi.netCash12')} value={net12 == null ? '—' : fmt0(net12)} note={data.scoped ? t('pc.item.cashNoteScoped') : t('pc.item.cashNote')} hint={t('pc.item.cashHint')} tone="grn" />
+            <Kpi label={t('pc.kpi.returnRate')} value={rate == null ? '—' : `${(rate * 100).toFixed(1)}%`} hint={t('pc.item.rateHint')} note={t('pc.item.piecesReturned', { n: fmt0(data.returned12) })} tone={rate != null && rate > 0.15 ? 'amber' : undefined} />
             {hasM ? (
               <Kpi
                 label={t('gm.kpi.margin') + ' — 12m'}
@@ -303,28 +307,30 @@ export function ItemCardPage() {
                 tone={margin12.margin != null && margin12.margin < 0 ? 'amber' : undefined}
               />
             ) : null}
-            <Kpi label="Clients, last 12 months" value={fmt0(data.clients12)} note={since == null ? undefined : `last sale ${since} days ago (${data.last})`} />
+            <Kpi label={t('pc.item.clients12')} value={fmt0(data.clients12)} note={since == null ? undefined : t('pc.item.lastSale', { days: since, date: fmtDate(data.last) })} />
 
             {vs.data ? (
               <>
                 <Kpi
-                  label={`Pieces ${throughLabel(vs.data.throughMonth)}, this year`}
+                  label={t('pc.item.piecesThrough', { through: throughLabel(vs.data.throughMonth, monthNames) })}
                   value={fmt0(vs.data.cy.qty)}
-                  note={`last year ${fmt0(vs.data.ly.qty)} · ${changeLabel(vs.data.cy.qty, vs.data.ly.qty)}`}
+                  note={t('pc.kpi.lastYearChange', { ly: fmt0(vs.data.ly.qty), chg: changeLabel(vs.data.cy.qty, vs.data.ly.qty, t('pc.new')) })}
                   tone={vs.data.cy.qty >= vs.data.ly.qty ? 'grn' : 'amber'}
-                  hint={`Net pieces (sold less returned), January to the last full month of ${vs.data.year}, against the same months of ${vs.data.prevYear}.`}
+                  hint={t('pc.item.piecesHint', { y: vs.data.year, py: vs.data.prevYear })}
                 />
                 <Kpi
-                  label={`Clients ${throughLabel(vs.data.throughMonth)}`}
+                  label={t('pc.item.clientsThrough', { through: throughLabel(vs.data.throughMonth, monthNames) })}
                   value={fmt0(vs.data.cy.clients ?? 0)}
-                  note={`last year ${fmt0(vs.data.ly.clients ?? 0)} · ${changeLabel(vs.data.cy.clients ?? 0, vs.data.ly.clients ?? 0)}`}
+                  note={t('pc.kpi.lastYearChange', { ly: fmt0(vs.data.ly.clients ?? 0), chg: changeLabel(vs.data.cy.clients ?? 0, vs.data.ly.clients ?? 0, t('pc.new')) })}
                 />
               </>
             ) : null}
 
+            <ReturnsDetail company={company} target={{ sku: data.item.sku }} asUser={asUser} />
+
             <section className="hub-card hub-span-8">
-              <div className="hub-card-hdr"><h3>Pieces sold and returned — 24 months</h3></div>
-              {charts ? <HubChart config={charts.monthly} height={240} label="Sold and returned by month" minWidth={560} /> : null}
+              <div className="hub-card-hdr"><h3>{t('pc.item.soldReturnedTitle')}</h3></div>
+              {charts ? <HubChart config={charts.monthly} height={240} label={t('pc.item.soldReturnedAria')} minWidth={560} /> : null}
             </section>
             {hasM && charts ? (
               <section className="hub-card hub-span-12">
@@ -344,27 +350,27 @@ export function ItemCardPage() {
               </section>
             ) : null}
             <section className="hub-card hub-span-4">
-              <div className="hub-card-hdr"><h3>Stock — last 150 days</h3></div>
+              <div className="hub-card-hdr"><h3>{t('pc.item.stock150')}</h3></div>
               {charts && data.stockDaily.length ? (
-                <HubChart config={charts.stock} height={240} label="Stock by day" minWidth={420} />
+                <HubChart config={charts.stock} height={240} label={t('pc.item.stockAria')} minWidth={420} />
               ) : (
-                <p className="status-msg">No stock history for this item.</p>
+                <p className="status-msg">{t('pc.item.noStockHist')}</p>
               )}
             </section>
 
             {vs.data ? (
               <section className="hub-card hub-span-12">
                 <div className="hub-card-hdr">
-                  <h3>Clients vs last year</h3>
+                  <h3>{t('pc.item.clientsVs')}</h3>
                   <span className="hub-card-aside">
-                    {throughLabel(vs.data.throughMonth)} {vs.data.year} against {vs.data.prevYear}, net pieces; the 20 biggest movers
+                    {t('pc.item.clientsVsAside', { through: throughLabel(vs.data.throughMonth, monthNames), y: vs.data.year, py: vs.data.prevYear })}
                   </span>
                 </div>
                 <ComparisonTable
-                  head="Client"
+                  head={t('pc.col.client')}
                   cyLabel={String(vs.data.year)}
                   lyLabel={String(vs.data.prevYear)}
-                  empty="Nobody bought it in either period."
+                  empty={t('pc.item.noneEither')}
                   rows={vs.data.clients.map(c => ({
                     key: c.id,
                     label: (
@@ -381,34 +387,34 @@ export function ItemCardPage() {
             ) : null}
 
             <section className="hub-card hub-span-12">
-              <div className="hub-card-hdr"><h3>Top clients — last 12 months</h3></div>
-              <ClientRows rows={data.topClients} company={company} empty="Nobody bought it in the last 12 months." margins={marginData?.topClients} />
+              <div className="hub-card-hdr"><h3>{t('pc.item.topClients')}</h3></div>
+              <ClientRows rows={data.topClients} company={company} empty={t('pc.item.noBuyers12')} margins={marginData?.topClients} />
             </section>
             <section className="hub-card hub-span-12">
               <div className="hub-card-hdr">
-                <h3>Stopped buying</h3>
-                <span className="hub-card-aside">bought in 3+ different months of the year before, none in the last 3 months</span>
+                <h3>{t('pc.stopped')}</h3>
+                <span className="hub-card-aside">{t('pc.stoppedAside')}</span>
               </div>
-              <ClientRows rows={data.stopped} company={company} empty="No regular client has stopped buying it." margins={marginData?.stopped} />
+              <ClientRows rows={data.stopped} company={company} empty={t('pc.item.noStopped')} margins={marginData?.stopped} />
             </section>
             <section className="hub-card hub-span-12">
-              <div className="hub-card-hdr"><h3>Latest arrivals (imports and local purchases)</h3></div>
+              <div className="hub-card-hdr"><h3>{t('pc.item.arrivals')}</h3></div>
               {data.moves.length ? (
                 <div className="tw">
                   <table>
                     <thead>
                       <tr>
-                        <SortTh label="Date" k="date" left sort={moveSort.sort} onSort={moveSort.onSort} />
-                        <SortTh label="Type" k="type" left sort={moveSort.sort} onSort={moveSort.onSort} />
-                        <SortTh label="Pieces" k="qty" sort={moveSort.sort} onSort={moveSort.onSort} />
-                        <SortTh label="Document" k="doc" left sort={moveSort.sort} onSort={moveSort.onSort} />
+                        <SortTh label={t('pc.col.date')} k="date" left sort={moveSort.sort} onSort={moveSort.onSort} />
+                        <SortTh label={t('pc.col.type')} k="type" left sort={moveSort.sort} onSort={moveSort.onSort} />
+                        <SortTh label={t('pc.col.pieces')} k="qty" sort={moveSort.sort} onSort={moveSort.onSort} />
+                        <SortTh label={t('pc.col.document')} k="doc" left sort={moveSort.sort} onSort={moveSort.onSort} />
                       </tr>
                     </thead>
                     <tbody>
                       {moveSort.sorted.map((m, i) => (
                         <tr key={`${m.date}|${m.doc}|${i}`}>
-                          <td style={{ textAlign: 'left' }}>{m.date}</td>
-                          <td style={{ textAlign: 'left' }}>{MOVE_LABEL[m.kind] ?? m.kind}</td>
+                          <td style={{ textAlign: 'left' }}>{fmtDate(m.date)}</td>
+                          <td style={{ textAlign: 'left' }}>{moveLabel(m.kind)}</td>
                           <td>{fmt0(m.qty)}</td>
                           <td style={{ textAlign: 'left' }}>{m.doc ?? ''}</td>
                         </tr>
@@ -417,7 +423,7 @@ export function ItemCardPage() {
                   </table>
                 </div>
               ) : (
-                <p className="status-msg">No purchase documents recorded for this item this year.</p>
+                <p className="status-msg">{t('pc.item.noArrivals')}</p>
               )}
             </section>
           </div>
