@@ -59,14 +59,14 @@ function ProtectedApp() {
         <Route path="debt" element={<RequireModule moduleId="debt"><PlaceholderModulePage title="Open Debt" /></RequireModule>} />
         <Route path="stock-alerts" element={<RequireModule moduleId="stock_alerts"><PlaceholderModulePage title="Stock Alerts" /></RequireModule>} />
         <Route path="stock" element={<RequireModule moduleId="stock"><StockPage /></RequireModule>} />
-        <Route path="items" element={<ItemsIndexPage />} />
-        <Route path="stock-brand" element={<RequireModule moduleId="stock"><StockBrandPage /></RequireModule>} />
-        <Route path="stock-history" element={<RequireModule moduleId="stock"><StockHistoryPage /></RequireModule>} />
-        <Route path="rnd/monthly" element={<RequireModule moduleId="rnd"><MonthlyDataPage /></RequireModule>} />
-        <Route path="rnd/yearly" element={<RequireModule moduleId="rnd"><YearlyDataPage /></RequireModule>} />
-        <Route path="rnd/year" element={<RequireModule moduleId="rnd"><YearDetailPage /></RequireModule>} />
-        <Route path="rnd/client" element={<RequireModule moduleId="purchase_insights"><ClientCardPage /></RequireModule>} />
-        <Route path="rnd/item" element={<RequireModule moduleId="purchase_insights"><ItemCardPage /></RequireModule>} />
+        <Route path="items" element={<RequireModule moduleId="items_index"><ItemsIndexPage /></RequireModule>} />
+        <Route path="stock-brand" element={<RequireModule moduleId="stock_brand"><StockBrandPage /></RequireModule>} />
+        <Route path="stock-history" element={<RequireModule moduleId="stock_history"><StockHistoryPage /></RequireModule>} />
+        <Route path="rnd/monthly" element={<RequireModule moduleId="rnd_monthly"><MonthlyDataPage /></RequireModule>} />
+        <Route path="rnd/yearly" element={<RequireModule moduleId="rnd_yearly"><YearlyDataPage /></RequireModule>} />
+        <Route path="rnd/year" element={<RequireModule moduleId="rnd_year"><YearDetailPage /></RequireModule>} />
+        <Route path="rnd/client" element={<RequireModule moduleId="rnd_client_card"><ClientCardPage /></RequireModule>} />
+        <Route path="rnd/item" element={<RequireModule moduleId="rnd_item_card"><ItemCardPage /></RequireModule>} />
         <Route path="export" element={<RequireModule moduleId="export"><PlaceholderModulePage title="Export" /></RequireModule>} />
         <Route path="operations/deliveries" element={<RequireModule moduleId="ops_deliveries"><DeliveriesPage /></RequireModule>} />
         {canManageUsers && <Route path="admin/users" element={<UsersPage />} />}

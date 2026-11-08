@@ -6,7 +6,7 @@ import { useLocale } from '../../context/LocaleContext'
 import { supabase } from '../../lib/supabase'
 import { callUserManagement } from '../../lib/userManagement'
 import { displayLoginId, isEmailLogin, isInternalAuthEmail } from '../../lib/loginIdentifier'
-import { MODULE_REGISTRY } from '../../modules/registry'
+import { MODULE_REGISTRY, type ModuleSection } from '../../modules/registry'
 import { OVERSITE_MODULE_REGISTRY, type OversiteModuleId } from '../../lib/oversiteModules'
 import type { AppLocale } from '../../i18n/types'
 import type { DashboardModuleId, LogicalCompany } from '../../types/dashboard'
@@ -67,6 +67,12 @@ function formatAgents(agents: string[] | null | undefined, role: string) {
   if (!agents?.length) return 'all'
   return agents.join(', ')
 }
+
+const MODULE_SECTIONS: { id: ModuleSection; title: string }[] = [
+  { id: 'main', title: 'Navigation' },
+  { id: 'operations', title: 'Operations' },
+  { id: 'rnd', title: 'R&D' },
+]
 
 export function UsersPage() {
   const qc = useQueryClient()
@@ -696,14 +702,39 @@ function EditAccessModal({
             </EditorGroup>
 
             <EditorGroup title="Modules">
-              <div className="admin-form-checklist">
-                {MODULE_REGISTRY.map(m => (
-                  <label key={m.id} className="admin-form-check">
-                    <input type="checkbox" checked={modules.includes(m.id)} onChange={() => toggleModule(m.id)} />
-                    {m.label}
-                  </label>
-                ))}
-              </div>
+              {MODULE_SECTIONS.map(sec => {
+                const items = MODULE_REGISTRY.filter(m => m.section === sec.id)
+                const topLevel = items.filter(m => !m.subpage)
+                const pages = items.filter(m => m.subpage)
+                const ids = items.map(m => m.id)
+                return (
+                  <div key={sec.id} style={{ marginBottom: 10 }}>
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'baseline', margin: '6px 0 2px' }}>
+                      <b>{sec.title}</b>
+                      <button type="button" className="sbar-search" onClick={() => setModules(prev => [...new Set([...prev, ...ids])])}>
+                        All
+                      </button>
+                      <button type="button" className="sbar-search" onClick={() => setModules(prev => prev.filter(id => !ids.includes(id)))}>
+                        None
+                      </button>
+                    </div>
+                    <div className="admin-form-checklist">
+                      {topLevel.map(m => (
+                        <label key={m.id} className="admin-form-check">
+                          <input type="checkbox" checked={modules.includes(m.id)} onChange={() => toggleModule(m.id)} />
+                          {m.label}
+                        </label>
+                      ))}
+                      {pages.map(m => (
+                        <label key={m.id} className="admin-form-check" style={{ marginInlineStart: topLevel.length ? 18 : 0 }}>
+                          <input type="checkbox" checked={modules.includes(m.id)} onChange={() => toggleModule(m.id)} />
+                          {m.label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
             </EditorGroup>
 
             {modules.includes('oversite') && (
@@ -879,7 +910,7 @@ function EditAccessModal({
                   value={defaultModule}
                   onChange={e => setDefaultModule(e.target.value as DashboardModuleId)}
                 >
-                  {MODULE_REGISTRY.filter(m => m.section !== 'rnd').map(m => (
+                  {MODULE_REGISTRY.filter(m => !m.subpage).map(m => (
                     <option key={m.id} value={m.id}>{m.label}</option>
                   ))}
                 </select>

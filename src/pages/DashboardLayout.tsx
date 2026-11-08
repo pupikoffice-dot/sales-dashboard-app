@@ -16,6 +16,7 @@ import { ViewAsSwitcher } from '../components/admin/ViewAsSwitcher'
 import { IntercompanySwitcher } from '../components/IntercompanySwitcher'
 import { SidebarFilters } from '../components/sidebar/SidebarFilters'
 import { MODULE_REGISTRY, NAV_EXTRAS } from '../modules/registry'
+import type { DashboardModuleId } from '../types/dashboard'
 import { sidebarNavHideId } from '../lib/sidebarHide'
 import { useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
@@ -150,7 +151,7 @@ export function DashboardLayout() {
     )
   }
 
-  const visible = MODULE_REGISTRY.filter(m => canShowModule(access, m.id, effectiveIsSuperAdmin))
+  const visible = MODULE_REGISTRY.filter(m => !m.subpage && canShowModule(access, m.id, effectiveIsSuperAdmin))
   const hiddenNav = new Set(access.hiddenSidebar ?? [])
   const visibleMain = visible.filter(m => m.section === 'main' && !hiddenNav.has(sidebarNavHideId(m.id)))
   // Stock used to be a Filter-panel tab; its old hide key keeps hiding it.
@@ -163,11 +164,7 @@ export function DashboardLayout() {
         x.section === section &&
         !hiddenNav.has(sidebarNavHideId(x.id)) &&
         !(x.hideKey && hiddenNav.has(x.hideKey)) &&
-        (x.superAdminOnly
-          ? effectiveIsSuperAdmin
-          : x.follows
-            ? canShowModule(access, x.follows, effectiveIsSuperAdmin)
-            : true),
+        (x.superAdminOnly ? effectiveIsSuperAdmin : canShowModule(access, x.id as DashboardModuleId, effectiveIsSuperAdmin)),
     )
   const opsItems = [
     ...visibleOps.map(m => ({ id: m.id as string, path: m.path })),
