@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computeGroupKpis, salesLyToDate, showGroupTotalsStrip, type GroupKpiInput } from './oversightGroupKpis'
+import { computeGroupKpis, groupTotalsColumns, salesLyToDate, showGroupTotalsStrip, type GroupKpiInput } from './oversightGroupKpis'
 import type { SalesRow } from '../types/dashboard'
 
 const col = (o: Partial<{ sales: number; ly: number; d720: number; debt: number | null }>): GroupKpiInput => ({
@@ -63,5 +63,22 @@ describe('computeGroupKpis', () => {
 
   it('returns nothing without companies', () => {
     expect(computeGroupKpis([], all)).toEqual([])
+  })
+})
+
+describe('groupTotalsColumns', () => {
+  it('leaves Goldbug out of the group totals only', () => {
+    const cols = [
+      { co: { id: 'pupik' }, ...col({ sales: 600 }) },
+      { co: { id: 'gold' }, ...col({ sales: 5000 }) },
+      { co: { id: 'mt' }, ...col({ sales: 400 }) },
+    ]
+    const kept = groupTotalsColumns(cols)
+    expect(kept.map(c => c.co.id)).toEqual(['pupik', 'mt'])
+    expect(computeGroupKpis(kept, { show: () => true, includeDeliveryNotes: false })[0].value).toBe(1000)
+    expect(cols).toHaveLength(3)
+  })
+  it('gives no totals when only Goldbug is selected', () => {
+    expect(computeGroupKpis(groupTotalsColumns([{ co: { id: 'gold' }, ...col({ sales: 5 }) }]), { show: () => true, includeDeliveryNotes: false })).toEqual([])
   })
 })

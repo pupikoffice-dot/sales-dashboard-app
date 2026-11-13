@@ -462,7 +462,7 @@ export const messages: Record<keyof typeof en, string> = {
 
   'oversite.jumpTo': 'קפוץ לחברה',
   'oversite.title': 'לוח מבט על',
-  'oversite.groupScope': 'החברות שנבחרו — סיכום',
+  'oversite.groupScope': 'סה״כ קבוצת פופיק',
   'oversite.vsLastYear': 'שינוי לעומת שנה שעברה, אותם ימים בחודש',
   'oversite.companyFilter': 'חברות',
   'oversite.companyFilterSearch': 'חיפוש חברות…',

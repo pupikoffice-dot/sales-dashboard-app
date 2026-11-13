@@ -44,6 +44,14 @@ export function showGroupTotalsStrip(isSuperAdmin: boolean): boolean {
   return isSuperAdmin === true
 }
 
+/** Companies left out of the "Pupik Group Totals" strip (still shown in the selector and per-company columns). */
+export const GROUP_TOTALS_EXCLUDED_COMPANIES: readonly string[] = ['gold']
+
+/** Columns that count toward the group totals: drops Goldbug. */
+export function groupTotalsColumns<T extends { co: { id: string } }>(cols: T[]): T[] {
+  return cols.filter(c => !GROUP_TOTALS_EXCLUDED_COMPANIES.includes(c.co.id))
+}
+
 export function computeGroupKpis(cols: GroupKpiInput[], opts: GroupKpiOptions): GroupKpi[] {
   if (!cols.length) return []
   const sum = (f: (c: GroupKpiInput) => number) => cols.reduce((a, c) => a + (f(c) || 0), 0)
