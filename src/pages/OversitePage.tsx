@@ -66,7 +66,7 @@ import {
 } from '../components/oversite/OversightArrangeBar'
 import { OversiteLegend } from '../components/oversite/OversiteLegend'
 import { OversightGroupKpis } from '../components/oversite/OversightGroupKpis'
-import { computeGroupKpis, salesLyToDate, showGroupTotalsStrip, type GroupKpiId } from '../lib/oversightGroupKpis'
+import { computeGroupKpis, groupTotalsColumns, salesLyToDate, showGroupTotalsStrip, type GroupKpiId } from '../lib/oversightGroupKpis'
 import { OversightCompanyFilter } from '../components/oversite/OversightCompanyFilter'
 import { OversightCompanyJump, companyAnchorId } from '../components/oversite/OversightCompanyJump'
 import {
@@ -286,7 +286,7 @@ function ClassicOversitePage({
     salesMtd: 'salesMtd', ordersToday: 'ordersToday', ordersMtd: 'ordersMtd',
     openOrders: 'openOrders', debt: 'debt', returns: 'returns',
   }
-  const groupKpis = computeGroupKpis(companyColumns, {
+  const groupKpis = computeGroupKpis(groupTotalsColumns(companyColumns), {
     show: id => showModule(GROUP_KPI_MODULE[id]),
     includeDeliveryNotes: showModule('deliveryNotes'),
   })

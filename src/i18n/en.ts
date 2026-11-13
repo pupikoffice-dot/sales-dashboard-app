@@ -460,7 +460,7 @@ export const messages = {
 
   'oversite.jumpTo': 'Jump to company',
   'oversite.title': 'Oversight Dashboard',
-  'oversite.groupScope': 'Selected companies — totals',
+  'oversite.groupScope': 'Pupik Group Totals',
   'oversite.vsLastYear': 'Change vs last year, same days of the month',
   'oversite.companyFilter': 'Companies',
   'oversite.companyFilterSearch': 'Search companies…',
