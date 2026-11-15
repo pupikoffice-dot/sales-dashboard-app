@@ -47,6 +47,16 @@ export interface OrderRow {
   b8_days: number | null
   /** the B8 speed differs from the forecast by more than 40% */
   b8_flag: boolean
+  /** plain pieces sold: this month so far, last month, last 3 and last 12 full months */
+  sales_cur: number
+  sales_last: number
+  sales_3m: number
+  sales_12m: number
+  /** document numbers behind b2_qty / b6_qty (comma separated) */
+  b2_docs: string | null
+  b6_docs: string | null
+  /** the whole supplier is hidden */
+  sup_hidden: boolean
 }
 
 export interface ImportRow {
@@ -70,6 +80,9 @@ export interface ImportRow {
   b6_arrival: string | null
   b8_rate: number | null
   b8_flag: boolean
+  b2_docs: string | null
+  b6_docs: string | null
+  sup_hidden: boolean
 }
 
 export interface SupplierSetting {
@@ -93,8 +106,12 @@ async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T | nu
   return (data ?? null) as T | null
 }
 
-export async function fetchOrderReco(company: string, asUser?: string | null): Promise<OrderRow[] | null> {
-  return rpc<OrderRow[]>('get_order_recommendation', { p_company: company, p_as: asUser ?? null })
+export async function fetchOrderReco(company: string, showHidden: boolean, asUser?: string | null): Promise<OrderRow[] | null> {
+  return rpc<OrderRow[]>('get_order_recommendation', { p_company: company, p_show_hidden: showHidden, p_as: asUser ?? null })
+}
+
+export async function setSupplierHidden(company: string, supplier: string, hidden: boolean): Promise<boolean> {
+  return (await rpc<boolean>('set_order_supplier_hidden', { p_company: company, p_supplier: supplier, p_hidden: hidden })) === true
 }
 
 export async function fetchImportCover(company: string, showHidden: boolean, asUser?: string | null): Promise<ImportRow[] | null> {

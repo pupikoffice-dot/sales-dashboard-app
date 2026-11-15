@@ -77,12 +77,19 @@ function ClientRows({ rows: baseRows, company, empty, margins }: { rows: ItemCar
 }
 
 /** R&D → Item card: who buys one item, how fast it sells, how long the stock lasts. Needs the Purchase insights module. */
-export function ItemCardPage() {
+export function ItemCardPage({ embedded }: { embedded?: { co: LogicalCompany; sku: string } } = {}) {
   const { t, monthNames } = useLocale()
   const { access } = useDashboardAccess()
   const { isPreviewing, previewUser } = usePreview()
   const asUser = isPreviewing ? (previewUser?.id ?? null) : null
-  const [params, setParams] = useSearchParams()
+  const [urlParams, setUrlParams] = useSearchParams()
+  // Embedded (popup on another page): the company and item live in local state, not in the address bar.
+  const [emb, setEmb] = useState<{ co: LogicalCompany; sku: string } | null>(embedded ?? null)
+  const params = embedded ? new URLSearchParams(emb ? { co: emb.co, sku: emb.sku } : {}) : urlParams
+  const setParams = (p: Record<string, string>) => {
+    if (embedded) setEmb(e => ({ co: (p.co ?? e?.co ?? embedded.co) as LogicalCompany, sku: p.sku ?? '' }))
+    else setUrlParams(p)
+  }
   const companies = useMemo(() => COMPANY_ORDER.filter(c => access?.companies.includes(c)), [access?.companies])
   const paramCo = params.get('co') as LogicalCompany | null
   const company = (paramCo && companies.includes(paramCo) ? paramCo : companies[0]) as LogicalCompany | undefined

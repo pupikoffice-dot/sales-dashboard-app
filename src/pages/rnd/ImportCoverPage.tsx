@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { ItemCardModal, ItemLink } from '../../components/rnd/ItemCardModal'
 import { PlanTable, type PlanCol } from '../../components/rnd/PlanTable'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { useLocale } from '../../context/LocaleContext'
 import { usePreview } from '../../context/PreviewContext'
 import { fmtDate } from '../../lib/dates'
 import { fmt0 } from '../../lib/format'
-import { fetchImportCover, groupBySupplier, perMonth, setItemHidden, type ImportRow } from '../../lib/orderPlanning'
+import { fetchImportCover, groupBySupplier, perMonth, setItemHidden, setSupplierHidden, type ImportRow } from '../../lib/orderPlanning'
 import { downloadWorkbook } from '../../lib/spreadsheetExport'
 import type { LogicalCompany } from '../../types/dashboard'
 
@@ -15,9 +16,16 @@ const COMPANY_ORDER: LogicalCompany[] = ['pupik', 'mt', 'grow', 'gold']
 const n1 = (v: number | null | undefined) => (v === null || v === undefined ? '—' : (Math.round(v * 10) / 10).toLocaleString('en-US'))
 const dt = (v: string | null) => (v ? fmtDate(v) : '—')
 
+/** Months left: red and bold under 3. */
+function MonthsLeft({ v }: { v: number | null }) {
+  if (v === null) return <>—</>
+  return <span className={v < 3 ? 'pt-low' : undefined}>{n1(v)}</span>
+}
+
 interface SupplierRow {
   supplier: string
   internal: boolean
+  hiddenSupplier: boolean
   items: number
   inStock: number
   notInStock: number
@@ -33,6 +41,7 @@ function summarize(rows: ImportRow[]): SupplierRow[] {
     return {
       supplier: g.supplier,
       internal: g.internal,
+      hiddenSupplier: !!g.rows[0]?.sup_hidden,
       items: g.rows.length,
       inStock: g.rows.filter(r => r.stock > 0).length,
       notInStock: g.rows.filter(r => r.stock <= 0).length,
@@ -58,6 +67,7 @@ export function ImportCoverPage() {
   const [openAll, setOpenAll] = useState({ n: 0, open: false })
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [card, setCard] = useState<string | null>(null)
 
   const key = ['import-cover', company, showHidden, asUser]
   const cover = useQuery({
@@ -68,16 +78,33 @@ export function ImportCoverPage() {
   })
   const suppliers = useMemo(() => summarize(cover.data ?? []), [cover.data])
   const hiddenTotal = useMemo(() => (cover.data ?? []).filter(r => r.hidden).length, [cover.data])
+  const H = (id: string) => ({ label: t(`oc.h.${id}` as 'oc.sku'), title: t(`oc.t.${id}` as 'oc.sku') })
 
+  async function refreshAll() {
+    await qc.invalidateQueries({ queryKey: ['import-cover', company] })
+    await qc.invalidateQueries({ queryKey: ['order-reco', company] })
+    await qc.invalidateQueries({ queryKey: ['order-settings', company] })
+  }
   async function toggleHidden(r: ImportRow) {
     if (!company) return
     setBusy(r.sku)
     setError(null)
     try {
-      const ok = await setItemHidden(company, r.sku, !r.hidden)
-      if (!ok) setError(t('oc.saveFailed'))
-      await qc.invalidateQueries({ queryKey: ['import-cover', company] })
-      await qc.invalidateQueries({ queryKey: ['order-reco', company] })
+      if (!(await setItemHidden(company, r.sku, !r.hidden))) setError(t('oc.saveFailed'))
+      await refreshAll()
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setBusy(null)
+    }
+  }
+  async function toggleSupplier(s: SupplierRow) {
+    if (!company) return
+    setBusy(s.supplier)
+    setError(null)
+    try {
+      if (!(await setSupplierHidden(company, s.supplier, !s.hiddenSupplier))) setError(t('oc.saveFailed'))
+      await refreshAll()
     } catch (e) {
       setError((e as Error).message)
     } finally {
@@ -87,16 +114,16 @@ export function ImportCoverPage() {
 
   const itemCols: Array<PlanCol<ImportRow>> = useMemo(
     () => [
-      { key: 'sku', label: t('oc.sku'), get: r => r.sku, text: true, show: r => (<>{r.sku}{r.hidden ? <small style={{ opacity: 0.7 }}> · {t('oc.hiddenTag')}</small> : null}</>) },
-      { key: 'name', label: t('oc.name'), get: r => r.item_name, text: true },
-      { key: 'stock', label: t('oc.stock'), get: r => r.stock, show: r => fmt0(r.stock) },
-      { key: 'perMonth', label: t('oc.perMonth'), get: r => Math.round(perMonth(r.rate12) * 10) / 10, show: r => n1(perMonth(r.rate12)), title: t('oc.perDay') },
-      { key: 'left', label: t('oc.monthsLeft'), get: r => (r.stock > 0 ? r.months_left : 0), show: r => (r.stock > 0 ? n1(r.months_left) : '0') },
-      { key: 'b2', label: t('oc.b2'), get: r => r.b2_qty, show: r => fmt0(r.b2_qty), title: t('oc.b2Title') },
-      { key: 'b6', label: t('oc.onTheWay'), get: r => r.b6_qty, show: r => (r.b6_qty ? `${fmt0(r.b6_qty)} · ${dt(r.b6_arrival)}` : '0'), title: t('oc.b6Title') },
-      { key: 'b8', label: t('oc.b8'), get: r => (r.b8_rate === null ? null : Math.round(perMonth(r.b8_rate) * 10) / 10), show: r => (r.b8_rate === null ? '—' : `${n1(perMonth(r.b8_rate))}${r.b8_flag ? ' ⚠' : ''}`), title: t('oc.b8Title') },
-      { key: 'soldMonths', label: t('oc.soldMonths'), get: r => r.sold_months12 },
-      { key: 'last', label: t('oc.lastSold'), get: r => r.last_sold, show: r => dt(r.last_sold), text: true },
+      { key: 'sku', ...H('sku'), get: r => r.sku, text: true, show: r => (<><ItemLink sku={r.sku} onOpen={setCard} />{r.hidden ? <small style={{ opacity: 0.7 }}> · {t('oc.hiddenTag')}</small> : null}</>) },
+      { key: 'name', ...H('name'), get: r => r.item_name, text: true, cls: 'pt-name', show: r => <span title={r.item_name}>{r.item_name}</span> },
+      { key: 'stock', ...H('stock'), get: r => r.stock, show: r => fmt0(r.stock) },
+      { key: 'perMonth', ...H('perMonth'), get: r => Math.round(perMonth(r.rate12) * 10) / 10, show: r => n1(perMonth(r.rate12)) },
+      { key: 'left', ...H('left'), get: r => (r.stock > 0 ? r.months_left : 0), show: r => (r.stock > 0 ? <MonthsLeft v={r.months_left} /> : <span className="pt-low">0</span>) },
+      { key: 'b2', ...H('b2'), get: r => r.b2_qty, show: r => <span title={r.b2_docs ?? ''}>{fmt0(r.b2_qty)}</span> },
+      { key: 'b6', ...H('b6'), get: r => r.b6_qty, show: r => <span title={r.b6_docs ?? ''}>{r.b6_qty ? `${fmt0(r.b6_qty)} · ${dt(r.b6_arrival)}` : '0'}</span> },
+      { key: 'b8', ...H('b8'), get: r => (r.b8_rate === null ? null : Math.round(perMonth(r.b8_rate) * 10) / 10), show: r => (r.b8_rate === null ? '—' : `${n1(perMonth(r.b8_rate))}${r.b8_flag ? ' ⚠' : ''}`) },
+      { key: 'soldMonths', ...H('soldMonths'), get: r => r.sold_months12 },
+      { key: 'last', ...H('last'), get: r => r.last_sold, show: r => dt(r.last_sold), text: true },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [t],
@@ -104,24 +131,38 @@ export function ImportCoverPage() {
 
   const supCols: Array<PlanCol<SupplierRow>> = useMemo(
     () => [
-      { key: 'supplier', label: t('oc.supplier'), get: r => r.supplier, text: true, show: r => (<>{r.supplier} {r.internal ? <small>({t('oc.internalTag')})</small> : null}</>) },
-      { key: 'items', label: t('oc.items'), get: r => r.items },
-      { key: 'inStock', label: t('oc.inStock'), get: r => r.inStock },
-      { key: 'notInStock', label: t('oc.notInStock'), get: r => r.notInStock },
-      { key: 'minMonths', label: t('oc.monthsLeft'), get: r => r.minMonths, show: r => n1(r.minMonths) },
-      { key: 'hidden', label: t('oc.hiddenTag'), get: r => r.hidden },
+      {
+        key: 'supplier',
+        ...H('supplier'),
+        get: r => r.supplier,
+        text: true,
+        show: r => (<>{r.supplier} {r.internal ? <small>({t('oc.internalTag')})</small> : null}{r.hiddenSupplier ? <small> · {t('oc.hiddenTag')}</small> : null}</>),
+      },
+      { key: 'items', ...H('sItems'), get: r => r.items },
+      { key: 'inStock', ...H('iInStock'), get: r => r.inStock },
+      { key: 'notInStock', ...H('iNoStock'), get: r => r.notInStock },
+      { key: 'minMonths', ...H('iLeft'), get: r => r.minMonths, show: r => <MonthsLeft v={r.minMonths} /> },
+      { key: 'hidden', ...H('iHidden'), get: r => r.hidden },
     ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [t],
   )
 
+  const head = () => [t('oc.supplier'), t('oc.sku'), t('oc.name'), t('oc.stock'), t('oc.perMonth'), t('oc.monthsLeft'), t('oc.b2'), t('oc.onTheWay'), t('oc.b8'), t('oc.soldMonths'), t('oc.lastSold')]
+  const line = (r: ImportRow) => [
+    r.supplier, r.sku, r.item_name, String(Math.round(r.stock)), n1(perMonth(r.rate12)), r.stock > 0 ? n1(r.months_left) : '0',
+    String(Math.round(r.b2_qty)) + (r.b2_docs ? ` (${r.b2_docs})` : ''), String(Math.round(r.b6_qty)) + (r.b6_docs ? ` (${r.b6_docs})` : ''),
+    r.b8_rate === null ? '' : n1(perMonth(r.b8_rate)) + (r.b8_flag ? ' !' : ''), String(r.sold_months12), r.last_sold ?? '',
+  ]
+  const stamp = () => new Date().toISOString().slice(0, 10)
+
   function exportExcel() {
-    const rows: string[][] = [[t('oc.supplier'), t('oc.sku'), t('oc.name'), t('oc.stock'), t('oc.perMonth'), t('oc.monthsLeft'), t('oc.soldMonths'), t('oc.lastSold')]]
-    for (const s of suppliers) {
-      for (const r of s.rows.filter(x => !x.hidden)) {
-        rows.push([r.supplier, r.sku, r.item_name, String(Math.round(r.stock)), n1(perMonth(r.rate12)), r.stock > 0 ? n1(r.months_left) : '0', String(r.sold_months12), r.last_sold ?? ''])
-      }
-    }
-    downloadWorkbook([{ name: 'Import stock cover', rows }], `import_stock_cover_${company}_${new Date().toISOString().slice(0, 10)}.xlsx`)
+    const rows: string[][] = [head()]
+    for (const s of suppliers) for (const r of s.rows.filter(x => !x.hidden)) rows.push(line(r))
+    downloadWorkbook([{ name: 'Import stock cover', rows }], `import_stock_cover_${company}_${stamp()}.xlsx`)
+  }
+  function exportSupplier(name: string, visible: ImportRow[]) {
+    downloadWorkbook([{ name: name.slice(0, 28) || 'Supplier', rows: [head(), ...visible.map(line)] }], `import_${name.replace(/[^\w-]+/g, '_')}_${company}_${stamp()}.xlsx`)
   }
 
   if (!company) return <p className="status-msg">{t('oc.noData')}</p>
@@ -129,7 +170,7 @@ export function ImportCoverPage() {
   return (
     <div className="panel" style={{ padding: 16 }}>
       <h2 style={{ marginTop: 0 }}>{t('oc.importTitle')}</h2>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+      <div className="pt-bar">
         <label>
           {t('oc.company')}{' '}
           <select value={company} onChange={e => setPicked(e.target.value as LogicalCompany)}>
@@ -140,16 +181,14 @@ export function ImportCoverPage() {
             ))}
           </select>
         </label>
-        <label>
-          <input type="checkbox" checked={editing} onChange={e => setEditing(e.target.checked)} /> {t('oc.edit')}
-        </label>
-        <label>
-          <input type="checkbox" checked={showHidden} onChange={e => setShowHidden(e.target.checked)} /> {t('oc.showHidden')}
-          {showHidden && hiddenTotal ? <small> ({t('oc.hiddenCount', { n: hiddenTotal })})</small> : null}
-        </label>
-        <button type="button" onClick={() => setOpenAll(o => ({ n: o.n + 1, open: true }))}>{t('oc.expandAll')}</button>
-        <button type="button" onClick={() => setOpenAll(o => ({ n: o.n + 1, open: false }))}>{t('oc.collapseAll')}</button>
-        <button type="button" onClick={exportExcel} disabled={!suppliers.length}>{t('oc.export')}</button>
+        <button type="button" className="btn" onClick={() => setOpenAll(o => ({ n: o.n + 1, open: true }))}>{t('oc.expandAll')}</button>
+        <button type="button" className="btn" onClick={() => setOpenAll(o => ({ n: o.n + 1, open: false }))}>{t('oc.collapseAll')}</button>
+        <button type="button" className={`btn${editing ? ' active' : ''}`} onClick={() => setEditing(v => !v)} aria-pressed={editing}>{t('oc.edit')}</button>
+        <button type="button" className={`btn${showHidden ? ' active' : ''}`} onClick={() => setShowHidden(v => !v)} aria-pressed={showHidden}>
+          {t('oc.showHidden')}
+          {showHidden && hiddenTotal ? ` (${hiddenTotal})` : ''}
+        </button>
+        <button type="button" className="btn" onClick={exportExcel} disabled={!suppliers.length}>{t('oc.export')}</button>
       </div>
       <p style={{ opacity: 0.8, maxWidth: 900 }}>{t('oc.importIntro')}</p>
       {cover.isLoading ? <p className="status-msg">{t('oc.loading')}</p> : null}
@@ -164,6 +203,25 @@ export function ImportCoverPage() {
           initialSort={{ key: 'supplier', dir: 'asc' }}
           filterPlaceholder={t('oc.filter')}
           openAll={openAll}
+          rowStyle={s => (s.hiddenSupplier ? { opacity: 0.5 } : undefined)}
+          lead={
+            editing
+              ? {
+                  header: t('oc.hideCol'),
+                  title: t('oc.hideSupplier'),
+                  cell: s => (
+                    <input
+                      type="checkbox"
+                      checked={s.hiddenSupplier}
+                      disabled={busy === s.supplier}
+                      title={t('oc.hideSupplier')}
+                      aria-label={`${t('oc.hideCol')} ${s.supplier}`}
+                      onChange={() => void toggleSupplier(s)}
+                    />
+                  ),
+                }
+              : undefined
+          }
           expand={s => (
             <PlanTable
               rows={s.rows}
@@ -171,17 +229,21 @@ export function ImportCoverPage() {
               rowKey={r => r.sku}
               initialSort={{ key: 'left', dir: 'asc' }}
               filterPlaceholder={t('oc.filter')}
+              exportLabel={t('oc.exportShort')}
+              onExport={visible => exportSupplier(s.supplier, visible)}
               rowStyle={r => (r.hidden ? { opacity: 0.5 } : r.stock <= 0 ? { background: 'rgba(127, 127, 127, 0.12)' } : undefined)}
               lead={
                 editing
                   ? {
-                      header: t('oc.hide'),
+                      header: t('oc.hideCol'),
+                      title: t('oc.hideItem'),
                       cell: r => (
                         <input
                           type="checkbox"
                           checked={r.hidden}
-                          disabled={busy === r.sku}
-                          aria-label={`${t('oc.hide')} ${r.sku}`}
+                          disabled={busy === r.sku || r.sup_hidden}
+                          title={t('oc.hideItem')}
+                          aria-label={`${t('oc.hideCol')} ${r.sku}`}
                           onChange={() => void toggleHidden(r)}
                         />
                       ),
@@ -192,6 +254,7 @@ export function ImportCoverPage() {
           )}
         />
       ) : null}
+      {card ? <ItemCardModal company={company} sku={card} closeLabel={t('oc.close')} onClose={() => setCard(null)} /> : null}
     </div>
   )
 }

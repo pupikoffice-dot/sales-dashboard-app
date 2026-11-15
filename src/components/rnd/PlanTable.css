@@ -1,0 +1,42 @@
+/* Order recommendation / Import stock cover tables: compact so the columns fit a PC screen without sideways scrolling. */
+.plan-table table {
+  width: 100%;
+  font-size: 0.78rem;
+}
+.plan-table th,
+.plan-table td {
+  padding: 3px 5px;
+  white-space: nowrap;
+}
+.plan-table td.pt-name {
+  max-width: 14vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.plan-table .pt-filter {
+  width: 100%;
+  min-width: 34px;
+  box-sizing: border-box;
+  font-size: 0.75rem;
+  padding: 1px 3px;
+}
+.plan-table .pt-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--acc, #2563eb);
+  cursor: pointer;
+  text-decoration: underline;
+}
+.plan-table .pt-low {
+  color: #d32f2f;
+  font-weight: 700;
+}
+.pt-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
