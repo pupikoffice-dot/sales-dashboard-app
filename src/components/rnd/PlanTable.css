@@ -40,3 +40,58 @@
   align-items: center;
   margin-bottom: 8px;
 }
+
+/* One header row: title, company, then coloured bordered buttons */
+.pt-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.pt-head h2 {
+  margin: 0 8px 0 0;
+  font-size: 1.1rem;
+}
+[dir='rtl'] .pt-head h2 {
+  margin: 0 0 0 8px;
+}
+.pt-head .pt-co {
+  font-size: 0.85rem;
+}
+.rb {
+  border: 2px solid;
+  border-radius: 7px;
+  padding: 4px 11px;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+  cursor: pointer;
+  color: #fff;
+}
+.rb:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.rb:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+.rb.on {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px currentColor;
+  filter: brightness(0.82);
+}
+.rb-tab { background: #1565c0; border-color: #0d47a1; }
+.rb-open { background: #2e7d32; border-color: #1b5e20; }
+.rb-close { background: #ef6c00; border-color: #bf360c; }
+.rb-edit { background: #7b1fa2; border-color: #4a148c; }
+.rb-hidden { background: #546e7a; border-color: #263238; }
+.rb-excel { background: #00838f; border-color: #006064; }
+/* the selected tab is drawn as pressed: darker with a light ring */
+.rb-tab:not(.on) { background: #e3eefc; color: #0d47a1; }
+.pt-err {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}

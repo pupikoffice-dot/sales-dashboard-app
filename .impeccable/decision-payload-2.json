@@ -1,0 +1,115 @@
+{
+  "title": "A sleeker dark-first look (with a light scheme), to join the skin menu",
+  "question": "Round two: sleek and dark-first. Each look also has a light scheme. Pick one and I build it as a new skin in the Look menu, in BETA only.",
+  "options": [
+    {
+      "id": "assigned",
+      "kind": "assigned",
+      "label": "Edge-lit Glass Shelf",
+      "kicker": "THE ROLL",
+      "lineage": "back-lit glass retail shelving",
+      "thesis": "Dark glass panels, each lit from its top edge by one hairline of its company's colour.",
+      "palette": ["#07090d", "#0e131b", "#7aa2ff", "#4fd1c5", "#f2f5fa"],
+      "materials": ["smoked glass panels", "edge light", "hairline seams"],
+      "viewport": "Slim hairline rail, near-black ground, two glass panels with a coloured top edge fading down. Light scheme: frosted white glass on pale grey, ink hairlines, the same coloured edge.",
+      "risk": "Glass can turn muddy if the panel fills are not held very quiet; contrast must stay high.",
+      "raised": [
+        { "from": "brand-identity-canon-saville-catalog-sleeve", "raise": "Only the selected company and row show full colour; everything else rests in white hairlines on black." },
+        { "from": "operate-c-emission-line-rail", "raise": "Data freshness is drawn as line form, not colour: solid when live, dashed while pending, half-height when stale." },
+        { "from": "rw-timetable-slide-rack", "raise": "Rank is carried by weight and case on a tight type scale, not by extra colours or boxes." },
+        { "from": "vernacular-ephemera-jet-age-ticket-wallet", "raise": "A returned or cancelled line is stamped and kept in the list, never removed." }
+      ],
+      "html": ".impeccable/mocks/decision/assigned.html"
+    },
+    {
+      "id": "model-pick",
+      "kind": "pick",
+      "label": "White City at Night",
+      "kicker": "IMPECCABLE’S PICK",
+      "lineage": "Tel Aviv Bauhaus facades under street lamps",
+      "thesis": "A cool blue-black city with one sodium-amber lamp marking today wherever it appears.",
+      "palette": ["#0a0f1a", "#111827", "#5ad1e6", "#ffb454", "#e6edf7"],
+      "materials": ["blue-black ground", "thin cyan rules", "one amber lamp"],
+      "viewport": "Deep blue-black shell with balcony-rail hairlines in panel headers; geometric type; today's bar, row and figure are the amber lamp. Light scheme: white-washed facade ground, slate ink, amber lamp kept.",
+      "risk": "Dark with a bright accent is the common look; it holds only if amber stays reserved for today.",
+      "html": ".impeccable/mocks/decision/model-pick.html"
+    },
+    {
+      "id": "challenger-dark-console",
+      "kind": "challenger",
+      "catalogId": "digital-design-canon-dark-first-developer-console",
+      "label": "Graphite Console",
+      "verdict": "competitive",
+      "lineage": "dark-first working consoles",
+      "thesis": "Graphite panels split by one-pixel seams, with state-only accent colours and monospaced figures.",
+      "palette": ["#0f1115", "#15181d", "#7cb7ff", "#7ee2a8", "#f5c26b"],
+      "materials": ["graphite ground", "1px seams", "mono figures"],
+      "viewport": "Tiled panels that persist while pages change; compact sans labels, monospaced numbers, one accent per state. Light scheme: warm-white panels, grey seams, the same accents darkened.",
+      "case": "Holds clarity: it is the proven way to make a dense dark screen scannable. Identification is thin, since it speaks to developers more than to a trading team.",
+      "risk": "Reads as a developer tool, so it can feel cold and generic here.",
+      "html": ".impeccable/mocks/decision/challenger-dark-console.html"
+    },
+    {
+      "id": "challenger-saville",
+      "kind": "challenger",
+      "catalogId": "brand-identity-canon-saville-catalog-sleeve",
+      "label": "Catalog Sleeve",
+      "verdict": "declined",
+      "lineage": "factory records catalog identity",
+      "palette": ["#000000", "#ffffff", "#b3b3b3"],
+      "materials": ["matte black", "white hairline plot", "coded colour strip"],
+      "case": "Fuses poorly: replacing names with coded colour strips hides what the numbers belong to.",
+      "kept": "Only the selected item decodes to full colour."
+    },
+    {
+      "id": "challenger-emission-rail",
+      "kind": "challenger",
+      "catalogId": "operate-c-emission-line-rail",
+      "label": "Emission Line Rail",
+      "verdict": "declined",
+      "lineage": "spectrogram plates",
+      "palette": ["#1b1c1e", "#d9d4c7", "#ffd23f"],
+      "materials": ["charcoal continuum", "hairline emission lines"],
+      "case": "Fuses poorly: colour only as hairlines would flatten charts people read in colour.",
+      "kept": "State carried in line form: solid, dashed, half-height."
+    },
+    {
+      "id": "challenger-timetable",
+      "kind": "challenger",
+      "catalogId": "rw-timetable-slide-rack",
+      "label": "Timetable Slide Rack",
+      "verdict": "declined",
+      "lineage": "pocket airline timetables",
+      "palette": ["#c79a2b", "#2c3a46", "#b33a1f", "#2e6b45"],
+      "materials": ["goldenrod bed", "tinted glass slides"],
+      "case": "Fuses poorly: a raked goldenrod rack is the opposite of sleek and hides the grid.",
+      "kept": "Rank carried by weight and case on one type scale."
+    },
+    {
+      "id": "challenger-ticket-wallet",
+      "kind": "challenger",
+      "catalogId": "vernacular-ephemera-jet-age-ticket-wallet",
+      "label": "Ticket Wallet",
+      "verdict": "declined",
+      "lineage": "jet-age airline ticket wallets",
+      "palette": ["#14213d", "#d62828", "#ffffff", "#5b3a8a"],
+      "materials": ["coupon stock", "carbon figures", "VOID stamp"],
+      "case": "Fuses poorly: tear-off coupons are a costume of paper on a working screen.",
+      "kept": "Cancelled lines are stamped and kept, never removed."
+    }
+  ],
+  "reroll": { "registers": ["safer", "bolder"] },
+  "buildPath": { "value": "code" },
+  "canon": true,
+  "canonCard": {
+    "kind": "canon",
+    "label": "The category standard (dark)",
+    "thesis": "A clean dark analytics dashboard: slate cards, one blue accent.",
+    "palette": ["#0b1220", "#e5ecf6", "#3b82f6", "#111a2e"],
+    "materials": ["slate cards", "deep navy ground", "one blue accent"],
+    "viewport": "Slate sidebar, KPI cards on a deep navy ground, standard charts and tables. Light scheme: white cards on light grey.",
+    "risk": "Indistinguishable from the competition by design.",
+    "html": ".impeccable/mocks/decision/canon.html"
+  },
+  "steer": true
+}

@@ -29,7 +29,7 @@ import type { LogicalCompany } from '../../types/dashboard'
 import { ReturnsDetail } from '../../components/rnd/ReturnsDetail'
 import { fmtDate } from '../../lib/dates'
 
-const COMPANY_ORDER: LogicalCompany[] = ['pupik', 'mt', 'grow', 'gold']
+const COMPANY_ORDER: LogicalCompany[] = ['pupik', 'mt', 'gold']
 
 function ClientRows({ rows: baseRows, company, empty, margins }: { rows: ItemCardClient[]; company: string; empty: string; margins?: Array<CostCover & { id: string }> | null }) {
   const { t } = useLocale()

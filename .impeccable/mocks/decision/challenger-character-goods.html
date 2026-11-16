@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Character Roster</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0}
+body{width:1440px;height:900px;overflow:hidden;background:#fff8fb;color:#2b2a3d;font:700 14px/1.35 'Nunito',sans-serif;display:grid;grid-template-columns:230px 1fr;grid-template-rows:60px 1fr}
+header{grid-column:1/3;background:#fff;border-bottom:3px solid #2b2a3d;display:flex;align-items:center;gap:10px;padding:0 24px}
+header b{font:700 24px 'Fredoka',sans-serif}
+.bub{border:3px solid #2b2a3d;border-radius:999px;padding:3px 14px;font-size:13px;background:#fff}
+.bub.on{background:#fff0b0}.sp{flex:1}
+nav{background:#cfe6ff;border-right:3px solid #2b2a3d;padding:16px 12px;display:flex;flex-direction:column;gap:8px}
+nav small{font:600 13px 'Fredoka',sans-serif;margin:10px 6px 0;letter-spacing:.04em}
+nav a{background:#fff;border:3px solid #2b2a3d;border-radius:16px;padding:7px 14px;font:600 15px 'Fredoka',sans-serif}
+nav a.on{background:#ffd9e4}
+main{padding:18px 26px;overflow:hidden}
+.top{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.top h1{font:700 32px 'Fredoka',sans-serif}
+.date{margin-left:auto;background:#d5f2cf;border:3px solid #2b2a3d;border-radius:999px;padding:3px 14px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.co{border:3px solid #2b2a3d;border-radius:24px;overflow:hidden;background:#fff}
+.rib{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:3px solid #2b2a3d}
+.rib h2{font:700 24px 'Fredoka',sans-serif}
+.rib .big{margin-left:auto;font:700 34px 'Fredoka',sans-serif}
+.rib small{display:block;font-size:12px;font-weight:700}
+.pk{background:#ffd9e4}.mk{background:#cfe6ff}
+.body{padding:14px 18px}
+h3{font:600 14px 'Fredoka',sans-serif;letter-spacing:.04em;margin:0 0 8px}
+.roster{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cell{border:3px solid #2b2a3d;border-radius:18px;padding:8px 12px;position:relative}
+.cell .rk{position:absolute;top:-3px;right:-3px;background:#2b2a3d;color:#fff;border-radius:0 15px 0 12px;font:600 12px 'Fredoka',sans-serif;padding:2px 9px}
+.cell b{font:600 18px 'Fredoka',sans-serif;display:block}
+.cell span{font-size:12px}
+.cell strong{display:block;font:700 22px 'Fredoka',sans-serif;margin-top:2px}
+.bar{height:9px;border:2px solid #2b2a3d;border-radius:99px;background:#fff;margin-top:4px;overflow:hidden}.bar i{display:block;height:100%}
+.bars{display:flex;align-items:flex-end;gap:9px;height:96px;margin-top:14px;border-bottom:3px solid #2b2a3d}
+.bars i{flex:1;display:block;border:3px solid #2b2a3d;border-bottom:0;border-radius:10px 10px 0 0}
+.lab{display:flex;gap:9px;font-size:11px;margin-top:3px}.lab span{flex:1;text-align:center}
+
+/* dark mode */
+body{background:#1d1b2e;color:#f4f1ff}
+header{background:#26233b;border-bottom-color:#f4efff}header b{color:#f4f1ff}
+.bub{background:#26233b;border-color:#f4efff;color:#f4f1ff}.bub.on{background:#fff0b0;color:#2b2a3d}
+nav{background:#2b2748;border-right-color:#f4efff}nav small{color:#f4f1ff}
+nav a{background:#1d1b2e;border-color:#f4efff;color:#f4f1ff}nav a.on{background:#ffd9e4;color:#2b2a3d}
+.date{color:#2b2a3d;border-color:#f4efff}
+.co{background:#26233b;border-color:#f4efff}
+.rib{border-bottom-color:#f4efff;color:#2b2a3d}
+.cell{border-color:#f4efff;color:#2b2a3d}.cell .rk{background:#f4efff;color:#2b2a3d}
+h3{color:#f4f1ff}
+.bars{border-bottom-color:#f4efff}.bars i{border-color:#f4efff}
+.lab{color:#cfc9ea}
+</style></head><body>
+<header><b>Sales Dashboard</b><span class="sp"></span><span class="bub">Companies</span><span class="bub on">Classic</span><span class="bub">Sales Manager</span><span class="bub on">EN</span><span class="bub">עב</span><span class="bub">Refresh</span></header>
+<nav><small>Navigation</small><a class="on">Oversight</a><a>Sales</a><a>Orders MTD</a><a>Open Orders</a><a>Returns</a><a>Debt</a><small>Operations</small><a>Deliveries</a><a>Stock</a><a>Stock by brand</a><a>Items</a><small>R&amp;D</small><a>Monthly data</a></nav>
+<main>
+<div class="top"><h1>Oversight</h1><span class="date">Tue 20 Oct 2026 · updated 11:47</span></div>
+<div class="cols">
+<section class="co"><div class="rib pk"><h2>Pupik</h2><span><small>Orders today · 6 clients · 52 qty</small></span><span class="big">9,325</span></div>
+<div class="body"><h3>Agents, ranked by cash</h3>
+<div class="roster">
+<div class="cell" style="background:#ffd9e4"><span class="rk">1</span><b>Agent 24</b><span>3 clients · 36 qty</span><strong>6,489</strong><div class="bar"><i style="width:100%;background:#ff7aa2"></i></div></div>
+<div class="cell" style="background:#fff0b0"><span class="rk">2</span><b>Agent 27</b><span>1 client · 12 qty</span><strong>1,500</strong><div class="bar"><i style="width:23%;background:#f5b700"></i></div></div>
+<div class="cell" style="background:#d5f2cf"><span class="rk">3</span><b>Agent 25</b><span>1 client · 2 qty</span><strong>1,306</strong><div class="bar"><i style="width:20%;background:#3cb371"></i></div></div>
+<div class="cell" style="background:#cfe6ff"><span class="rk">4</span><b>Agent 38</b><span>1 client · 2 qty</span><strong>30</strong><div class="bar"><i style="width:1%;background:#3a86ff"></i></div></div></div>
+<h3 style="margin-top:14px">Last 7 workdays</h3>
+<div class="bars"><i style="height:82px;background:#ff7aa2"></i><i style="height:60px;background:#ff7aa2"></i><i style="height:29px;background:#ff7aa2"></i><i style="height:30px;background:#ff7aa2"></i><i style="height:60px;background:#ff7aa2"></i><i style="height:88px;background:#ff7aa2"></i><i style="height:12px;background:#fff0b0"></i></div>
+<div class="lab"><span>28/09</span><span>29/09</span><span>30/09</span><span>01/10</span><span>04/10</span><span>05/10</span><span>Today</span></div></div></section>
+<section class="co"><div class="rib mk"><h2>Monkeytime</h2><span><small>Orders today · 2 clients · 45 qty</small></span><span class="big">2,424</span></div>
+<div class="body"><h3>Agents, ranked by cash</h3>
+<div class="roster">
+<div class="cell" style="background:#cfe6ff"><span class="rk">1</span><b>Agent 55</b><span>1 client · 29 qty</span><strong>2,209</strong><div class="bar"><i style="width:100%;background:#3a86ff"></i></div></div>
+<div class="cell" style="background:#fff0b0"><span class="rk">2</span><b>Agent 60</b><span>1 client · 16 qty</span><strong>215</strong><div class="bar"><i style="width:10%;background:#f5b700"></i></div></div></div>
+<h3 style="margin-top:92px">Last 7 workdays</h3>
+<div class="bars"><i style="height:2px;background:#3a86ff"></i><i style="height:38px;background:#3a86ff"></i><i style="height:80px;background:#3a86ff"></i><i style="height:2px;background:#3a86ff"></i><i style="height:88px;background:#3a86ff"></i><i style="height:32px;background:#3a86ff"></i><i style="height:10px;background:#fff0b0"></i></div>
+<div class="lab"><span>28/09</span><span>29/09</span><span>30/09</span><span>01/10</span><span>04/10</span><span>05/10</span><span>Today</span></div></div></section>
+</div></main></body></html>

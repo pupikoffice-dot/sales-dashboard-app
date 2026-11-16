@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ItemCardModal, ItemLink } from '../../components/rnd/ItemCardModal'
+import { PlanHeader, type HeaderBtn } from '../../components/rnd/PlanHeader'
 import { PlanTable, type PlanCol } from '../../components/rnd/PlanTable'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { useLocale } from '../../context/LocaleContext'
@@ -11,7 +12,7 @@ import { fetchImportCover, groupBySupplier, perMonth, setItemHidden, setSupplier
 import { downloadWorkbook } from '../../lib/spreadsheetExport'
 import type { LogicalCompany } from '../../types/dashboard'
 
-const COMPANY_ORDER: LogicalCompany[] = ['pupik', 'mt', 'grow', 'gold']
+const COMPANY_ORDER: LogicalCompany[] = ['pupik', 'mt', 'gold']
 
 const n1 = (v: number | null | undefined) => (v === null || v === undefined ? '—' : (Math.round(v * 10) / 10).toLocaleString('en-US'))
 const dt = (v: string | null) => (v ? fmtDate(v) : '—')
@@ -85,31 +86,44 @@ export function ImportCoverPage() {
     await qc.invalidateQueries({ queryKey: ['order-reco', company] })
     await qc.invalidateQueries({ queryKey: ['order-settings', company] })
   }
-  async function toggleHidden(r: ImportRow) {
+  /** Hide / un-hide: the table changes at once (no waiting for the engine), the save runs behind it, and a failure puts it back. */
+  async function applyHide(busyKey: string, change: (rows: ImportRow[]) => ImportRow[], save: () => Promise<boolean>) {
     if (!company) return
-    setBusy(r.sku)
+    const before = qc.getQueryData<ImportRow[] | null>(key)
+    setBusy(busyKey)
     setError(null)
+    qc.setQueryData<ImportRow[] | null>(key, old => (old ? change(old) : old))
     try {
-      if (!(await setItemHidden(company, r.sku, !r.hidden))) setError(t('oc.saveFailed'))
-      await refreshAll()
+      if (!(await save())) {
+        qc.setQueryData(key, before)
+        setError(t('oc.saveFailed'))
+      }
     } catch (e) {
+      qc.setQueryData(key, before)
       setError((e as Error).message)
     } finally {
       setBusy(null)
     }
+    void refreshAll()
   }
-  async function toggleSupplier(s: SupplierRow) {
+  function toggleHidden(r: ImportRow) {
     if (!company) return
-    setBusy(s.supplier)
-    setError(null)
-    try {
-      if (!(await setSupplierHidden(company, s.supplier, !s.hiddenSupplier))) setError(t('oc.saveFailed'))
-      await refreshAll()
-    } catch (e) {
-      setError((e as Error).message)
-    } finally {
-      setBusy(null)
-    }
+    const nh = !r.hidden
+    void applyHide(
+      r.sku,
+      rows => rows.flatMap(x => (x.sku !== r.sku ? [x] : !nh || showHidden ? [{ ...x, hidden: nh }] : [])),
+      () => setItemHidden(company, r.sku, nh),
+    )
+  }
+  function toggleSupplier(s: SupplierRow) {
+    if (!company) return
+    const nh = !s.hiddenSupplier
+    const skus = new Set(s.rows.map(x => x.sku))
+    void applyHide(
+      s.supplier,
+      rows => rows.flatMap(x => (!skus.has(x.sku) ? [x] : !nh || showHidden ? [{ ...x, sup_hidden: nh, hidden: nh }] : [])),
+      () => setSupplierHidden(company, s.supplier, nh),
+    )
   }
 
   const itemCols: Array<PlanCol<ImportRow>> = useMemo(
@@ -167,33 +181,21 @@ export function ImportCoverPage() {
 
   if (!company) return <p className="status-msg">{t('oc.noData')}</p>
 
+  const buttons: HeaderBtn[] = [
+    { key: 'open', label: t('oc.expandAll'), kind: 'open', onClick: () => setOpenAll(o => ({ n: o.n + 1, open: true })) },
+    { key: 'close', label: t('oc.collapseAll'), kind: 'close', onClick: () => setOpenAll(o => ({ n: o.n + 1, open: false })) },
+    { key: 'edit', label: t('oc.edit'), kind: 'edit', on: editing, onClick: () => setEditing(v => !v) },
+    { key: 'hid', label: `${t('oc.showHidden')}${showHidden && hiddenTotal ? ` (${hiddenTotal})` : ''}`, kind: 'hidden', on: showHidden, onClick: () => setShowHidden(v => !v) },
+    { key: 'xl', label: t('oc.exportShort'), kind: 'excel', disabled: !suppliers.length, title: t('oc.export'), onClick: exportExcel },
+  ]
+
   return (
     <div className="panel" style={{ padding: 16 }}>
-      <h2 style={{ marginTop: 0 }}>{t('oc.importTitle')}</h2>
-      <div className="pt-bar">
-        <label>
-          {t('oc.company')}{' '}
-          <select value={company} onChange={e => setPicked(e.target.value as LogicalCompany)}>
-            {companies.map(c => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button type="button" className="btn" onClick={() => setOpenAll(o => ({ n: o.n + 1, open: true }))}>{t('oc.expandAll')}</button>
-        <button type="button" className="btn" onClick={() => setOpenAll(o => ({ n: o.n + 1, open: false }))}>{t('oc.collapseAll')}</button>
-        <button type="button" className={`btn${editing ? ' active' : ''}`} onClick={() => setEditing(v => !v)} aria-pressed={editing}>{t('oc.edit')}</button>
-        <button type="button" className={`btn${showHidden ? ' active' : ''}`} onClick={() => setShowHidden(v => !v)} aria-pressed={showHidden}>
-          {t('oc.showHidden')}
-          {showHidden && hiddenTotal ? ` (${hiddenTotal})` : ''}
-        </button>
-        <button type="button" className="btn" onClick={exportExcel} disabled={!suppliers.length}>{t('oc.export')}</button>
-      </div>
+      <PlanHeader title={t('oc.importTitle')} companyLabelText={t('oc.company')} companies={companies} company={company} onCompany={setPicked} buttons={buttons} />
       <p style={{ opacity: 0.8, maxWidth: 900 }}>{t('oc.importIntro')}</p>
       {cover.isLoading ? <p className="status-msg">{t('oc.loading')}</p> : null}
       {cover.error ? <p className="status-msg error">{(cover.error as Error).message}</p> : null}
-      {error ? <p className="status-msg error">{error}</p> : null}
+      {error ? <p className="status-msg error pt-err">{error}</p> : null}
       {cover.data === null ? <p className="status-msg">{t('oc.noData')}</p> : null}
       {suppliers.length ? (
         <PlanTable
@@ -216,7 +218,7 @@ export function ImportCoverPage() {
                       disabled={busy === s.supplier}
                       title={t('oc.hideSupplier')}
                       aria-label={`${t('oc.hideCol')} ${s.supplier}`}
-                      onChange={() => void toggleSupplier(s)}
+                      onChange={() => toggleSupplier(s)}
                     />
                   ),
                 }
@@ -244,7 +246,7 @@ export function ImportCoverPage() {
                           disabled={busy === r.sku || r.sup_hidden}
                           title={t('oc.hideItem')}
                           aria-label={`${t('oc.hideCol')} ${r.sku}`}
-                          onChange={() => void toggleHidden(r)}
+                          onChange={() => toggleHidden(r)}
                         />
                       ),
                     }
