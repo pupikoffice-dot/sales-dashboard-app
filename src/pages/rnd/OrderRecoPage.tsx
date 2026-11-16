@@ -163,6 +163,7 @@ export function OrderRecoPage() {
       { key: 'sLast', ...H('sLast'), get: r => r.sales_last, show: r => fmt0(r.sales_last) },
       { key: 's3', ...H('s3'), get: r => r.sales_3m, show: r => fmt0(r.sales_3m) },
       { key: 's12', ...H('s12'), get: r => r.sales_12m, show: r => fmt0(r.sales_12m) },
+      { key: 'base', ...H('base'), get: r => Math.round(perMonth(r.rate12) * 10) / 10, show: r => n1(perMonth(r.rate12)) },
       { key: 'perMonth', ...H('fc'), get: r => Math.round(perMonth(r.forecast_rate) * 10) / 10, show: r => n1(perMonth(r.forecast_rate)) },
       { key: 'trend', ...H('trend'), get: r => Math.round(r.trend * 100) / 100, show: r => r.trend.toFixed(2) },
       { key: 'demand', ...H('dem'), get: r => Math.round(r.demand_cover), show: r => fmt0(r.demand_cover) },
@@ -214,13 +215,13 @@ export function OrderRecoPage() {
   const itemHead = () => [
     t('oc.supplier'), t('oc.h.sku' as 'oc.sku'), t('oc.name'), t('oc.status'), t('oc.stock'), t('oc.t.left' as 'oc.sku').split(':')[0],
     t('oc.t.sCur' as 'oc.sku').split(':')[0], t('oc.t.sLast' as 'oc.sku').split(':')[0], t('oc.t.s3' as 'oc.sku').split(':')[0], t('oc.t.s12' as 'oc.sku').split(':')[0],
-    t('oc.perMonth'), t('oc.trend'), t('oc.demandCover'), t('oc.atArrival'), t('oc.b2'), t('oc.onTheWay'), t('oc.b8'), t('oc.orderQty'),
+    t('oc.h.base' as 'oc.sku'), t('oc.perMonth'), t('oc.trend'), t('oc.demandCover'), t('oc.atArrival'), t('oc.b2'), t('oc.onTheWay'), t('oc.b8'), t('oc.orderQty'),
     t('oc.runOut'), t('oc.orderBy'), t('oc.lastSold'),
   ]
   const itemLine = (r: OrderRow) => [
     r.supplier, r.sku, r.item_name, statusLabel(r.status), String(Math.round(r.stock)), r.months_left === null ? '' : n1(r.months_left),
     String(Math.round(r.sales_cur)), String(Math.round(r.sales_last)), String(Math.round(r.sales_3m)), String(Math.round(r.sales_12m)),
-    n1(perMonth(r.forecast_rate)), r.trend.toFixed(2), String(Math.round(r.demand_cover)), String(Math.round(r.stock_at_arrival)),
+    n1(perMonth(r.rate12)), n1(perMonth(r.forecast_rate)), r.trend.toFixed(2), String(Math.round(r.demand_cover)), String(Math.round(r.stock_at_arrival)),
     String(Math.round(r.b2_qty)) + (r.b2_docs ? ` (${r.b2_docs})` : ''), String(Math.round(r.b6_qty)) + (r.b6_docs ? ` (${r.b6_docs})` : ''),
     r.b8_rate === null ? '' : n1(perMonth(r.b8_rate)) + (r.b8_flag ? ' !' : ''), String(r.order_qty),
     r.run_out ?? '', r.order_by ?? '', r.last_sold ?? '',
