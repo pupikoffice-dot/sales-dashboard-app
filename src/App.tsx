@@ -21,6 +21,8 @@ const YearDetailPage = lazy(() => import('./pages/rnd/YearDetailPage').then(m =>
 const ClientCardPage = lazy(() => import('./pages/rnd/ClientCardPage').then(m => ({ default: m.ClientCardPage })))
 const ItemCardPage = lazy(() => import('./pages/rnd/ItemCardPage').then(m => ({ default: m.ItemCardPage })))
 const StockHistoryPage = lazy(() => import('./pages/StockHistoryPage').then(m => ({ default: m.StockHistoryPage })))
+const OrderRecoPage = lazy(() => import('./pages/rnd/OrderRecoPage').then(m => ({ default: m.OrderRecoPage })))
+const ImportCoverPage = lazy(() => import('./pages/rnd/ImportCoverPage').then(m => ({ default: m.ImportCoverPage })))
 const MonthlyDataPage = lazy(() => import('./pages/rnd/MonthlyDataPage').then(m => ({ default: m.MonthlyDataPage })))
 const ItemsIndexPage = lazy(() => import('./pages/ItemsIndexPage').then(m => ({ default: m.ItemsIndexPage })))
 const DeliveriesPage = lazy(() => import('./pages/operations/DeliveriesPage').then(m => ({ default: m.DeliveriesPage })))
@@ -67,6 +69,8 @@ function ProtectedApp() {
         <Route path="rnd/year" element={<RequireModule moduleId="rnd_year"><YearDetailPage /></RequireModule>} />
         <Route path="rnd/client" element={<RequireModule moduleId="rnd_client_card"><ClientCardPage /></RequireModule>} />
         <Route path="rnd/item" element={<RequireModule moduleId="rnd_item_card"><ItemCardPage /></RequireModule>} />
+        <Route path="rnd/order-reco" element={<RequireModule moduleId="rnd_order_reco"><OrderRecoPage /></RequireModule>} />
+        <Route path="rnd/import-cover" element={<RequireModule moduleId="rnd_import_cover"><ImportCoverPage /></RequireModule>} />
         <Route path="export" element={<RequireModule moduleId="export"><PlaceholderModulePage title="Export" /></RequireModule>} />
         <Route path="operations/deliveries" element={<RequireModule moduleId="ops_deliveries"><DeliveriesPage /></RequireModule>} />
         {canManageUsers && <Route path="admin/users" element={<UsersPage />} />}

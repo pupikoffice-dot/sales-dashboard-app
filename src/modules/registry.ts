@@ -33,6 +33,8 @@ export const MODULE_REGISTRY: ModuleDef[] = [
   { id: 'rnd_year', label: 'Yearly data', path: '/rnd/year', section: 'rnd', subpage: true },
   { id: 'rnd_client_card', label: 'Client card', path: '/rnd/client', section: 'rnd', subpage: true },
   { id: 'rnd_item_card', label: 'Item card', path: '/rnd/item', section: 'rnd', subpage: true },
+  { id: 'rnd_order_reco', label: 'Order recommendation', path: '/rnd/order-reco', section: 'rnd', subpage: true },
+  { id: 'rnd_import_cover', label: 'Import stock cover', path: '/rnd/import-cover', section: 'rnd', subpage: true },
 ]
 
 /**
@@ -60,6 +62,8 @@ export const NAV_EXTRAS: NavExtra[] = [
   { id: 'rnd_year', label: 'Yearly data', path: '/rnd/year', section: 'rnd' },
   { id: 'rnd_client_card', label: 'Client card', path: '/rnd/client', section: 'rnd' },
   { id: 'rnd_item_card', label: 'Item card', path: '/rnd/item', section: 'rnd' },
+  { id: 'rnd_order_reco', label: 'Order recommendation', path: '/rnd/order-reco', section: 'rnd' },
+  { id: 'rnd_import_cover', label: 'Import stock cover', path: '/rnd/import-cover', section: 'rnd' },
 ]
 
 export function pathForModule(id: DashboardModuleId): string {
