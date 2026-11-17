@@ -130,7 +130,7 @@
 /* ── Year / quarter meters (Oversight header) ─────────────────────────────── */
 .pm {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
   gap: 12px;
   margin: 10px 0 4px;
 }
@@ -169,3 +169,22 @@
 .pm-gap--over { color: var(--grn); }
 .pm-group { margin: 0 0 14px; }
 .pm-group-lbl { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.9px; text-transform: uppercase; color: var(--muted); }
+.pm-note { margin: 6px 0 0; font-size: 0.72rem; color: var(--muted2); }
+
+/* Two-colour meter (Pupik + Grow): track tinted by last year's split, fill by this year's split */
+.pm-bar--split {
+  background: linear-gradient(to right,
+    color-mix(in srgb, var(--co-pupik) 28%, transparent) var(--pm-split, 50%),
+    color-mix(in srgb, var(--co-grow) 28%, transparent) var(--pm-split, 50%));
+}
+[dir="rtl"] .pm-bar--split {
+  background: linear-gradient(to left,
+    color-mix(in srgb, var(--co-pupik) 28%, transparent) var(--pm-split, 50%),
+    color-mix(in srgb, var(--co-grow) 28%, transparent) var(--pm-split, 50%));
+}
+.pm-fill--base { position: absolute; inset-block: 0; inset-inline-start: 0; background: var(--co-pupik); border-radius: 6px 0 0 6px; }
+.pm-fill--grow { position: absolute; inset-block: 0; background: var(--co-grow); border-radius: 0 6px 6px 0; }
+.pm-parts { display: flex; flex-direction: column; gap: 2px; font-size: 0.74rem; color: var(--muted2); }
+.pm-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-inline: 2px 3px; }
+.pm-dot--base { background: var(--co-pupik); }
+.pm-dot--grow { background: var(--co-grow); }

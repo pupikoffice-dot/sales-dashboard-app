@@ -13,6 +13,14 @@ export const METER_COMPANIES: readonly string[] = ['pupik', 'mt', 'gold']
 /** Companies combined in the group-totals header meters. */
 export const GROUP_METER_COMPANIES: readonly string[] = ['pupik', 'mt']
 
+/**
+ * Grow's sales moved into Pupik from 2026, so wherever Pupik is measured against last year, Grow is counted
+ * with it (both years), otherwise 2025 would miss Grow's share. Returns the list to measure, Grow added.
+ */
+export function withGrow(companies: readonly string[]): string[] {
+  return companies.includes('pupik') && !companies.includes('grow') ? [...companies, 'grow'] : [...companies]
+}
+
 export interface PeriodMeter {
   /** Cash sold in the period so far (this year). */
   done: number
