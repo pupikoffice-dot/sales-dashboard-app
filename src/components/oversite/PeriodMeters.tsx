@@ -1,10 +1,12 @@
 import { useMemo } from 'react'
+import { useQueries } from '@tanstack/react-query'
 import { useLocale } from '../../context/LocaleContext'
 import { fmt } from '../../lib/format'
-import { computePeriodMeters, type PeriodMeter } from '../../lib/periodMeters'
+import { fetchMonthlyMargin } from '../../lib/grossMarginApi'
+import { computeMarginMeters, computePeriodMeters, type MarginMonth, type PeriodMeter } from '../../lib/periodMeters'
 import type { SalesRow } from '../../types/dashboard'
 
-/** Header meters: this year vs last year, this quarter vs the same quarter last year. */
+/** Meters: this year vs last year, this quarter vs the same quarter last year; sales and (when allowed) gross margin. */
 export function PeriodMeters({
   rows,
   companies,
@@ -20,6 +22,19 @@ export function PeriodMeters({
     () => computePeriodMeters(rows, new Set(key ? key.split(',') : []), todayStr),
     [rows, key, todayStr],
   )
+  // Gross margin per month (the database returns null for users who may not see item costs: no margin meters then).
+  const marginQs = useQueries({
+    queries: (key ? key.split(',') : []).map(co => ({
+      queryKey: ['monthly-margin', co, null],
+      queryFn: () => fetchMonthlyMargin(co, null),
+      staleTime: 10 * 60 * 1000,
+    })),
+  })
+  const marginMonths = useMemo<MarginMonth[] | null>(() => {
+    if (!marginQs.length || marginQs.some(q => !q.data)) return null
+    return marginQs.flatMap(q => q.data!.months)
+  }, [marginQs])
+  const gm = useMemo(() => (marginMonths ? computeMarginMeters(marginMonths, todayStr) : null), [marginMonths, todayStr])
   if (!companies.length) return null
 
   return (
@@ -34,6 +49,20 @@ export function PeriodMeters({
         goalLbl={t('pm.goalQuarter', { q: String(m.quarterNo), year: String(m.curYear - 1) })}
         meter={m.quarter}
       />
+      {gm ? (
+        <>
+          <Meter
+            title={t('pm.gmYear', { year: String(gm.curYear) })}
+            goalLbl={t('pm.goalYear', { year: String(gm.curYear - 1) })}
+            meter={gm.year}
+          />
+          <Meter
+            title={t('pm.gmQuarter', { q: String(gm.quarterNo), year: String(gm.curYear) })}
+            goalLbl={t('pm.goalQuarter', { q: String(gm.quarterNo), year: String(gm.curYear - 1) })}
+            meter={gm.quarter}
+          />
+        </>
+      ) : null}
     </section>
   )
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computePeriodMeters } from './periodMeters'
+import { computeMarginMeters, computePeriodMeters } from './periodMeters'
 import type { SalesRow } from '../types/dashboard'
 
 const row = (company: string, date: string, cash: number): SalesRow =>
@@ -45,5 +45,29 @@ describe('computePeriodMeters', () => {
     expect(over.year.gap).toBe(-30)
     const none = computePeriodMeters([row('pupik', '2026-02-01', 130)], new Set(['pupik']), '2026-11-16')
     expect(none.year.pct).toBeNull()
+  })
+})
+
+describe('computeMarginMeters', () => {
+  const mm = (year: number, month: number, covered: number, cost: number) => ({ year, month, covered, cost })
+  const months = [
+    mm(2025, 1, 1000, 700), // 300
+    mm(2025, 10, 1000, 800), // 200
+    mm(2025, 11, 1000, 900), // 100
+    mm(2025, 12, 1000, 800), // 200
+    mm(2026, 1, 2000, 1500), // 500
+    mm(2026, 11, 500, 400), // 100
+  ]
+  const m = computeMarginMeters(months, '2026-11-15')
+  it('year goal, done, gap', () => {
+    expect(m.year.goal).toBe(800)
+    expect(m.year.done).toBe(600)
+    expect(m.year.gap).toBe(200)
+  })
+  it('quarter and pro-rata pace for the current month', () => {
+    expect(m.quarter.goal).toBe(500)
+    expect(m.quarter.done).toBe(100)
+    // Jan 300 + Oct 200 + half of Nov 100 (15 of 30 days)
+    expect(m.year.lyToDate).toBe(550)
   })
 })

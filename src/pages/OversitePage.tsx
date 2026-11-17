@@ -67,6 +67,7 @@ import {
 import { OversiteLegend } from '../components/oversite/OversiteLegend'
 import { OversightGroupKpis } from '../components/oversite/OversightGroupKpis'
 import { PeriodMeters } from '../components/oversite/PeriodMeters'
+import { GROUP_METER_COMPANIES, METER_COMPANIES } from '../lib/periodMeters'
 import { computeGroupKpis, groupTotalsColumns, salesLyToDate, showGroupTotalsStrip, type GroupKpiId } from '../lib/oversightGroupKpis'
 import { OversightCompanyFilter } from '../components/oversite/OversightCompanyFilter'
 import { OversightCompanyJump, companyAnchorId } from '../components/oversite/OversightCompanyJump'
@@ -162,6 +163,10 @@ function ClassicOversitePage({
   const displayedCompanies = useMemo(
     () => visibleCompanies.filter(c => selectedCos.has(c.id)),
     [visibleCompanies, selectedCos],
+  )
+  const groupMeterCos = useMemo(
+    () => displayedCompanies.filter(c => GROUP_METER_COMPANIES.includes(c.id)),
+    [displayedCompanies],
   )
 
   /** Per-company metrics — memoised so UI toggles (modals) do not re-scan all rows. */
@@ -323,9 +328,6 @@ function ClassicOversitePage({
           ) : null}{' '}
           · {t('oversite.month')}: <b>{ctx.monthLbl}</b>
         </div>
-        {showModule('salesMtd') ? (
-          <PeriodMeters rows={companyRows} companies={displayedCompanies.map(c => c.id)} todayStr={ctx.todayStr} />
-        ) : null}
         {arrange.arranging ? <ArrangeHiddenTray arrange={arrange} surface="classic" /> : null}
       </div>
 
@@ -339,6 +341,12 @@ function ClassicOversitePage({
         <>
         {showGroupTotalsStrip(isSuperAdmin) ? (
           <OversightGroupKpis kpis={groupKpis} scopeLabel={groupScope} monthLbl={ctx.monthLbl} />
+        ) : null}
+        {showGroupTotalsStrip(isSuperAdmin) && showModule('salesMtd') && groupMeterCos.length > 1 ? (
+          <div className="pm-group">
+            <div className="pm-group-lbl">{groupMeterCos.map(c => c.label).join(' + ')}</div>
+            <PeriodMeters rows={companyRows} companies={groupMeterCos.map(c => c.id)} todayStr={ctx.todayStr} />
+          </div>
         ) : null}
         <div className={`ov-grid${displayedCompanies.length === 1 ? ' ov-grid--single-co' : ''}`}>
           {companyColumns.map(
@@ -584,6 +592,9 @@ function ClassicOversitePage({
                 <div className="ov-col-hdr">
                   {co.label}
                 </div>
+                {showModule('salesMtd') && METER_COMPANIES.includes(co.id) ? (
+                  <PeriodMeters rows={companyRows} companies={[co.id]} todayStr={ctx.todayStr} />
+                ) : null}
                 {useSavedLook ? (
                   <OversightFlowCards
                     board={classicBoard}

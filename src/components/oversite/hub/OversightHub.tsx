@@ -25,6 +25,7 @@ import type { OversightLayoutPreference } from '../../../lib/oversightLayouts'
 import type { LogicalCompany } from '../../../types/dashboard'
 import { OversightCompanyFilter } from '../OversightCompanyFilter'
 import { PeriodMeters } from '../PeriodMeters'
+import { GROUP_METER_COMPANIES, METER_COMPANIES } from '../../../lib/periodMeters'
 import { OversightLayoutToggle, type OversightLayoutOption } from '../OversightLayoutToggle'
 import { JumpBar, type JumpTarget } from '../OversightCompanyJump'
 import { HubChart, cssVar, withAlpha } from './HubChart'
@@ -242,13 +243,25 @@ export function OversightHub({
           {t('oversite.today')}: <b>{ctx.todayDisp}</b> · {t('oversite.month')}: <b>{ctx.monthLbl}</b> ·{' '}
           {t('hub.scope')}: <b>{cos.map(c => shortName(c.label)).join(', ') || '—'}</b>
         </div>
-        {show('salesMtd') ? <PeriodMeters rows={rows} companies={cos.map(c => c.id)} todayStr={ctx.todayStr} /> : null}
       </div>
 
       {cos.length === 0 ? <p className="ov-empty">{t('oversite.noCompaniesSelected')}</p> : (
         <>
         <JumpBar ariaLabel={t('hub.jumpTo')} targets={jumpTargets} />
         <div className="hub-grid">
+          {/* Year / quarter vs last year, one block per company that carries them */}
+          {show('salesMtd')
+            ? cos.filter(c => METER_COMPANIES.includes(c.id)).map(c => (
+                <Card key={c.id} cls="hub-span-12" title={shortName(c.label)}>
+                  <PeriodMeters rows={rows} companies={[c.id]} todayStr={ctx.todayStr} />
+                </Card>
+              ))
+            : null}
+          {show('salesMtd') && cos.filter(c => GROUP_METER_COMPANIES.includes(c.id)).length > 1 ? (
+            <Card cls="hub-span-12" title={cos.filter(c => GROUP_METER_COMPANIES.includes(c.id)).map(c => shortName(c.label)).join(' + ')}>
+              <PeriodMeters rows={rows} companies={cos.filter(c => GROUP_METER_COMPANIES.includes(c.id)).map(c => c.id)} todayStr={ctx.todayStr} />
+            </Card>
+          ) : null}
           {/* KPI tiles */}
           {show('salesMtd') ? (
             <Tile cls="hub-span-3" label={t('hub.salesMtd')} value={fmt(data.salesMtd)} tone="grn"
