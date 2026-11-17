@@ -12,6 +12,7 @@ export type OversiteModuleId =
   | 'openOrders'
   | 'salesMtd'
   | 'deliveryNotes'
+  | 'periodMeters'
   | 'topItems'
   | 'suppliers'
   | 'returns'
@@ -30,6 +31,7 @@ export const OVERSITE_MODULE_REGISTRY: OversiteModuleDef[] = [
   { id: 'openOrders', label: 'Open Orders' },
   { id: 'salesMtd', label: 'Sales MTD' },
   { id: 'deliveryNotes', label: 'Delivery notes (720) in Sales MTD' },
+  { id: 'periodMeters', label: 'Year / quarter meters vs last year (sales + margin)' },
   { id: 'topItems', label: 'Top 10 Items' },
   { id: 'suppliers', label: 'Suppliers' },
   { id: 'returns', label: 'Returns MTD' },

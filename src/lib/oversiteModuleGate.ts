@@ -13,5 +13,7 @@ export function canShowOversiteModule(
   if (!mods.includes(moduleId)) return false
   // Delivery notes (720) is an add-on inside the Sales MTD card — requires both grants.
   if (moduleId === 'deliveryNotes') return mods.includes('salesMtd')
+  // Year / quarter meters are built from the sales rows — also require Sales MTD.
+  if (moduleId === 'periodMeters') return mods.includes('salesMtd')
   return true
 }

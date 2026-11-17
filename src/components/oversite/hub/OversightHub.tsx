@@ -250,14 +250,14 @@ export function OversightHub({
         <JumpBar ariaLabel={t('hub.jumpTo')} targets={jumpTargets} />
         <div className="hub-grid">
           {/* Year / quarter vs last year, one block per company that carries them */}
-          {show('salesMtd')
+          {show('periodMeters')
             ? cos.filter(c => METER_COMPANIES.includes(c.id)).map(c => (
                 <Card key={c.id} cls="hub-span-12" title={shortName(c.label)}>
                   <PeriodMeters rows={rows} companies={[c.id]} todayStr={ctx.todayStr} />
                 </Card>
               ))
             : null}
-          {show('salesMtd') && cos.filter(c => GROUP_METER_COMPANIES.includes(c.id)).length > 1 ? (
+          {show('periodMeters') && cos.filter(c => GROUP_METER_COMPANIES.includes(c.id)).length > 1 ? (
             <Card cls="hub-span-12" title={cos.filter(c => GROUP_METER_COMPANIES.includes(c.id)).map(c => shortName(c.label)).join(' + ')}>
               <PeriodMeters rows={rows} companies={cos.filter(c => GROUP_METER_COMPANIES.includes(c.id)).map(c => c.id)} todayStr={ctx.todayStr} />
             </Card>
