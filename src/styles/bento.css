@@ -126,3 +126,44 @@
     font-size: 1.2rem;
   }
 }
+
+/* ── Year / quarter meters (Oversight header) ─────────────────────────────── */
+.pm {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 12px;
+  margin: 10px 0 4px;
+}
+.pm-card {
+  background: var(--bento-bg);
+  border: 1px solid var(--bdr);
+  border-radius: var(--bento-r);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  --pm-c: var(--amber);
+}
+.pm-card.pm-ahead, .pm-card.pm-done { --pm-c: var(--grn); }
+.pm-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.pm-title { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.9px; text-transform: uppercase; color: var(--muted); }
+.pm-pct { font-size: 1.45rem; font-weight: 700; color: var(--pm-c); line-height: 1.1; }
+.pm-bar {
+  position: relative;
+  height: 12px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--txt) 10%, transparent);
+  overflow: visible;
+}
+.pm-fill { height: 100%; border-radius: 6px; background: var(--pm-c); transition: width 0.4s ease; }
+.pm-pace {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  background: var(--txt);
+  opacity: 0.75;
+}
+.pm-foot { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 0.74rem; color: var(--muted2); }
+.pm-gap { color: var(--bento-red); font-weight: 700; }
+.pm-gap--over { color: var(--grn); }

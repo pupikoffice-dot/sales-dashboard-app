@@ -24,6 +24,7 @@ import { computeSalesForecast } from '../../../lib/salesForecast'
 import type { OversightLayoutPreference } from '../../../lib/oversightLayouts'
 import type { LogicalCompany } from '../../../types/dashboard'
 import { OversightCompanyFilter } from '../OversightCompanyFilter'
+import { PeriodMeters } from '../PeriodMeters'
 import { OversightLayoutToggle, type OversightLayoutOption } from '../OversightLayoutToggle'
 import { JumpBar, type JumpTarget } from '../OversightCompanyJump'
 import { HubChart, cssVar, withAlpha } from './HubChart'
@@ -241,6 +242,7 @@ export function OversightHub({
           {t('oversite.today')}: <b>{ctx.todayDisp}</b> · {t('oversite.month')}: <b>{ctx.monthLbl}</b> ·{' '}
           {t('hub.scope')}: <b>{cos.map(c => shortName(c.label)).join(', ') || '—'}</b>
         </div>
+        {show('salesMtd') ? <PeriodMeters rows={rows} companies={cos.map(c => c.id)} todayStr={ctx.todayStr} /> : null}
       </div>
 
       {cos.length === 0 ? <p className="ov-empty">{t('oversite.noCompaniesSelected')}</p> : (
