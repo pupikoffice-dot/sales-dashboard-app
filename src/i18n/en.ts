@@ -930,6 +930,8 @@ export const messages = {
   'pc.client.rateDefault': 'credit notes ÷ invoiced cash, last 12 months',
   'pc.client.docs12': 'Documents, last 12 months',
   'pc.client.firstPurchase': 'first purchase {date}',
+  'pc.client.openDebt': 'Open debt',
+  'pc.client.openDebtOld': 'of which old debt {amount}',
   'pc.client.lastPurchase': 'Last purchase',
   'pc.client.daysAgo': '{n} days ago',
   'pc.client.netCashThrough': 'Net cash {through}, this year',

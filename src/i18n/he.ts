@@ -931,6 +931,8 @@ export const messages: Record<keyof typeof en, string> = {
   'pc.client.rateDefault': 'חשבוניות זיכוי ÷ סכום חשבוניות, 12 חודשים אחרונים',
   'pc.client.docs12': 'מסמכים, 12 חודשים אחרונים',
   'pc.client.firstPurchase': 'רכישה ראשונה {date}',
+  'pc.client.openDebt': 'חוב פתוח',
+  'pc.client.openDebtOld': 'מזה חוב ישן {amount}',
   'pc.client.lastPurchase': 'רכישה אחרונה',
   'pc.client.daysAgo': 'לפני {n} ימים',
   'pc.client.netCashThrough': 'מכירות נטו {through}, השנה',

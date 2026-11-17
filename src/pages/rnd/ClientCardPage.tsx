@@ -9,6 +9,10 @@ import { ComparisonTable } from '../../components/rnd/ComparisonTable'
 import { ClientItemSales } from '../../components/rnd/ClientItemSales'
 import { MarginNote } from '../../components/rnd/marginShared'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
+import { useAuth } from '../../context/AuthContext'
+import { useDashboardData } from '../../hooks/useDashboardData'
+import { debtRowTotal } from '../../lib/debtMetrics'
+import { canShowOversiteModule } from '../../lib/oversiteModuleGate'
 import { useLocale } from '../../context/LocaleContext'
 import { attachMargin, fmtPct, hasMarginData, marginOf, type CostCover } from '../../lib/grossMargin'
 import { fetchClientCardMargin } from '../../lib/grossMarginApi'
@@ -86,6 +90,8 @@ function ItemRows({ rows: baseRows, company, empty, margins }: { rows: ClientCar
 export function ClientCardPage() {
   const { t, monthNames } = useLocale()
   const { access } = useDashboardAccess()
+  const { isSuperAdmin } = useAuth()
+  const { debtRows } = useDashboardData()
   const { isPreviewing, previewUser } = usePreview()
   const asUser = isPreviewing ? (previewUser?.id ?? null) : null
   const [params, setParams] = useSearchParams()
@@ -269,6 +275,12 @@ export function ClientCardPage() {
   const pick = (id: string) => setParams({ co: company, id })
   const rate = data ? returnRate(data.sold12, data.returned12) : null
   const since = data ? daysSince(data.last) : null
+  // Open debt of this client (same debt file as Oversight; only for users who see the Open Debt section).
+  const clientDebt = useMemo(() => {
+    if (!data || data.client.isChain || !canShowOversiteModule(access, 'debt', isSuperAdmin)) return null
+    const rows = debtRows.filter(r => r.company === company && String(r.clientID) === String(data.client.id))
+    return { total: rows.reduce((s, r) => s + debtRowTotal(r), 0), old: rows.reduce((s, r) => s + (r.oldDebt || 0), 0) }
+  }, [data, debtRows, company, access, isSuperAdmin])
 
   return (
     <div className="panel" style={{ padding: 16 }}>
@@ -416,6 +428,9 @@ export function ClientCardPage() {
                 hint={t('gm.hint')}
                 tone={margin12.margin != null && margin12.margin < 0 ? 'amber' : undefined}
               />
+            ) : null}
+            {clientDebt ? (
+              <Kpi label={t('pc.client.openDebt')} value={fmt0(clientDebt.total)} note={clientDebt.old > 0 ? t('pc.client.openDebtOld', { amount: fmt0(clientDebt.old) }) : undefined} tone={clientDebt.total > 0 ? 'amber' : undefined} />
             ) : null}
             <Kpi label={t('pc.client.lastPurchase')} value={since == null ? '—' : t('pc.client.daysAgo', { n: since })} note={data.last ? fmtDate(data.last) : undefined} tone={since != null && since > 90 ? 'amber' : undefined} />
 
