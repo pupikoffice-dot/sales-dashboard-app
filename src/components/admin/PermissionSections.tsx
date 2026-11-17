@@ -17,7 +17,7 @@ export const VIEWS = [
   'returns', 'debt', 'stock_alerts', 'stock', 'export', 'ops_deliveries',
 ] as const
 export const OVERSITE_WIDGETS = [
-  'ordersToday', 'ordersMtd', 'openOrders', 'salesMtd', 'deliveryNotes', 'topItems',
+  'ordersToday', 'ordersMtd', 'openOrders', 'salesMtd', 'deliveryNotes', 'periodMeters', 'topItems',
   'suppliers', 'returns', 'debt', 'receipts', 'stockAlerts',
 ] as const
 

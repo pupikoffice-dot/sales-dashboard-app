@@ -342,7 +342,7 @@ function ClassicOversitePage({
         {showGroupTotalsStrip(isSuperAdmin) ? (
           <OversightGroupKpis kpis={groupKpis} scopeLabel={groupScope} monthLbl={ctx.monthLbl} />
         ) : null}
-        {showGroupTotalsStrip(isSuperAdmin) && showModule('salesMtd') && groupMeterCos.length > 1 ? (
+        {showGroupTotalsStrip(isSuperAdmin) && showModule('periodMeters') && groupMeterCos.length > 1 ? (
           <div className="pm-group">
             <div className="pm-group-lbl">{groupMeterCos.map(c => c.label).join(' + ')}</div>
             <PeriodMeters rows={companyRows} companies={groupMeterCos.map(c => c.id)} todayStr={ctx.todayStr} />
@@ -592,7 +592,7 @@ function ClassicOversitePage({
                 <div className="ov-col-hdr">
                   {co.label}
                 </div>
-                {showModule('salesMtd') && METER_COMPANIES.includes(co.id) ? (
+                {showModule('periodMeters') && METER_COMPANIES.includes(co.id) ? (
                   <PeriodMeters rows={companyRows} companies={[co.id]} todayStr={ctx.todayStr} />
                 ) : null}
                 {useSavedLook ? (

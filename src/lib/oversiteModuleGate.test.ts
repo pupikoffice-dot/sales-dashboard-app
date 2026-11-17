@@ -20,6 +20,12 @@ function access(modules: string[]): DashboardAccess {
 }
 
 describe('canShowOversiteModule', () => {
+  it('requires salesMtd for the periodMeters module', () => {
+    expect(canShowOversiteModule(access(['periodMeters']), 'periodMeters')).toBe(false)
+    expect(canShowOversiteModule(access(['salesMtd', 'periodMeters']), 'periodMeters')).toBe(true)
+    expect(canShowOversiteModule(access(['salesMtd']), 'periodMeters')).toBe(false)
+  })
+
   it('requires salesMtd for deliveryNotes add-on', () => {
     expect(canShowOversiteModule(access(['deliveryNotes']), 'deliveryNotes')).toBe(false)
     expect(canShowOversiteModule(access(['salesMtd', 'deliveryNotes']), 'deliveryNotes')).toBe(true)
