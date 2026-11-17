@@ -66,6 +66,7 @@ import {
 } from '../components/oversite/OversightArrangeBar'
 import { OversiteLegend } from '../components/oversite/OversiteLegend'
 import { OversightGroupKpis } from '../components/oversite/OversightGroupKpis'
+import { PeriodMeters } from '../components/oversite/PeriodMeters'
 import { computeGroupKpis, groupTotalsColumns, salesLyToDate, showGroupTotalsStrip, type GroupKpiId } from '../lib/oversightGroupKpis'
 import { OversightCompanyFilter } from '../components/oversite/OversightCompanyFilter'
 import { OversightCompanyJump, companyAnchorId } from '../components/oversite/OversightCompanyJump'
@@ -322,6 +323,9 @@ function ClassicOversitePage({
           ) : null}{' '}
           · {t('oversite.month')}: <b>{ctx.monthLbl}</b>
         </div>
+        {showModule('salesMtd') ? (
+          <PeriodMeters rows={companyRows} companies={displayedCompanies.map(c => c.id)} todayStr={ctx.todayStr} />
+        ) : null}
         {arrange.arranging ? <ArrangeHiddenTray arrange={arrange} surface="classic" /> : null}
       </div>
 
