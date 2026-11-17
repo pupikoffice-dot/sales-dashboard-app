@@ -59,37 +59,85 @@
 .pt-head .pt-co {
   font-size: 0.85rem;
 }
-.rb {
-  border: 2px solid;
-  border-radius: 7px;
-  padding: 4px 11px;
+/* Glass buttons: translucent tinted pane, soft blur, hairline border, gentle lift on hover. */
+.rb,
+.plan-table .btn {
+  --rb: #64748b;
+  position: relative;
+  border: 1px solid color-mix(in srgb, var(--rb) 38%, transparent);
+  border-radius: 999px;
+  padding: 5px 15px;
   font: inherit;
   font-size: 0.82rem;
   font-weight: 600;
+  letter-spacing: 0.01em;
   line-height: 1.3;
   white-space: nowrap;
   cursor: pointer;
-  color: #fff;
+  color: color-mix(in srgb, var(--rb) 62%, var(--txt, #0f172a));
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 55%),
+    color-mix(in srgb, var(--rb) 14%, transparent);
+  -webkit-backdrop-filter: blur(10px) saturate(1.4);
+  backdrop-filter: blur(10px) saturate(1.4);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 1px 2px rgba(0, 0, 0, 0.12),
+    0 4px 14px -6px color-mix(in srgb, var(--rb) 55%, transparent);
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
 }
-.rb:disabled {
+.rb:hover:not(:disabled),
+.plan-table .btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--rb) 60%, transparent);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0) 55%),
+    color-mix(in srgb, var(--rb) 24%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 2px 4px rgba(0, 0, 0, 0.14),
+    0 8px 20px -6px color-mix(in srgb, var(--rb) 65%, transparent);
+}
+.rb:active:not(:disabled),
+.plan-table .btn:active:not(:disabled) {
+  transform: translateY(0);
+  transition-duration: 0.05s;
+}
+.rb:focus-visible,
+.plan-table .btn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--rb) 70%, transparent);
+  outline-offset: 2px;
+}
+.rb:disabled,
+.plan-table .btn:disabled {
   opacity: 0.45;
   cursor: default;
+  box-shadow: none;
 }
-.rb:hover:not(:disabled) {
-  filter: brightness(1.12);
-}
+/* switched on: a deeper tint and a soft inner glow instead of a hard ring */
 .rb.on {
-  box-shadow: 0 0 0 2px #fff, 0 0 0 4px currentColor;
-  filter: brightness(0.82);
+  border-color: color-mix(in srgb, var(--rb) 75%, transparent);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 60%),
+    color-mix(in srgb, var(--rb) 34%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--rb) 35%, transparent),
+    inset 0 2px 8px color-mix(in srgb, var(--rb) 30%, transparent),
+    0 0 14px -4px color-mix(in srgb, var(--rb) 70%, transparent);
 }
-.rb-tab { background: #1565c0; border-color: #0d47a1; }
-.rb-open { background: #2e7d32; border-color: #1b5e20; }
-.rb-close { background: #ef6c00; border-color: #bf360c; }
-.rb-edit { background: #7b1fa2; border-color: #4a148c; }
-.rb-hidden { background: #546e7a; border-color: #263238; }
-.rb-excel { background: #00838f; border-color: #006064; }
-/* the selected tab is drawn as pressed: darker with a light ring */
-.rb-tab:not(.on) { background: #e3eefc; color: #0d47a1; }
+.rb-tab { --rb: #3b82f6; }
+.rb-open { --rb: #22c55e; }
+.rb-close { --rb: #f59e0b; }
+.rb-edit { --rb: #a855f7; }
+.rb-hidden { --rb: #64748b; }
+.rb-excel { --rb: #06b6d4; }
+.plan-table .btn { --rb: #06b6d4; }
+@media (prefers-reduced-motion: reduce) {
+  .rb,
+  .plan-table .btn { transition: none; }
+  .rb:hover:not(:disabled),
+  .plan-table .btn:hover:not(:disabled) { transform: none; }
+}
 .pt-err {
   position: sticky;
   top: 0;

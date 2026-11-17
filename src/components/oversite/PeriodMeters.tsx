@@ -122,10 +122,10 @@ export function PeriodMeters({
   )
 
   return (
+    <div className="pm-wrap">
     <section className="pm" aria-label={t('pm.aria')}>
       {card(m, 'year', t('pm.year', { year: String(m.curYear) }), salesBase, salesGrow)}
       {card(m, 'quarter', t('pm.quarter', { q: String(m.quarterNo), year: String(m.curYear) }), salesBase, salesGrow)}
-      {inclGrow ? <p className="pm-note">{t('pm.inclGrow')}</p> : null}
       {gm ? (
         <>
           {card(gm, 'year', t('pm.gmYear', { year: String(gm.curYear) }), gmBase, gmGrow)}
@@ -133,6 +133,8 @@ export function PeriodMeters({
         </>
       ) : null}
     </section>
+    {inclGrow ? <p className="pm-note">{t('pm.inclGrow')}</p> : null}
+    </div>
   )
 }
 
