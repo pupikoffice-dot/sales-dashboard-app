@@ -7,6 +7,12 @@ import type { SalesRow } from '../types/dashboard'
  * Pace marker = what last year had reached by the same calendar day (so on/ahead of pace is visible).
  */
 
+/** Companies that carry the year / quarter meters (the ones with the main Oversight details). */
+export const METER_COMPANIES: readonly string[] = ['pupik', 'mt', 'gold']
+
+/** Companies combined in the group-totals header meters. */
+export const GROUP_METER_COMPANIES: readonly string[] = ['pupik', 'mt']
+
 export interface PeriodMeter {
   /** Cash sold in the period so far (this year). */
   done: number
@@ -76,5 +82,48 @@ export function computePeriodMeters(rows: SalesRow[], companies: ReadonlySet<str
     }
   }
 
+  return { year: build(yDone, yGoal, yLyTd), quarter: build(qDone, qGoal, qLyTd), quarterNo, curYear }
+}
+
+export interface MarginMonth {
+  year: number
+  month: number
+  cost: number | null | undefined
+  covered: number | null | undefined
+}
+
+/**
+ * Same meters for gross margin (covered sales - cost, items without a cost left out, see grossMargin.ts).
+ * Margins exist per month only, so the pace marker takes last year's whole months before today's month
+ * plus the same share of the current month as the days passed.
+ */
+export function computeMarginMeters(months: readonly MarginMonth[], todayStr: string): PeriodMeters {
+  const curYear = Number(todayStr.slice(0, 4))
+  const todayMonth = Number(todayStr.slice(5, 7))
+  const todayDay = Number(todayStr.slice(8, 10))
+  const quarterNo = (Math.floor((todayMonth - 1) / 3) + 1) as 1 | 2 | 3 | 4
+  const qFirst = (quarterNo - 1) * 3 + 1
+  const qLast = qFirst + 2
+  const share = todayDay / new Date(curYear, todayMonth, 0).getDate()
+
+  let yDone = 0, yGoal = 0, yLyTd = 0
+  let qDone = 0, qGoal = 0, qLyTd = 0
+  for (const r of months) {
+    const year = Number(r.year)
+    const month = Number(r.month)
+    if (year !== curYear && year !== curYear - 1) continue
+    const margin = (Number(r.covered) || 0) - (Number(r.cost) || 0)
+    const inQuarter = month >= qFirst && month <= qLast
+    if (year === curYear) {
+      yDone += margin
+      if (inQuarter) qDone += margin
+      continue
+    }
+    yGoal += margin
+    if (inQuarter) qGoal += margin
+    const part = month < todayMonth ? margin : month === todayMonth ? margin * share : 0
+    yLyTd += part
+    if (inQuarter) qLyTd += part
+  }
   return { year: build(yDone, yGoal, yLyTd), quarter: build(qDone, qGoal, qLyTd), quarterNo, curYear }
 }

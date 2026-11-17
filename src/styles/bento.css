@@ -167,3 +167,5 @@
 .pm-foot { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 0.74rem; color: var(--muted2); }
 .pm-gap { color: var(--bento-red); font-weight: 700; }
 .pm-gap--over { color: var(--grn); }
+.pm-group { margin: 0 0 14px; }
+.pm-group-lbl { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.9px; text-transform: uppercase; color: var(--muted); }
