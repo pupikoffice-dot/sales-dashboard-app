@@ -3,7 +3,7 @@ import { useQueries } from '@tanstack/react-query'
 import { useLocale } from '../../context/LocaleContext'
 import { fmt } from '../../lib/format'
 import { fetchMonthlyMargin } from '../../lib/grossMarginApi'
-import { computeMarginMeters, computePeriodMeters, type MarginMonth, type PeriodMeter } from '../../lib/periodMeters'
+import { computeMarginMeters, computePeriodMeters, withGrow, type MarginMonth, type PeriodMeter } from '../../lib/periodMeters'
 import type { SalesRow } from '../../types/dashboard'
 
 /** Meters: this year vs last year, this quarter vs the same quarter last year; sales and (when allowed) gross margin. */
@@ -17,7 +17,9 @@ export function PeriodMeters({
   todayStr: string
 }) {
   const { t } = useLocale()
-  const key = companies.join(',')
+  const measured = useMemo(() => withGrow(companies), [companies])
+  const key = measured.join(',')
+  const inclGrow = measured.includes('grow') && !companies.includes('grow')
   const m = useMemo(
     () => computePeriodMeters(rows, new Set(key ? key.split(',') : []), todayStr),
     [rows, key, todayStr],
@@ -31,9 +33,11 @@ export function PeriodMeters({
     })),
   })
   const marginMonths = useMemo<MarginMonth[] | null>(() => {
-    if (!marginQs.length || marginQs.some(q => !q.data)) return null
-    return marginQs.flatMap(q => q.data!.months)
-  }, [marginQs])
+    // Grow is an add-on to Pupik: if the user may not see its margin it is simply left out, the others still show.
+    const needed = marginQs.filter((_, i) => !(inclGrow && measured[i] === 'grow'))
+    if (!needed.length || needed.some(q => !q.data)) return null
+    return marginQs.flatMap(q => q.data?.months ?? [])
+  }, [marginQs, measured, inclGrow])
   const gm = useMemo(() => (marginMonths ? computeMarginMeters(marginMonths, todayStr) : null), [marginMonths, todayStr])
   if (!companies.length) return null
 
@@ -49,6 +53,7 @@ export function PeriodMeters({
         goalLbl={t('pm.goalQuarter', { q: String(m.quarterNo), year: String(m.curYear - 1) })}
         meter={m.quarter}
       />
+      {inclGrow ? <p className="pm-note">{t('pm.inclGrow')}</p> : null}
       {gm ? (
         <>
           <Meter

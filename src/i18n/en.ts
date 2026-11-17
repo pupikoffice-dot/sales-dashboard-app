@@ -464,6 +464,7 @@ export const messages = {
   'pm.aria': 'Year and quarter against last year',
   'pm.year': 'Sales {year}',
   'pm.quarter': 'Sales Q{q} {year}',
+  'pm.inclGrow': 'Pupik includes Grow in both years (Grow sales moved into Pupik in 2026)',
   'pm.gmYear': 'Gross margin {year}',
   'pm.gmQuarter': 'Gross margin Q{q} {year}',
   'pm.goalYear': 'goal ({year} in full)',

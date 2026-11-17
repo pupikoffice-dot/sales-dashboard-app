@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computeMarginMeters, computePeriodMeters } from './periodMeters'
+import { computeMarginMeters, computePeriodMeters, withGrow } from './periodMeters'
 import type { SalesRow } from '../types/dashboard'
 
 const row = (company: string, date: string, cash: number): SalesRow =>
@@ -69,5 +69,22 @@ describe('computeMarginMeters', () => {
     expect(m.quarter.done).toBe(100)
     // Jan 300 + Oct 200 + half of Nov 100 (15 of 30 days)
     expect(m.year.lyToDate).toBe(550)
+  })
+})
+
+describe('withGrow', () => {
+  it('adds grow wherever pupik is measured, once', () => {
+    expect(withGrow(['pupik'])).toEqual(['pupik', 'grow'])
+    expect(withGrow(['pupik', 'mt'])).toEqual(['pupik', 'mt', 'grow'])
+    expect(withGrow(['pupik', 'grow'])).toEqual(['pupik', 'grow'])
+    expect(withGrow(['mt', 'gold'])).toEqual(['mt', 'gold'])
+  })
+  it('last year includes grow, this year is pupik plus whatever grow still has', () => {
+    const r = (company: string, date: string, cash: number) =>
+      ({ company, date, year: Number(date.slice(0, 4)), month: Number(date.slice(5, 7)), cash }) as never
+    const rows = [r('pupik', '2025-03-01', 100), r('grow', '2025-03-01', 50), r('pupik', '2026-03-01', 120)]
+    const m = computePeriodMeters(rows, new Set(withGrow(['pupik'])), '2026-11-16')
+    expect(m.year.goal).toBe(150)
+    expect(m.year.done).toBe(120)
   })
 })

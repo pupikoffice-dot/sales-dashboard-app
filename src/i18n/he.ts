@@ -466,6 +466,7 @@ export const messages: Record<keyof typeof en, string> = {
   'pm.aria': 'שנה ורבעון לעומת שנה שעברה',
   'pm.year': 'מכירות {year}',
   'pm.quarter': 'מכירות רבעון {q} {year}',
+  'pm.inclGrow': 'פופיק כולל את גרו בשתי השנים (המכירות של גרו עברו לפופיק ב-2026)',
   'pm.gmYear': 'רווח גולמי {year}',
   'pm.gmQuarter': 'רווח גולמי רבעון {q} {year}',
   'pm.goalYear': 'יעד (כל {year})',
