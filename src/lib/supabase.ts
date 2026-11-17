@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '../types/database.generated'
 
 const url = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.trim() ?? ''
 const anonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined)?.trim() ?? ''
@@ -21,3 +22,10 @@ if (!supabaseConfigured) {
 export const supabase: SupabaseClient = supabaseConfigured
   ? createClient(url, anonKey)
   : (null as unknown as SupabaseClient)
+
+/**
+ * The same client, typed from the database schema (table names, columns and RPC arguments are
+ * checked at compile time). Use this in NEW code; existing code keeps `supabase` until each
+ * call site is moved over deliberately (see docs/architecture/DATABASE-TYPES.md).
+ */
+export const db = supabase as unknown as SupabaseClient<Database>

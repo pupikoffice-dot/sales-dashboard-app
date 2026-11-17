@@ -129,3 +129,9 @@ Infrastructure changes that may eventually be needed (not now): move ETL code un
 - Data-health email alerts never worked (no mail key).
 - README is out of date (refers to `../supabase/setup.sql` and old paths); the real layout is in the server share's `docs/APP.md`.
 - Edge function runtime (Deno) and the Node toolchain are different worlds; types are not shared with them yet.
+
+## Migration progress
+
+- Stage 0 (documentation baseline): done 2026-11-17.
+- Stage 1 (generated database types): done 2026-11-17 for new code via `db`; moving existing call sites over is incremental, see `DATABASE-TYPES.md`.
+- Stages 2 to 7: waiting for owner approval.
