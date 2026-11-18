@@ -64,21 +64,19 @@ export function ImportCoverPage() {
   const [picked, setPicked] = useState<LogicalCompany | null>(null)
   const company = (picked && companies.includes(picked) ? picked : companies[0]) as LogicalCompany | undefined
   const [editing, setEditing] = useState(false)
-  const [showHidden, setShowHidden] = useState(false)
   const [openAll, setOpenAll] = useState({ n: 0, open: false })
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [card, setCard] = useState<string | null>(null)
 
-  const key = ['import-cover', company, showHidden, asUser]
+  const key = ['import-cover', company, editing, asUser]
   const cover = useQuery({
     queryKey: key,
-    queryFn: () => fetchImportCover(company as string, showHidden, asUser),
+    queryFn: () => fetchImportCover(company as string, editing, asUser),
     enabled: !!company,
     staleTime: 5 * 60 * 1000,
   })
   const suppliers = useMemo(() => summarize(cover.data ?? []), [cover.data])
-  const hiddenTotal = useMemo(() => (cover.data ?? []).filter(r => r.hidden).length, [cover.data])
   const H = (id: string) => ({ label: t(`oc.h.${id}` as 'oc.sku'), title: t(`oc.t.${id}` as 'oc.sku') })
 
   async function refreshAll() {
@@ -111,7 +109,7 @@ export function ImportCoverPage() {
     const nh = !r.hidden
     void applyHide(
       r.sku,
-      rows => rows.flatMap(x => (x.sku !== r.sku ? [x] : !nh || showHidden ? [{ ...x, hidden: nh }] : [])),
+      rows => rows.flatMap(x => (x.sku !== r.sku ? [x] : !nh || editing ? [{ ...x, hidden: nh }] : [])),
       () => setItemHidden(company, r.sku, nh),
     )
   }
@@ -121,7 +119,7 @@ export function ImportCoverPage() {
     const skus = new Set(s.rows.map(x => x.sku))
     void applyHide(
       s.supplier,
-      rows => rows.flatMap(x => (!skus.has(x.sku) ? [x] : !nh || showHidden ? [{ ...x, sup_hidden: nh, hidden: nh }] : [])),
+      rows => rows.flatMap(x => (!skus.has(x.sku) ? [x] : !nh || editing ? [{ ...x, sup_hidden: nh, hidden: nh }] : [])),
       () => setSupplierHidden(company, s.supplier, nh),
     )
   }
@@ -184,8 +182,7 @@ export function ImportCoverPage() {
   const buttons: HeaderBtn[] = [
     { key: 'open', label: t('oc.expandAll'), kind: 'open', onClick: () => setOpenAll(o => ({ n: o.n + 1, open: true })) },
     { key: 'close', label: t('oc.collapseAll'), kind: 'close', onClick: () => setOpenAll(o => ({ n: o.n + 1, open: false })) },
-    { key: 'edit', label: t('oc.edit'), kind: 'edit', on: editing, onClick: () => setEditing(v => !v) },
-    { key: 'hid', label: `${t('oc.showHidden')}${showHidden && hiddenTotal ? ` (${hiddenTotal})` : ''}`, kind: 'hidden', on: showHidden, onClick: () => setShowHidden(v => !v) },
+    { key: 'edit', label: t('oc.edit'), kind: 'edit', on: editing, onClick: () => { qc.removeQueries({ queryKey: ['import-cover', company, !editing] }); setEditing(v => !v) } },
     { key: 'xl', label: t('oc.exportShort'), kind: 'excel', disabled: !suppliers.length, title: t('oc.export'), onClick: exportExcel },
   ]
 
