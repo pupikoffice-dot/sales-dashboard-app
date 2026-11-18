@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ItemCardModal, ItemLink } from '../../components/rnd/ItemCardModal'
 import { PlanHeader, type HeaderBtn } from '../../components/rnd/PlanHeader'
-import { PlanTable, type PlanCol } from '../../components/rnd/PlanTable'
+import { ExcelIcon, PlanTable, type PlanCol } from '../../components/rnd/PlanTable'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { useLocale } from '../../context/LocaleContext'
 import { usePreview } from '../../context/PreviewContext'
@@ -148,7 +148,7 @@ export function ImportCoverPage() {
         ...H('supplier'),
         get: r => r.supplier,
         text: true,
-        show: r => (<>{r.supplier} {r.internal ? <small>({t('oc.internalTag')})</small> : null}{r.hiddenSupplier ? <small> · {t('oc.hiddenTag')}</small> : null}</>),
+        show: r => (<>{r.supplier} {r.internal ? <small>({t('oc.internalTag')})</small> : null}{r.hiddenSupplier ? <small> · {t('oc.hiddenTag')}</small> : null} <ExcelIcon title={t('oc.export')} onClick={() => exportSupplier(r.supplier, r.rows.filter(x => !x.hidden))} /></>),
       },
       { key: 'items', ...H('sItems'), get: r => r.items },
       { key: 'inStock', ...H('iInStock'), get: r => r.inStock },
@@ -228,8 +228,6 @@ export function ImportCoverPage() {
               rowKey={r => r.sku}
               initialSort={{ key: 'left', dir: 'asc' }}
               filterPlaceholder={t('oc.filter')}
-              exportLabel={t('oc.exportShort')}
-              onExport={visible => exportSupplier(s.supplier, visible)}
               rowStyle={r => (r.hidden ? { opacity: 0.5 } : r.stock <= 0 ? { background: 'rgba(127, 127, 127, 0.12)' } : undefined)}
               lead={
                 editing

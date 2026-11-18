@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ItemCardModal, ItemLink } from '../../components/rnd/ItemCardModal'
 import { PlanHeader, type HeaderBtn } from '../../components/rnd/PlanHeader'
-import { PlanTable, type PlanCol } from '../../components/rnd/PlanTable'
+import { ExcelIcon, PlanTable, type PlanCol } from '../../components/rnd/PlanTable'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { useLocale } from '../../context/LocaleContext'
 import { usePreview } from '../../context/PreviewContext'
@@ -195,6 +195,8 @@ export function OrderRecoPage() {
             {r.supplier} {r.internal ? <small>({t('oc.internalTag')})</small> : null}
             {r.hidden ? <small> · {t('oc.hiddenTag')}</small> : null}
             {r.lead === null ? <small style={{ opacity: 0.7 }}> · {t('oc.noLead')}</small> : null}
+            {' '}
+            <ExcelIcon title={t('oc.export')} onClick={() => exportSupplier(r.supplier, r.rows.filter(x => !x.hidden))} />
           </>
         ),
       },
@@ -299,8 +301,6 @@ export function OrderRecoPage() {
                   rowKey={r => r.sku}
                   initialSort={{ key: 'orderBy', dir: 'asc' }}
                   filterPlaceholder={t('oc.filter')}
-                  exportLabel={t('oc.exportShort')}
-                  onExport={visible => exportSupplier(s.supplier, visible)}
                   rowStyle={r => ({ background: STATUS_COLOR[r.status], ...(r.hidden ? { opacity: 0.5 } : null) })}
                   lead={
                     editing
