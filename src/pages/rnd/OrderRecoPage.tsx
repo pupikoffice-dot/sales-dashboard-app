@@ -386,15 +386,15 @@ function SettingsTab({ company, asUser, onSaved }: { company: string; asUser: st
         <table>
           <thead>
             <tr>
-              <th style={{ textAlign: 'start' }}>{t('oc.supplier')}</th>
-              <th>{t('oc.items')}</th>
-              <th>{t('oc.lead')}</th>
-              <th>{t('oc.cover')}</th>
-              <th>{t('oc.safety')}</th>
-              <th>{t('oc.internal')}</th>
-              <th>{t('oc.payTerms')}</th>
-              <th>{t('oc.payDays')}</th>
-              <th>{t('oc.payNotes')}</th>
+              <th style={{ textAlign: 'start' }} title={t('oc.tip.supplier')}>{t('oc.supplier')}</th>
+              <th title={t('oc.tip.items')}>{t('oc.items')}</th>
+              <th title={t('oc.tip.lead')}>{t('oc.lead')}</th>
+              <th title={t('oc.tip.cover')}>{t('oc.cover')}</th>
+              <th title={t('oc.tip.safety')}>{t('oc.safety')}</th>
+              <th title={t('oc.tip.internal')}>{t('oc.internal')}</th>
+              <th title={t('oc.tip.payTerms')}>{t('oc.payTerms')}</th>
+              <th title={t('oc.tip.payDays')}>{t('oc.payDays')}</th>
+              <th title={t('oc.tip.payNotes')}>{t('oc.payNotes')}</th>
               <th />
             </tr>
           </thead>
