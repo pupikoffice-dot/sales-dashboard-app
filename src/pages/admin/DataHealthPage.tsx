@@ -4,6 +4,7 @@ import { useDataHealthIncidents, useDataHealthRules, useDataHealthSendState, use
 import { acknowledgeIncident, type StatusRow } from '../../lib/dataHealth/api'
 import { monthlyStats, redSegments } from '../../lib/dataHealth/timeline'
 import { fmtDateTime, fmtDatesInText } from '../../lib/dates'
+import { downloadMarginExceptions } from '../../lib/marginExceptionsReport'
 
 // Data health monitor page (admin and super-admin). Spec: docs/superpowers/specs/2026-10-03-data-health-monitor-design.md
 const COLOUR: Record<StatusRow['status'], string> = { green: '#2e7d32', amber: '#ed8c00', red: '#c62828', grey: '#9e9e9e' }
@@ -11,6 +12,18 @@ const age = (h: number | null) => (h === null ? '-' : h < 48 ? `${Math.round(h)}
 
 export function DataHealthPage() {
   const [days, setDays] = useState(30)
+  const [marginMsg, setMarginMsg] = useState<{ kind: 'busy' | 'ok' | 'error'; text: string } | null>(null)
+  async function runMarginReport() {
+    setMarginMsg({ kind: 'busy', text: 'Building the report (up to a minute)…' })
+    try {
+      const r = await downloadMarginExceptions()
+      setMarginMsg(r === 'ok'
+        ? { kind: 'ok', text: 'Report downloaded.' }
+        : { kind: 'error', text: 'You are not allowed to see item costs, so this report is not available to you.' })
+    } catch (e) {
+      setMarginMsg({ kind: 'error', text: `The report failed: ${e instanceof Error ? e.message : String(e)}` })
+    }
+  }
   const statuses = useDataHealthStatuses()
   const rules = useDataHealthRules()
   const incidents = useDataHealthIncidents(days)
@@ -38,6 +51,16 @@ export function DataHealthPage() {
 
   return (
     <div className="p-4 space-y-6">
+      <div className="flex flex-wrap items-center gap-3">
+        <button type="button" className="nav-btn" disabled={marginMsg?.kind === 'busy'} onClick={() => void runMarginReport()}
+          title="Excel: items with no cost and items with gross margin under 10%, this year, Pupik / Monkeytime / Goldbug">
+          Margin &amp; no-cost items (Excel)
+        </button>
+        {marginMsg && (
+          <span className="text-sm" role="status" style={{ color: marginMsg.kind === 'error' ? COLOUR.red : '#6b7280' }}>{marginMsg.text}</span>
+        )}
+      </div>
+
       <div>
         <h1 className="text-xl font-semibold">Data health</h1>
         <p className="text-sm text-gray-500">
