@@ -143,8 +143,18 @@ function buildSplitMetricSheets(
   return { cash: cashRows, qty: qtyRows }
 }
 
+export type WorkbookCell = string | number | null
+export interface WorkbookSheet {
+  name: string
+  rows: WorkbookCell[][]
+  /** Column widths in characters (optional). */
+  widths?: number[]
+  /** Freeze the header row and filter every column (optional; for long lists). */
+  headerFilter?: boolean
+}
+
 export function downloadWorkbook(
-  sheets: Array<{ name: string; rows: string[][] }>,
+  sheets: WorkbookSheet[],
   filename: string,
 ): void {
   if (!sheets.some(sheet => sheet.rows.length)) return
@@ -152,7 +162,12 @@ export function downloadWorkbook(
     const wb = XLSX.utils.book_new()
     for (const sheet of sheets) {
       if (!sheet.rows.length) continue
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sheet.rows), sheet.name.slice(0, 31))
+      const ws = XLSX.utils.aoa_to_sheet(sheet.rows)
+      if (sheet.widths) ws['!cols'] = sheet.widths.map(wch => ({ wch }))
+      if (sheet.headerFilter) {
+        ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: sheet.rows.length - 1, c: Math.max(0, (sheet.rows[0]?.length ?? 1) - 1) } }) }
+      }
+      XLSX.utils.book_append_sheet(wb, ws, sheet.name.slice(0, 31))
     }
     if (!wb.SheetNames.length) return
     XLSX.writeFile(wb, filename)

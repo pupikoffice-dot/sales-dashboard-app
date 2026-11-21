@@ -23,6 +23,29 @@ export interface PlanCol<T> {
  * A table whose every heading sorts, with a filter box under each heading and a hover explanation on each heading.
  * Used for the supplier rows and the item rows below them, on both the Order recommendation and the Import stock cover pages.
  */
+/** Small Excel icon button that sits on a brand (supplier) row; it does not open or close the row. */
+export function ExcelIcon({ title, onClick, disabled }: { title: string; onClick: () => void; disabled?: boolean }) {
+  return (
+    <button
+      type="button"
+      className="pt-xl"
+      title={title}
+      aria-label={title}
+      disabled={disabled}
+      onClick={e => {
+        e.stopPropagation()
+        onClick()
+      }}
+    >
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M9.5 1.5H4a1.5 1.5 0 0 0-1.5 1.5v10A1.5 1.5 0 0 0 4 14.5h8a1.5 1.5 0 0 0 1.5-1.5V5.5z" />
+        <path d="M9.5 1.5v4h4" />
+        <path d="M5.8 8.2l2.4 3.6M8.2 8.2l-2.4 3.6" />
+      </svg>
+    </button>
+  )
+}
+
 export function PlanTable<T>({
   rows,
   cols,

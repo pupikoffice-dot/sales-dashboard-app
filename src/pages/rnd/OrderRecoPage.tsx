@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ItemCardModal, ItemLink } from '../../components/rnd/ItemCardModal'
 import { PlanHeader, type HeaderBtn } from '../../components/rnd/PlanHeader'
-import { PlanTable, type PlanCol } from '../../components/rnd/PlanTable'
+import { ExcelIcon, PlanTable, type PlanCol } from '../../components/rnd/PlanTable'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { useLocale } from '../../context/LocaleContext'
 import { usePreview } from '../../context/PreviewContext'
@@ -88,20 +88,18 @@ export function OrderRecoPage() {
   const [tab, setTab] = useState<'reco' | 'settings'>('reco')
   const [openAll, setOpenAll] = useState({ n: 0, open: true })
   const [editing, setEditing] = useState(false)
-  const [showHidden, setShowHidden] = useState(false)
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [card, setCard] = useState<string | null>(null)
 
   const reco = useQuery({
-    queryKey: ['order-reco', company, showHidden, asUser],
-    queryFn: () => fetchOrderReco(company as string, showHidden, asUser),
+    queryKey: ['order-reco', company, editing, asUser],
+    queryFn: () => fetchOrderReco(company as string, editing, asUser),
     enabled: !!company,
     staleTime: 5 * 60 * 1000,
   })
 
   const suppliers = useMemo(() => summarize(reco.data ?? []), [reco.data])
-  const hiddenTotal = useMemo(() => (reco.data ?? []).filter(r => r.hidden).length, [reco.data])
 
   const statusLabel = (s: OrderStatus) => t(`oc.status.${s}` as 'oc.status.ok')
   const H = (id: string) => ({ label: t(`oc.h.${id}` as 'oc.sku'), title: t(`oc.t.${id}` as 'oc.sku') })
@@ -111,7 +109,7 @@ export function OrderRecoPage() {
     await qc.invalidateQueries({ queryKey: ['import-cover', company] })
     await qc.invalidateQueries({ queryKey: ['order-settings', company] })
   }
-  const recoKey = ['order-reco', company, showHidden, asUser]
+  const recoKey = ['order-reco', company, editing, asUser]
   /** Hide / un-hide: the table changes at once (no waiting for the engine), the save runs behind it, and a failure puts it back. */
   async function applyHide(busyKey: string, change: (rows: OrderRow[]) => OrderRow[], save: () => Promise<boolean>) {
     if (!company) return
@@ -137,7 +135,7 @@ export function OrderRecoPage() {
     const nh = !r.hidden
     void applyHide(
       r.sku,
-      rows => rows.flatMap(x => (x.sku !== r.sku ? [x] : !nh || showHidden ? [{ ...x, hidden: nh }] : [])),
+      rows => rows.flatMap(x => (x.sku !== r.sku ? [x] : !nh || editing ? [{ ...x, hidden: nh }] : [])),
       () => setItemHidden(company, r.sku, nh),
     )
   }
@@ -147,7 +145,7 @@ export function OrderRecoPage() {
     const skus = new Set(s.rows.map(x => x.sku))
     void applyHide(
       s.supplier,
-      rows => rows.flatMap(x => (!skus.has(x.sku) ? [x] : !nh || showHidden ? [{ ...x, sup_hidden: nh, hidden: nh }] : [])),
+      rows => rows.flatMap(x => (!skus.has(x.sku) ? [x] : !nh || editing ? [{ ...x, sup_hidden: nh, hidden: nh }] : [])),
       () => setSupplierHidden(company, s.supplier, nh),
     )
   }
@@ -197,6 +195,8 @@ export function OrderRecoPage() {
             {r.supplier} {r.internal ? <small>({t('oc.internalTag')})</small> : null}
             {r.hidden ? <small> · {t('oc.hiddenTag')}</small> : null}
             {r.lead === null ? <small style={{ opacity: 0.7 }}> · {t('oc.noLead')}</small> : null}
+            {' '}
+            <ExcelIcon title={t('oc.export')} onClick={() => exportSupplier(r.supplier, r.rows.filter(x => !x.hidden))} />
           </>
         ),
       },
@@ -250,8 +250,7 @@ export function OrderRecoPage() {
       ? ([
           { key: 'open', label: t('oc.expandAll'), kind: 'open', onClick: () => setOpenAll(o => ({ n: o.n + 1, open: true })) },
           { key: 'close', label: t('oc.collapseAll'), kind: 'close', onClick: () => setOpenAll(o => ({ n: o.n + 1, open: false })) },
-          { key: 'edit', label: t('oc.edit'), kind: 'edit', on: editing, onClick: () => setEditing(v => !v) },
-          { key: 'hid', label: `${t('oc.showHidden')}${showHidden && hiddenTotal ? ` (${hiddenTotal})` : ''}`, kind: 'hidden', on: showHidden, onClick: () => setShowHidden(v => !v) },
+          { key: 'edit', label: t('oc.edit'), kind: 'edit', on: editing, onClick: () => { qc.removeQueries({ queryKey: ['order-reco', company, !editing] }); setEditing(v => !v) } },
           { key: 'xl', label: t('oc.exportShort'), kind: 'excel', disabled: !suppliers.length, title: t('oc.export'), onClick: exportExcel },
         ] as HeaderBtn[])
       : []),
@@ -302,8 +301,6 @@ export function OrderRecoPage() {
                   rowKey={r => r.sku}
                   initialSort={{ key: 'orderBy', dir: 'asc' }}
                   filterPlaceholder={t('oc.filter')}
-                  exportLabel={t('oc.exportShort')}
-                  onExport={visible => exportSupplier(s.supplier, visible)}
                   rowStyle={r => ({ background: STATUS_COLOR[r.status], ...(r.hidden ? { opacity: 0.5 } : null) })}
                   lead={
                     editing
@@ -389,15 +386,15 @@ function SettingsTab({ company, asUser, onSaved }: { company: string; asUser: st
         <table>
           <thead>
             <tr>
-              <th style={{ textAlign: 'start' }}>{t('oc.supplier')}</th>
-              <th>{t('oc.items')}</th>
-              <th>{t('oc.lead')}</th>
-              <th>{t('oc.cover')}</th>
-              <th>{t('oc.safety')}</th>
-              <th>{t('oc.internal')}</th>
-              <th>{t('oc.payTerms')}</th>
-              <th>{t('oc.payDays')}</th>
-              <th>{t('oc.payNotes')}</th>
+              <th style={{ textAlign: 'start' }} title={t('oc.tip.supplier')}>{t('oc.supplier')}</th>
+              <th title={t('oc.tip.items')}>{t('oc.items')}</th>
+              <th title={t('oc.tip.lead')}>{t('oc.lead')}</th>
+              <th title={t('oc.tip.cover')}>{t('oc.cover')}</th>
+              <th title={t('oc.tip.safety')}>{t('oc.safety')}</th>
+              <th title={t('oc.tip.internal')}>{t('oc.internal')}</th>
+              <th title={t('oc.tip.payTerms')}>{t('oc.payTerms')}</th>
+              <th title={t('oc.tip.payDays')}>{t('oc.payDays')}</th>
+              <th title={t('oc.tip.payNotes')}>{t('oc.payNotes')}</th>
               <th />
             </tr>
           </thead>

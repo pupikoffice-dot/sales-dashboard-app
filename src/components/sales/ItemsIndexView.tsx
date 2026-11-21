@@ -26,6 +26,8 @@ interface ItemsIndexViewProps {
   initialCompany: LogicalCompany | null
 }
 
+const HIDDEN_COMPANIES: string[] = ['grow']
+
 function ItemsIndexContent({ initialCompany }: ItemsIndexViewProps) {
   const { searchQuery, setSearchQuery } = useSalesReportUi()
   const { t } = useLocale()
@@ -33,12 +35,13 @@ function ItemsIndexContent({ initialCompany }: ItemsIndexViewProps) {
   const { access } = useDashboardAccess()
   const { isPreviewing, effectiveIsSuperAdmin } = usePreview()
   // "View as user": the fetch used the admin's session, so cut it down to the previewed user's access.
-  const data = useMemo(
-    () => (raw.data && isPreviewing && !effectiveIsSuperAdmin && access ? maskItemIndexForPreview(raw.data, access) : raw.data),
-    [raw.data, isPreviewing, effectiveIsSuperAdmin, access],
-  )
+  const data = useMemo(() => {
+    const d = raw.data && isPreviewing && !effectiveIsSuperAdmin && access ? maskItemIndexForPreview(raw.data, access) : raw.data
+    // Grow is not shown on this page (owner's decision 2026-11-19); its data stays in the database.
+    return d ? { ...d, rows: d.rows.filter(r => !HIDDEN_COMPANIES.includes(r.co)) } : d
+  }, [raw.data, isPreviewing, effectiveIsSuperAdmin, access])
   const q = { isLoading: raw.isLoading, error: raw.error, data }
-  const [company, setCompany] = useState<LogicalCompany | 'all'>(initialCompany ?? 'all')
+  const [company, setCompany] = useState<LogicalCompany | 'all'>(initialCompany && !HIDDEN_COMPANIES.includes(initialCompany) ? initialCompany : 'all')
   const [mode, setMode] = useState<'index' | 'nocat' | 'control'>('index')
   const cc = useCategoryControl()
   const ccCounts = cc.data ? controlCounts(cc.data, company) : null
@@ -46,7 +49,7 @@ function ItemsIndexContent({ initialCompany }: ItemsIndexViewProps) {
   // In stock but no category (REP103 column I). Reloaded every 10 min: the 103 export now runs twice a day.
   const nocatRaw = useQuery({ queryKey: ['uncategorized-stock'], queryFn: fetchUncategorizedStock, staleTime: 10 * 60 * 1000 })
   const nocat = useMemo(() => {
-    const rows = nocatRaw.data ?? []
+    const rows = (nocatRaw.data ?? []).filter(r => !HIDDEN_COMPANIES.includes(r.co))
     if (isPreviewing && !effectiveIsSuperAdmin && access) {
       const co = new Set<string>(access.companies)
       return rows.filter(r => co.has(r.co))
