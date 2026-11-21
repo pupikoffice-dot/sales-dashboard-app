@@ -5,6 +5,7 @@ import { acknowledgeIncident, type StatusRow } from '../../lib/dataHealth/api'
 import { monthlyStats, redSegments } from '../../lib/dataHealth/timeline'
 import { fmtDateTime, fmtDatesInText } from '../../lib/dates'
 import { downloadMarginExceptions } from '../../lib/marginExceptionsReport'
+import '../../components/rnd/PlanTable.css' // the shared glass button style (.rb, .rb-excel)
 
 // Data health monitor page (admin and super-admin). Spec: docs/superpowers/specs/2026-10-03-data-health-monitor-design.md
 const COLOUR: Record<StatusRow['status'], string> = { green: '#2e7d32', amber: '#ed8c00', red: '#c62828', grey: '#9e9e9e' }
@@ -51,16 +52,7 @@ export function DataHealthPage() {
 
   return (
     <div className="p-4 space-y-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <button type="button" className="nav-btn" disabled={marginMsg?.kind === 'busy'} onClick={() => void runMarginReport()}
-          title="Excel: items with no cost and items with gross margin under 10%, this year, Pupik / Monkeytime / Goldbug">
-          Margin &amp; no-cost items (Excel)
-        </button>
-        {marginMsg && (
-          <span className="text-sm" role="status" style={{ color: marginMsg.kind === 'error' ? COLOUR.red : '#6b7280' }}>{marginMsg.text}</span>
-        )}
-      </div>
-
+      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
       <div>
         <h1 className="text-xl font-semibold">Data health</h1>
         <p className="text-sm text-gray-500">
@@ -73,6 +65,22 @@ export function DataHealthPage() {
               ? `Email alerts to ${sendState.data.recipients.join(', ')} are working (last sent ${fmtDateTime(sendState.data.last_send_at)}).`
               : 'Email alerts: nothing sent yet.'}
         </p>
+      </div>
+      <div className="flex flex-col items-end gap-1" style={{ maxWidth: 360 }}>
+        <button type="button" className="rb rb-excel" disabled={marginMsg?.kind === 'busy'} onClick={() => void runMarginReport()}
+          title="Excel: items with no cost and items with gross margin under 10%, this year, Pupik / Monkeytime / Goldbug">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"
+            aria-hidden="true" style={{ verticalAlign: '-2px', marginInlineEnd: 6 }}>
+            <path d="M9.5 1.5H4a1.5 1.5 0 0 0-1.5 1.5v10A1.5 1.5 0 0 0 4 14.5h8a1.5 1.5 0 0 0 1.5-1.5V5.5z" />
+            <path d="M9.5 1.5v4h4" />
+            <path d="M5.8 8.2l2.4 3.6M8.2 8.2l-2.4 3.6" />
+          </svg>
+          Margin &amp; no-cost items
+        </button>
+        {marginMsg && (
+          <span className="text-xs" role="status" style={{ color: marginMsg.kind === 'error' ? COLOUR.red : '#6b7280', textAlign: 'end' }}>{marginMsg.text}</span>
+        )}
+      </div>
       </div>
 
       <section>
