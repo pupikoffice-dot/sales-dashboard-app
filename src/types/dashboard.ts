@@ -18,6 +18,7 @@ export type DashboardModuleId =
   | 'rnd_monthly'
   | 'rnd_yearly'
   | 'rnd_year'
+  | 'rnd_grp_cards'
   | 'rnd_client_card'
   | 'rnd_item_card'
   | 'rnd_order_reco'

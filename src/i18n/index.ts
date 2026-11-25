@@ -57,6 +57,11 @@ const NAV_KEYS: Record<string, MessageKey> = {
   rnd_item_card: 'nav.rndItemCard',
   rnd_order_reco: 'nav.rndOrderReco',
   rnd_import_cover: 'nav.rndImportCover',
+  grp_expenses: 'nav.grpExpenses',
+  rnd_grp_cards: 'nav.grpCards',
+  exp_group: 'nav.expGroup',
+  exp_company: 'nav.expCompany',
+  exp_cards: 'nav.expCards',
 }
 
 export function navLabel(locale: AppLocale, moduleId: string): string {

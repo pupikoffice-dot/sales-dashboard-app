@@ -72,6 +72,7 @@ export function DashboardLayout() {
   const ownFilters = ['/stock', '/stock-brand', '/stock-history', '/items', '/rnd'].some(p => location.pathname === p || location.pathname.startsWith(`${p}/`))
   const showFilters = !location.pathname.startsWith('/admin') && !hideNavigation && !ownFilters
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({}) // sidebar group tabs the user opened by hand
   // Desktop: the sidebar can shrink to a narrow rail of icons (remembered on this device).
   const [rail, setRail] = useState(() => {
     try {
@@ -170,7 +171,16 @@ export function DashboardLayout() {
     ...visibleOps.map(m => ({ id: m.id as string, path: m.path })),
     ...extraVisible('operations').map(x => ({ id: x.id, path: x.path })),
   ]
-  const rndItems = extraVisible('rnd').map(x => ({ id: x.id, path: x.path }))
+  // R&D sidebar: plain buttons plus group tabs (one button that opens a dropdown of its pages). A group appears at the place of
+  // its first visible page and only when it has at least one visible page.
+  type RndEntry = { id: string; path: string; children?: { id: string; path: string }[] }
+  const rndItems: RndEntry[] = []
+  for (const x of extraVisible('rnd')) {
+    if (!x.group) { rndItems.push({ id: x.id, path: x.path }); continue }
+    let g = rndItems.find(e => e.id === x.group)
+    if (!g) { g = { id: x.group, path: x.path, children: [] }; rndItems.push(g) }
+    g.children!.push({ id: x.id, path: x.path })
+  }
   const rowCount = allRows.length
   const debtCount = debtRows.length
 
@@ -214,18 +224,53 @@ export function DashboardLayout() {
             <div className="sidebar-label" style={{ marginTop: 8 }}>
               {t('nav.rnd')}
             </div>
-            {rndItems.map(m => (
-              <NavLink
-                key={m.id}
-                to={m.path}
-                onClick={() => setSidebarOpen(false)}
-                title={rail ? navLabel(locale, m.id) : undefined}
-                className={({ isActive }) => `nav-btn${isActive ? ' active' : ''}`}
-              >
-                <NavIcon id={m.id} />
-                <span className="nav-txt">{navLabel(locale, m.id)}</span>
-              </NavLink>
-            ))}
+            {rndItems.map(m => {
+              if (!m.children) {
+                return (
+                  <NavLink
+                    key={m.id}
+                    to={m.path}
+                    onClick={() => setSidebarOpen(false)}
+                    title={rail ? navLabel(locale, m.id) : undefined}
+                    className={({ isActive }) => `nav-btn${isActive ? ' active' : ''}`}
+                  >
+                    <NavIcon id={m.id} />
+                    <span className="nav-txt">{navLabel(locale, m.id)}</span>
+                  </NavLink>
+                )
+              }
+              const inside = m.children.some(c => location.pathname === c.path || location.pathname.startsWith(`${c.path}/`))
+              const open = openGroups[m.id] ?? inside
+              return (
+                <div key={m.id}>
+                  <button
+                    type="button"
+                    className={`nav-btn${inside ? ' active' : ''}`}
+                    aria-expanded={open}
+                    title={rail ? navLabel(locale, m.id) : undefined}
+                    onClick={() => setOpenGroups(prev => ({ ...prev, [m.id]: !open }))}
+                    style={{ width: '100%', textAlign: 'start' }}
+                  >
+                    <NavIcon id={m.id} />
+                    <span className="nav-txt">{navLabel(locale, m.id)}</span>
+                    <span className="nav-txt" aria-hidden="true" style={{ marginInlineStart: 'auto' }}>{open ? '▾' : '▸'}</span>
+                  </button>
+                  {open && m.children.map(c => (
+                    <NavLink
+                      key={c.id}
+                      to={c.path}
+                      onClick={() => setSidebarOpen(false)}
+                      title={rail ? navLabel(locale, c.id) : undefined}
+                      className={({ isActive }) => `nav-btn${isActive ? ' active' : ''}`}
+                      style={rail ? undefined : { paddingInlineStart: 28 }}
+                    >
+                      <NavIcon id={c.id} />
+                      <span className="nav-txt">{navLabel(locale, c.id)}</span>
+                    </NavLink>
+                  ))}
+                </div>
+              )
+            })}
           </>
         )}
         {opsItems.length > 0 && (
@@ -513,6 +558,13 @@ const NAV_ICONS: Record<string, string> = {
   rnd_monthly: '🔬',
   rnd_yearly: '📅',
   rnd_year: '🗓',
+  grp_expenses: '💰',
+  rnd_grp_cards: '🗂',
+  rnd_client_card: '👥',
+  rnd_item_card: '🏷',
+  exp_group: '🌐',
+  exp_company: '🏢',
+  exp_cards: '🗃',
   'nav.adminUsers': '👤',
   'nav.adminClasses': '🔑',
   'nav.adminModules': '🧩',

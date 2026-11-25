@@ -23,6 +23,8 @@ const ItemCardPage = lazy(() => import('./pages/rnd/ItemCardPage').then(m => ({ 
 const StockHistoryPage = lazy(() => import('./pages/StockHistoryPage').then(m => ({ default: m.StockHistoryPage })))
 const OrderRecoPage = lazy(() => import('./pages/rnd/OrderRecoPage').then(m => ({ default: m.OrderRecoPage })))
 const ImportCoverPage = lazy(() => import('./pages/rnd/ImportCoverPage').then(m => ({ default: m.ImportCoverPage })))
+const ExpensesPage = lazy(() => import('./pages/expenses/ExpensesPage').then(m => ({ default: m.ExpensesPage })))
+const ExpenseCardsPage = lazy(() => import('./pages/expenses/ExpenseCardsPage').then(m => ({ default: m.ExpenseCardsPage })))
 const MonthlyDataPage = lazy(() => import('./pages/rnd/MonthlyDataPage').then(m => ({ default: m.MonthlyDataPage })))
 const ItemsIndexPage = lazy(() => import('./pages/ItemsIndexPage').then(m => ({ default: m.ItemsIndexPage })))
 const DeliveriesPage = lazy(() => import('./pages/operations/DeliveriesPage').then(m => ({ default: m.DeliveriesPage })))
@@ -74,6 +76,9 @@ function ProtectedApp() {
         <Route path="export" element={<RequireModule moduleId="export"><PlaceholderModulePage title="Export" /></RequireModule>} />
         <Route path="operations/deliveries" element={<RequireModule moduleId="ops_deliveries"><DeliveriesPage /></RequireModule>} />
         {canManageUsers && <Route path="admin/users" element={<UsersPage />} />}
+        {isSuperAdmin && <Route path="expenses/group" element={<ExpensesPage mode="group" />} />}
+        {isSuperAdmin && <Route path="expenses/company" element={<ExpensesPage mode="company" />} />}
+        {isSuperAdmin && <Route path="expenses/cards" element={<ExpenseCardsPage />} />}
         {isSuperAdmin && <Route path="admin/classes" element={<ClassesPage />} />}
         {isSuperAdmin && <Route path="admin/modules" element={<ModulesPage />} />}
         {isSuperAdmin && <Route path="admin/chains" element={<ChainsPage />} />}

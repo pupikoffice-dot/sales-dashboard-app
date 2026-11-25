@@ -726,7 +726,7 @@ function EditAccessModal({
                         </label>
                       ))}
                       {pages.map(m => (
-                        <label key={m.id} className="admin-form-check" style={{ marginInlineStart: topLevel.length ? 18 : 0 }}>
+                        <label key={m.id} className="admin-form-check" style={{ marginInlineStart: (m.group ? 36 : 0) + (topLevel.length ? 18 : 0) }}>
                           <input type="checkbox" checked={modules.includes(m.id)} onChange={() => toggleModule(m.id)} />
                           {m.label}
                         </label>
