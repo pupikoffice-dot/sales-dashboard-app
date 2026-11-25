@@ -57,6 +57,11 @@ function ExpensesView({ data, mode }: { data: ExpenseData; mode: 'group' | 'comp
   const [open, setOpen] = useState<Set<string>>(new Set())
   const toggle = (code: string) => setOpen(s => { const n = new Set(s); if (n.has(code)) n.delete(code); else n.add(code); return n })
   const prevByCat = new Map(prev.categories.map(c => [c.code, c]))
+  const prevByCat2 = new Map(prev.categories2.map(c => [c.code, c]))
+  const [open2, setOpen2] = useState<Set<string>>(new Set())
+  const toggle2 = (code: string) => setOpen2(s => { const n = new Set(s); if (n.has(code)) n.delete(code); else n.add(code); return n })
+  const cat2Label = new Map((data.categories2 ?? []).map(k => [k.code, k.label]))
+  const hasCat2 = (data.categories2 ?? []).length > 0
 
   const loadedAt = data.loads
     .filter(l => l.y === year && (mode === 'group' || l.co === co))
@@ -113,10 +118,31 @@ function ExpensesView({ data, mode }: { data: ExpenseData; mode: 'group' | 'comp
       ...(hasPrev ? [rp(pctOfRevenue(prev.totalYtd, prev.revenueYtd)), null] : []), null, null])
     downloadWorkbook([{ name: 'By category', rows, headerFilter: true, widths: [28, 12, 30, 12, ...Array(12).fill(11), 14, 14, 14, 10, 9, 12] }], `Expenses-by-category-${stamp}.xlsx`)
   }
+  const exportCategories2 = () => {
+    const head: WorkbookCell[] = ['Category 2', 'Card', 'Name', 'Company', 'Category', ...MONTHS, `YTD Jan-${MONTHS[through - 1]}`, `Avg per month (${through} mo)`,
+      ...(hasPrev ? [`${year - 1} YTD`, 'Change %'] : []), 'Share %', '% of revenue']
+    const rows: WorkbookCell[][] = [head]
+    for (const c of cur.categories2) {
+      const p = prevByCat2.get(c.code)
+      const chg = pctChange(c.ytd, p?.ytd ?? 0)
+      rows.push([c.label, '', '', '', '', ...c.months.map(r2), r2(c.ytd), r2(avgOf(c.ytd, through)),
+        ...(hasPrev ? [r2(p?.ytd ?? 0), chg === null ? null : r2(chg)] : []), cur.totalYtd ? r2((c.ytd / cur.totalYtd) * 100) : null, rp(pctOfRevenue(c.ytd, cur.revenueYtd))])
+      for (const k of cur.cards.filter(x => !x.excluded && x.cat2 === c.code).sort((a, b) => b.ytd - a.ytd)) {
+        const pk = prevCards.get(`${k.co}|${k.card}`)
+        const kc = pctChange(k.ytd, pk?.ytd ?? 0)
+        rows.push([c.label, k.card, k.name, expenseCompanyLabel(k.co), data.categories.find(x => x.code === k.cat)?.label ?? k.cat, ...k.months.map(r2), r2(k.ytd), r2(avgOf(k.ytd, through)),
+          ...(hasPrev ? [r2(pk?.ytd ?? 0), kc === null ? null : r2(kc)] : []), cur.totalYtd ? r2((k.ytd / cur.totalYtd) * 100) : null, rp(pctOfRevenue(k.ytd, cur.revenueYtd))])
+      }
+    }
+    const tc = pctChange(cur.totalYtd, prev.totalYtd)
+    rows.push(['Total', '', '', '', '', ...cur.total.map(r2), r2(cur.totalYtd), r2(avgOf(cur.totalYtd, through)),
+      ...(hasPrev ? [r2(prev.totalYtd), tc === null ? null : r2(tc)] : []), 100, rp(pctOfRevenue(cur.totalYtd, cur.revenueYtd))])
+    downloadWorkbook([{ name: 'By Category 2', rows, headerFilter: true, widths: [28, 12, 30, 12, 22, ...Array(12).fill(11), 14, 14, 14, 10, 9, 12] }], `Expenses-by-category2-${stamp}.xlsx`)
+  }
   const exportTopCards = () => {
-    const rows: WorkbookCell[][] = [['Card', 'Company', 'Name', 'Category', `YTD Jan-${MONTHS[through - 1]}`, `Avg per month (${through} mo)`, '% of revenue']]
-    for (const c of topCards) rows.push([c.card, expenseCompanyLabel(c.co), c.name, data.categories.find(k => k.code === c.cat)?.label ?? c.cat, r2(c.ytd), r2(avgOf(c.ytd, through)), rp(pctOfRevenue(c.ytd, cur.revenueYtd))])
-    downloadWorkbook([{ name: 'Largest cards', rows, widths: [12, 12, 32, 22, 14, 16] }], `Expenses-largest-cards-${stamp}.xlsx`)
+    const rows: WorkbookCell[][] = [['Card', 'Company', 'Name', 'Category', 'Category 2', `YTD Jan-${MONTHS[through - 1]}`, `Avg per month (${through} mo)`, '% of revenue']]
+    for (const c of topCards) rows.push([c.card, expenseCompanyLabel(c.co), c.name, data.categories.find(k => k.code === c.cat)?.label ?? c.cat, c.cat2 ? (cat2Label.get(c.cat2) ?? c.cat2) : 'Not assigned', r2(c.ytd), r2(avgOf(c.ytd, through)), rp(pctOfRevenue(c.ytd, cur.revenueYtd))])
+    downloadWorkbook([{ name: 'Largest cards', rows, widths: [12, 12, 32, 22, 22, 14, 16] }], `Expenses-largest-cards-${stamp}.xlsx`)
   }
   const exportCompanies = () => {
     const rows: WorkbookCell[][] = [['Company', `${year} YTD`, `Avg per month (${through} mo)`, ...(hasPrev ? [`${year - 1} YTD`, 'Change %'] : [])]]
@@ -292,9 +318,100 @@ function ExpensesView({ data, mode }: { data: ExpenseData; mode: 'group' | 'comp
       </section>
 
       <section>
+        <h2 className="font-semibold mb-2 flex items-center gap-3">
+          By Category 2 {hasCat2 && <ExportBtn onClick={exportCategories2} />}
+        </h2>
+        {!hasCat2 ? (
+          <p className="text-sm text-gray-500">
+            No Category 2 yet. <Link to="/expenses/cards" className="underline">Create them and assign the cards</Link>; this table then sums the expenses by Category 2 only.
+          </p>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="text-sm w-full">
+                <thead>
+                  <tr className="text-gray-500">
+                    <th style={{ textAlign: 'left' }}>Category 2</th>
+                    {MONTHS.map((m, i) => <th key={m} style={{ ...num, opacity: i < through ? 1 : 0.4 }}>{m}</th>)}
+                    <th style={num}>YTD</th>
+                    <th style={num} title={`YTD divided by the ${through} counted month${through === 1 ? '' : 's'}`}>Avg / month</th>
+                    {hasPrev && <th style={num}>{year - 1} YTD</th>}
+                    {hasPrev && <th style={num}>Change</th>}
+                    <th style={num}>Share</th>
+                    <th style={num} title="YTD expense divided by YTD revenue">% of revenue</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cur.categories2.map(c => {
+                    const p = prevByCat2.get(c.code)
+                    const isOpen = open2.has(c.code)
+                    const cardRows = isOpen
+                      ? cur.cards.filter(k => !k.excluded && k.cat2 === c.code).sort((a, b) => b.ytd - a.ytd || a.card.localeCompare(b.card))
+                      : []
+                    return (
+                      <Fragment key={c.code || 'none'}>
+                        <tr className="border-t" style={c.code === '' ? { opacity: 0.8, fontStyle: 'italic' } : undefined}>
+                          <td>
+                            <button type="button" aria-expanded={isOpen} onClick={() => toggle2(c.code)}
+                              style={{ background: 'none', border: 0, padding: 0, cursor: 'pointer', font: 'inherit', color: 'inherit', textAlign: 'left' }}>
+                              <span aria-hidden style={{ display: 'inline-block', width: '1.1em' }}>{isOpen ? '▾' : '▸'}</span>
+                              {c.label}
+                            </button>
+                          </td>
+                          {c.months.map((v, i) => <td key={i} style={{ ...num, opacity: i < through ? 1 : 0.4 }}>{fmtIls(v)}</td>)}
+                          <td style={{ ...num, fontWeight: 600 }}>{fmtIls(c.ytd)}</td>
+                          <td style={num}>{fmtIls(avgOf(c.ytd, through))}</td>
+                          {hasPrev && <td style={num}>{p ? fmtIls(p.ytd) : '—'}</td>}
+                          {hasPrev && <td style={num}><Pct v={pctChange(c.ytd, p?.ytd ?? 0)} /></td>}
+                          <td style={num}>{cur.totalYtd ? `${((c.ytd / cur.totalYtd) * 100).toFixed(1)}%` : '—'}</td>
+                          <td style={num}>{fmtPct(pctOfRevenue(c.ytd, cur.revenueYtd))}</td>
+                        </tr>
+                        {cardRows.map(k => {
+                          const pk = prevCards.get(`${k.co}|${k.card}`)
+                          return (
+                            <tr key={`${k.co}|${k.card}`} style={{ background: 'rgba(127,127,127,0.07)', fontSize: '0.92em' }}>
+                              <td style={{ paddingLeft: '1.6em' }}>
+                                {k.name || k.card}
+                                <span style={{ opacity: 0.55 }}> · {k.card}{mode === 'group' ? ` · ${expenseCompanyLabel(k.co)}` : ''}</span>
+                              </td>
+                              {k.months.map((v, i) => <td key={i} style={{ ...num, opacity: i < through ? 1 : 0.4 }}>{fmtIls(v)}</td>)}
+                              <td style={{ ...num, fontWeight: 600 }}>{fmtIls(k.ytd)}</td>
+                              <td style={num}>{fmtIls(avgOf(k.ytd, through))}</td>
+                              {hasPrev && <td style={num}>{pk ? fmtIls(pk.ytd) : '—'}</td>}
+                              {hasPrev && <td style={num}><Pct v={pctChange(k.ytd, pk?.ytd ?? 0)} /></td>}
+                              <td style={num}>{cur.totalYtd ? `${((k.ytd / cur.totalYtd) * 100).toFixed(1)}%` : '—'}</td>
+                              <td style={num}>{fmtPct(pctOfRevenue(k.ytd, cur.revenueYtd))}</td>
+                            </tr>
+                          )
+                        })}
+                      </Fragment>
+                    )
+                  })}
+                  <tr className="border-t font-semibold">
+                    <td>Total</td>
+                    {cur.total.map((v, i) => <td key={i} style={{ ...num, opacity: i < through ? 1 : 0.4 }}>{fmtIls(v)}</td>)}
+                    <td style={num}>{fmtIls(cur.totalYtd)}</td>
+                    <td style={num}>{fmtIls(avgOf(cur.totalYtd, through))}</td>
+                    {hasPrev && <td style={num}>{fmtIls(prev.totalYtd)}</td>}
+                    {hasPrev && <td style={num}><Pct v={pctChange(cur.totalYtd, prev.totalYtd)} /></td>}
+                    <td style={num}>100%</td>
+                    <td style={num}>{fmtPct(pctOfRevenue(cur.totalYtd, cur.revenueYtd))}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p className="text-sm text-gray-500 mt-2">
+              The same expenses as the table above, grouped by Category 2 instead. The total is the same{mode === 'group' ? ' (intercompany charges are left out here too)' : ''}.
+              Cards with no Category 2 are shown as "Not assigned".
+            </p>
+          </>
+        )}
+      </section>
+
+      <section>
         <h2 className="font-semibold mb-2 flex items-center gap-3">Ten largest cards (year to date) <ExportBtn onClick={exportTopCards} /></h2>
         <table className="text-sm">
-          <thead><tr className="text-gray-500"><th style={{ textAlign: 'left' }}>Card</th>{mode === 'group' && <th style={{ textAlign: 'left' }}>Company</th>}<th style={{ textAlign: 'left' }}>Name</th><th style={{ textAlign: 'left' }}>Category</th><th style={num}>YTD</th><th style={num}>Avg / month</th><th style={num}>% of revenue</th></tr></thead>
+          <thead><tr className="text-gray-500"><th style={{ textAlign: 'left' }}>Card</th>{mode === 'group' && <th style={{ textAlign: 'left' }}>Company</th>}<th style={{ textAlign: 'left' }}>Name</th><th style={{ textAlign: 'left' }}>Category</th><th style={{ textAlign: 'left' }}>Category 2</th><th style={num}>YTD</th><th style={num}>Avg / month</th><th style={num}>% of revenue</th></tr></thead>
           <tbody>
             {topCards.map(c => (
               <tr key={`${c.co}|${c.card}`} className="border-t">
@@ -302,6 +419,7 @@ function ExpensesView({ data, mode }: { data: ExpenseData; mode: 'group' | 'comp
                 {mode === 'group' && <td className="pr-4">{expenseCompanyLabel(c.co)}</td>}
                 <td className="pr-4">{c.name}</td>
                 <td className="pr-4">{data.categories.find(k => k.code === c.cat)?.label ?? c.cat}</td>
+                <td className="pr-4">{c.cat2 ? (cat2Label.get(c.cat2) ?? c.cat2) : <span style={{ opacity: 0.5 }}>Not assigned</span>}</td>
                 <td style={num}>{fmtIls(c.ytd)}</td>
                 <td style={num}>{fmtIls(avgOf(c.ytd, through))}</td>
                 <td style={num}>{fmtPct(pctOfRevenue(c.ytd, cur.revenueYtd))}</td>

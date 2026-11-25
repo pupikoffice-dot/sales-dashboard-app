@@ -50,6 +50,21 @@ describe('expenses summary', () => {
     expect(pctOfRevenue(5, 0)).toBeNull()
     expect(companiesWithoutRevenue({ ...withRev, lines: [...withRev.lines, { co: 'baloo', y: 2026, card: '9', m: { '1': 1 } }] }, 2026)).toEqual(['baloo'])
   })
+  it('Category 2 sums the same cards another way: adds up to the total, unassigned last, intercompany out in group view', () => {
+    const d2: ExpenseData = {
+      ...data,
+      categories2: [{ code: 'c2_a', label: 'Overheads' }, { code: 'c2_b', label: 'People' }],
+      cards: data.cards.map(c => (c.card === '1' && c.co === 'pupik' ? { ...c, cat2: 'c2_b' } : c.card === '3' ? { ...c, cat2: 'c2_a' } : c)),
+    }
+    const g = summarize(d2, { kind: 'group' }, 2026, 12)
+    expect(g.categories2.map(c => c.code)).toEqual(['c2_a', 'c2_b'])        // intercompany cards (no Category 2) are not in the list
+    expect(g.categories2.find(c => c.code === 'c2_b')?.ytd).toBe(175)        // pupik card 1: 100+50+25
+    expect(g.categories2.find(c => c.code === 'c2_a')?.ytd).toBe(5)          // mt card 3: 10-5
+    expect(g.categories2.reduce((t, c) => t + c.ytd, 0)).toBe(g.totalYtd)
+    const p = summarize(d2, { kind: 'company', co: 'pupik' }, 2026, 12)
+    expect(p.categories2.map(c => c.label)).toEqual(['People', 'Not assigned'])  // the intercompany card is booked here, so it shows as not assigned, last
+    expect(p.categories2.reduce((t, c) => t + c.ytd, 0)).toBe(p.totalYtd)
+  })
   it('percent change needs a base', () => {
     expect(pctChange(110, 100)).toBeCloseTo(10)
     expect(pctChange(5, 0)).toBeNull()

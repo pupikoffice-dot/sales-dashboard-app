@@ -2,16 +2,18 @@
 // Amounts: cash ILS; positive = expense, negative = credit to the card (lowers the expense).
 
 export type ExpenseCategory = { code: string; label: string }
-export type ExpenseCard = { co: string; card: string; name: string; cat: string; src: 'auto' | 'owner' }
+export type ExpenseCard = { co: string; card: string; name: string; cat: string; cat2?: string | null; src: 'auto' | 'owner' }
 export type ExpenseLine = { co: string; y: number; card: string; m: Record<string, number> }
 export type ExpenseLoad = { co: string; y: number; at: string }
 export type ExpenseRevenue = { co: string; y: number; m: Record<string, number> }
-export type ExpenseData = { categories: ExpenseCategory[]; loads: ExpenseLoad[]; cards: ExpenseCard[]; lines: ExpenseLine[]; revenue?: ExpenseRevenue[] }
+export type ExpenseData = { categories: ExpenseCategory[]; categories2?: ExpenseCategory[]; loads: ExpenseLoad[]; cards: ExpenseCard[]; lines: ExpenseLine[]; revenue?: ExpenseRevenue[] }
 
 export const EXPENSE_COMPANIES = ['pupik', 'mt', 'gold', 'baloo'] as const
 export type ExpenseCompany = (typeof EXPENSE_COMPANIES)[number]
 export const INTERCOMPANY = 'intercompany'
 export const UNCLASSIFIED = 'unclassified'
+/** Category 2 value of a card the owner has not assigned (not a real code). */
+export const NO_CAT2 = ''
 
 export function expenseCompanyLabel(co: string): string {
   return { pupik: 'Pupik', mt: 'Monkeytime', gold: 'Goldbug', baloo: 'Baloo' }[co] ?? co
@@ -20,7 +22,7 @@ export function expenseCompanyLabel(co: string): string {
 export type Scope = { kind: 'group' } | { kind: 'company'; co: string }
 
 export type CardRow = {
-  co: string; card: string; name: string; cat: string; src: 'auto' | 'owner'
+  co: string; card: string; name: string; cat: string; cat2: string; src: 'auto' | 'owner'
   months: number[]            // 12 values, Jan..Dec
   ytd: number                 // months 1..through
   excluded: boolean           // group view: intercompany card, left out of the totals
@@ -30,6 +32,7 @@ export type Summary = {
   year: number
   through: number
   categories: CategoryRow[]   // only categories that have activity; intercompany last, flagged by code
+  categories2: CategoryRow[]  // the same cards grouped by the owner's Category 2 (code '' = not assigned, last); adds up to `total`
   total: number[]             // 12 months, without the excluded intercompany cards in group view
   totalYtd: number
   intercompany: { months: number[]; ytd: number }  // net of ALL intercompany cards in scope (in group view: should be about 0)
@@ -81,7 +84,7 @@ export function summarize(data: ExpenseData, scope: Scope, year: number, through
     for (const k of Object.keys(l.m)) months[Number(k) - 1] = l.m[k]
     const cat = info?.cat ?? UNCLASSIFIED
     cards.push({
-      co: l.co, card: l.card, name: info?.name ?? '', cat, src: info?.src ?? 'auto',
+      co: l.co, card: l.card, name: info?.name ?? '', cat, cat2: info?.cat2 ?? NO_CAT2, src: info?.src ?? 'auto',
       months, ytd: months.slice(0, through).reduce((a, b) => a + b, 0),
       excluded: scope.kind === 'group' && cat === INTERCOMPANY,
     })
@@ -100,6 +103,20 @@ export function summarize(data: ExpenseData, scope: Scope, year: number, through
   }
   for (const r of byCat.values()) r.ytd = r.months.slice(0, through).reduce((a, b) => a + b, 0)
 
+  // Category 2: only the cards that count in the total (so it always adds up to `total`)
+  const cat2Label = new Map((data.categories2 ?? []).map(c => [c.code, c.label]))
+  const byCat2 = new Map<string, CategoryRow>()
+  for (const c of cards) {
+    if (c.excluded) continue
+    let row = byCat2.get(c.cat2)
+    if (!row) { row = { code: c.cat2, label: c.cat2 === NO_CAT2 ? 'Not assigned' : (cat2Label.get(c.cat2) ?? c.cat2), months: zeros(), ytd: 0, cards: 0 }; byCat2.set(c.cat2, row) }
+    row.cards += 1
+    c.months.forEach((v, i) => { row!.months[i] += v })
+  }
+  for (const r of byCat2.values()) r.ytd = r.months.slice(0, through).reduce((a, b) => a + b, 0)
+  const order2 = new Map((data.categories2 ?? []).map((c, i) => [c.code, i]))
+  const categories2 = [...byCat2.values()].sort((a, b) => (order2.get(a.code) ?? 9999) - (order2.get(b.code) ?? 9999))
+
   const order = new Map(data.categories.map((c, i) => [c.code, i]))
   const categories = [...byCat.values()].sort((a, b) => (order.get(a.code) ?? 999) - (order.get(b.code) ?? 999))
   const sumTo = (a: number[]) => a.slice(0, through).reduce((x, y) => x + y, 0)
@@ -108,7 +125,7 @@ export function summarize(data: ExpenseData, scope: Scope, year: number, through
     if (r.y !== year || !inScope(r.co)) continue
     for (const k of Object.keys(r.m)) revenue[Number(k) - 1] += r.m[k]
   }
-  return { year, through, categories, total, totalYtd: sumTo(total), intercompany: { months: inter, ytd: sumTo(inter) }, cards, revenue, revenueYtd: sumTo(revenue) }
+  return { year, through, categories, categories2, total, totalYtd: sumTo(total), intercompany: { months: inter, ytd: sumTo(inter) }, cards, revenue, revenueYtd: sumTo(revenue) }
 }
 
 /** Companies that have expenses in the year but no revenue loaded (their expenses have nothing to be compared with). */

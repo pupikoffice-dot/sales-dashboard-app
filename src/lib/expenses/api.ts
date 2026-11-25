@@ -30,5 +30,26 @@ export async function deleteExpenseCategory(code: string): Promise<void> {
   if (error) throw error
 }
 
+export async function setExpenseCardCategory2(company: string, card: string, category2: string | null): Promise<void> {
+  const { error } = await supabase.rpc('set_expense_card_category2', { p_company: company, p_card: card, p_category2: category2 })
+  if (error) throw error
+}
+
+/** Category 2: add (code = null) or rename. */
+export async function saveExpenseCategory2(code: string | null, label: string): Promise<void> {
+  const { error } = await supabase.rpc('save_expense_category2', { p_code: code, p_label: label })
+  if (error) throw error
+}
+
+export async function moveExpenseCategory2(code: string, dir: -1 | 1): Promise<void> {
+  const { error } = await supabase.rpc('move_expense_category2', { p_code: code, p_dir: dir })
+  if (error) throw error
+}
+
+export async function deleteExpenseCategory2(code: string): Promise<void> {
+  const { error } = await supabase.rpc('delete_expense_category2', { p_code: code })
+  if (error) throw error
+}
+
 export const useExpenseData = () =>
   useQuery({ queryKey: ['expenses', 'data'], queryFn: fetchExpenseData, staleTime: 5 * 60_000, retry: false })
