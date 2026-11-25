@@ -19,10 +19,22 @@ describe('page permissions', () => {
     }
   })
   it('pages are granted one by one: Item card yes, Yearly data no', () => {
-    const a = access(['rnd_item_card'])
+    const a = access(['rnd_grp_cards', 'rnd_item_card'])
     expect(canShowModule(a, 'rnd_item_card')).toBe(true)
     expect(canShowModule(a, 'rnd_year')).toBe(false)
     expect(canShowModule(a, 'rnd_client_card')).toBe(false)
+  })
+  it('a page inside the Cards group tab needs the group tab as well', () => {
+    expect(canShowModule(access(['rnd_item_card']), 'rnd_item_card')).toBe(false)       // page without the group
+    expect(canShowModule(access(['rnd_grp_cards']), 'rnd_item_card')).toBe(false)       // group without the page
+    expect(canShowModule(access(['rnd_grp_cards', 'rnd_client_card']), 'rnd_client_card')).toBe(true)
+    expect(canShowModule(access(['rnd_grp_cards', 'rnd_client_card']), 'rnd_item_card')).toBe(false)
+  })
+  it('the Expenses group and its pages are super admin only (not grantable)', () => {
+    const exp = NAV_EXTRAS.filter(e => e.group === 'grp_expenses')
+    expect(exp.length).toBe(3)
+    expect(exp.every(e => e.superAdminOnly)).toBe(true)
+    expect(MODULE_REGISTRY.some(m => (m.id as string) === 'grp_expenses' || m.group === 'grp_expenses')).toBe(false)
   })
   it('a super admin sees every page', () => {
     expect(canShowModule(access([]), 'rnd_year', true)).toBe(true)

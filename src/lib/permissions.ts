@@ -1,5 +1,6 @@
 import { resolveLogicalCompany } from './companyTags'
 import type { DashboardAccess, DashboardModuleId, SalesRow } from '../types/dashboard'
+import { GROUP_OF_PAGE } from '../modules/registry'
 
 export function canShowModule(
   access: DashboardAccess | null,
@@ -8,7 +9,10 @@ export function canShowModule(
 ): boolean {
   if (!access?.active) return false
   if (isSuperAdmin) return true
-  return access.modules.includes(moduleId)
+  if (!access.modules.includes(moduleId)) return false
+  // a page inside a group tab needs the group tab granted as well
+  const group = GROUP_OF_PAGE[moduleId]
+  return !group || access.modules.includes(group as DashboardModuleId)
 }
 
 export function companyInScope(access: DashboardAccess, company: string): boolean {
