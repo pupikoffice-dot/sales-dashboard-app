@@ -8,3 +8,13 @@
 - Handoff protocol: the Codding root `CLAUDE.md` defines "write progress in HANDOFF.md" / "read HANDOFF.md". Offer a handoff after significant work.
 - Runtime/ETL/ops rules (UNC paths, one PC per job, never edit `sync\` or `ops\` by hand, no secrets on the share) are in `Management Dashboard\CLAUDE.md` on the server share.
 - Do not run the migrations in `docs/architecture/ASSESSMENT-2026-11-17.md` until the owner approves the roadmap.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues for `pupikoffice-dot/sales-dashboard-app`, using the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
