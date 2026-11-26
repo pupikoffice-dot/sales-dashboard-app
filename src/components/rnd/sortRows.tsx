@@ -57,6 +57,7 @@ export function SortTh({
   onSort,
   left,
   title,
+  wrap,
 }: {
   label: string
   k: string
@@ -64,9 +65,17 @@ export function SortTh({
   onSort: (key: string) => void
   left?: boolean
   title?: string
+  /** let a long heading break onto two lines instead of widening the column */
+  wrap?: boolean
 }) {
   const active = sort?.key === k
-  const style: CSSProperties = { cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap', ...(left ? { textAlign: 'start' } : null) }
+  const style: CSSProperties = {
+    cursor: 'pointer',
+    userSelect: 'none',
+    whiteSpace: wrap ? 'normal' : 'nowrap',
+    ...(wrap ? { lineHeight: 1.15, verticalAlign: 'bottom' } : null),
+    ...(left ? { textAlign: 'start' } : null),
+  }
   return (
     <th
       style={style}
@@ -75,7 +84,7 @@ export function SortTh({
       onClick={() => onSort(k)}
     >
       {label}
-      <span style={{ opacity: active ? 1 : 0.4 }}> {active ? (sort!.dir === 'asc' ? '↑' : '↓') : '↕'}</span>
+      <span style={{ opacity: active ? 1 : 0.4, whiteSpace: 'nowrap' }}> {active ? (sort!.dir === 'asc' ? '↑' : '↓') : '↕'}</span>
     </th>
   )
 }

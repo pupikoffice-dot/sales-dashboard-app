@@ -13,6 +13,7 @@ import {
   fetchOrderSettings,
   groupBySupplier,
   perMonth,
+  rateBasisInfo,
   saveOrderSetting,
   setItemHidden,
   setSupplierHidden,
@@ -34,7 +35,8 @@ const STATUS_COLOR: Record<OrderStatus, string> = {
 const STATUS_RANK: Record<OrderStatus, number> = { late: 0, order: 1, out: 2, ok: 3 }
 
 const n1 = (v: number | null | undefined) => (v === null || v === undefined ? '—' : (Math.round(v * 10) / 10).toLocaleString('en-US'))
-const dt = (v: string | null) => (v ? fmtDate(v) : '—')
+/** Short date for the table: DD/MM/YY (the full year only costs width). */
+const dt = (v: string | null) => (v ? fmtDate(v).replace(/^(\d{1,2}\/\d{1,2}\/)\d{2}(\d{2})$/, '$1$2') : '—')
 
 /** Months left: red and bold under 3. */
 function MonthsLeft({ v }: { v: number | null }) {
@@ -162,6 +164,17 @@ export function OrderRecoPage() {
       { key: 's3', ...H('s3'), get: r => r.sales_3m, show: r => fmt0(r.sales_3m) },
       { key: 's12', ...H('s12'), get: r => r.sales_12m, show: r => fmt0(r.sales_12m) },
       { key: 'base', ...H('base'), get: r => Math.round(perMonth(r.rate12) * 10) / 10, show: r => n1(perMonth(r.rate12)) },
+      {
+        key: 'basis',
+        ...H('basis'),
+        get: r => rateBasisInfo(r).label,
+        text: true,
+        show: r => {
+          const b = rateBasisInfo(r)
+          return <span title={b.title} style={r.rate_basis ? undefined : { opacity: 0.6 }}>{b.label}</span>
+        },
+      },
+      { key: 'baseOld', ...H('baseOld'), get: r => (r.rate_old == null ? null : Math.round(perMonth(r.rate_old) * 10) / 10), show: r => (r.rate_old == null ? '—' : n1(perMonth(r.rate_old))) },
       { key: 'perMonth', ...H('fc'), get: r => Math.round(perMonth(r.forecast_rate) * 10) / 10, show: r => n1(perMonth(r.forecast_rate)) },
       { key: 'trend', ...H('trend'), get: r => Math.round(r.trend * 100) / 100, show: r => r.trend.toFixed(2) },
       { key: 'demand', ...H('dem'), get: r => Math.round(r.demand_cover), show: r => fmt0(r.demand_cover) },
@@ -175,9 +188,24 @@ export function OrderRecoPage() {
       },
       { key: 'b8', ...H('b8'), get: r => (r.b8_rate === null ? null : Math.round(perMonth(r.b8_rate) * 10) / 10), show: r => (r.b8_rate === null ? '—' : `${n1(perMonth(r.b8_rate))}${r.b8_flag ? ' ⚠' : ''}`) },
       { key: 'qty', ...H('qty'), get: r => r.order_qty, show: r => <strong>{fmt0(r.order_qty)}</strong> },
-      { key: 'runOut', ...H('runOut'), get: r => r.run_out, show: r => dt(r.run_out), text: true },
-      { key: 'orderBy', ...H('orderBy'), get: r => r.order_by, show: r => dt(r.order_by), text: true },
-      { key: 'last', ...H('last'), get: r => r.last_sold, show: r => dt(r.last_sold), text: true },
+      { key: 'runOut', ...H('runOut'), get: r => r.run_out, show: r => dt(r.run_out), text: true, cls: 'pt-date' },
+      { key: 'orderBy', ...H('orderBy'), get: r => r.order_by, show: r => dt(r.order_by), text: true, cls: 'pt-date' },
+      { key: 'last', ...H('last'), get: r => r.last_sold, show: r => dt(r.last_sold), text: true, cls: 'pt-date' },
+      {
+        key: 'lastIn',
+        ...H('lastIn'),
+        get: r => r.last_in_date ?? null,
+        text: true,
+        cls: 'pt-date',
+        show: r =>
+          r.last_in_date ? (
+            <span title={`${r.last_in_kind ?? ''} ${r.last_in_doc ?? ''}`.trim()}>
+              {fmt0(r.last_in_qty ?? 0)} · {r.last_in_kind} · {dt(r.last_in_date)}
+            </span>
+          ) : (
+            '—'
+          ),
+      },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [t],
@@ -215,16 +243,17 @@ export function OrderRecoPage() {
   const itemHead = () => [
     t('oc.supplier'), t('oc.h.sku' as 'oc.sku'), t('oc.name'), t('oc.status'), t('oc.stock'), t('oc.t.left' as 'oc.sku').split(':')[0],
     t('oc.t.sCur' as 'oc.sku').split(':')[0], t('oc.t.sLast' as 'oc.sku').split(':')[0], t('oc.t.s3' as 'oc.sku').split(':')[0], t('oc.t.s12' as 'oc.sku').split(':')[0],
-    t('oc.h.base' as 'oc.sku'), t('oc.perMonth'), t('oc.trend'), t('oc.demandCover'), t('oc.atArrival'), t('oc.b2'), t('oc.onTheWay'), t('oc.b8'), t('oc.orderQty'),
-    t('oc.runOut'), t('oc.orderBy'), t('oc.lastSold'),
+    t('oc.h.base' as 'oc.sku'), t('oc.h.basis' as 'oc.sku'), t('oc.h.baseOld' as 'oc.sku'), t('oc.perMonth'), t('oc.trend'), t('oc.demandCover'), t('oc.atArrival'), t('oc.b2'), t('oc.onTheWay'), t('oc.b8'), t('oc.orderQty'),
+    t('oc.runOut'), t('oc.orderBy'), t('oc.lastSold'), t('oc.h.lastIn' as 'oc.sku'), t('oc.h.lastInQty' as 'oc.sku'), t('oc.h.lastInDoc' as 'oc.sku'),
   ]
   const itemLine = (r: OrderRow) => [
     r.supplier, r.sku, r.item_name, statusLabel(r.status), String(Math.round(r.stock)), r.months_left === null ? '' : n1(r.months_left),
     String(Math.round(r.sales_cur)), String(Math.round(r.sales_last)), String(Math.round(r.sales_3m)), String(Math.round(r.sales_12m)),
-    n1(perMonth(r.rate12)), n1(perMonth(r.forecast_rate)), r.trend.toFixed(2), String(Math.round(r.demand_cover)), String(Math.round(r.stock_at_arrival)),
+    n1(perMonth(r.rate12)), rateBasisInfo(r).label, r.rate_old == null ? '' : n1(perMonth(r.rate_old)), n1(perMonth(r.forecast_rate)), r.trend.toFixed(2), String(Math.round(r.demand_cover)), String(Math.round(r.stock_at_arrival)),
     String(Math.round(r.b2_qty)) + (r.b2_docs ? ` (${r.b2_docs})` : ''), String(Math.round(r.b6_qty)) + (r.b6_docs ? ` (${r.b6_docs})` : ''),
     r.b8_rate === null ? '' : n1(perMonth(r.b8_rate)) + (r.b8_flag ? ' !' : ''), String(r.order_qty),
     r.run_out ?? '', r.order_by ?? '', r.last_sold ?? '',
+    r.last_in_date ?? '', r.last_in_qty == null ? '' : String(Math.round(r.last_in_qty)), r.last_in_kind ? `${r.last_in_kind} ${r.last_in_doc ?? ''}`.trim() : '',
   ]
   const stamp = () => new Date().toISOString().slice(0, 10)
 
