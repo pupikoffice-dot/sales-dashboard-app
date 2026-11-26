@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { passesFilter } from '../../lib/orderPlanning'
 import { SortTh, useSortedRows, type SortValue } from './sortRows'
 import './PlanTable.css'
@@ -77,6 +77,18 @@ export function PlanTable<T>({
   onExport?: (visible: T[]) => void
   exportLabel?: string
 }) {
+  const headRef = useRef<HTMLTableSectionElement>(null)
+  const [headH, setHeadH] = useState(0)
+  // Publish this table's header height so a table opened inside one of its rows can stick just below it.
+  useLayoutEffect(() => {
+    const el = headRef.current
+    if (!el) return
+    const measure = () => setHeadH(Math.round(el.getBoundingClientRect().height))
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
   const [openKeys, setOpenKeys] = useState<Set<string>>(new Set())
   const [filters, setFilters] = useState<Record<string, string>>({})
   const accessors = useMemo(() => Object.fromEntries(cols.map(c => [c.key, c.get])), [cols])
@@ -105,7 +117,7 @@ export function PlanTable<T>({
   const anyFilter = Object.values(filters).some(v => v.trim())
 
   return (
-    <div className="plan-table">
+    <div className="plan-table" style={{ ['--tw-outer-head' as string]: `${headH}px` } as CSSProperties}>
       {onExport ? (
         <div style={{ textAlign: 'end', marginBottom: 4 }}>
           <button type="button" className="btn" onClick={() => onExport(sorted)} disabled={!sorted.length}>
@@ -113,9 +125,9 @@ export function PlanTable<T>({
           </button>
         </div>
       ) : null}
-      <div className="tw" style={{ overflowX: 'auto' }}>
+      <div className="tw">
         <table>
-          <thead>
+          <thead ref={headRef}>
             <tr>
               {expand ? <th style={{ width: 20 }} /> : null}
               {lead ? <th title={lead.title}>{lead.header}</th> : null}

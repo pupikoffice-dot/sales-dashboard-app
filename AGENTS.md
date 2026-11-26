@@ -48,6 +48,17 @@ Python, SQL and TypeScript coexist. Rules for the seams:
 - **Protect the database**: schema changes only through a reviewed migration in `supabase/migrations/` (the only migration history), tested on BETA first, never edited by hand in production, never destructive without approval. Patch live functions with migrations, not ad-hoc SQL.
 - Prefer additive, backward-compatible changes (new column/table/function) so the old and new code both keep working.
 
+## Tables (permanent UI rule)
+
+Every data table keeps its header row visible while the user scrolls down it. No exceptions for new tables.
+
+- Wrap every table in the standard `.tw` wrapper (or one of the wrappers listed in `src/styles/tables.css`). That file makes the wrapper a scroll frame and sticks the whole `<thead>` to its top, with an opaque background. Do not add inline `overflow` / `overflowX` styles to a wrapper: they break it.
+- A table opened inside another table's row needs no frame of its own; it sticks under the outer header (the outer table publishes `--tw-outer-head`, see `PlanTable`).
+- Inside a modal the modal body is the scroll frame; the rule handles that.
+- Sales report tables (`.tw-sticky`, `.tw-months`) use the older `useStickyTableHeaders` script. Leave them as they are.
+- A table that can never be long (a legend, a fixed handful of rows) may stay without it; say so in a comment where it is built.
+- A new table is not done until you have scrolled it in the browser and seen the header stay.
+
 ## Performance and scalability
 
 Do not add infrastructure or optimise prematurely. Measure first (query timings, `explain analyze`, bundle size, render profiling), then fix the measured bottleneck.
