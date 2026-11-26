@@ -28,6 +28,7 @@ import {
 import type { LogicalCompany } from '../../types/dashboard'
 import { ReturnsDetail } from '../../components/rnd/ReturnsDetail'
 import { fmtDate } from '../../lib/dates'
+import { ItemOrderReco } from '../../components/rnd/ItemOrderReco'
 
 const COMPANY_ORDER: LogicalCompany[] = ['pupik', 'mt', 'gold']
 
@@ -332,6 +333,8 @@ export function ItemCardPage({ embedded }: { embedded?: { co: LogicalCompany; sk
                 />
               </>
             ) : null}
+
+            <ItemOrderReco company={company} sku={data.item.sku} asUser={asUser} />
 
             <ReturnsDetail company={company} target={{ sku: data.item.sku }} asUser={asUser} />
 

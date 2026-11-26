@@ -120,7 +120,7 @@ export function PlanTable<T>({
               {expand ? <th style={{ width: 20 }} /> : null}
               {lead ? <th title={lead.title}>{lead.header}</th> : null}
               {cols.map(c => (
-                <SortTh key={c.key} label={c.label} k={c.key} sort={sort} onSort={onSort} left={c.text} title={c.title} />
+                <SortTh key={c.key} label={c.label} k={c.key} sort={sort} onSort={onSort} left={c.text} title={c.title} wrap />
               ))}
             </tr>
             <tr>
