@@ -1,0 +1,59 @@
+/*
+ * RULE: every data table keeps its header visible while you scroll down it.
+ *
+ * How: the table wrapper is the scroll frame (scrolls both ways inside a viewport-high box) and the whole
+ * <thead> is sticky at the top of that frame. A wrapper with overflow-x:auto alone can never make a header
+ * stick to the window, so the frame has to scroll vertically as well.
+ *
+ * Applies to: .tw (the standard wrapper) and the Oversight wrappers listed below.
+ * Does NOT apply to: .tw-sticky / .tw-months (Sales report tables; they float through the
+ * useStickyTableHeaders script), .bi-table-wrap (already its own frame with a sticky header).
+ * Written down in AGENTS.md ("Tables") so every agent follows it.
+ */
+.tw:not(.tw-sticky):not(.tw-months),
+.ov-order-detail,
+.ov-supplier-matrix-scroll,
+.ov-table-wrap {
+  overflow: auto;
+  max-height: var(--tw-max-h, calc(100vh - var(--header-h, 60px) - 80px));
+}
+
+.tw:not(.tw-sticky):not(.tw-months) thead,
+.ov-order-detail thead,
+.ov-supplier-matrix-scroll thead,
+.ov-table-wrap thead {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+
+/* An opaque header (rows must not show through) with a line that survives border-collapse. */
+.tw:not(.tw-sticky):not(.tw-months) thead th,
+.ov-order-detail thead th,
+.ov-supplier-matrix-scroll thead th,
+.ov-table-wrap thead th {
+  background: var(--sur2, #131b2e);
+  box-shadow: inset 0 -1px 0 var(--bdr, rgba(148, 163, 184, 0.3));
+}
+
+/* A table inside another table's row (e.g. the items of a brand) does not get a frame of its own:
+   it sticks to the outer frame, just under the outer header (the outer one publishes its height). */
+.tw .tw,
+.tw .ov-order-detail {
+  overflow: visible;
+  max-height: none;
+}
+.tw .tw thead,
+.tw .ov-order-detail thead {
+  top: var(--tw-outer-head, 0px);
+  z-index: 2;
+}
+
+/* Inside a modal the modal body already scrolls: the table sticks to it instead of making a second scroll box. */
+.debt-modal-body .tw:not(.tw-sticky):not(.tw-months),
+.debt-modal-body .ov-order-detail,
+.debt-modal-body .ov-supplier-matrix-scroll,
+.debt-modal-body .ov-table-wrap {
+  overflow: visible;
+  max-height: none;
+}
