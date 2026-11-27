@@ -543,6 +543,30 @@ body.sales-agent-no-nav .dashboard-main {
   box-shadow: 0 4px 14px var(--acc-shadow);
 }
 
+/* Group tabs (Cards, Expenses, Import): a different colour from the plain buttons so they read as folders that open. */
+.nav-btn.nav-grp {
+  background: color-mix(in srgb, var(--grn) 14%, transparent);
+  border-color: color-mix(in srgb, var(--grn) 55%, transparent);
+  color: var(--txt);
+  font-weight: 600;
+}
+.nav-btn.nav-grp:hover {
+  border-color: var(--grn);
+  color: var(--grn);
+  background: color-mix(in srgb, var(--grn) 24%, transparent);
+}
+.nav-btn.nav-grp.active {
+  background: var(--grn);
+  border-color: var(--grn);
+  color: var(--bg);
+}
+.nav-btn.nav-sub {
+  border-inline-start: 3px solid color-mix(in srgb, var(--grn) 70%, transparent);
+}
+.nav-btn.nav-sub.active {
+  border-inline-start-color: var(--grn);
+}
+
 .dashboard-main {
   flex: 1;
   /* min-width: 0 lets this flex child shrink below its content width —
@@ -6156,6 +6180,11 @@ html[data-theme='light'] .sm-suite-disclaimer {
     font-size: 0.9rem;
     line-height: 1;
     cursor: pointer;
+    /* the menu scrolls, the collapse button stays in view */
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--sur2);
   }
 
   .rail-toggle:hover {

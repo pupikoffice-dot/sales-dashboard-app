@@ -37,8 +37,11 @@ export const MODULE_REGISTRY: ModuleDef[] = [
   { id: 'rnd_grp_cards', label: 'Cards (group tab)', path: '/rnd/client', section: 'rnd', subpage: true },
   { id: 'rnd_client_card', label: 'Client card', path: '/rnd/client', section: 'rnd', subpage: true, group: 'rnd_grp_cards' },
   { id: 'rnd_item_card', label: 'Item card', path: '/rnd/item', section: 'rnd', subpage: true, group: 'rnd_grp_cards' },
-  { id: 'rnd_order_reco', label: 'Order recommendation', path: '/rnd/order-reco', section: 'rnd', subpage: true },
-  { id: 'rnd_import_cover', label: 'Import stock cover', path: '/rnd/import-cover', section: 'rnd', subpage: true },
+  // Group tab "Import": Order recommendation + Import stock cover. Same rule as Cards: group AND page must be granted.
+  { id: 'rnd_grp_import', label: 'Import (group tab)', path: '/rnd/order-reco', section: 'rnd', subpage: true },
+  { id: 'rnd_order_reco', label: 'Order recommendation', path: '/rnd/order-reco', section: 'rnd', subpage: true, group: 'rnd_grp_import' },
+  { id: 'rnd_import_cover', label: 'Import stock cover', path: '/rnd/import-cover', section: 'rnd', subpage: true, group: 'rnd_grp_import' },
+  { id: 'rnd_sales_specifics', label: 'Sales specifics', path: '/rnd/sales-specifics', section: 'rnd', subpage: true },
 ]
 
 /**
@@ -68,8 +71,9 @@ export const NAV_EXTRAS: NavExtra[] = [
   { id: 'rnd_year', label: 'Yearly data', path: '/rnd/year', section: 'rnd' },
   { id: 'rnd_client_card', label: 'Client card', path: '/rnd/client', section: 'rnd', group: 'rnd_grp_cards' },
   { id: 'rnd_item_card', label: 'Item card', path: '/rnd/item', section: 'rnd', group: 'rnd_grp_cards' },
-  { id: 'rnd_order_reco', label: 'Order recommendation', path: '/rnd/order-reco', section: 'rnd' },
-  { id: 'rnd_import_cover', label: 'Import stock cover', path: '/rnd/import-cover', section: 'rnd' },
+  { id: 'rnd_order_reco', label: 'Order recommendation', path: '/rnd/order-reco', section: 'rnd', group: 'rnd_grp_import' },
+  { id: 'rnd_import_cover', label: 'Import stock cover', path: '/rnd/import-cover', section: 'rnd', group: 'rnd_grp_import' },
+  { id: 'rnd_sales_specifics', label: 'Sales specifics', path: '/rnd/sales-specifics', section: 'rnd' },
   // R&D > Expenses (ERP report 801): super admin only for now, so they are not grantable modules.
   { id: 'exp_group', label: 'Expenses — group', path: '/expenses/group', section: 'rnd', superAdminOnly: true, group: 'grp_expenses' },
   { id: 'exp_company', label: 'Expenses — company', path: '/expenses/company', section: 'rnd', superAdminOnly: true, group: 'grp_expenses' },
@@ -84,6 +88,7 @@ export interface NavGroup { id: string; section: NavSection }
 export const NAV_GROUPS: NavGroup[] = [
   { id: 'grp_expenses', section: 'rnd' }, // super admin only: all its pages are
   { id: 'rnd_grp_cards', section: 'rnd' },
+  { id: 'rnd_grp_import', section: 'rnd' },
 ]
 
 /** page id -> the grantable group that must also be granted. */

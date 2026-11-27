@@ -245,7 +245,7 @@ export function DashboardLayout() {
                 <div key={m.id}>
                   <button
                     type="button"
-                    className={`nav-btn${inside ? ' active' : ''}`}
+                    className={`nav-btn nav-grp${inside ? ' active' : ''}`}
                     aria-expanded={open}
                     title={rail ? navLabel(locale, m.id) : undefined}
                     onClick={() => setOpenGroups(prev => ({ ...prev, [m.id]: !open }))}
@@ -261,7 +261,7 @@ export function DashboardLayout() {
                       to={c.path}
                       onClick={() => setSidebarOpen(false)}
                       title={rail ? navLabel(locale, c.id) : undefined}
-                      className={({ isActive }) => `nav-btn${isActive ? ' active' : ''}`}
+                      className={({ isActive }) => `nav-btn nav-sub${isActive ? ' active' : ''}`}
                       style={rail ? undefined : { paddingInlineStart: 28 }}
                     >
                       <NavIcon id={c.id} />
@@ -560,6 +560,7 @@ const NAV_ICONS: Record<string, string> = {
   rnd_year: '🗓',
   grp_expenses: '💰',
   rnd_grp_cards: '🗂',
+  rnd_grp_import: '🚢',
   rnd_client_card: '👥',
   rnd_item_card: '🏷',
   exp_group: '🌐',

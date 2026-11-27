@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { SortableTh } from './SortableTh'
+import { ItemCostTip } from '../rnd/ItemCostTip'
 import { SalesReportUiProvider, useSalesReportUi } from '../../context/SalesReportUiContext'
 import { fmt0, fmt2 } from '../../lib/format'
 import { companyLabel } from '../../lib/salesMetrics'
@@ -303,7 +304,7 @@ function ItemsIndexContent({ initialCompany }: ItemsIndexViewProps) {
                     <td>{r.cat ?? ''}</td>
                     <td data-sv={r.lastCategory ?? ''}>{formatLastCategory(r.lastCategory, r.lastCategorySeenAt)}</td>
                     <td data-sv={r.p01 ?? ''}>{r.p01 != null ? fmt2(r.p01) : '—'}</td>
-                    {showCost && <td data-sv={r.cost ?? ''}>{r.cost != null ? fmt2(r.cost) : '—'}</td>}
+                    {showCost && <td data-sv={r.cost ?? ''}>{r.cost != null ? <ItemCostTip company={r.co} sku={r.sku}>{fmt2(r.cost)}</ItemCostTip> : '—'}</td>}
                     {showFob && <td data-sv={r.fob ?? ''}>{r.fob != null ? fmt2(r.fob) : '—'}</td>}
                     <td data-sv={r.wms ?? ''} className="accent2">
                       {r.wms != null ? fmt0(r.wms) : '—'}

@@ -19,10 +19,12 @@ export type DashboardModuleId =
   | 'rnd_yearly'
   | 'rnd_year'
   | 'rnd_grp_cards'
+  | 'rnd_grp_import'
   | 'rnd_client_card'
   | 'rnd_item_card'
   | 'rnd_order_reco'
   | 'rnd_import_cover'
+  | 'rnd_sales_specifics'
 
 export interface DashboardAccess {
   userId: string

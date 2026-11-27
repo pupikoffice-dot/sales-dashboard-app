@@ -12,7 +12,7 @@ import { useLocale } from '../../context/LocaleContext'
 import { attachMargin, fmtPct, hasMarginData, marginOf, type CostCover } from '../../lib/grossMargin'
 import { fetchItemCardMargin } from '../../lib/grossMarginApi'
 import { usePreview } from '../../context/PreviewContext'
-import { fmt0 } from '../../lib/format'
+import { fmt0, fmt2 } from '../../lib/format'
 import {
   daysSince,
   fetchItemCard,
@@ -28,6 +28,8 @@ import {
 import type { LogicalCompany } from '../../types/dashboard'
 import { ReturnsDetail } from '../../components/rnd/ReturnsDetail'
 import { fmtDate } from '../../lib/dates'
+import { ItemCostTip } from '../../components/rnd/ItemCostTip'
+import { fetchItemCostHistory } from '../../lib/itemCostHistory'
 import { ItemOrderReco } from '../../components/rnd/ItemOrderReco'
 
 const COMPANY_ORDER: LogicalCompany[] = ['pupik', 'mt', 'gold']
@@ -129,6 +131,13 @@ export function ItemCardPage({ embedded }: { embedded?: { co: LogicalCompany; sk
     staleTime: 5 * 60 * 1000,
   })
   const marginData = marginQ.data ?? null
+  // Item index cost (latest supplier-invoice cost) with the past import costs on hover; hidden for users who may not see costs.
+  const costQ = useQuery({
+    queryKey: ['item-cost-hist', company, sku],
+    queryFn: () => fetchItemCostHistory(company as string, sku as string),
+    enabled: !!company && !!sku && marginData != null,
+    staleTime: 5 * 60 * 1000,
+  })
   const hasM = hasMarginData(marginData?.months ?? [])
   const net12 = useMemo(() => {
     if (!data) return null
@@ -313,6 +322,22 @@ export function ItemCardPage({ embedded }: { embedded?: { co: LogicalCompany; sk
                 note={margin12.pct == null ? t('gm.coverageNone') : t('gm.kpi.marginSub', { pct: fmtPct(margin12.pct) })}
                 hint={t('gm.hint')}
                 tone={margin12.margin != null && margin12.margin < 0 ? 'amber' : undefined}
+              />
+            ) : null}
+            {costQ.data && marginData ? (
+              <Kpi
+                label={t('ic.cost.label')}
+                value={
+                  costQ.data.cost != null ? (
+                    <ItemCostTip company={company as string} sku={data.item.sku} eager>
+                      {fmt2(costQ.data.cost)}
+                    </ItemCostTip>
+                  ) : (
+                    '—'
+                  )
+                }
+                note={costQ.data.cost != null ? t('ic.cost.note') : t('ic.cost.missing')}
+                tone={costQ.data.cost != null ? undefined : 'amber'}
               />
             ) : null}
             <Kpi label={t('pc.item.clients12')} value={fmt0(data.clients12)} note={since == null ? undefined : t('pc.item.lastSale', { days: since, date: fmtDate(data.last) })} />

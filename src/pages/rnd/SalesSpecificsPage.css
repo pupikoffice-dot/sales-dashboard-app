@@ -1,0 +1,15 @@
+.ss-deals table { width: auto; font-size: 0.9rem; }
+.ss-deals th, .ss-deals td { padding: 5px 10px; white-space: nowrap; text-align: end; }
+.tw.ss-deals thead th { vertical-align: bottom; white-space: normal; text-align: center; line-height: 1.25; text-transform: none; letter-spacing: 0; font-size: 0.8rem; min-width: 64px; max-width: 110px; }
+.tw.ss-deals thead th.ss-first { text-align: start; min-width: 110px; }
+.ss-deals .ss-month { opacity: 0.9; border-inline-start: 1px solid rgba(127, 127, 127, 0.2); }
+.ss-deals .ss-grp { border-inline-start: 1px solid rgba(127, 127, 127, 0.35); }
+.ss-deals .ss-pct { opacity: 0.75; }
+.ss-deals .ss-chg.up { color: var(--grn, #047857); }
+.ss-deals .ss-chg.down { color: var(--red, #b91c1c); }
+.ss-deals .ss-chg.flat { opacity: 0.6; }
+.ss-deals .ss-total th, .ss-deals .ss-total td { font-weight: 700; border-top: 2px solid rgba(127, 127, 127, 0.4); }
+.ss-chart { margin-top: 22px; max-width: 980px; }
+.ss-chart-bar { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; margin: 4px 0 8px; }
+.ss-chart-bar select { max-width: 100%; }
+.ss-note { opacity: 0.7; font-size: 0.85rem; margin: 4px 0 0; }
