@@ -1,0 +1,24 @@
+.ict { position: relative; display: inline-block; cursor: help; border-bottom: 1px dotted currentColor; }
+.ict-pop {
+  display: none;
+  position: absolute;
+  z-index: 30;
+  inset-inline-start: 0;
+  top: 100%;
+  min-width: 300px;
+  max-height: 390px;
+  overflow: auto;
+  padding: 12px 15px;
+  text-align: start;
+  font-size: 1.17rem;
+  font-weight: 400;
+  background: var(--bg, #fff);
+  color: var(--txt, #0f172a);
+  border: 1px solid rgba(127, 127, 127, 0.35);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+.ict:hover .ict-pop, .ict:focus .ict-pop { display: block; }
+.ict-pop table { width: 100%; margin-top: 4px; border-collapse: collapse; }
+.ict-pop th, .ict-pop td { padding: 3px 12px 3px 0; white-space: nowrap; text-align: start; }
+.ict-note { display: block; margin-top: 4px; opacity: 0.7; }
