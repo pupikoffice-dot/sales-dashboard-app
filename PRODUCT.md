@@ -29,8 +29,9 @@ One place across several companies, built on the group's own ERP reports and ter
 - Cost and profit figures are restricted by default and only granted per user.
 
 ## Capabilities and Constraints
-- Sections today: Oversight (company columns with Orders Today, Orders MTD, Open Orders, Sales MTD, Returns MTD, Open Debt, delivery notes; layouts Classic, Hub and a sales-manager/agent suite chosen per user), Sales (reports by client, item, supplier), Orders MTD, Open Orders, Operations (Deliveries, Stock, Stock by brand, Items), R&D (super admin only; Monthly data), Admin (users, classes, modules, data health).
-- Per-user controls: companies, agents, which Oversight sections, which sidebar buttons, whether item cost is visible, and which look (skin) they may pick.
+- Sections today: Oversight (company columns with Orders Today, Orders MTD, Open Orders, Sales MTD, Returns MTD, Open Debt, delivery notes; layouts Classic, Hub and a sales-manager/agent suite chosen per user), Sales (reports by client, item, supplier), Orders MTD, Open Orders, Operations (Deliveries, Stock, Stock by brand, Items), R&D, Admin (users, classes, modules, data health, chains).
+- R&D today (super admin by default; each page and group can be granted to named users): a **Cards** group (Monthly, Multi-year and Yearly data, Client card for one client or a whole chain, Item card with cost, margin and order recommendation, Sales specifics with "Deals per Range": invoices counted by invoice-total range), an **Expenses** group (whole group, by company, classify cards; super admin only), and an **Import** group (Order recommendation, Import stock cover). Group tabs expand in the menu; a user needs the group permission and the page permission.
+- Per-user controls: companies, agents, which Oversight sections, which sidebar buttons, whether item cost is visible, which R&D pages and groups are open, and which look (skin) they may pick.
 - Looks: Classic (default), Bento, Solid and Glass, each in light and dark.
 - Built as a React + Vite + Tailwind app with Chart.js, on Supabase (database, login, row rules) and Vercel.
 - Terminology to keep: Oversight, Open Orders, Sales MTD, Items, Stock by brand, R&D, "brand" meaning the supplier naming used on the Sales page.
