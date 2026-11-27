@@ -27,6 +27,7 @@ import { useUserProfile } from '../hooks/useUserProfile'
 import { useOversightLayout } from '../hooks/useOversightLayout'
 import { useDataHealthNotices } from '../hooks/useDataHealth'
 import { DataHealthBanner } from '../components/DataHealthBanner'
+import { RouteErrorBoundary } from '../components/RouteErrorBoundary'
 import { unacknowledgedRed } from '../lib/dataHealth/notices'
 
 async function fetchActiveAppVersion(): Promise<string> {
@@ -380,9 +381,11 @@ export function DashboardLayout() {
           <p>{t('common.renderingReport')}</p>
         </div>
       )}
-      <Suspense fallback={<p className="status-msg">{t('common.loading')}</p>}>
-        <Outlet />
-      </Suspense>
+      <RouteErrorBoundary key={location.pathname}>
+        <Suspense fallback={<p className="status-msg">{t('common.loading')}</p>}>
+          <Outlet />
+        </Suspense>
+      </RouteErrorBoundary>
     </main>
   )
 

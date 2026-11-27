@@ -7,6 +7,8 @@ import { Kpi, PurchaseSearchBar, useDebounced } from '../../components/rnd/Purch
 import { SortTh, useSortedRows } from '../../components/rnd/sortRows'
 import { ComparisonTable } from '../../components/rnd/ComparisonTable'
 import { ClientItemSales } from '../../components/rnd/ClientItemSales'
+import { DealsPerRangeView } from '../../components/rnd/DealsPerRangeView'
+import { fetchClientDealsPerRange } from '../../lib/dealsPerRange'
 import { MarginNote } from '../../components/rnd/marginShared'
 import { useDashboardAccess } from '../../context/DashboardAccessContext'
 import { useAuth } from '../../context/AuthContext'
@@ -146,6 +148,13 @@ export function ClientCardPage() {
     enabled: !!company && !!clientId,
     staleTime: 5 * 60 * 1000,
   })
+  // Deals per range of this client (null = not allowed; the section is then not shown).
+  const deals = useQuery({
+    queryKey: ['client-deals-per-range', company, clientId, asUser],
+    queryFn: () => fetchClientDealsPerRange(company as string, clientId as string, asUser),
+    enabled: !!company && !!clientId,
+    staleTime: 5 * 60 * 1000,
+  })
   const data = card.data
   // Gross margin (null for users who may not see item costs: then no margin column, tile or line appears).
   const marginQ = useQuery({
@@ -270,17 +279,19 @@ export function ClientCardPage() {
     return { monthly, brands }
   }, [data, marginData, hasM, t, monthNames])
 
-  if (!company) return <p className="status-msg">{t('pc.noCompanies')}</p>
-
-  const pick = (id: string) => setParams({ co: company, id })
-  const rate = data ? returnRate(data.sold12, data.returned12) : null
-  const since = data ? daysSince(data.last) : null
   // Open debt of this client (same debt file as Oversight; only for users who see the Open Debt section).
+  // Hooks must all run before the early return below, otherwise React crashes when `company` appears later.
   const clientDebt = useMemo(() => {
     if (!data || data.client.isChain || !canShowOversiteModule(access, 'debt', isSuperAdmin)) return null
     const rows = debtRows.filter(r => r.company === company && String(r.clientID) === String(data.client.id))
     return { total: rows.reduce((s, r) => s + debtRowTotal(r), 0), old: rows.reduce((s, r) => s + (r.oldDebt || 0), 0) }
   }, [data, debtRows, company, access, isSuperAdmin])
+
+  if (!company) return <p className="status-msg">{t('pc.noCompanies')}</p>
+
+  const pick = (id: string) => setParams({ co: company, id })
+  const rate = data ? returnRate(data.sold12, data.returned12) : null
+  const since = data ? daysSince(data.last) : null
 
   return (
     <div className="panel" style={{ padding: 16 }}>
@@ -596,6 +607,16 @@ export function ClientCardPage() {
                 ) : (
                   <p className="status-msg">{stores.isLoading ? t('pc.client.loadingStores') : t('pc.client.noStores')}</p>
                 )}
+              </section>
+            ) : null}
+
+            {deals.data ? (
+              <section className="hub-card hub-span-12">
+                <div className="hub-card-hdr">
+                  <h3>{t('pc.client.deals')}</h3>
+                  <span className="hub-card-aside">{t('pc.client.dealsAside')}</span>
+                </div>
+                <DealsPerRangeView data={deals.data} csvName={`deals_per_range_${company}_${clientId}`} />
               </section>
             ) : null}
 
