@@ -46,6 +46,10 @@ async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T | nu
 export const fetchDealsPerRange = (company: string, asUser?: string | null) =>
   rpc<DealsPerRange>('get_deals_per_range', { p_company: company, p_as: asUser ?? null })
 
+/** Same figures for one client or a chain ('chain:<id>'); null = no access to the client card. */
+export const fetchClientDealsPerRange = (company: string, clientId: string, asUser?: string | null) =>
+  rpc<DealsPerRange>('get_client_deals_per_range', { p_company: company, p_client_id: clientId, p_as: asUser ?? null })
+
 /** The invoices counted in one cell (bucket 1..8, period key: month | quarter | d90 | d365 | m:YYYY-MM). */
 export const fetchDealsDetail = (company: string, bucket: number, period: string, asUser?: string | null) =>
   rpc<DealsDetail>('get_deals_detail', { p_company: company, p_bucket: bucket, p_period: period, p_as: asUser ?? null })

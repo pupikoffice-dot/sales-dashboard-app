@@ -964,6 +964,8 @@ export const messages = {
   'pc.client.byAgentAside': 'net cash, last 12 months, from the stores of this chain',
   'pc.client.searchSales': 'Search sales',
   'pc.client.searchSalesAside': 'what this client paid for an item, line by line',
+  'pc.client.deals': 'Deals per range',
+  'pc.client.dealsAside': 'invoices of this client by invoice total, this period against last year',
   'pc.client.topItems': 'Top items — last 12 months',
   'pc.client.noStopped': 'Nothing the client used to buy regularly has stopped.',
   'pc.client.whyReturn': 'Why they return',

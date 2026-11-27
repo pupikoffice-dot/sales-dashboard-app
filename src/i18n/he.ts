@@ -965,6 +965,8 @@ export const messages: Record<keyof typeof en, string> = {
   'pc.client.byAgentAside': 'מכירות נטו, 12 חודשים אחרונים, מחנויות הרשת',
   'pc.client.searchSales': 'חיפוש מכירות',
   'pc.client.searchSalesAside': 'מה הלקוח שילם עבור פריט, שורה אחר שורה',
+  'pc.client.deals': 'עסקאות לפי טווח',
+  'pc.client.dealsAside': 'חשבוניות הלקוח לפי סכום החשבונית, התקופה מול אשתקד',
   'pc.client.topItems': 'פריטים מובילים — 12 חודשים אחרונים',
   'pc.client.noStopped': 'שום דבר שהלקוח נהג לקנות באופן קבוע לא הופסק.',
   'pc.client.whyReturn': 'למה הם מחזירים',
